@@ -36,7 +36,7 @@ use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
 
-use crate::complex::user::UserComplex;
+use crate::complex::user as user_complex;
 use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, UpdateUserInfoInstr, UpdateUserPasswordInstr,
 };
@@ -367,7 +367,7 @@ async fn update_password_replaces_the_verified_password() {
     let snapshot = mock.snapshot();
 
     assert!(
-        UserComplex::verify_password(
+        user_complex::verify_password(
             "new-password",
             &snapshot.credentials[0].password_hash,
         )
@@ -375,7 +375,7 @@ async fn update_password_replaces_the_verified_password() {
     );
 
     assert!(
-        !UserComplex::verify_password(
+        !user_complex::verify_password(
             "old-password",
             &snapshot.credentials[0].password_hash,
         )
@@ -408,7 +408,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
     let snapshot = mock.snapshot();
 
     assert!(
-        UserComplex::verify_password(
+        user_complex::verify_password(
             "old-password",
             &snapshot.credentials[0].password_hash,
         )

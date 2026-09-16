@@ -30,7 +30,7 @@ use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::member_invitation as member_invitation_usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -77,7 +77,7 @@ pub async fn create(
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
     //
-    usecase::member_invitation::create::<
+    member_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -119,7 +119,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::member_invitation::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    member_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -152,7 +152,7 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
-    usecase::member_invitation::update_roles::<
+    member_invitation_usecase::update_roles::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -185,7 +185,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member_invitation::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    member_invitation_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         member_invitation_id,

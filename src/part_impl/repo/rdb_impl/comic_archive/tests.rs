@@ -9,7 +9,7 @@ use time::OffsetDateTime;
 
 use poprako_rdb_core::RdbCore;
 
-use crate::complex::comic_archive::ComicArchiveComplex;
+use crate::complex::comic_archive as comic_archive_complex;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::nucl::ReptRead;
@@ -110,7 +110,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
                 )
                 .await?;
 
-            let comic_archive_entry = ComicArchiveComplex::prepare_entry(
+            let comic_archive_entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 archiver_id.clone(),
                 OffsetDateTime::now_utc(),
@@ -291,7 +291,7 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
         .await
         .unwrap();
 
-    let comic_archive_entry = ComicArchiveComplex::prepare_entry(
+    let comic_archive_entry = comic_archive_complex::prepare_entry(
         comic_archive_snapshot,
         archiver_id,
         OffsetDateTime::now_utc(),

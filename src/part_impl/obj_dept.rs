@@ -22,7 +22,7 @@ use poprako_rdb_core::RdbCore;
 #[cfg(test)]
 use crate::implement_mock_obj_dept;
 
-use crate::complex::image::ImageComplex;
+use crate::complex::image as image_complex;
 use crate::part::obj_dept::{
     ChapterArtwork, ComicCover, PageImage, TeamAvatar, UserAvatar,
 };
@@ -66,8 +66,8 @@ impl_image_key_map!(
     PageImageKey,
     page_id,
     "page image",
-    ImageComplex::page_key,
-    ImageComplex::parse_page_key
+    image_complex::page_key,
+    image_complex::parse_page_key
 );
 
 impl_image_key_map!(
@@ -75,8 +75,8 @@ impl_image_key_map!(
     UserAvatarKey,
     user_id,
     "user avatar",
-    ImageComplex::user_avatar_key,
-    ImageComplex::parse_user_avatar_key
+    image_complex::user_avatar_key,
+    image_complex::parse_user_avatar_key
 );
 
 impl_image_key_map!(
@@ -84,8 +84,8 @@ impl_image_key_map!(
     TeamAvatarKey,
     team_id,
     "team avatar",
-    ImageComplex::team_avatar_key,
-    ImageComplex::parse_team_avatar_key
+    image_complex::team_avatar_key,
+    image_complex::parse_team_avatar_key
 );
 
 impl_image_key_map!(
@@ -93,8 +93,8 @@ impl_image_key_map!(
     ComicCoverKey,
     comic_id,
     "comic cover",
-    ImageComplex::comic_cover_key,
-    ImageComplex::parse_comic_cover_key
+    image_complex::comic_cover_key,
+    image_complex::parse_comic_cover_key
 );
 
 rdb_obj_dept_prom! {

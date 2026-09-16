@@ -33,7 +33,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::member as member_usecase;
 use crate::value::member::MemberInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -78,7 +78,7 @@ pub async fn create(
     Json(instr): Json<CreateMemberInstr>,
 ) -> HttpResult<CreateMemberVal> {
     //
-    usecase::member::create::<_, RdbContext<ReptRead>, HybRepo>(
+    member_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -107,7 +107,7 @@ pub async fn list_infos(
     Query(instr): Query<ListMemberInfosInstr>,
 ) -> HttpResult<Vec<MemberInfoView>> {
     //
-    usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -144,7 +144,7 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -178,7 +178,7 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_id, &instr.id)?;
 
-    usecase::member::update_roles::<_, RdbContext<Serial>, HybRepo>(
+    member_usecase::update_roles::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
@@ -208,7 +208,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete::<_, RdbContext<Serial>, HybRepo>(
+    member_usecase::delete::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         member_id,
@@ -237,7 +237,7 @@ pub async fn join(
     Json(instr): Json<JoinTeamInstr>,
 ) -> HttpResult<MemberInfoView> {
     //
-    usecase::member::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
+    member_usecase::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,

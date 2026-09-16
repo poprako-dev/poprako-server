@@ -15,9 +15,8 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::member_invitation::{
-    MemberInvitationComplex, MemberInvitationPermComplex,
-};
+use crate::complex::member_invitation as member_invitation_complex;
+use crate::complex::member_invitation::perm as member_invitation_perm_complex;
 use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
     UpdateMemberInvitationRolesInstr,
@@ -119,7 +118,7 @@ where
         });
     };
 
-    MemberInvitationPermComplex::ensure_user_can_create(&member_info)?;
+    member_invitation_perm_complex::ensure_user_can_create(&member_info)?;
 
     let (member_invitation_id, code) = nucl
         .coord(async move |context| {
@@ -167,8 +166,8 @@ where
             }
 
             let (member_invitation_id, code) = (
-                MemberInvitationComplex::gen_id(),
-                MemberInvitationComplex::gen_code(),
+                member_invitation_complex::gen_id(),
+                member_invitation_complex::gen_code(),
             );
 
             let member_invitation_entry = MemberInvitationEntry {
@@ -253,7 +252,7 @@ where
         });
     };
 
-    MemberInvitationPermComplex::ensure_user_can_list_infos(&member_info)?;
+    member_invitation_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: instr.team_id,
@@ -296,7 +295,7 @@ where
     )
     .await?;
 
-    MemberInvitationPermComplex::ensure_user_can_update_info(&member_info)?;
+    member_invitation_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -341,7 +340,7 @@ where
     )
     .await?;
 
-    MemberInvitationPermComplex::ensure_user_can_delete(&member_info)?;
+    member_invitation_perm_complex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
         //

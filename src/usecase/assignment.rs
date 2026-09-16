@@ -15,12 +15,11 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::{
-    AssignmentComplex, AssignmentDeleteAccess, AssignmentListAccess,
-    AssignmentPermComplex, UserAssignmentListAccess,
+use crate::complex::assignment::perm as assignment_perm_complex;
+use crate::complex::chapter::perm as chapter_perm_complex;
+use crate::complex::{
+    assignment as assignment_complex, chapter as chapter_complex,
 };
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::data::instr::assignment::{
     JoinChapterAssignmentInstr, ListAssignmentInfosInstr,
 };
@@ -127,9 +126,9 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_join(&member_info, instr.roles)?;
+    chapter_perm_complex::ensure_user_can_join(&member_info, instr.roles)?;
 
-    AssignmentPermComplex::ensure_user_can_take_roles(
+    assignment_perm_complex::ensure_user_can_take_roles(
         &member_info,
         instr.roles,
     )?;
@@ -144,7 +143,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let existing_assignment_info = FindAssignmentInfo::ChapterUser {
                 chapter_id: &instr.chapter_id,
@@ -160,7 +159,7 @@ where
             {
                 //
                 //
-                let assignment_role_update = AssignmentComplex::merge_roles(
+                let assignment_role_update = assignment_complex::merge_roles(
                     &existing_assignment_info,
                     instr.roles,
                 );
@@ -189,7 +188,7 @@ where
             } else {
                 //
                 let assignment_entry = AssignmentEntry {
-                    id: AssignmentComplex::gen_id(),
+                    id: assignment_complex::gen_id(),
                     chapter_id: instr.chapter_id,
                     user_id: token.user_id.clone(),
                     roles: instr.roles,
@@ -257,8 +256,8 @@ where
 
     if token.user_id == assignment_info.user_id {
         //
-        AssignmentPermComplex::ensure_user_can_delete(
-            &AssignmentDeleteAccess::Owner,
+        assignment_perm_complex::ensure_user_can_delete(
+            &assignment_perm_complex::AssignmentDeleteAccess::Owner,
         )?;
     } else {
         //
@@ -287,8 +286,8 @@ where
             });
         };
 
-        AssignmentPermComplex::ensure_user_can_delete(
-            &AssignmentDeleteAccess::Admin {
+        assignment_perm_complex::ensure_user_can_delete(
+            &assignment_perm_complex::AssignmentDeleteAccess::Admin {
                 assignment_info: &admin_assignment_info,
             },
         )?;
@@ -303,7 +302,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+        chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
         DeleteAssignments::Id { id: &id }
             .step_on(repo, context)
@@ -360,8 +359,8 @@ where
 
             if let Some(member_info) = member_info {
                 //
-                return AssignmentPermComplex::ensure_user_can_list_chapter_infos(
-                    &AssignmentListAccess::Member {
+                return assignment_perm_complex::ensure_user_can_list_chapter_infos(
+                    &assignment_perm_complex::AssignmentListAccess::Member {
                         member_info: &member_info,
                     },
                 );
@@ -393,8 +392,8 @@ where
                 });
             };
 
-            AssignmentPermComplex::ensure_user_can_list_chapter_infos(
-                &AssignmentListAccess::Assignee {
+            assignment_perm_complex::ensure_user_can_list_chapter_infos(
+                &assignment_perm_complex::AssignmentListAccess::Assignee {
                     assignment_info: &assignment_info,
                 },
             )
@@ -403,8 +402,8 @@ where
         AssignmentListSpec::User { owner_id, .. }
             if token.user_id == *owner_id =>
         {
-            AssignmentPermComplex::ensure_user_can_list_user_infos(
-                &UserAssignmentListAccess::Owner,
+            assignment_perm_complex::ensure_user_can_list_user_infos(
+                &assignment_perm_complex::UserAssignmentListAccess::Owner,
             )
         }
 
@@ -413,8 +412,8 @@ where
             let user_info =
                 GetUserInfo { id: &token.user_id }.run_on(repo).await?;
 
-            AssignmentPermComplex::ensure_user_can_list_user_infos(
-                &UserAssignmentListAccess::SuperAdmin {
+            assignment_perm_complex::ensure_user_can_list_user_infos(
+                &assignment_perm_complex::UserAssignmentListAccess::SuperAdmin {
                     user_info: &user_info,
                 },
             )

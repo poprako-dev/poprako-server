@@ -9,8 +9,8 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::ComicComplex;
-use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
+use crate::complex::termbase::perm as termbase_perm_complex;
+use crate::complex::{comic as comic_complex, termbase as termbase_complex};
 use crate::data::instr::termbase::{
     CreateTermbaseInstr, ListComicTermbaseInfosInstr,
     ListTeamTermbaseInfosInstr, UpdateTermbaseInfoInstr,
@@ -58,7 +58,7 @@ where
         + Send
         + Sync,
 {
-    let termbase_entry = TermbaseComplex::build_entry(
+    let termbase_entry = termbase_complex::build_entry(
         instr.team_id,
         instr.comic_id,
         instr.name,
@@ -88,7 +88,7 @@ where
                         .step_on(repo, context)
                         .await?;
 
-                        ComicComplex::ensure_comic_writable(&comic_info)?;
+                        comic_complex::ensure_comic_writable(&comic_info)?;
 
                         let workset_info = GetWorksetInfo {
                             id: &comic_info.workset_id,
@@ -134,7 +134,7 @@ where
                 });
             };
 
-            TermbasePermComplex::ensure_user_can_write_team(&member_info)?;
+            termbase_perm_complex::ensure_user_can_write_team(&member_info)?;
 
             let termbase_info = CreateTermbase {
                 entry: &termbase_entry,
@@ -170,7 +170,7 @@ where
     )
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
+    termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
     accept(termbase_info.into())
 }
@@ -211,11 +211,11 @@ where
         });
     };
 
-    TermbasePermComplex::ensure_user_can_read_team(&member_info)?;
+    termbase_perm_complex::ensure_user_can_read_team(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Team {
         team_id: instr.team_id,
-        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(instr.fuzzy_name),
+        fuzzy_name: termbase_complex::normalize_fuzzy_name(instr.fuzzy_name),
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -248,11 +248,11 @@ where
     )
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read_comic(&member_info)?;
+    termbase_perm_complex::ensure_user_can_read_comic(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Comic {
         comic_id: instr.comic_id,
-        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(instr.fuzzy_name),
+        fuzzy_name: termbase_complex::normalize_fuzzy_name(instr.fuzzy_name),
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -279,8 +279,11 @@ where
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let termbase_info_update =
-        TermbaseComplex::build_update(instr.id, instr.name, instr.description)?;
+    let termbase_info_update = termbase_complex::build_update(
+        instr.id,
+        instr.name,
+        instr.description,
+    )?;
 
     nucl.coord(async move |context| {
         //
@@ -298,7 +301,7 @@ where
         )
         .await?;
 
-        TermbasePermComplex::ensure_user_can_write(
+        termbase_perm_complex::ensure_user_can_write(
             &member_info,
             &termbase_info,
         )?;
@@ -348,7 +351,7 @@ where
         )
         .await?;
 
-        TermbasePermComplex::ensure_user_can_write(
+        termbase_perm_complex::ensure_user_can_write(
             &member_info,
             &termbase_info,
         )?;

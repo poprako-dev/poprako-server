@@ -5,7 +5,7 @@ use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::oper::DeleteObjs;
 use poprako_util::i18n::trl;
 
-use crate::complex::member::MemberComplex;
+use crate::complex::member as member_complex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::obj_dept::UserAvatar;
@@ -83,7 +83,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            if !MemberComplex::team_has_admin_after_delete(
+            if !member_complex::team_has_admin_after_delete(
                 &team_member_infos,
                 member_info,
             ) {

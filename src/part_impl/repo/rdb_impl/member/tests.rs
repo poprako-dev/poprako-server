@@ -13,7 +13,7 @@ use tokio::sync::{Semaphore, mpsc};
 
 use poprako_rdb_core::RdbCore;
 
-use crate::complex::member::MemberComplex;
+use crate::complex::member as member_complex;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::model::write::user::UserEntry;
@@ -435,7 +435,7 @@ async fn remove_admin_role_after_read(
 
         let roles = RoleMask::from(RoleField::REVIEWER);
 
-        assert!(MemberComplex::team_has_admin_after_role_update(
+        assert!(member_complex::team_has_admin_after_role_update(
             &member_infos,
             subject_member_info,
             roles,

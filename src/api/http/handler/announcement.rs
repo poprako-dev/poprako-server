@@ -28,7 +28,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::announcement as announcement_usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -71,7 +71,7 @@ pub async fn create(
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
     //
-    usecase::announcement::create::<RdbContext<ReptRead>, HybRepo>(
+    announcement_usecase::create::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -107,7 +107,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::announcement::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    announcement_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -139,7 +139,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&announcement_id, &instr.id)?;
 
-    usecase::announcement::update_info::<RdbContext<ReptRead>, HybRepo>(
+    announcement_usecase::update_info::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -168,7 +168,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::announcement::delete::<RdbContext<ReptRead>, HybRepo>(
+    announcement_usecase::delete::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         announcement_id,

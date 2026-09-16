@@ -18,10 +18,11 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::AssignmentComplex;
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter::perm::ChapterPermComplex;
-use crate::complex::comic::ComicComplex;
+use crate::complex::chapter::perm as chapter_perm_complex;
+use crate::complex::{
+    assignment as assignment_complex, chapter as chapter_complex,
+    comic as comic_complex,
+};
 use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
 };
@@ -84,7 +85,7 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_list_infos(&member_info)?;
+    chapter_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let spec = ChapterListSpec {
         comic_id: instr.comic_id,
@@ -120,7 +121,7 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_get_info(&member_info)?;
+    chapter_perm_complex::ensure_user_can_get_info(&member_info)?;
 
     let chapter_info = GetChapterInfo {
         id: &id,
@@ -151,7 +152,7 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_get_pinned(&member_info)?;
+    chapter_perm_complex::ensure_user_can_get_pinned(&member_info)?;
 
     let chapter_info = FindPinnedChapterInfo {
         comic_id: &comic_id,
@@ -191,7 +192,7 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_create(
+    chapter_perm_complex::ensure_user_can_create(
         &member_info,
         instr.preset_assignment_roles,
     )?;
@@ -206,7 +207,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ComicComplex::ensure_comic_writable(&comic_info)?;
+            comic_complex::ensure_comic_writable(&comic_info)?;
 
             LockChapters {
                 comic_id: &instr.comic_id,
@@ -228,9 +229,9 @@ where
             .await?;
 
             let subtitle =
-                ChapterComplex::subtitle_or_default(instr.subtitle, index);
+                chapter_complex::subtitle_or_default(instr.subtitle, index);
 
-            let chapter_id = ChapterComplex::gen_id();
+            let chapter_id = chapter_complex::gen_id();
 
             UnpinOtherChapters {
                 comic_id: &instr.comic_id,
@@ -268,10 +269,10 @@ where
             .await?;
 
             let assignment_entry = AssignmentEntry {
-                id: AssignmentComplex::gen_id(),
+                id: assignment_complex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id.clone(),
-                roles: AssignmentComplex::creator_roles(
+                roles: assignment_complex::creator_roles(
                     instr.preset_assignment_roles,
                 ),
             };
@@ -334,7 +335,7 @@ where
         });
     };
 
-    ChapterPermComplex::ensure_user_can_update_info(&assignment_info)?;
+    chapter_perm_complex::ensure_user_can_update_info(&assignment_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -345,7 +346,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+        chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
         match instr.subtitle {
             //
@@ -428,7 +429,7 @@ where
         });
     };
 
-    ChapterPermComplex::ensure_user_can_mark_pinned(&assignment_info)?;
+    chapter_perm_complex::ensure_user_can_mark_pinned(&assignment_info)?;
 
     let chapter_info = GetChapterInfo {
         id: &id,
@@ -455,7 +456,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let prev_pinned_chapter = FindPinnedChapterInfo {
                 comic_id: &chapter_info.comic_id,

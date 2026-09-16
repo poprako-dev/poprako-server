@@ -16,10 +16,11 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::{BaseError, BaseRest};
-use crate::usecase::chapter::stage::{
-    RawProvideAdvance, try_advance_raw_provide,
+use crate::usecase::chapter::stage as chapter_stage_usecase;
+use crate::usecase::{
+    assignment_invitation as assignment_invitation_usecase,
+    member_invitation as member_invitation_usecase,
 };
-use crate::usecase::{assignment_invitation, member_invitation};
 
 /// Delivers one decoded Prom task to its domain use case.
 pub async fn dispatch<C, N, R, V, D>(
@@ -48,7 +49,7 @@ where
                 actor_user_id,
             } => {
                 //
-                let rest = try_advance_raw_provide(
+                let rest = chapter_stage_usecase::try_advance_raw_provide(
                     (nucl, repo, obj_dept_view, develop),
                     &chapter_id,
                     Some(actor_user_id),
@@ -67,7 +68,7 @@ where
                     invitation_id,
                 } => {
                     //
-                    assignment_invitation::purge_expired::<C, R>(
+                    assignment_invitation_usecase::purge_expired::<C, R>(
                         (repo,),
                         &invitation_id,
                     )
@@ -78,7 +79,7 @@ where
                     invitation_id,
                 } => {
                     //
-                    member_invitation::purge_expired::<C, R>(
+                    member_invitation_usecase::purge_expired::<C, R>(
                         (repo,),
                         &invitation_id,
                     )
@@ -92,19 +93,24 @@ where
 }
 
 // Map chapter advancement outcomes to Prom delivery policy.
-fn chapter_flow(rest: BaseRest<RawProvideAdvance>) -> TaskFlow {
+fn chapter_flow(
+    rest: BaseRest<chapter_stage_usecase::RawProvideAdvance>,
+) -> TaskFlow {
     //
     match rest {
         //
-        Ok(RawProvideAdvance::Advanced | RawProvideAdvance::Unchanged) => {
-            TaskFlow::Complete
+        Ok(
+            chapter_stage_usecase::RawProvideAdvance::Advanced
+            | chapter_stage_usecase::RawProvideAdvance::Unchanged,
+        )
+        | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+
+        Ok(chapter_stage_usecase::RawProvideAdvance::Pending) => {
+            //
+            TaskFlow::Wait {
+                err_message: "page objects are pending".into(),
+            }
         }
-
-        Ok(RawProvideAdvance::Pending) => TaskFlow::Wait {
-            err_message: "page objects are pending".into(),
-        },
-
-        Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
         Err(error) => TaskFlow::Retry {
             err_message: format!("{:?}", error),

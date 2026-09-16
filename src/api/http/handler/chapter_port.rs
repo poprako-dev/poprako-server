@@ -33,7 +33,10 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::chapter_port::{
+    artwork as chapter_port_artwork_usecase,
+    import_translation as chapter_port_import_translation_usecase,
+};
 
 /// `POST /api/v1/chapters/{chapter_id}/translations/import` — import translations.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -56,7 +59,7 @@ pub async fn import_translation(
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
     //
-    usecase::chapter_port::import_translation::import_translation::<
+    chapter_port_import_translation_usecase::import_translation::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -165,7 +168,7 @@ pub async fn alloc_artwork(
     Json(instr): Json<AllocChapterArtworkInstr>,
 ) -> HttpResult<AllocChapterArtworkVal> {
     //
-    usecase::chapter_port::artwork::alloc_artwork::<
+    chapter_port_artwork_usecase::alloc_artwork::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -204,7 +207,7 @@ pub async fn mark_artwork_uploaded(
     Json(instr): Json<MarkChapterArtworkUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::chapter_port::artwork::mark_artwork_uploaded::<
+    chapter_port_artwork_usecase::mark_artwork_uploaded::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -243,7 +246,7 @@ pub async fn export_artwork(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ExportChapterArtworkVal> {
     //
-    usecase::chapter_port::artwork::export_artwork::<
+    chapter_port_artwork_usecase::export_artwork::<
         _,
         RdbContext<ReptRead>,
         HybRepo,

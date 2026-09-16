@@ -34,7 +34,13 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::comic::{
+    alloc as comic_alloc_usecase, cover as comic_cover_usecase,
+    list as comic_list_usecase,
+};
+use crate::usecase::{
+    comic as comic_usecase, comic_archive as comic_archive_usecase,
+};
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::pagination::PubListLimit;
 
@@ -61,7 +67,7 @@ pub async fn export_archives(
     Query(instr): Query<ExportComicArchivesInstr>,
 ) -> HttpResult<ExportComicArchivesVal> {
     //
-    usecase::comic_archive::export::<RdbContext<ReptRead>, HybRepo>(
+    comic_archive_usecase::export::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         team_id,
@@ -128,7 +134,7 @@ pub async fn create(
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
     //
-    usecase::comic::create::<_, RdbContext<ReptRead>, HybRepo>(
+    comic_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -169,7 +175,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comic::list::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    comic_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -197,7 +203,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoView> {
     //
-    usecase::comic::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    comic_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
@@ -230,7 +236,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&comic_id, &instr.id)?;
 
-    usecase::comic::update_info::<RdbContext<ReptRead>, HybRepo>(
+    comic_usecase::update_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -261,7 +267,7 @@ pub async fn alloc_cover(
     Json(instr): Json<AllocComicCoverInstr>,
 ) -> HttpResult<AllocComicCoverVal> {
     //
-    usecase::comic::alloc::alloc_cover::<_, RdbContext<ReptRead>, HybRepo, _>(
+    comic_alloc_usecase::alloc_cover::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -297,7 +303,7 @@ pub async fn mark_cover_uploaded(
     Json(instr): Json<MarkComicCoverUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::comic::cover::mark_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+    comic_cover_usecase::mark_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
@@ -327,7 +333,7 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     //
-    usecase::comic_archive::archive::<_, RdbContext<Serial>, HybRepo, _>(
+    comic_archive_usecase::archive::<_, RdbContext<Serial>, HybRepo, _>(
         (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
@@ -355,7 +361,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo>(
+    comic_usecase::delete::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         comic_id,

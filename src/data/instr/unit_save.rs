@@ -2,8 +2,7 @@
 use sha2::{Digest as _, Sha256};
 use uuid::Uuid;
 
-use crate::complex::unit::UnitComplex;
-use crate::complex::unit_save::UnitSaveComplex;
+use crate::complex::{unit as unit_complex, unit_save as unit_save_complex};
 use crate::data::instr::unit::{SavePageUnitEditsInstr, into_unit_edits};
 use crate::model::shared::unit_save::UnitSaveCreatedUnitId;
 use crate::model::write::unit::UnitEdit;
@@ -17,7 +16,7 @@ pub fn prepare_save(
 ) -> BaseRest<(Vec<UnitEdit>, UnitSaveEntry)> {
     //
     if Uuid::parse_str(&instr.save_id).is_err() {
-        return Err(UnitSaveComplex::invalid_save());
+        return Err(unit_save_complex::invalid_save());
     }
 
     let payload = serde_json::to_vec(&instr.edits).map_err(|error| {
@@ -35,7 +34,7 @@ pub fn prepare_save(
 
     let edits = into_unit_edits(instr.edits, user_id, |local_id| {
         //
-        let unit_id = UnitComplex::gen_id();
+        let unit_id = unit_complex::gen_id();
 
         created_unit_ids.push(UnitSaveCreatedUnitId {
             local_id: local_id.into(),

@@ -17,7 +17,7 @@ use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::result::BaseRest;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::subtree_delete as subtree_delete_usecase;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
 // Delay between empty or failed sweep attempts.
@@ -62,7 +62,7 @@ where
         run(
             &token,
             |level| {
-                usecase::subtree_delete::sweep((&nucl, &repo, &obj_dept), level)
+                subtree_delete_usecase::sweep((&nucl, &repo, &obj_dept), level)
             },
             || wait(&token),
         )

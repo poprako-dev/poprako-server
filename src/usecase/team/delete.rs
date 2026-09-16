@@ -5,7 +5,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::team::TeamPermComplex;
+use crate::complex::team::perm as team_perm_complex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::repo::member::MemberRepo;
@@ -53,7 +53,7 @@ where
                 });
             };
 
-            TeamPermComplex::ensure_user_can_delete(&member_info)?;
+            team_perm_complex::ensure_user_can_delete(&member_info)?;
 
             MarkSubtree {
                 scope: &delete_scope,

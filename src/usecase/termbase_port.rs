@@ -9,8 +9,8 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::ComicComplex;
-use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
+use crate::complex::termbase::perm as termbase_perm_complex;
+use crate::complex::{comic as comic_complex, termbase as termbase_complex};
 use crate::data::instr::termbase_port::ImportTermbaseInstr;
 use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
 use crate::model::read::proj::termbase::TermbaseInfo;
@@ -69,7 +69,7 @@ where
             )
             .await?;
 
-            TermbasePermComplex::ensure_user_can_read(
+            termbase_perm_complex::ensure_user_can_read(
                 &member_info,
                 &termbase_info,
             )?;
@@ -113,7 +113,7 @@ where
         + Send
         + Sync,
 {
-    let termbase_import = TermbaseComplex::normalize_import(instr.into())?;
+    let termbase_import = termbase_complex::normalize_import(instr.into())?;
 
     let import_termbase_val = nucl
         .coord(async move |context| {
@@ -125,7 +125,7 @@ where
             let termbase_infos =
                 list_import_targets(repo, context, &scope).await?;
 
-            let existing_termbase_info = TermbaseComplex::find_import_target(
+            let existing_termbase_info = termbase_complex::find_import_target(
                 termbase_infos,
                 &termbase_import.name,
             );
@@ -143,7 +143,7 @@ where
                     }
                 };
 
-                let termbase_entry = TermbaseComplex::build_entry(
+                let termbase_entry = termbase_complex::build_entry(
                     team_id,
                     comic_id,
                     termbase_import.name.clone(),
@@ -215,7 +215,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ComicComplex::ensure_comic_writable(&comic_info)?;
+            comic_complex::ensure_comic_writable(&comic_info)?;
 
             let workset_info = GetWorksetInfo {
                 id: &comic_info.workset_id,
@@ -264,7 +264,7 @@ where
         });
     };
 
-    TermbasePermComplex::ensure_user_can_write_team(&member_info)
+    termbase_perm_complex::ensure_user_can_write_team(&member_info)
 }
 
 // List existing terminology bases within the selected import scope.
@@ -335,7 +335,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    let term_upsert_plan = TermbaseComplex::build_term_upsert_plan(
+    let term_upsert_plan = termbase_complex::build_term_upsert_plan(
         &termbase_info.id,
         &token.user_id,
         termbase_info.term_count,

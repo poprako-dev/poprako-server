@@ -22,7 +22,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::comment as comment_usecase;
 use crate::value::comment::CommentInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -65,7 +65,7 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    usecase::comment::create::<RdbContext<ReptRead>, HybRepo>(
+    comment_usecase::create::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -101,7 +101,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comment::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    comment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,

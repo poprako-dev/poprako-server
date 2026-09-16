@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::usecase::user::delete as user_delete_usecase;
 use poprako_obj_dept::model::task::ObjTask;
 
 fn seed_user_with_avatar(mock: &Mock, is_avail: bool) {
@@ -49,7 +50,7 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
         "team-2",
     ));
 
-    crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -93,7 +94,7 @@ async fn delete_removes_memberships_from_tombstoned_teams() {
         .deleted_team_ids
         .insert("team-1".into());
 
-    crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -126,7 +127,7 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
         "team-1",
     ));
 
-    let err = crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -157,7 +158,7 @@ async fn delete_pending_avatar_enqueues_exact_object_delete() {
 
     seed_user_with_avatar(&mock, false);
 
-    crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -180,7 +181,7 @@ async fn delete_rejects_non_owner_without_mutation() {
         credential("user-1", "password"),
     );
 
-    let err = crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-2"),
         "user-1".into(),
@@ -203,7 +204,7 @@ async fn delete_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),

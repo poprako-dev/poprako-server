@@ -1,7 +1,7 @@
 use super::super::alloc::validation::validate_page_count;
 
-use crate::complex::image::ImageComplex;
-use crate::complex::page::PageComplex;
+use crate::complex::image as image_complex;
+use crate::complex::page as page_complex;
 use crate::data::instr::page::{AllocPageImageInstr, PageImageInstr};
 use crate::test_util::IMAGE_CONFIG;
 use crate::value::image::ImageHash;
@@ -12,7 +12,7 @@ use serde_json::json;
 fn image_byte_length_accepts_closed_bounds() {
     //
     assert!(
-        ImageComplex::ensure_byte_length(
+        image_complex::ensure_byte_length(
             &IMAGE_CONFIG,
             1,
             ImageKind::PageImage,
@@ -21,7 +21,7 @@ fn image_byte_length_accepts_closed_bounds() {
     );
 
     assert!(
-        ImageComplex::ensure_byte_length(
+        image_complex::ensure_byte_length(
             &IMAGE_CONFIG,
             25 * 1024 * 1024,
             ImageKind::PageImage,
@@ -34,7 +34,7 @@ fn image_byte_length_accepts_closed_bounds() {
 fn image_byte_length_rejects_values_outside_bounds() {
     //
     assert!(
-        ImageComplex::ensure_byte_length(
+        image_complex::ensure_byte_length(
             &IMAGE_CONFIG,
             0,
             ImageKind::PageImage,
@@ -43,7 +43,7 @@ fn image_byte_length_rejects_values_outside_bounds() {
     );
 
     assert!(
-        ImageComplex::ensure_byte_length(
+        image_complex::ensure_byte_length(
             &IMAGE_CONFIG,
             25 * 1024 * 1024 + 1,
             ImageKind::PageImage,
@@ -112,12 +112,12 @@ fn raw_ident_rejects_patch_objects_and_invalid_filenames() {
         "", "  ", "a\nb.png", "a\rb.png", "a\0b.png", "a/b.png", "a\\b.png",
         "a\tb.png",
     ] {
-        assert!(PageComplex::ensure_raw_ident(Some(value)).is_err());
+        assert!(page_complex::ensure_raw_ident(Some(value)).is_err());
     }
 
     for value in ["原稿 01.PNG", " name.webp ", "[封面].png", "same.jpg"] {
-        assert!(PageComplex::ensure_raw_ident(Some(value)).is_ok());
+        assert!(page_complex::ensure_raw_ident(Some(value)).is_ok());
     }
 
-    assert!(PageComplex::ensure_raw_ident(None).is_ok());
+    assert!(page_complex::ensure_raw_ident(None).is_ok());
 }

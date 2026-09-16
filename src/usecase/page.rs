@@ -20,7 +20,7 @@ use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
-use crate::complex::page::PagePermComplex;
+use crate::complex::page::perm as page_perm_complex;
 use crate::data::instr::page::MarkPageImageUploadedInstr;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::PageImage;
@@ -60,7 +60,7 @@ where
         });
     };
 
-    PagePermComplex::ensure_user_can_mark_image_uploaded(&assignment_info)?;
+    page_perm_complex::ensure_user_can_mark_image_uploaded(&assignment_info)?;
 
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;

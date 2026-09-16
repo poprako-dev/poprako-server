@@ -7,8 +7,8 @@ use poprako_obj_dept::oper::{ClearObjs, ListObjMetas};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter::perm::ChapterPermComplex;
+use crate::complex::chapter as chapter_complex;
+use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::data::instr::chapter::UpdateChapterStageInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::shared::user::UserToken;
@@ -200,15 +200,18 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let was_published = chapter_info.stages.get_phase(Stage::Publish)
                 == StagePhase::Completed;
 
             let prev_phase = chapter_info.stages.get_phase(stage);
 
-            let chapter_stage_update =
-                ChapterComplex::build_stage_update(&chapter_info, stage, oper)?;
+            let chapter_stage_update = chapter_complex::build_stage_update(
+                &chapter_info,
+                stage,
+                oper,
+            )?;
 
             let next_phase = chapter_stage_update.stages.get_phase(stage);
 
@@ -330,7 +333,7 @@ where
         StageOper::Revert => Vec::<AssignmentInfo>::new(),
     };
 
-    ChapterPermComplex::ensure_user_can_update_stage(
+    chapter_perm_complex::ensure_user_can_update_stage(
         &assignment_info,
         &assignment_infos,
         stage,

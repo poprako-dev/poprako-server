@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::complex::system_mail::SystemMailComplex;
+use crate::complex::system_mail as system_mail_complex;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::SendSystemMail;
 use crate::part::repo::oper::team::GetTeamInfo;
@@ -49,7 +49,7 @@ pub async fn notify_invitor<C, R>(
     );
 
     let system_mail_entry = SystemMailEntry {
-        id: SystemMailComplex::gen_id(),
+        id: system_mail_complex::gen_id(),
         receiver_id: invitor_id.to_string(),
         title: trl("mail-invitation-used-title"),
         content: trl_kv("mail-invitation-used-body", &args),

@@ -28,7 +28,8 @@ use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::assignment_invitation as assignment_invitation_usecase;
+use crate::usecase::assignment_invitation::join as assignment_invitation_join_usecase;
 use crate::value::pagination::PubListLimit;
 
 /// Query for listing assignment invitations under one chapter.
@@ -68,7 +69,7 @@ pub async fn create(
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
     //
-    usecase::assignment_invitation::create::<
+    assignment_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -109,7 +110,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::assignment_invitation::list_infos::<RdbContext<ReptRead>, HybRepo>(
+    assignment_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -137,7 +138,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::assignment_invitation::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    assignment_invitation_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_invitation_id,
@@ -167,7 +168,7 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    usecase::assignment_invitation::join::join::<
+    assignment_invitation_join_usecase::join::<
         _,
         RdbContext<ReptRead>,
         HybRepo,

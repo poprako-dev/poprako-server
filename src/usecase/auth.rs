@@ -8,8 +8,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::member::MemberComplex;
-use crate::complex::user::UserComplex;
+use crate::complex::{member as member_complex, user as user_complex};
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::model::shared::user::UserToken;
@@ -35,7 +34,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// Within a single transaction, this function:
 ///
 /// 1. Fetches and validates the invitation, ensuring the invitee QQ ID matches.
-/// 2. Hashes the password via [`UserComplex::hash_password`].
+/// 2. Hashes the password via [`user_complex::hash_password`].
 /// 3. Inserts a new [`UserEntry`] row.
 /// 4. Creates a [`MemberEntry`] linking the new user to the inviting team with
 ///    the role specified in the invitation.
@@ -104,10 +103,10 @@ where
             }
 
             let password_hash =
-                UserComplex::hash_password(&instr.password).await?;
+                user_complex::hash_password(&instr.password).await?;
 
             let user_entry = UserEntry {
-                id: UserComplex::gen_id(),
+                id: user_complex::gen_id(),
                 qid: instr.qid,
                 nickname: instr.nickname,
                 password_hash,
@@ -118,7 +117,7 @@ where
                 .await?;
 
             let member_entry = MemberEntry {
-                id: MemberComplex::gen_id(),
+                id: member_complex::gen_id(),
                 user_id: user_info.id.clone(),
                 user_nickname: user_info.nickname.clone(),
                 team_id: invitation_info.team_id.clone(),
@@ -197,7 +196,7 @@ where
     let user_credential =
         GetUserCredential { qid: &instr.qid }.run_on(repo).await?;
 
-    if !UserComplex::verify_password(
+    if !user_complex::verify_password(
         &instr.password,
         &user_credential.password_hash,
     )

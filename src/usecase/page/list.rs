@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::page::{PageListAccess, PagePermComplex};
+use crate::complex::page::perm as page_perm_complex;
 use crate::data::instr::page::{
     ListPageInfosInstr, ListPageUnitDiffStatsInstr,
 };
@@ -119,8 +119,8 @@ where
 
     if let Some(member_info) = member_info {
         //
-        return PagePermComplex::ensure_user_can_list_infos(
-            &PageListAccess::Member {
+        return page_perm_complex::ensure_user_can_list_infos(
+            &page_perm_complex::PageListAccess::Member {
                 member_info: &member_info,
             },
         );
@@ -151,7 +151,9 @@ where
         });
     };
 
-    PagePermComplex::ensure_user_can_list_infos(&PageListAccess::Assignee {
-        assignment_info: &assignment_info,
-    })
+    page_perm_complex::ensure_user_can_list_infos(
+        &page_perm_complex::PageListAccess::Assignee {
+            assignment_info: &assignment_info,
+        },
+    )
 }

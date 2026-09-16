@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::team::TeamPermComplex;
+use crate::complex::team::perm as team_perm_complex;
 use crate::data::instr::team::ListTeamInfosInstr;
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::spec::team::TeamListSpec;
@@ -88,7 +88,7 @@ where
         //
         let user_info = GetUserInfo { id: &token.user_id }.run_on(repo).await?;
 
-        TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
+        team_perm_complex::ensure_user_can_list_infos(&user_info)?;
     }
 
     let team_info_list_spec = TeamListSpec {

@@ -1,4 +1,5 @@
 use super::*;
+use crate::complex::unit as unit_complex;
 
 use time::OffsetDateTime;
 
@@ -103,7 +104,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
         },
     ];
 
-    let edits = UnitComplex::normalize_edits(&["a"], edits).unwrap();
+    let edits = unit_complex::normalize_edits(&["a"], edits).unwrap();
 
     assert_eq!(edits.len(), 1);
 
@@ -121,7 +122,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
 #[test]
 fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     //
-    let self_anchor = UnitComplex::normalize_edits(
+    let self_anchor = unit_complex::normalize_edits(
         &["a"],
         vec![save(
             "a",
@@ -133,7 +134,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
 
     assert_args(self_anchor.unwrap_err());
 
-    let unknown = UnitComplex::normalize_edits(
+    let unknown = unit_complex::normalize_edits(
         &["a"],
         vec![UnitEdit::Delete {
             id: "missing".to_string(),
@@ -146,7 +147,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
 #[test]
 fn normalize_orders_create_prior_to_save_for_the_same_unit() {
     //
-    let edits = UnitComplex::normalize_edits(
+    let edits = unit_complex::normalize_edits(
         &[],
         vec![save("a", Patch::Clear), create("a", None)],
     )
@@ -180,7 +181,7 @@ fn edit_sequence_plan_combines_create_restore_delete_and_moves() {
         },
     ];
 
-    let Ok(plan) = UnitComplex::plan_edit_sequence(&orders, &edits) else {
+    let Ok(plan) = unit_complex::plan_edit_sequence(&orders, &edits) else {
         assert!(false, "valid Unit edits must produce a sequence plan");
 
         return;
@@ -240,7 +241,7 @@ fn edit_sequence_plan_handles_a_long_tombstone_chain_linearly() {
         },
     )];
 
-    let Ok(plan) = UnitComplex::plan_edit_sequence(&orders, &edits) else {
+    let Ok(plan) = unit_complex::plan_edit_sequence(&orders, &edits) else {
         assert!(false, "a valid long tombstone chain must remain editable");
 
         return;
@@ -270,7 +271,7 @@ fn edit_sequence_plan_rejects_visible_overflow_and_corrupt_order() {
 
     let overflow_edits = vec![create("overflow", None)];
 
-    let overflow = UnitComplex::plan_edit_sequence(&orders, &overflow_edits);
+    let overflow = unit_complex::plan_edit_sequence(&orders, &overflow_edits);
 
     assert!(matches!(
         overflow,
@@ -283,7 +284,7 @@ fn edit_sequence_plan_rejects_visible_overflow_and_corrupt_order() {
     let corrupt_orders = vec![order("a", None, false), order("b", None, false)];
 
     assert!(matches!(
-        UnitComplex::plan_edit_sequence(&corrupt_orders, &[]),
+        unit_complex::plan_edit_sequence(&corrupt_orders, &[]),
         Err(BaseError::Unrecoverable { .. }),
     ));
 }
@@ -292,19 +293,19 @@ fn edit_sequence_plan_rejects_visible_overflow_and_corrupt_order() {
 fn search_phrase_trims_unicode_and_accepts_one_character() {
     //
     let phrase =
-        UnitComplex::normalize_search_phrase(" 译文甲 ".into()).unwrap();
+        unit_complex::normalize_search_phrase(" 译文甲 ".into()).unwrap();
 
     assert_eq!(phrase, "译文甲");
 
     assert_eq!(
-        UnitComplex::normalize_search_phrase(" 日 ".into()).unwrap(),
+        unit_complex::normalize_search_phrase(" 日 ".into()).unwrap(),
         "日",
     );
 
-    assert_args(UnitComplex::normalize_search_phrase("".into()).unwrap_err());
+    assert_args(unit_complex::normalize_search_phrase("".into()).unwrap_err());
 
     assert_args(
-        UnitComplex::normalize_search_phrase(" \u{2003}\n ".into())
+        unit_complex::normalize_search_phrase(" \u{2003}\n ".into())
             .unwrap_err(),
     );
 }
@@ -316,7 +317,7 @@ fn transform_uses_original_text_without_target_cascading() {
 
     let unit_transform = transform(&[("abc", "def"), ("def", "final")]);
 
-    let edit = UnitComplex::build_transform_edit(
+    let edit = unit_complex::build_transform_edit(
         &unit_info,
         UnitTextPart::TranslatedText,
         &unit_transform,
@@ -346,7 +347,7 @@ fn transform_rejects_overlapping_original_matches() {
 
     let unit_transform = transform(&[("abc", "first"), ("bcd", "second")]);
 
-    let error = UnitComplex::build_transform_edit(
+    let error = unit_complex::build_transform_edit(
         &unit_info,
         UnitTextPart::TranslatedText,
         &unit_transform,
@@ -364,7 +365,7 @@ fn proofread_transform_preserves_approval_and_updates_attribution() {
 
     let unit_transform = transform(&[("old", "new")]);
 
-    let edit = UnitComplex::build_transform_edit(
+    let edit = unit_complex::build_transform_edit(
         &unit_info,
         UnitTextPart::ProofreadText,
         &unit_transform,

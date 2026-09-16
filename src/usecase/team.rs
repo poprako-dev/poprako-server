@@ -22,9 +22,10 @@ use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
 
-use crate::complex::image::ImageComplex;
-use crate::complex::member::MemberComplex;
-use crate::complex::team::{TeamComplex, TeamPermComplex};
+use crate::complex::team::perm as team_perm_complex;
+use crate::complex::{
+    image as image_complex, member as member_complex, team as team_complex,
+};
 use crate::config::image::ImageConfig;
 use crate::data::instr::team::{
     AllocTeamAvatarInstr, CreateTeamInstr, MarkTeamAvatarUploadedInstr,
@@ -75,10 +76,10 @@ where
 {
     let user_info = GetUserInfo { id: &token.user_id }.run_on(repo).await?;
 
-    TeamPermComplex::ensure_user_can_create(&user_info)?;
+    team_perm_complex::ensure_user_can_create(&user_info)?;
 
     let team_entry = TeamEntry {
-        id: TeamComplex::gen_id(),
+        id: team_complex::gen_id(),
         name: instr.name,
         description: instr.description,
     };
@@ -95,7 +96,7 @@ where
                 .await?;
 
             let member_entry = MemberEntry {
-                id: MemberComplex::gen_id(),
+                id: member_complex::gen_id(),
                 user_id: token.user_id,
                 user_nickname: user_info.nickname,
                 team_id: team_info.id.clone(),
@@ -149,7 +150,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_update_info(&member_info)?;
+    team_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     let team_repl = TeamRepl {
         id: instr.id,
@@ -198,7 +199,7 @@ where
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     O: ObjDept<TeamAvatar, C> + Send + Sync,
 {
-    ImageComplex::ensure_byte_length(
+    image_complex::ensure_byte_length(
         image_config,
         instr.new_byte_len,
         ImageKind::TeamAvatar,
@@ -219,7 +220,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_alloc_avatar(&member_info)?;
+    team_perm_complex::ensure_user_can_alloc_avatar(&member_info)?;
 
     let obj_slot = nucl
         .coord(async move |context| {
@@ -282,7 +283,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
+    team_perm_complex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
 
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;

@@ -6,8 +6,9 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::AssignmentComplex;
-use crate::complex::chapter::ChapterComplex;
+use crate::complex::{
+    assignment as assignment_complex, chapter as chapter_complex,
+};
 use crate::data::instr::assignment_invitation::JoinAssignmentInvitationInstr;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -105,7 +106,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let comic_info = GetComicInfo {
                 id: &chapter_info.comic_id,
@@ -280,7 +281,7 @@ where
     }
 
     let assignment_entry = AssignmentEntry {
-        id: AssignmentComplex::gen_id(),
+        id: assignment_complex::gen_id(),
         chapter_id: assignment_invitation_info.chapter_id.clone(),
         user_id: current_user_id.to_owned(),
         roles: assignment_invitation_info.roles,
@@ -339,7 +340,7 @@ where
     R: AssignmentRepo<C>,
 {
     let assignment_role_update =
-        AssignmentComplex::merge_roles(&existing_assignment_info, roles);
+        assignment_complex::merge_roles(&existing_assignment_info, roles);
 
     if assignment_role_update.roles == existing_assignment_info.roles {
         return accept((existing_assignment_info, None));

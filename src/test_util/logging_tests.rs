@@ -22,7 +22,11 @@ use crate::data::instr::unit::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::usecase::{chapter_port, termbase_port, unit};
+use crate::usecase::chapter_port::import_translation as chapter_port_import_translation_usecase;
+use crate::usecase::unit::transform as unit_transform_usecase;
+use crate::usecase::{
+    termbase_port as termbase_port_usecase, unit as unit_usecase,
+};
 use crate::value::termbase::TermbaseScope;
 use crate::value::unit::UnitTextPart;
 
@@ -81,7 +85,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         };
 
         assert!(
-            chapter_port::import_translation::import_translation(
+            chapter_port_import_translation_usecase::import_translation(
                 (&mock, &mock),
                 token.clone(),
                 instr,
@@ -106,7 +110,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         };
 
         assert!(
-            termbase_port::import(
+            termbase_port_usecase::import(
                 (&mock, &mock),
                 token.clone(),
                 scope,
@@ -124,7 +128,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         };
 
         assert!(
-            unit::search_infos((&mock, &mock), token.clone(), instr)
+            unit_usecase::search_infos((&mock, &mock), token.clone(), instr)
                 .await
                 .is_err()
         );
@@ -141,7 +145,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         };
 
         assert!(
-            unit::transform::transform(
+            unit_transform_usecase::transform(
                 (&mock, &mock),
                 token,
                 "chapter-1".into(),

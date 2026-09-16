@@ -5,9 +5,11 @@ use std::sync::OnceLock;
 
 use time::OffsetDateTime;
 
-use crate::complex::chapter_port::export_translation::ChapterTranslationExportComplex;
-use crate::complex::chapter_port::import_translation::ChapterTranslationImportComplex;
-use crate::complex::comic_archive::ComicArchiveComplex;
+use crate::complex::chapter_port::{
+    export_translation as chapter_translation_export_complex,
+    import_translation as chapter_translation_import_complex,
+};
+use crate::complex::comic_archive as comic_archive_complex;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -44,7 +46,7 @@ pub async fn prepare_archive(archive_input: ArchiveInput) -> bool {
     //
     let ArchiveInput(comic_archive_snapshot) = archive_input;
 
-    ComicArchiveComplex::prepare_entry(
+    comic_archive_complex::prepare_entry(
         comic_archive_snapshot,
         "benchmark-user".into(),
         OffsetDateTime::UNIX_EPOCH,
@@ -57,14 +59,14 @@ pub async fn prepare_archive(archive_input: ArchiveInput) -> bool {
 #[must_use]
 pub fn parse_label_plus() -> bool {
     //
-    ChapterTranslationImportComplex::parse_label_plus(label_plus_content())
+    chapter_translation_import_complex::parse_label_plus(label_plus_content())
         .is_ok()
 }
 
 /// Benchmarks `PopRaKo` JSON parsing with a large generated project payload.
 #[must_use]
 pub fn parse_poprako() -> bool {
-    ChapterTranslationImportComplex::parse_poprako(poprako_content()).is_ok()
+    chapter_translation_import_complex::parse_poprako(poprako_content()).is_ok()
 }
 
 /// Benchmarks `LabelPlus` rendering for a large page-and-unit collection.
@@ -85,7 +87,7 @@ pub fn label_plus_export_input() -> LabelPlusExportInput {
 #[must_use]
 pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
     //
-    !ChapterTranslationExportComplex::make_label_plus(
+    !chapter_translation_export_complex::make_label_plus(
         &label_plus_export_input.pages,
         &label_plus_export_input.units_by_page_id,
         &std::collections::HashMap::new(),

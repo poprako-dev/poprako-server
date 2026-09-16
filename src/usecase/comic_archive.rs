@@ -13,9 +13,8 @@ use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::oper::{ClearObjs, DeleteObjs};
 use poprako_util::i18n::trl;
 
-use crate::complex::comic_archive::{
-    ComicArchiveComplex, ComicArchivePermComplex,
-};
+use crate::complex::comic_archive as comic_archive_complex;
+use crate::complex::comic_archive::perm as comic_archive_perm_complex;
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
 use crate::data::val::comic_archive::{
     ArchiveComicVal, ExportComicArchivesVal,
@@ -78,7 +77,7 @@ where
         });
     };
 
-    ComicArchivePermComplex::ensure_user_can_export(&member_info)?;
+    comic_archive_perm_complex::ensure_user_can_export(&member_info)?;
 
     let months = ComicArchiveMonth::parse_retained(
         instr.months,
@@ -150,7 +149,7 @@ where
     )
     .await?;
 
-    ComicArchivePermComplex::ensure_user_can_archive(&member_info)?;
+    comic_archive_perm_complex::ensure_user_can_archive(&member_info)?;
 
     let archive_comic_val = nucl
         .coord(async move |context| {
@@ -161,13 +160,13 @@ where
             .step_on(repo, context)
             .await?;
 
-            ComicArchiveComplex::ensure_snapshot_archivable(
+            comic_archive_complex::ensure_snapshot_archivable(
                 &comic_archive_snapshot,
             )?;
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let comic_archive_entry = ComicArchiveComplex::prepare_entry(
+            let comic_archive_entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 token.user_id,
                 archived_at,

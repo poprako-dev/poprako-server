@@ -1,4 +1,5 @@
 use super::*;
+use crate::complex::member as member_complex;
 
 use crate::test_util;
 
@@ -26,7 +27,7 @@ fn role_update_rejects_removing_the_only_admin() {
         member("worker", RoleField::TRANSLATOR),
     ];
 
-    assert!(!MemberComplex::team_has_admin_after_role_update(
+    assert!(!member_complex::team_has_admin_after_role_update(
         &member_infos,
         &admin_member_info,
         RoleMask::from(RoleField::REVIEWER),
@@ -43,7 +44,7 @@ fn role_update_allows_removing_one_of_two_admins() {
         member("remaining", RoleField::ADMIN),
     ];
 
-    assert!(MemberComplex::team_has_admin_after_role_update(
+    assert!(member_complex::team_has_admin_after_role_update(
         &member_infos,
         &subject_member_info,
         RoleMask::from(RoleField::TRANSLATOR),
@@ -60,7 +61,7 @@ fn role_update_allows_assigning_an_admin_to_an_adminless_team() {
         member("worker", RoleField::REVIEWER),
     ];
 
-    assert!(MemberComplex::team_has_admin_after_role_update(
+    assert!(member_complex::team_has_admin_after_role_update(
         &member_infos,
         &subject_member_info,
         RoleMask::from(RoleField::ADMIN),
@@ -77,7 +78,7 @@ fn deletion_requires_another_admin() {
         member("worker", RoleField::TRANSLATOR),
     ];
 
-    assert!(!MemberComplex::team_has_admin_after_delete(
+    assert!(!member_complex::team_has_admin_after_delete(
         &sole_admin_member_infos,
         &subject_member_info,
     ));
@@ -87,7 +88,7 @@ fn deletion_requires_another_admin() {
         member("remaining", RoleField::ADMIN),
     ];
 
-    assert!(MemberComplex::team_has_admin_after_delete(
+    assert!(member_complex::team_has_admin_after_delete(
         &remaining_admin_member_infos,
         &subject_member_info,
     ));

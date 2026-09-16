@@ -15,7 +15,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::ChapterComplex;
+use crate::complex::chapter as chapter_complex;
 use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, ListAssignmentInvitationInfosInstr,
 };
@@ -133,7 +133,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let invitee_user_info = FindUserInfo {
                 qid: &instr.invitee_qid,
@@ -252,7 +252,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+        chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
         DeleteAssignmentInvitations::Id { id: &id }
             .step_on(repo, context)

@@ -9,77 +9,72 @@ use argon2::password_hash::{
 use crate::result::{BaseError, BaseRest};
 use crate::util::next_snowflake_id;
 
-/// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
-pub struct UserComplex;
+/// Generates a unique user identifier backed by a snowflake value.
+#[must_use]
+pub fn gen_id() -> String {
+    next_snowflake_id()
+}
 
-impl UserComplex {
-    /// Generates a unique user identifier backed by a snowflake value.
-    #[must_use]
-    pub fn gen_id() -> String {
-        next_snowflake_id()
-    }
+/// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
+///
+/// # Errors
+///
+/// Returns an unrecoverable error when the blocking task cannot complete
+/// or Argon2id fails to produce a password hash.
+pub async fn hash_password(password: &str) -> BaseRest<String> {
+    //
+    let password = password.to_owned();
 
-    /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
-    ///
-    /// # Errors
-    ///
-    /// Returns an unrecoverable error when the blocking task cannot complete
-    /// or Argon2id fails to produce a password hash.
-    pub async fn hash_password(password: &str) -> BaseRest<String> {
-        //
-        let password = password.to_owned();
-
-        tokio::task::spawn_blocking(move || hash_password_sync(&password))
-            .await
-            .map_err(|error| {
-                //
-                tracing::error!(
-                    operation = "hash_password",
-                    sdk_err = ?error,
-                    "Tokio SDK blocking task error",
-                );
-
-                BaseError::Unrecoverable {
-                    message: format!(
-                        "[UserComplex::hash_password] blocking task failed: {}",
-                        error,
-                    ),
-                }
-            })?
-    }
-
-    /// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
-    /// TODO: no need to return bool.
-    pub async fn verify_password(password: &str, password_hash: &str) -> bool {
-        //
-        let (password, password_hash) =
-            (password.to_owned(), password_hash.to_owned());
-
-        match tokio::task::spawn_blocking(move || {
-            verify_password_sync(&password, &password_hash)
-        })
+    tokio::task::spawn_blocking(move || hash_password_sync(&password))
         .await
-        {
-            Ok(is_valid) => is_valid,
+        .map_err(|error| {
+            //
+            tracing::error!(
+                operation = "hash_password",
+                sdk_err = ?error,
+                "Tokio SDK blocking task error",
+            );
 
-            Err(error) => {
-                //
-                tracing::error!(
-                    operation = "verify_password",
-                    sdk_err = ?error,
-                    "[UserComplex::verify_password] blocking task failed",
-                );
-
-                false
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[user_complex::hash_password] blocking task failed: {}",
+                    error,
+                ),
             }
+        })?
+}
+
+/// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
+/// TODO: no need to return bool.
+pub async fn verify_password(password: &str, password_hash: &str) -> bool {
+    //
+    let (password, password_hash) =
+        (password.to_owned(), password_hash.to_owned());
+
+    match tokio::task::spawn_blocking(move || {
+        verify_password_sync(&password, &password_hash)
+    })
+    .await
+    {
+        Ok(is_valid) => is_valid,
+
+        Err(error) => {
+            //
+            tracing::error!(
+                operation = "verify_password",
+                sdk_err = ?error,
+                "[user_complex::verify_password] blocking task failed",
+            );
+
+            false
         }
     }
+}
 
-    /// Hashes a plaintext password using the sync runtime (test-only helper).
-    #[cfg(test)]
-    pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
-        hash_password_sync(password)
-    }
+/// Hashes a plaintext password using the sync runtime (test-only helper).
+#[cfg(test)]
+pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
+    hash_password_sync(password)
 }
 
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.
@@ -100,7 +95,7 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
 
             BaseError::Unrecoverable {
                 message: format!(
-                    "[UserComplex::hash_password] argon2 hashing failed: {}",
+                    "[user_complex::hash_password] argon2 hashing failed: {}",
                     error,
                 ),
             }

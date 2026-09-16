@@ -21,32 +21,192 @@ use crate::util::{Patch, next_snowflake_id, trim_owned};
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
 
-// Build the client-visible error for an invalid Unit transform.
-fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
+/// Trims and validates a Unit search phrase.
+pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
     //
-    let err_message = trl("error-invalid-unit-transform");
+    let phrase = trim_owned(phrase);
 
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
-        unit_id,
-        reason,
-        "expected error: invalid unit transform",
-    );
+    if phrase.is_empty() {
+        //
+        let err_message = trl("error-unit-search-phrase-required");
 
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: err_message,
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            "expected error: unit search phrase required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
+
+    accept(phrase)
 }
 
-// Build the client-visible error for an invalid Unit operation.
-const fn invalid_unit_oper(err_message: String) -> BaseError {
+/// Builds one content-only edit from non-overlapping literal transforms.
+pub fn build_transform_edit(
+    unit_info: &UnitInfo,
+    part: UnitTextPart,
+    unit_transform: &UnitTransform,
+    user_id: &str,
+) -> BaseRest<Option<UnitEdit>> {
     //
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: err_message,
+    let original = match part {
+        //
+        UnitTextPart::TranslatedText => unit_info.translated_text.as_deref(),
+
+        UnitTextPart::ProofreadText => unit_info.proofread_text.as_deref(),
+    };
+
+    let Some(original) = original else {
+        return accept(None);
+    };
+
+    let transformed = transform_text(original, unit_transform)?;
+
+    let Some(transformed) = transformed else {
+        return accept(None);
+    };
+
+    let (translation, revision) = match part {
+        //
+        UnitTextPart::TranslatedText => (
+            Patch::Assign {
+                value: UnitTranslation {
+                    translated_text: transformed,
+                    last_translator_id: user_id.to_string(),
+                },
+            },
+            Patch::Skip,
+        ),
+
+        UnitTextPart::ProofreadText => (
+            Patch::Skip,
+            Patch::Assign {
+                value: UnitRevision {
+                    is_proofread: unit_info.is_proofread,
+                    proofread_text: Some(transformed),
+                    last_proofreader_id: user_id.to_string(),
+                },
+            },
+        ),
+    };
+
+    accept(Some(UnitEdit::Save {
+        id: unit_info.id.clone(),
+        next_id: Patch::Skip,
+        is_bubble: None,
+        coord: None,
+        translation,
+        revision,
+    }))
+}
+
+/// Generates one permanent Unit ID.
+pub fn gen_id() -> String {
+    next_snowflake_id()
+}
+
+/// Returns workflow stages triggered by submitted Unit content.
+pub fn submitted_stage_advances(edits: &[UnitEdit]) -> Vec<Stage> {
+    //
+    let translated = edits.iter().any(|edit| match edit {
+        //
+        UnitEdit::Create {
+            translation: Some(translation),
+            ..
+        }
+        | UnitEdit::Save {
+            translation: Patch::Assign { value: translation },
+            ..
+        } => !translation.translated_text.trim().is_empty(),
+
+        _ => false,
+    });
+
+    let proofread = edits.iter().any(|edit| match edit {
+        //
+        UnitEdit::Create {
+            revision: Some(revision),
+            ..
+        }
+        | UnitEdit::Save {
+            revision: Patch::Assign { value: revision },
+            ..
+        } => revision.is_proofread,
+
+        _ => false,
+    });
+
+    let mut stages = Vec::with_capacity(2);
+
+    if translated {
+        stages.push(Stage::Translate);
     }
+
+    if proofread {
+        stages.push(Stage::Proofread);
+    }
+
+    stages
+}
+
+/// Normalizes one Unit edit batch against the persisted Unit IDs.
+pub fn normalize_edits(
+    base_ids: &[&str],
+    edits: Vec<UnitEdit>,
+) -> BaseRest<Vec<UnitEdit>> {
+    //
+    if !(1..=MAX_UNIT_EDIT_COUNT).contains(&edits.len()) {
+        //
+        let args = HashMap::from([
+            ("min_count".into(), 1_usize.into()),
+            ("max_count".into(), MAX_UNIT_EDIT_COUNT.into()),
+        ]);
+
+        let err_message = trl_kv("error-invalid-unit-edit-count", &args);
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            edit_count = edits.len(),
+            max_edit_count = MAX_UNIT_EDIT_COUNT,
+            base_id_count = base_ids.len(),
+            "expected error: unit edit count is invalid",
+        );
+
+        return Err(invalid_unit_oper(err_message));
+    }
+
+    let (delete_edits, non_delete_edits) = edits
+        .into_iter()
+        .partition::<Vec<_>, _>(|edit| matches!(edit, UnitEdit::Delete { .. }));
+
+    let (create_edits, save_edits) = non_delete_edits
+        .into_iter()
+        .partition::<Vec<_>, _>(|edit| matches!(edit, UnitEdit::Create { .. }));
+
+    let mut edits = delete_edits
+        .into_iter()
+        .chain(create_edits)
+        .chain(save_edits)
+        .collect::<Vec<_>>();
+
+    compress_edits(&mut edits);
+
+    final_validate_edits(base_ids, &edits)?;
+
+    accept(edits)
+}
+
+/// Plans one normalized Unit edit batch against the persisted chain.
+pub fn plan_edit_sequence<'a>(
+    orders: &'a [UnitOrder],
+    edits: &'a [UnitEdit],
+) -> BaseRest<edit::UnitEditSequencePlan<'a>> {
+    edit::UnitEditSequencePlan::build(orders, edits)
 }
 
 // Apply every non-overlapping transform against the same original text.
@@ -131,440 +291,268 @@ fn transform_text(
     accept((transformed != original).then_some(transformed))
 }
 
-/// Pure Unit mutation and linked-list rules.
-pub struct UnitComplex;
-
-impl UnitComplex {
-    /// Trims and validates a Unit search phrase.
-    pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
-        //
-        let phrase = trim_owned(phrase);
-
-        if phrase.is_empty() {
-            //
-            let err_message = trl("error-unit-search-phrase-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                "expected error: unit search phrase required",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        accept(phrase)
+// Build the client-visible error for an invalid Unit operation.
+const fn invalid_unit_oper(err_message: String) -> BaseError {
+    //
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
     }
+}
 
-    /// Builds one content-only edit from non-overlapping literal transforms.
-    pub fn build_transform_edit(
-        unit_info: &UnitInfo,
-        part: UnitTextPart,
-        unit_transform: &UnitTransform,
-        user_id: &str,
-    ) -> BaseRest<Option<UnitEdit>> {
+// Merge adjacent or contradictory edit operations into canonical forms.
+fn compress_edits(edits: &mut Vec<UnitEdit>) {
+    //
+    let mut edit_slots = std::mem::take(edits)
+        .into_iter()
+        .map(Some)
+        .collect::<Vec<_>>();
+
+    let mut remaining_slots = edit_slots.as_mut_slice();
+
+    while let Some((later_slot, earlier_slots)) =
+        remaining_slots.split_last_mut()
+    {
         //
-        let original = match part {
+        let Some(later_edit) = later_slot.as_mut() else {
             //
-            UnitTextPart::TranslatedText => {
-                unit_info.translated_text.as_deref()
-            }
+            remaining_slots = earlier_slots;
 
-            UnitTextPart::ProofreadText => unit_info.proofread_text.as_deref(),
+            continue;
         };
 
-        let Some(original) = original else {
-            return accept(None);
-        };
-
-        let transformed = transform_text(original, unit_transform)?;
-
-        let Some(transformed) = transformed else {
-            return accept(None);
-        };
-
-        let (translation, revision) = match part {
+        for earlier_slot in earlier_slots.iter_mut().rev() {
             //
-            UnitTextPart::TranslatedText => (
-                Patch::Assign {
-                    value: UnitTranslation {
-                        translated_text: transformed,
-                        last_translator_id: user_id.to_string(),
-                    },
-                },
-                Patch::Skip,
-            ),
-
-            UnitTextPart::ProofreadText => (
-                Patch::Skip,
-                Patch::Assign {
-                    value: UnitRevision {
-                        is_proofread: unit_info.is_proofread,
-                        proofread_text: Some(transformed),
-                        last_proofreader_id: user_id.to_string(),
-                    },
-                },
-            ),
-        };
-
-        accept(Some(UnitEdit::Save {
-            id: unit_info.id.clone(),
-            next_id: Patch::Skip,
-            is_bubble: None,
-            coord: None,
-            translation,
-            revision,
-        }))
-    }
-
-    /// Generates one permanent Unit ID.
-    pub fn gen_id() -> String {
-        next_snowflake_id()
-    }
-
-    /// Returns workflow stages triggered by submitted Unit content.
-    pub fn submitted_stage_advances(edits: &[UnitEdit]) -> Vec<Stage> {
-        //
-        let translated = edits.iter().any(|edit| match edit {
-            //
-            UnitEdit::Create {
-                translation: Some(translation),
-                ..
-            }
-            | UnitEdit::Save {
-                translation: Patch::Assign { value: translation },
-                ..
-            } => !translation.translated_text.trim().is_empty(),
-
-            _ => false,
-        });
-
-        let proofread = edits.iter().any(|edit| match edit {
-            //
-            UnitEdit::Create {
-                revision: Some(revision),
-                ..
-            }
-            | UnitEdit::Save {
-                revision: Patch::Assign { value: revision },
-                ..
-            } => revision.is_proofread,
-
-            _ => false,
-        });
-
-        let mut stages = Vec::with_capacity(2);
-
-        if translated {
-            stages.push(Stage::Translate);
-        }
-
-        if proofread {
-            stages.push(Stage::Proofread);
-        }
-
-        stages
-    }
-
-    /// Normalizes one Unit edit batch against the persisted Unit IDs.
-    pub fn normalize_edits(
-        base_ids: &[&str],
-        edits: Vec<UnitEdit>,
-    ) -> BaseRest<Vec<UnitEdit>> {
-        //
-        if !(1..=MAX_UNIT_EDIT_COUNT).contains(&edits.len()) {
-            //
-            let args = HashMap::from([
-                ("min_count".into(), 1_usize.into()),
-                ("max_count".into(), MAX_UNIT_EDIT_COUNT.into()),
-            ]);
-
-            let err_message = trl_kv("error-invalid-unit-edit-count", &args);
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                edit_count = edits.len(),
-                max_edit_count = MAX_UNIT_EDIT_COUNT,
-                base_id_count = base_ids.len(),
-                "expected error: unit edit count is invalid",
-            );
-
-            return Err(invalid_unit_oper(err_message));
-        }
-
-        let (delete_edits, non_delete_edits) =
-            edits.into_iter().partition::<Vec<_>, _>(|edit| {
-                matches!(edit, UnitEdit::Delete { .. })
-            });
-
-        let (create_edits, save_edits) =
-            non_delete_edits.into_iter().partition::<Vec<_>, _>(|edit| {
-                matches!(edit, UnitEdit::Create { .. })
-            });
-
-        let mut edits = delete_edits
-            .into_iter()
-            .chain(create_edits)
-            .chain(save_edits)
-            .collect::<Vec<_>>();
-
-        Self::compress_edits(&mut edits);
-
-        Self::final_validate_edits(base_ids, &edits)?;
-
-        accept(edits)
-    }
-
-    /// Plans one normalized Unit edit batch against the persisted chain.
-    pub fn plan_edit_sequence<'a>(
-        orders: &'a [UnitOrder],
-        edits: &'a [UnitEdit],
-    ) -> BaseRest<edit::UnitEditSequencePlan<'a>> {
-        edit::UnitEditSequencePlan::build(orders, edits)
-    }
-
-    // Merge adjacent or contradictory edit operations into canonical forms.
-    fn compress_edits(edits: &mut Vec<UnitEdit>) {
-        //
-        let mut edit_slots = std::mem::take(edits)
-            .into_iter()
-            .map(Some)
-            .collect::<Vec<_>>();
-
-        let mut remaining_slots = edit_slots.as_mut_slice();
-
-        while let Some((later_slot, earlier_slots)) =
-            remaining_slots.split_last_mut()
-        {
-            //
-            let Some(later_edit) = later_slot.as_mut() else {
+            let action = match (&*later_edit, earlier_slot.as_ref()) {
                 //
-                remaining_slots = earlier_slots;
+                (
+                    UnitEdit::Create { id, .. }
+                    | UnitEdit::Save { id, .. }
+                    | UnitEdit::Delete { id },
+                    Some(UnitEdit::Delete { id: prev_id }),
+                ) if id == prev_id => 1,
 
-                continue;
+                (
+                    UnitEdit::Create { id, .. }
+                    | UnitEdit::Save { id, .. }
+                    | UnitEdit::Delete { id },
+                    Some(UnitEdit::Save { id: prev_id, .. }),
+                ) if id == prev_id => 2,
+
+                _ => 0,
             };
 
-            for earlier_slot in earlier_slots.iter_mut().rev() {
+            match action {
                 //
-                let action = match (&*later_edit, earlier_slot.as_ref()) {
-                    //
-                    (
-                        UnitEdit::Create { id, .. }
-                        | UnitEdit::Save { id, .. }
-                        | UnitEdit::Delete { id },
-                        Some(UnitEdit::Delete { id: prev_id }),
-                    ) if id == prev_id => 1,
-
-                    (
-                        UnitEdit::Create { id, .. }
-                        | UnitEdit::Save { id, .. }
-                        | UnitEdit::Delete { id },
-                        Some(UnitEdit::Save { id: prev_id, .. }),
-                    ) if id == prev_id => 2,
-
-                    _ => 0,
-                };
-
-                match action {
-                    //
-                    1 => {
-                        earlier_slot.take();
-                    }
-
-                    2 => {
-                        //
-                        let Some(mut earlier_edit) = earlier_slot.take() else {
-                            continue;
-                        };
-
-                        Self::merge_edits(&mut earlier_edit, later_edit);
-                    }
-
-                    _ => {}
+                1 => {
+                    earlier_slot.take();
                 }
-            }
 
-            remaining_slots = earlier_slots;
+                2 => {
+                    //
+                    let Some(mut earlier_edit) = earlier_slot.take() else {
+                        continue;
+                    };
+
+                    merge_edits(&mut earlier_edit, later_edit);
+                }
+
+                _ => {}
+            }
         }
 
-        edits.extend(edit_slots.into_iter().flatten());
+        remaining_slots = earlier_slots;
     }
 
-    // Validate cross-edit consistency and pointer validity.
-    fn final_validate_edits(
-        base_ids: &[&str],
-        edits: &[UnitEdit],
-    ) -> BaseRest<()> {
-        //
-        let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
+    edits.extend(edit_slots.into_iter().flatten());
+}
 
-        let (deleted_ids, created_ids) = edits.iter().fold(
-            (HashSet::new(), HashSet::new()),
-            |(mut deleted, mut created), edit| {
+// Validate cross-edit consistency and pointer validity.
+fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
+    //
+    let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
+
+    let (deleted_ids, created_ids) = edits.iter().fold(
+        (HashSet::new(), HashSet::new()),
+        |(mut deleted, mut created), edit| {
+            //
+            match edit {
                 //
-                match edit {
-                    //
-                    UnitEdit::Create { id, .. } => {
-                        created.insert(id.as_str());
-                    }
-
-                    UnitEdit::Delete { id } => {
-                        deleted.insert(id.as_str());
-                    }
-
-                    UnitEdit::Save { .. } => {}
+                UnitEdit::Create { id, .. } => {
+                    created.insert(id.as_str());
                 }
 
-                (deleted, created)
-            },
+                UnitEdit::Delete { id } => {
+                    deleted.insert(id.as_str());
+                }
+
+                UnitEdit::Save { .. } => {}
+            }
+
+            (deleted, created)
+        },
+    );
+
+    let create_count = edits
+        .iter()
+        .filter(|edit| matches!(edit, UnitEdit::Create { .. }))
+        .count();
+
+    if create_count != created_ids.len()
+        || created_ids.iter().any(|id| base_ids.contains(id))
+    {
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            edit_count = edits.len(),
+            base_id_count = base_ids.len(),
+            create_count,
+            created_id_count = created_ids.len(),
+            "expected error: unit create edits are inconsistent",
         );
 
-        let create_count = edits
-            .iter()
-            .filter(|edit| matches!(edit, UnitEdit::Create { .. }))
-            .count();
-
-        if create_count != created_ids.len()
-            || created_ids.iter().any(|id| base_ids.contains(id))
-        {
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                edit_count = edits.len(),
-                base_id_count = base_ids.len(),
-                create_count,
-                created_id_count = created_ids.len(),
-                "expected error: unit create edits are inconsistent",
-            );
-
-            return Err(invalid_unit_oper(err_message));
-        }
-
-        edits.iter().try_for_each(|edit| {
-            Self::validate_edit(&base_ids, &deleted_ids, &created_ids, edit)
-        })
+        return Err(invalid_unit_oper(err_message));
     }
 
-    // Merge a prior save edit into a later save edit for the same Unit.
-    fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
+    edits.iter().try_for_each(|edit| {
+        validate_edit(&base_ids, &deleted_ids, &created_ids, edit)
+    })
+}
+
+// Build the client-visible error for an invalid Unit transform.
+fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
+    //
+    let err_message = trl("error-invalid-unit-transform");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        unit_id,
+        reason,
+        "expected error: invalid unit transform",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
+
+// Merge a prior save edit into a later save edit for the same Unit.
+fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
+    //
+    let (
+        UnitEdit::Save {
+            next_id: earlier_next_id,
+            is_bubble: earlier_is_bubble,
+            coord: earlier_coord,
+            translation: earlier_translation,
+            revision: earlier_revision,
+            ..
+        },
+        UnitEdit::Save {
+            next_id: later_next_id,
+            is_bubble: later_is_bubble,
+            coord: later_coord,
+            translation: later_translation,
+            revision: later_revision,
+            ..
+        },
+    ) = (earlier, later)
+    else {
+        return;
+    };
+
+    inherit_option(earlier_is_bubble, later_is_bubble);
+
+    inherit_option(earlier_coord, later_coord);
+
+    inherit_patch(earlier_next_id, later_next_id);
+
+    inherit_patch(earlier_translation, later_translation);
+
+    inherit_patch(earlier_revision, later_revision);
+}
+
+// Validate one edit target and its optional next pointer.
+fn validate_edit(
+    base_ids: &HashSet<&str>,
+    deleted_ids: &HashSet<&str>,
+    created_ids: &HashSet<&str>,
+    edit: &UnitEdit,
+) -> BaseRest<()> {
+    //
+    let invalid_target = match edit {
         //
-        let (
-            UnitEdit::Save {
-                next_id: earlier_next_id,
-                is_bubble: earlier_is_bubble,
-                coord: earlier_coord,
-                translation: earlier_translation,
-                revision: earlier_revision,
-                ..
-            },
-            UnitEdit::Save {
-                next_id: later_next_id,
-                is_bubble: later_is_bubble,
-                coord: later_coord,
-                translation: later_translation,
-                revision: later_revision,
-                ..
-            },
-        ) = (earlier, later)
-        else {
-            return;
-        };
-
-        inherit_option(earlier_is_bubble, later_is_bubble);
-
-        inherit_option(earlier_coord, later_coord);
-
-        inherit_patch(earlier_next_id, later_next_id);
-
-        inherit_patch(earlier_translation, later_translation);
-
-        inherit_patch(earlier_revision, later_revision);
-    }
-
-    // Validate one edit target and its optional next pointer.
-    fn validate_edit(
-        base_ids: &HashSet<&str>,
-        deleted_ids: &HashSet<&str>,
-        created_ids: &HashSet<&str>,
-        edit: &UnitEdit,
-    ) -> BaseRest<()> {
-        //
-        let invalid_target = match edit {
-            //
-            UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
-                Some((id, "delete"))
-            }
-
-            UnitEdit::Save { id, .. }
-                if !base_ids.contains(id.as_str())
-                    && !created_ids.contains(id.as_str()) =>
-            {
-                Some((id, "save"))
-            }
-
-            _ => None,
-        };
-
-        if let Some((id, operation)) = invalid_target {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %id,
-                operation,
-                "expected error: unit edit target is invalid",
-            );
-
-            return Err(invalid_unit_oper(err_message));
+        UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
+            Some((id, "delete"))
         }
 
-        let Some((id, next_id)) = (match edit {
-            //
-            UnitEdit::Create {
-                id,
-                next_id: Some(next_id),
-                ..
-            }
-            | UnitEdit::Save {
-                id,
-                next_id: Patch::Assign { value: next_id },
-                ..
-            } => Some((id, next_id)),
-
-            _ => None,
-        }) else {
-            return accept(());
-        };
-
-        if next_id == id
-            || (!base_ids.contains(next_id.as_str())
-                && !created_ids.contains(next_id.as_str()))
-            || deleted_ids.contains(next_id.as_str())
+        UnitEdit::Save { id, .. }
+            if !base_ids.contains(id.as_str())
+                && !created_ids.contains(id.as_str()) =>
         {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %id,
-                next_unit_id = %next_id,
-                "expected error: unit next pointer is invalid",
-            );
-
-            return Err(invalid_unit_oper(err_message));
+            Some((id, "save"))
         }
 
-        accept(())
+        _ => None,
+    };
+
+    if let Some((id, operation)) = invalid_target {
+        //
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            unit_id = %id,
+            operation,
+            "expected error: unit edit target is invalid",
+        );
+
+        return Err(invalid_unit_oper(err_message));
     }
+
+    let Some((id, next_id)) = (match edit {
+        //
+        UnitEdit::Create {
+            id,
+            next_id: Some(next_id),
+            ..
+        }
+        | UnitEdit::Save {
+            id,
+            next_id: Patch::Assign { value: next_id },
+            ..
+        } => Some((id, next_id)),
+
+        _ => None,
+    }) else {
+        return accept(());
+    };
+
+    if next_id == id
+        || (!base_ids.contains(next_id.as_str())
+            && !created_ids.contains(next_id.as_str()))
+        || deleted_ids.contains(next_id.as_str())
+    {
+        //
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            unit_id = %id,
+            next_unit_id = %next_id,
+            "expected error: unit next pointer is invalid",
+        );
+
+        return Err(invalid_unit_oper(err_message));
+    }
+
+    accept(())
 }
 
 // Copy the older optional value only when the newer optional is empty.

@@ -14,8 +14,8 @@ use poprako_obj_dept::oper::{
 };
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter_port::artwork::ChapterArtworkComplex;
+use crate::complex::chapter as chapter_complex;
+use crate::complex::chapter_port::artwork as chapter_artwork_complex;
 use crate::config::artwork::ArtworkConfig;
 use crate::data::instr::chapter_port::{
     AllocChapterArtworkInstr, MarkChapterArtworkUploadedInstr,
@@ -45,7 +45,7 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::chapter_port::perm::ensure_export_access;
+use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::value::artwork::{ArtworkHash, ChapterArtworkKey};
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
@@ -68,7 +68,7 @@ where
     O: ObjDept<ChapterArtwork, C> + Send + Sync,
 {
     //
-    ChapterArtworkComplex::ensure_allocation(
+    chapter_artwork_complex::ensure_allocation(
         *config,
         instr.new_byte_len,
         &instr.ext,
@@ -92,7 +92,7 @@ where
             )
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let artwork_spec = ObjSlotSpec {
                 dom: ChapterArtworkKey {
@@ -179,7 +179,7 @@ where
             )
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let artwork_key = ObjGen {
                 id: chapter_info.id.clone(),
@@ -193,7 +193,7 @@ where
 
             if !marked {
                 //
-                return Err(ChapterArtworkComplex::artwork_error(
+                return Err(chapter_artwork_complex::artwork_error(
                     ExpectedVariant::Args,
                     "error-stale-artwork-upload",
                 ));
@@ -282,7 +282,12 @@ where
         + Sync,
     O: ObjDeptView<ChapterArtwork, C> + Sync,
 {
-    ensure_export_access::<C, R>(repo, &token, &chapter_id).await?;
+    chapter_port_perm_usecase::ensure_export_access::<C, R>(
+        repo,
+        &token,
+        &chapter_id,
+    )
+    .await?;
 
     let chapter_info = GetChapterInfo {
         id: &chapter_id,
@@ -302,7 +307,7 @@ where
         .filter(|meta| meta.is_avail)
         .ok_or_else(|| {
             //
-            ChapterArtworkComplex::artwork_error(
+            chapter_artwork_complex::artwork_error(
                 ExpectedVariant::Args,
                 "error-artwork-unavailable",
             )
@@ -381,11 +386,11 @@ where
 
     let assignment_info = assignment_info.ok_or_else(|| {
         //
-        ChapterArtworkComplex::artwork_error(
+        chapter_artwork_complex::artwork_error(
             ExpectedVariant::Perm,
             "error-artwork-upload-role-required",
         )
     })?;
 
-    ChapterArtworkComplex::ensure_user_can_upload(&assignment_info)
+    chapter_artwork_complex::ensure_user_can_upload(&assignment_info)
 }

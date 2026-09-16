@@ -1,4 +1,4 @@
-use super::ImageComplex;
+use crate::complex::image as image_complex;
 
 use crate::config::image::ImageConfig;
 use crate::result::BaseError;
@@ -24,7 +24,7 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
     for (image_kind, byte_limit) in cases {
         //
         assert!(
-            ImageComplex::ensure_byte_length(
+            image_complex::ensure_byte_length(
                 &IMAGE_CONFIG,
                 byte_limit,
                 image_kind,
@@ -32,7 +32,7 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
             .is_ok(),
         );
 
-        let failure = ImageComplex::ensure_byte_length(
+        let failure = image_complex::ensure_byte_length(
             &IMAGE_CONFIG,
             byte_limit + 1,
             image_kind,
@@ -55,7 +55,7 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
 #[test]
 fn missing_byte_length_uses_the_runtime_page_limit_in_its_message() {
     //
-    let failure = ImageComplex::invalid_byte_length_rejection(
+    let failure = image_complex::invalid_byte_length_rejection(
         &IMAGE_CONFIG,
         0,
         ImageKind::PageImage,

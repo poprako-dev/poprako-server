@@ -3,7 +3,7 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use crate::complex::chapter::perm::ChapterPermComplex;
+use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::data::instr::chapter::ListChapterWorkflowRecordInfosInstr;
 use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
@@ -35,7 +35,7 @@ where
     )
     .await?;
 
-    ChapterPermComplex::ensure_user_can_get_info(&member_info)?;
+    chapter_perm_complex::ensure_user_can_get_info(&member_info)?;
 
     let spec = ChapterWorkflowRecordListSpec {
         chapter_id: instr.chapter_id,

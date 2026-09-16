@@ -7,9 +7,8 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::UnitComplex;
-use crate::complex::unit::perm::UnitPermComplex;
+use crate::complex::unit::perm as unit_perm_complex;
+use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::unit::{
     TransformChapterUnitsInstr, into_unit_transforms,
 };
@@ -39,7 +38,7 @@ use crate::part::repo::oper::unit::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::stage::start_pending_stages;
+use crate::usecase::stage as stage_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::{UnitEditPerm, UnitTextPart};
@@ -103,7 +102,7 @@ pub fn build_page_edits(
             continue;
         }
 
-        let edit = UnitComplex::build_transform_edit(
+        let edit = unit_complex::build_transform_edit(
             unit_info,
             part,
             unit_transform,
@@ -255,7 +254,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+    chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id: &chapter_info.id,
@@ -280,7 +279,7 @@ where
         ),
     };
 
-    UnitPermComplex::ensure_user_can_transform(edit_perm, part)?;
+    unit_perm_complex::ensure_user_can_transform(edit_perm, part)?;
 
     let page_infos = ListPageInfos {
         chapter_id: &chapter_info.id,
@@ -353,7 +352,7 @@ where
         .map(|order| order.id.as_str())
         .collect::<Vec<_>>();
 
-    let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
+    let edits = unit_complex::normalize_edits(&base_ids, edits)?;
 
     let count_metrics = ApplyUnitEdits {
         page_id: &page_info.id,
@@ -416,9 +415,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let stages = UnitComplex::submitted_stage_advances(applied_edits);
+    let stages = unit_complex::submitted_stage_advances(applied_edits);
 
-    start_pending_stages(
+    stage_usecase::start_pending_stages(
         repo,
         context,
         &chapter_info.id,

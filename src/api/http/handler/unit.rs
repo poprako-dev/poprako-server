@@ -26,7 +26,8 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::unit as unit_usecase;
+use crate::usecase::unit::transform as unit_transform_usecase;
 use crate::value::unit::UnitTextPart;
 
 /// Identity of one immutable Unit save batch.
@@ -72,7 +73,7 @@ pub async fn list_infos(
     //
     let instr = ListPageUnitInfosInstr { page_id };
 
-    usecase::unit::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
+    unit_usecase::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -110,7 +111,7 @@ pub async fn search_infos(
         phrase: query.phrase,
     };
 
-    usecase::unit::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
+    unit_usecase::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -148,7 +149,7 @@ pub async fn save_infos(
         save_id: query.save_id,
     };
 
-    usecase::unit::save_edits::<_, RdbContext<Serial>, HybRepo>(
+    unit_usecase::save_edits::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
@@ -179,7 +180,7 @@ pub async fn transform(
     Json(instr): Json<TransformChapterUnitsInstr>,
 ) -> HttpNoContent {
     //
-    usecase::unit::transform::transform::<_, RdbContext<Serial>, HybRepo>(
+    unit_transform_usecase::transform::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         chapter_id,

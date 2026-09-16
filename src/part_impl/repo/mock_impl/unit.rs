@@ -7,7 +7,7 @@ mod orchestra;
 // Internal organization of the `tests` module.
 mod tests;
 
-use crate::complex::unit::UnitComplex;
+use crate::complex::unit as unit_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{
@@ -347,7 +347,7 @@ fn apply_edits(
 ) -> BaseRest<UnitCountMetrics> {
     //
     // Derive the final sequence once through the shared pure business planner.
-    let sequence_plan = UnitComplex::plan_edit_sequence(orders, edits)?;
+    let sequence_plan = unit_complex::plan_edit_sequence(orders, edits)?;
 
     for edit in edits {
         //

@@ -8,7 +8,7 @@ use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::ComicPermComplex;
+use crate::complex::comic::perm as comic_perm_complex;
 use crate::data::instr::comic::MarkComicCoverUploadedInstr;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::ComicCover;
@@ -40,7 +40,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_mark_cover_uploaded(&member_info)?;
+    comic_perm_complex::ensure_user_can_mark_cover_uploaded(&member_info)?;
 
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;

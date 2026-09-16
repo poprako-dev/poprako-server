@@ -31,92 +31,77 @@ use crate::value::chapter::stage::{
 };
 use crate::value::index::stored_index_to_user_index;
 
-/// Domain opers for chapter entities: ID generation, workflow-stage
-/// transition computation, and small pure helpers.
-pub struct ChapterComplex;
-
-impl ChapterComplex {
-    /// Generate a unique, time-ordered chapter identifier backed by a snowflake value.
-    pub fn gen_id() -> String {
-        next_snowflake_id()
-    }
-
-    /// Returns the user-supplied subtitle if present and non-empty, or a
-    /// generated default in the format "Ch. N" (1-based).
-    pub fn subtitle_or_default(
-        subtitle: Option<String>,
-        index: usize,
-    ) -> String {
-        //
-        subtitle
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| default_subtitle(index))
-    }
-
-    /// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]
-    /// to the current [`WorkflowStage`] phase of a chapter.
-    pub fn build_stage_update(
-        chapter_info: &ChapterInfo,
-        stage: Stage,
-        oper: StageOper,
-    ) -> BaseRest<ChapterStageRepl> {
-        //
-        let current_phase = get_phase(chapter_info, stage);
-
-        let next_phase = try_modify_stage((stage, current_phase), oper)?;
-
-        let chapter_stage_update = ChapterStageRepl {
-            id: chapter_info.id.clone(),
-            stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
-        };
-
-        accept(chapter_stage_update)
-    }
-
-    /// Rejects user mutations once a chapter has been published.
-    pub fn ensure_chapter_writable(chapter_info: &ChapterInfo) -> BaseRest<()> {
-        //
-        Self::ensure_writable_state(
-            &chapter_info.id,
-            chapter_info
-                .stages
-                .has_phase(Stage::Publish, StagePhase::Completed),
-        )
-    }
-
-    /// Rejects a minimal persisted Chapter scope once it has been published.
-    pub fn ensure_writable_state(
-        chapter_id: &str,
-        is_published: bool,
-    ) -> BaseRest<()> {
-        //
-        if is_published {
-            //
-            let err_message = trl("error-chapter-published-frozen");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                chapter_id,
-                stage = ?Stage::Publish,
-                stage_phase = ?StagePhase::Completed,
-                "expected error: published chapter is frozen",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        accept(())
-    }
+/// Generate a unique, time-ordered chapter identifier backed by a snowflake value.
+pub fn gen_id() -> String {
+    next_snowflake_id()
 }
 
-// Extract the current [`StagePhase`] for a given [`Stage`] from a
-// [`ChapterInfo`] record.
-fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
-    chapter_info.stages.get_phase(stage)
+/// Returns the user-supplied subtitle if present and non-empty, or a
+/// generated default in the format "Ch. N" (1-based).
+pub fn subtitle_or_default(subtitle: Option<String>, index: usize) -> String {
+    //
+    subtitle
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| default_subtitle(index))
+}
+
+/// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]
+/// to the current [`WorkflowStage`] phase of a chapter.
+pub fn build_stage_update(
+    chapter_info: &ChapterInfo,
+    stage: Stage,
+    oper: StageOper,
+) -> BaseRest<ChapterStageRepl> {
+    //
+    let current_phase = get_phase(chapter_info, stage);
+
+    let next_phase = try_modify_stage((stage, current_phase), oper)?;
+
+    let chapter_stage_update = ChapterStageRepl {
+        id: chapter_info.id.clone(),
+        stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
+    };
+
+    accept(chapter_stage_update)
+}
+
+/// Rejects a minimal persisted Chapter scope once it has been published.
+pub fn ensure_writable_state(
+    chapter_id: &str,
+    is_published: bool,
+) -> BaseRest<()> {
+    //
+    if is_published {
+        //
+        let err_message = trl("error-chapter-published-frozen");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            chapter_id,
+            stage = ?Stage::Publish,
+            stage_phase = ?StagePhase::Completed,
+            "expected error: published chapter is frozen",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
+    }
+
+    accept(())
+}
+
+/// Rejects user mutations once a chapter has been published.
+pub fn ensure_chapter_writable(chapter_info: &ChapterInfo) -> BaseRest<()> {
+    //
+    ensure_writable_state(
+        &chapter_info.id,
+        chapter_info
+            .stages
+            .has_phase(Stage::Publish, StagePhase::Completed),
+    )
 }
 
 // Generate a human-readable default subtitle for a chapter, e.g. `"Ch. 1"`.
@@ -132,4 +117,10 @@ fn default_subtitle(index: usize) -> String {
     );
 
     trl_kv("chapter-default-subtitle", &args)
+}
+
+// Extract the current [`StagePhase`] for a given [`Stage`] from a
+// [`ChapterInfo`] record.
+fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
+    chapter_info.stages.get_phase(stage)
 }

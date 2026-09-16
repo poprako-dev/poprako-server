@@ -27,7 +27,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::term as term_usecase;
 use crate::value::pagination::PubListLimit;
 
 /// Query parameters for terms inside one terminology base.
@@ -63,7 +63,7 @@ pub async fn create(
     Json(instr): Json<CreateTermInstr>,
 ) -> HttpResult<CreateTermVal> {
     //
-    usecase::term::create::<_, RdbContext<ReptRead>, HybRepo>(
+    term_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -99,7 +99,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::term::list_infos::<RdbContext<ReptRead>, HybRepo>(
+    term_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -127,7 +127,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermInfoView> {
     //
-    usecase::term::get_info::<RdbContext<ReptRead>, HybRepo>(
+    term_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         term_id,
@@ -159,7 +159,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&term_id, &instr.id)?;
 
-    usecase::term::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+    term_usecase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -188,7 +188,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::term::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    term_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         term_id,

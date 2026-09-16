@@ -10,8 +10,7 @@ use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::{ObjSlot, ObjSlotSpec};
 use poprako_obj_dept::oper::{DeleteObjs, GenObjSlots, ListObjMetas};
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::page::{PageComplex, manifest};
+use crate::complex::{chapter as chapter_complex, page as page_complex};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::write::page::{
     PageImageSpec, PageManifestEntry, PageRawIdentsRepl,
@@ -52,6 +51,8 @@ where
     P: Prom<C> + Send + Sync,
     O: ObjDept<PageImage, C> + Send + Sync,
 {
+    use crate::complex::page::manifest as page_manifest_complex;
+
     let chapter_info = GetChapterInfoExcluded {
         id: chapter_id,
         incls: &[],
@@ -59,7 +60,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+    chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
     let existing_page_infos = ListPageInfosExcluded {
         chapter_id: &chapter_info.id,
@@ -83,7 +84,7 @@ where
             //
             let obj_meta = existing_obj_metas.get(&page_info.id);
 
-            manifest::PageManifestCand {
+            page_manifest_complex::PageManifestCand {
                 id: &page_info.id,
                 chapter_id: &page_info.chapter_id,
                 index: page_info.index,
@@ -95,7 +96,7 @@ where
         })
         .collect::<Vec<_>>();
 
-    let manifest_plan = manifest::PageManifestComplex::build(
+    let manifest_plan = page_manifest_complex::build(
         &chapter_info.id,
         &manifest_candidates,
         page_specs,
@@ -141,7 +142,7 @@ where
                     .map(|page_info| page_info.id.clone())
                     .ok_or_else(page_manifest_result_missing)?,
 
-                None => PageComplex::gen_id(),
+                None => page_complex::gen_id(),
             };
 
             accept(PageManifestEntry {
