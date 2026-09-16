@@ -13,7 +13,8 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::comment::{CommentComplex, CommentPermComplex};
+use crate::complex::comment as comment_complex;
+use crate::complex::comment::perm as comment_perm_complex;
 use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::view::comment::CommentInfoView;
@@ -57,7 +58,7 @@ where
         });
     };
 
-    CommentPermComplex::ensure_user_can_list_infos(&member_info)?;
+    comment_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let comment_infos = ListCommentInfos {
         spec: &comment_list_spec,
@@ -96,10 +97,10 @@ where
         });
     };
 
-    CommentPermComplex::ensure_user_can_create(&member_info)?;
+    comment_perm_complex::ensure_user_can_create(&member_info)?;
 
     let comment_entry = CommentEntry {
-        id: CommentComplex::gen_id(),
+        id: comment_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
         content: instr.content,

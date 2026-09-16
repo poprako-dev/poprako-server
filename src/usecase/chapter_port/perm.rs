@@ -5,9 +5,8 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter_port::perm::{
-    ChapterExportAccess, ChapterPortPermComplex,
-};
+use crate::complex::chapter_port::perm as chapter_port_perm_complex;
+use crate::complex::chapter_port::perm::ChapterExportAccess;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::member::MemberRepo;
@@ -50,7 +49,7 @@ where
         //
         (Some(member_info), assignment_info) => {
             //
-            ChapterPortPermComplex::ensure_user_can_export_translation(
+            chapter_port_perm_complex::ensure_user_can_export_translation(
                 &ChapterExportAccess::Member { member_info },
             )?;
 
@@ -59,7 +58,7 @@ where
 
         (None, Some(assignment_info)) => {
             //
-            ChapterPortPermComplex::ensure_user_can_export_translation(
+            chapter_port_perm_complex::ensure_user_can_export_translation(
                 &ChapterExportAccess::Assignee { assignment_info },
             )?;
 

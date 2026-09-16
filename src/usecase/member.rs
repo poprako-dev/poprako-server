@@ -13,7 +13,8 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::member::{MemberComplex, MemberPermComplex};
+use crate::complex::member as member_complex;
+use crate::complex::member::perm as member_perm_complex;
 use crate::data::instr::member::{
     CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
     UpdateMemberRolesInstr,
@@ -74,7 +75,7 @@ where
         });
     };
 
-    MemberPermComplex::ensure_user_can_create(&member_info)?;
+    member_perm_complex::ensure_user_can_create(&member_info)?;
 
     let member_id = nucl
         .coord(async move |context| {
@@ -116,7 +117,7 @@ where
             }
 
             let member_entry = MemberEntry {
-                id: MemberComplex::gen_id(),
+                id: member_complex::gen_id(),
                 user_id: instr.user_id,
                 user_nickname: user_info.nickname,
                 team_id: instr.team_id,
@@ -231,7 +232,7 @@ where
             }
 
             let member_entry = MemberEntry {
-                id: MemberComplex::gen_id(),
+                id: member_complex::gen_id(),
                 user_id: current_user_id,
                 user_nickname: current_user_info.nickname,
                 team_id: member_invitation_info.team_id.clone(),
@@ -290,7 +291,7 @@ where
             });
         };
 
-        MemberPermComplex::ensure_user_can_list_infos(&member_info)?;
+        member_perm_complex::ensure_user_can_list_infos(&member_info)?;
     }
 
     let member_infos = ListMemberInfos::Spec {
@@ -344,7 +345,7 @@ where
                 });
             };
 
-            MemberPermComplex::ensure_user_can_update_info(
+            member_perm_complex::ensure_user_can_update_info(
                 &caller_member_info,
             )?;
 
@@ -354,7 +355,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            if !MemberComplex::team_has_admin_after_role_update(
+            if !member_complex::team_has_admin_after_role_update(
                 &member_infos,
                 &member_info,
                 instr.roles,
@@ -438,7 +439,7 @@ where
                 });
             };
 
-            MemberPermComplex::ensure_user_can_delete(&caller_member_info)?;
+            member_perm_complex::ensure_user_can_delete(&caller_member_info)?;
 
             let member_infos = LockTeamMemberInfos {
                 team_id: &member_info.team_id,
@@ -446,7 +447,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            if !MemberComplex::team_has_admin_after_delete(
+            if !member_complex::team_has_admin_after_delete(
                 &member_infos,
                 &member_info,
             ) {

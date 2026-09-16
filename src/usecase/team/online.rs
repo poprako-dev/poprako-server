@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::team::TeamPermComplex;
+use crate::complex::team::perm as team_perm_complex;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::online_user::OnlineUserRepo;
@@ -46,7 +46,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_mark_self_online(&member_info)?;
+    team_perm_complex::ensure_user_can_mark_self_online(&member_info)?;
 
     UpdateUser::TouchLastActive { id: &token.user_id }
         .run_on(repo)
@@ -88,7 +88,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_list_online_user_ids(&member_info)?;
+    team_perm_complex::ensure_user_can_list_online_user_ids(&member_info)?;
 
     let online_user_ids =
         ListOnlineUserIds { team_id: &team_id }.run_on(repo).await?;

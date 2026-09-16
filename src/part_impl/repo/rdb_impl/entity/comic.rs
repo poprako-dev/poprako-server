@@ -9,7 +9,7 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
-use crate::complex::comic::ComicComplex;
+use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::comic::ComicEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
@@ -111,7 +111,7 @@ impl<'a> TryFrom<&'a ComicEntry> for ComicEntryRow<'a> {
             f_title: &comic_entry.title,
             f_author: &comic_entry.author,
             f_description: comic_entry.description.as_deref(),
-            f_composed_title: ComicComplex::compose_title(
+            f_composed_title: comic_complex::compose_title(
                 comic_entry.index,
                 &comic_entry.author,
                 &comic_entry.title,

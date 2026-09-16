@@ -4,93 +4,88 @@ use std::fmt::Write as _;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 
-/// Chapter export formatting rules.
-pub struct ChapterTranslationExportComplex;
+/// Converts pages and units into `LabelPlus` text.
+pub fn make_label_plus(
+    pages: &[PageInfo],
+    units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
+    ext_by_page_id: &HashMap<String, String>,
+    raw_ident_by_page_id: &HashMap<String, String>,
+) -> String {
+    //
+    let mut output = String::new();
 
-impl ChapterTranslationExportComplex {
-    /// Converts pages and units into `LabelPlus` text.
-    pub fn make_label_plus(
-        pages: &[PageInfo],
-        units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
-        ext_by_page_id: &HashMap<String, String>,
-        raw_ident_by_page_id: &HashMap<String, String>,
-    ) -> String {
+    output.push_str("1,0\n");
+
+    output.push_str("-\n");
+
+    output.push_str("框内\n");
+
+    output.push_str("框外\n");
+
+    output.push_str("-\n");
+
+    output.push_str("Exported by PopRaKo Web\n");
+
+    for page_info in pages {
         //
-        let mut output = String::new();
+        let image_name = raw_ident_by_page_id
+            .get(&page_info.id)
+            .cloned()
+            .unwrap_or_else(|| {
+                //
+                label_plus_image_name(
+                    page_info,
+                    ext_by_page_id
+                        .get(&page_info.id)
+                        .map_or("jpg", String::as_str),
+                )
+            });
 
-        output.push_str("1,0\n");
-
-        output.push_str("-\n");
-
-        output.push_str("框内\n");
-
-        output.push_str("框外\n");
-
-        output.push_str("-\n");
-
-        output.push_str("Exported by PopRaKo Web\n");
-
-        for page_info in pages {
+        // FIXME: why ignore? and similar ones.
+        write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
             //
-            let image_name = raw_ident_by_page_id
-                .get(&page_info.id)
-                .cloned()
-                .unwrap_or_else(|| {
-                    //
-                    label_plus_image_name(
-                        page_info,
-                        ext_by_page_id
-                            .get(&page_info.id)
-                            .map_or("jpg", String::as_str),
-                    )
-                });
+            tracing::error!(
+                err = %error,
+                "[chapter_translation_export_complex::make_label_plus] failed to write page header",
+            );
+        });
 
-            // FIXME: why ignore? and similar ones.
-            write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
+        let units = units_by_page_id
+            .get(&page_info.id)
+            .map_or(&[][..], Vec::as_slice);
+
+        for (index, unit_info) in units.iter().enumerate() {
+            //
+            let group = if unit_info.is_bubble { 1 } else { 2 };
+
+            writeln!(
+                output,
+                "----------------[{}]----------------[{:.4},{:.4},{}]",
+                index + 1,
+                unit_info.coord.x_coord,
+                unit_info.coord.y_coord,
+                group
+            )
+            .unwrap_or_else(|error| {
                 //
                 tracing::error!(
                     err = %error,
-                    "[ChapterTranslationExportComplex::make_label_plus] failed to write page header",
+                    "[chapter_translation_export_complex::make_label_plus] failed to write unit line",
                 );
             });
 
-            let units = units_by_page_id
-                .get(&page_info.id)
-                .map_or(&[][..], Vec::as_slice);
-
-            for (index, unit_info) in units.iter().enumerate() {
+            if let Some(main_text) = select_main_text(unit_info) {
                 //
-                let group = if unit_info.is_bubble { 1 } else { 2 };
-
-                writeln!(
-                    output,
-                    "----------------[{}]----------------[{:.4},{:.4},{}]",
-                    index + 1,
-                    unit_info.coord.x_coord,
-                    unit_info.coord.y_coord,
-                    group
-                )
-                .unwrap_or_else(|error| {
-                    //
-                    tracing::error!(
-                        err = %error,
-                        "[ChapterTranslationExportComplex::make_label_plus] failed to write unit line",
-                    );
-                });
-
-                if let Some(main_text) = select_main_text(unit_info) {
-                    //
-                    output.push_str(main_text);
-
-                    output.push('\n');
-                }
+                output.push_str(main_text);
 
                 output.push('\n');
             }
-        }
 
-        output
+            output.push('\n');
+        }
     }
+
+    output
 }
 
 // Build a LabelPlus image filename from a page's stored index and image

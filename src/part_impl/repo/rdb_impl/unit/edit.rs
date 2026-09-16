@@ -17,7 +17,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::complex::unit::UnitComplex;
+use crate::complex::unit as unit_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
@@ -60,7 +60,7 @@ pub async fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
     //
-    let edit_plan = UnitComplex::plan_edit_sequence(orders, edits)?;
+    let edit_plan = unit_complex::plan_edit_sequence(orders, edits)?;
 
     let mut create_entries = Vec::new();
 

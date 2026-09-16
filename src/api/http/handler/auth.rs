@@ -21,7 +21,7 @@ use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::auth as auth_usecase;
 
 /// `POST /api/v1/auth/register` — registers a user via invitation code.
 ///
@@ -45,7 +45,7 @@ pub async fn register(
 ) -> HttpResult<RegisterAuthVal> {
     //
     let reply =
-        usecase::auth::register::<_, RdbContext<ReptRead>, HybRepo, _, _>(
+        auth_usecase::register::<_, RdbContext<ReptRead>, HybRepo, _, _>(
             (
                 harn.nucl().rept_read(),
                 harn.repo(),
@@ -83,7 +83,7 @@ pub async fn login(
     Json(instr): Json<LoginAuthInstr>,
 ) -> HttpResult<LoginAuthVal> {
     //
-    let reply = usecase::auth::login::<RdbContext<ReptRead>, HybRepo, _>(
+    let reply = auth_usecase::login::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.auth()),
         instr,
     )

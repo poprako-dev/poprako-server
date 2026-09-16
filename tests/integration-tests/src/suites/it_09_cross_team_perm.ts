@@ -132,7 +132,7 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
 
         if (defaultComicId) {
             expectError(
-                await outsiderApi.get<ErrorBody>(`/api/v1/comics/${defaultComicId}`),
+                await outsiderApi.get<ErrorBody>(`/api/v1/comics/${defaultComicId}?incl=workset.team`),
                 403,
                 4,
             );

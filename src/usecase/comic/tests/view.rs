@@ -83,10 +83,14 @@ async fn get_info_returns_uploaded_cover_url() {
         true,
     );
 
-    let comic_view =
-        get_info((&mock, &mock), token("user-1"), "comic-1".into())
-            .await
-            .unwrap();
+    let comic_view = get_info(
+        (&mock, &mock),
+        token("user-1"),
+        "comic-1".into(),
+        GetComicInfoInstr::default(),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(
         comic_view.cover_url.as_deref(),
@@ -105,10 +109,14 @@ async fn get_info_falls_back_to_uploaded_first_pinned_page() {
     seed_read_scope(&mock);
     seed_fallback_page(&mock, true);
 
-    let comic_view =
-        get_info((&mock, &mock), token("user-1"), "comic-1".into())
-            .await
-            .unwrap();
+    let comic_view = get_info(
+        (&mock, &mock),
+        token("user-1"),
+        "comic-1".into(),
+        GetComicInfoInstr::default(),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(
         comic_view.cover_url.as_deref(),

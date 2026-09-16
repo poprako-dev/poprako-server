@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDept;
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::perm::ChapterPermComplex;
+use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
@@ -79,7 +79,7 @@ where
             });
         };
 
-        ChapterPermComplex::ensure_user_can_delete(&member_info)?;
+        chapter_perm_complex::ensure_user_can_delete(&member_info)?;
 
         delete_chapter_objs(repo, obj_dept, context, &delete_scope).await?;
 

@@ -31,7 +31,11 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::chapter as chapter_usecase;
+use crate::usecase::chapter::{
+    delete as chapter_delete_usecase, stage as chapter_stage_usecase,
+    workflow_record as chapter_workflow_record_usecase,
+};
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -88,7 +92,7 @@ pub async fn create(
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
     //
-    usecase::chapter::create::<_, RdbContext<ReptRead>, HybRepo>(
+    chapter_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -124,7 +128,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    chapter_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -151,7 +155,7 @@ pub async fn get_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoView>> {
     //
-    usecase::chapter::get_pinned::<RdbContext<ReptRead>, HybRepo>(
+    chapter_usecase::get_pinned::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         comic_id,
@@ -179,7 +183,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoView> {
     //
-    usecase::chapter::get_info::<RdbContext<ReptRead>, HybRepo>(
+    chapter_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         chapter_id,
@@ -214,7 +218,7 @@ pub async fn list_workflow_record_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::workflow_record::list_workflow_record_infos::<
+    chapter_workflow_record_usecase::list_workflow_record_infos::<
         RdbContext<ReptRead>,
         HybRepo,
     >((harn.repo(),), user_token, instr)
@@ -246,7 +250,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+    chapter_usecase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -276,7 +280,7 @@ pub async fn mark_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::mark_pinned::<_, RdbContext<ReptRead>, HybRepo>(
+    chapter_usecase::mark_pinned::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         chapter_id,
@@ -310,7 +314,7 @@ pub async fn advance_stage(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::stage::update_stage::<
+    chapter_stage_usecase::update_stage::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -350,7 +354,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+    chapter_delete_usecase::delete::<_, RdbContext<Serial>, HybRepo, _>(
         (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,

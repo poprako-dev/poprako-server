@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::ComicPermComplex;
+use crate::complex::comic::perm as comic_perm_complex;
 use crate::data::instr::comic::ListComicInfosInstr;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -74,7 +74,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_list_infos(&member_info)?;
+    comic_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let spec = instr.try_into()?;
 

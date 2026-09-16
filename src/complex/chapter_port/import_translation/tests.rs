@@ -1,3 +1,4 @@
+use crate::complex::chapter_port::import_translation as chapter_translation_import_complex;
 // Integration fixture for real LabelPlus import parsing.
 // parse_poprako(parse_poprako)(positive): preserves zero-based PopRaKo indexes.
 // build_unit_create(build_unit_create)(positive): import always produces a complete Unit Create.
@@ -16,8 +17,9 @@ const LABEL_PLUS_MATERIAL: &str =
 #[test]
 fn parse_label_plus_parses_real_material() {
     //
-    let pages =
-        ChapterTranslationImportComplex::parse_label_plus(LABEL_PLUS_MATERIAL);
+    let pages = chapter_translation_import_complex::parse_label_plus(
+        LABEL_PLUS_MATERIAL,
+    );
 
     let pages = match pages {
         //
@@ -50,7 +52,7 @@ fn parse_label_plus_parses_real_material() {
 #[test]
 fn parse_poprako_preserves_zero_based_indexes() {
     //
-    let pages = ChapterTranslationImportComplex::parse_poprako(
+    let pages = chapter_translation_import_complex::parse_poprako(
         r#"{
             "chapter_id": "chapter-1",
             "chapter_index": 0,
@@ -104,11 +106,12 @@ fn parse_poprako_preserves_zero_based_indexes() {
 #[test]
 fn build_unit_create_produces_a_complete_create() {
     //
-    let pages =
-        ChapterTranslationImportComplex::parse_label_plus(LABEL_PLUS_MATERIAL)
-            .unwrap();
+    let pages = chapter_translation_import_complex::parse_label_plus(
+        LABEL_PLUS_MATERIAL,
+    )
+    .unwrap();
 
-    let edit = ChapterTranslationImportComplex::build_unit_create(
+    let edit = chapter_translation_import_complex::build_unit_create(
         &pages[0].units[0],
         "unit-new".to_string(),
         "proofreader-1",
@@ -143,7 +146,7 @@ fn parse_label_plus_accepts_bom_crlf_and_structure_trailing_whitespace() {
     );
 
     let pages =
-        ChapterTranslationImportComplex::parse_label_plus(content).unwrap();
+        chapter_translation_import_complex::parse_label_plus(content).unwrap();
 
     assert_eq!(pages.len(), 1);
     assert!(matches!(
@@ -167,7 +170,9 @@ fn parse_poprako_rejects_duplicate_page_indexes() {
         ]
     }"#;
 
-    assert!(ChapterTranslationImportComplex::parse_poprako(content).is_err());
+    assert!(
+        chapter_translation_import_complex::parse_poprako(content).is_err()
+    );
 }
 
 #[test]
@@ -236,7 +241,7 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
 
     let content = serde_json::to_string(&document).unwrap();
     let pages =
-        ChapterTranslationImportComplex::parse_poprako(&content).unwrap();
+        chapter_translation_import_complex::parse_poprako(&content).unwrap();
 
     assert_eq!(pages[0].page_index, 0);
     assert_eq!(pages[0].units[0].index, 0);

@@ -46,99 +46,80 @@ pub struct ManifestPlan {
     pub deleted_existing_indexes: Vec<usize>,
 }
 
-/// Pure operations for authoritative chapter page manifests.
-pub struct PageManifestComplex;
-
-impl PageManifestComplex {
-    /// Reserves explicit identities before consuming automatic hash matches.
-    pub fn build(
-        chapter_id: &str,
-        cands: &[PageManifestCand<'_>],
-        page_specs: &[PageImageSpec],
-    ) -> BaseRest<ManifestPlan> {
-        //
-        let mut assigned_indexes = vec![None; page_specs.len()];
-
-        let mut consumed_indexes = HashSet::new();
-
-        for (request_index, (assigned_index, page_spec)) in
-            assigned_indexes.iter_mut().zip(page_specs).enumerate()
-        {
-            let Some(page_id) = &page_spec.page_id else {
-                continue;
-            };
-
-            let existing_index = cands
-                .iter()
-                .position(|cand| {
-                    cand.id == page_id && cand.chapter_id == chapter_id
-                })
-                .ok_or_else(|| {
-                    page_not_found(chapter_id, page_id, request_index)
-                })?;
-
-            consumed_indexes.insert(existing_index);
-
-            *assigned_index = Some(existing_index);
-        }
-
-        for (assigned_index, page_spec) in
-            assigned_indexes.iter_mut().zip(page_specs)
-        {
-            let None = page_spec.page_id else {
-                continue;
-            };
-
-            let existing_index = cands
-                .iter()
-                .enumerate()
-                .filter(|(existing_index, cand)| {
-                    //
-                    !consumed_indexes.contains(existing_index)
-                        && cand.image_hash
-                            == Some(page_spec.image_hash.as_bytes().as_slice())
-                        && cand.image_ext == Some(page_spec.ext.suffix())
-                })
-                .min_by(|(_, left), (_, right)| cand_order(left, right))
-                .map(|(existing_index, _)| existing_index);
-
-            let Some(existing_index) = existing_index else {
-                continue;
-            };
-
-            consumed_indexes.insert(existing_index);
-
-            *assigned_index = Some(existing_index);
-        }
-
-        let matches = assigned_indexes
-            .into_iter()
-            .map(|existing_index| ManifestMatch { existing_index })
-            .collect();
-
-        let deleted_existing_indexes = (0..cands.len())
-            .filter(|existing_index| !consumed_indexes.contains(existing_index))
-            .collect();
-
-        accept(ManifestPlan {
-            matches,
-            deleted_existing_indexes,
-        })
-    }
-}
-
-// Orders automatic cands by content preservation and stable identity.
-fn cand_order(
-    left: &PageManifestCand<'_>,
-    right: &PageManifestCand<'_>,
-) -> Ordering {
+/// Reserves explicit identities before consuming automatic hash matches.
+pub fn build(
+    chapter_id: &str,
+    cands: &[PageManifestCand<'_>],
+    page_specs: &[PageImageSpec],
+) -> BaseRest<ManifestPlan> {
     //
-    right
-        .has_units
-        .cmp(&left.has_units)
-        .then_with(|| right.image_uploaded.cmp(&left.image_uploaded))
-        .then_with(|| left.index.cmp(&right.index))
-        .then_with(|| left.id.cmp(right.id))
+    let mut assigned_indexes = vec![None; page_specs.len()];
+
+    let mut consumed_indexes = HashSet::new();
+
+    for (request_index, (assigned_index, page_spec)) in
+        assigned_indexes.iter_mut().zip(page_specs).enumerate()
+    {
+        let Some(page_id) = &page_spec.page_id else {
+            continue;
+        };
+
+        let existing_index = cands
+            .iter()
+            .position(|cand| {
+                cand.id == page_id && cand.chapter_id == chapter_id
+            })
+            .ok_or_else(|| {
+                page_not_found(chapter_id, page_id, request_index)
+            })?;
+
+        consumed_indexes.insert(existing_index);
+
+        *assigned_index = Some(existing_index);
+    }
+
+    for (assigned_index, page_spec) in
+        assigned_indexes.iter_mut().zip(page_specs)
+    {
+        let None = page_spec.page_id else {
+            continue;
+        };
+
+        let existing_index = cands
+            .iter()
+            .enumerate()
+            .filter(|(existing_index, cand)| {
+                //
+                !consumed_indexes.contains(existing_index)
+                    && cand.image_hash
+                        == Some(page_spec.image_hash.as_bytes().as_slice())
+                    && cand.image_ext == Some(page_spec.ext.suffix())
+            })
+            .min_by(|(_, left), (_, right)| cand_order(left, right))
+            .map(|(existing_index, _)| existing_index);
+
+        let Some(existing_index) = existing_index else {
+            continue;
+        };
+
+        consumed_indexes.insert(existing_index);
+
+        *assigned_index = Some(existing_index);
+    }
+
+    let matches = assigned_indexes
+        .into_iter()
+        .map(|existing_index| ManifestMatch { existing_index })
+        .collect();
+
+    let deleted_existing_indexes = (0..cands.len())
+        .filter(|existing_index| !consumed_indexes.contains(existing_index))
+        .collect();
+
+    accept(ManifestPlan {
+        matches,
+        deleted_existing_indexes,
+    })
 }
 
 // Builds the expected missing-page error with matching diagnostics.
@@ -163,4 +144,18 @@ fn page_not_found(
         variant: ExpectedVariant::Args,
         message: err_message,
     }
+}
+
+// Orders automatic cands by content preservation and stable identity.
+fn cand_order(
+    left: &PageManifestCand<'_>,
+    right: &PageManifestCand<'_>,
+) -> Ordering {
+    //
+    right
+        .has_units
+        .cmp(&left.has_units)
+        .then_with(|| right.image_uploaded.cmp(&left.image_uploaded))
+        .then_with(|| left.index.cmp(&right.index))
+        .then_with(|| left.id.cmp(right.id))
 }

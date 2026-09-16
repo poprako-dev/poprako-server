@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::complex::system_mail::SystemMailComplex;
+use crate::complex::system_mail as system_mail_complex;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -197,7 +197,7 @@ where
     assignment_infos
         .into_iter()
         .map(|assignment_info| SystemMailEntry {
-            id: SystemMailComplex::gen_id(),
+            id: system_mail_complex::gen_id(),
             receiver_id: assignment_info.user_id,
             title: title.clone(),
             content: content.clone(),

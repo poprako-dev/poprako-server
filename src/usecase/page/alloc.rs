@@ -16,9 +16,10 @@ use poprako_obj_dept::model::slot::{ObjSlot, ObjSlotSpec};
 use poprako_obj_dept::oper::GenObjSlot;
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::image::ImageComplex;
-use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::complex::page::perm as page_perm_complex;
+use crate::complex::{
+    chapter as chapter_complex, image as image_complex, page as page_complex,
+};
 use crate::config::image::ImageConfig;
 use crate::data::instr::page::{AllocChapterPagesInstr, AllocPageImageInstr};
 use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
@@ -43,6 +44,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::alloc::manifest::apply_manifest;
+use crate::usecase::page::alloc::validation as page_alloc_validation_usecase;
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash, ImageKind, PageImageKey};
 
@@ -73,7 +75,7 @@ where
         .map(PageImageSpec::from)
         .collect::<Vec<_>>();
 
-    let page_count = validation::validate_page_specs(
+    let page_count = page_alloc_validation_usecase::validate_page_specs(
         image_config,
         &page_specs,
         &chapter_id,
@@ -129,9 +131,9 @@ where
     P: Prom<C> + Send + Sync,
     O: ObjDept<PageImage, C> + Send + Sync,
 {
-    PageComplex::ensure_raw_ident(instr.raw_ident.as_deref())?;
+    page_complex::ensure_raw_ident(instr.raw_ident.as_deref())?;
 
-    ImageComplex::ensure_byte_length(
+    image_complex::ensure_byte_length(
         image_config,
         instr.new_byte_len,
         ImageKind::PageImage,
@@ -159,7 +161,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+            chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             GetPageInfoExcluded { id: &id }
                 .step_on(repo, context)
@@ -288,5 +290,5 @@ where
         });
     };
 
-    PagePermComplex::ensure_user_can_alloc(&assignment_info)
+    page_perm_complex::ensure_user_can_alloc(&assignment_info)
 }

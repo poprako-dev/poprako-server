@@ -14,10 +14,11 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl_kv;
 
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::UnitComplex;
-use crate::complex::unit::perm::UnitPermComplex;
-use crate::complex::unit_save::UnitSaveComplex;
+use crate::complex::unit::perm as unit_perm_complex;
+use crate::complex::{
+    chapter as chapter_complex, unit as unit_complex,
+    unit_save as unit_save_complex,
+};
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr,
     SearchChapterUnitInfosInstr, UnitEditInstr,
@@ -51,7 +52,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::{UnitRepo, UnitSaveRepo};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
-use crate::usecase::stage::start_pending_stages;
+use crate::usecase::stage as stage_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::{
@@ -119,7 +120,7 @@ where
     )
     .await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
+    unit_perm_complex::ensure_user_can_list_infos(&access_info.as_access())?;
 
     let authorized_chapter_id = page_scope.chapter_id;
 
@@ -193,7 +194,7 @@ where
         phrase,
     } = instr;
 
-    let phrase = UnitComplex::normalize_search_phrase(phrase)?;
+    let phrase = unit_complex::normalize_search_phrase(phrase)?;
 
     let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
         repo,
@@ -202,7 +203,7 @@ where
     )
     .await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
+    unit_perm_complex::ensure_user_can_list_infos(&access_info.as_access())?;
 
     if phrase.contains('\0') {
         return accept(Vec::new());
@@ -294,7 +295,7 @@ where
 
     let page_id = save_entry.page_id.clone();
 
-    let stages = UnitComplex::submitted_stage_advances(&edits);
+    let stages = unit_complex::submitted_stage_advances(&edits);
 
     let created_unit_ids = nucl
         .coord(async move |context| {
@@ -304,7 +305,7 @@ where
                     .step_on(repo, context)
                     .await?;
 
-            ChapterComplex::ensure_writable_state(
+            chapter_complex::ensure_writable_state(
                 &chapter_scope.id,
                 chapter_scope.is_published,
             )?;
@@ -325,7 +326,7 @@ where
                 }),
             };
 
-            UnitPermComplex::ensure_user_can_edit_fields(edit_perm, &edits)?;
+            unit_perm_complex::ensure_user_can_edit_fields(edit_perm, &edits)?;
 
             let page_scope = GetPageUnitScopeExcluded { id: &page_id }
                 .step_on(repo, context)
@@ -347,7 +348,7 @@ where
             .step_on(repo, context)
             .await?
             {
-                return UnitSaveComplex::replay_saved_units(
+                return unit_save_complex::replay_saved_units(
                     receipt,
                     &save_entry.payload_digest,
                 );
@@ -361,7 +362,7 @@ where
 
             let base_ids = order_ids.collect::<Vec<_>>();
 
-            let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
+            let edits = unit_complex::normalize_edits(&base_ids, edits)?;
 
             let count_metrics = ApplyUnitEdits {
                 page_id: &page_scope.id,
@@ -393,7 +394,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            start_pending_stages(
+            stage_usecase::start_pending_stages(
                 repo,
                 context,
                 &chapter_scope.id,

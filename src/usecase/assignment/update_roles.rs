@@ -5,10 +5,10 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::{
-    AssignmentComplex, AssignmentPermComplex, AssignmentRoleUpdateAccess,
+use crate::complex::assignment::perm as assignment_perm_complex;
+use crate::complex::{
+    assignment as assignment_complex, chapter as chapter_complex,
 };
-use crate::complex::chapter::ChapterComplex;
 use crate::data::instr::assignment::UpdateAssignmentRolesInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -63,7 +63,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+        chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
         let assignment_infos = ListAssignmentInfosExcluded {
             chapter_id: &instr.chapter_id,
@@ -182,7 +182,7 @@ where
     C: Context,
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
-    if !AssignmentComplex::chapter_has_admin_after_role_update(
+    if !assignment_complex::chapter_has_admin_after_role_update(
         assignment_infos,
         &instr.user_id,
         instr.roles,
@@ -208,7 +208,7 @@ where
     }
 
     let assignment_entry = AssignmentEntry {
-        id: AssignmentComplex::gen_id(),
+        id: assignment_complex::gen_id(),
         chapter_id: instr.chapter_id,
         user_id: instr.user_id.clone(),
         roles: instr.roles,
@@ -246,7 +246,7 @@ fn ensure_existing_update_keeps_admin(
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()> {
     //
-    if AssignmentComplex::is_self_admin_role_removal(
+    if assignment_complex::is_self_admin_role_removal(
         &token.user_id,
         assignment_info,
         instr.roles,
@@ -271,7 +271,7 @@ fn ensure_existing_update_keeps_admin(
         });
     }
 
-    if AssignmentComplex::chapter_has_admin_after_role_update(
+    if assignment_complex::chapter_has_admin_after_role_update(
         assignment_infos,
         &instr.user_id,
         instr.roles,
@@ -301,13 +301,18 @@ fn ensure_existing_update_keeps_admin(
 // Select the permission context for an administrator or self-reduction.
 fn role_update_access(
     assignment_info: &AssignmentInfo,
-) -> AssignmentRoleUpdateAccess<'_> {
+) -> assignment_perm_complex::AssignmentRoleUpdateAccess<'_> {
     //
     if assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return AssignmentRoleUpdateAccess::Admin { assignment_info };
+        //
+        return assignment_perm_complex::AssignmentRoleUpdateAccess::Admin {
+            assignment_info,
+        };
     }
 
-    AssignmentRoleUpdateAccess::SelfReduce { assignment_info }
+    assignment_perm_complex::AssignmentRoleUpdateAccess::SelfReduce {
+        assignment_info,
+    }
 }
 
 // Ensure the caller may apply the requested role change.
@@ -355,7 +360,7 @@ where
     )
     .await?;
 
-    AssignmentPermComplex::ensure_user_can_update_roles(
+    assignment_perm_complex::ensure_user_can_update_roles(
         &update_access,
         &subject_member_info,
         instr.roles,

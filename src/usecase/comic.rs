@@ -18,10 +18,14 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::AssignmentComplex;
-use crate::complex::chapter::ChapterComplex;
-use crate::complex::comic::{ComicComplex, ComicPermComplex};
-use crate::data::instr::comic::{CreateComicInstr, UpdateComicInfoInstr};
+use crate::complex::comic::perm as comic_perm_complex;
+use crate::complex::{
+    assignment as assignment_complex, chapter as chapter_complex,
+    comic as comic_complex,
+};
+use crate::data::instr::comic::{
+    CreateComicInstr, GetComicInfoInstr, UpdateComicInfoInstr,
+};
 use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
@@ -90,7 +94,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_create(
+    comic_perm_complex::ensure_user_can_create(
         &member_info,
         instr.preset_assignment_roles,
     )?;
@@ -105,7 +109,7 @@ where
             .await?;
 
             let comic_entry = ComicEntry {
-                id: ComicComplex::gen_id(),
+                id: comic_complex::gen_id(),
                 workset_id: instr.workset_id,
                 index,
                 title: instr.title,
@@ -131,13 +135,13 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            let subtitle = ChapterComplex::subtitle_or_default(
+            let subtitle = chapter_complex::subtitle_or_default(
                 instr.first_chapter_subtitle,
                 chapter_index,
             );
 
             let chapter_entry = ChapterEntry {
-                id: ChapterComplex::gen_id(),
+                id: chapter_complex::gen_id(),
                 comic_id: comic_info.id.clone(),
                 is_pinned: true,
                 index: chapter_index,
@@ -190,12 +194,13 @@ where
     })
 }
 
-/// Fetches a comic by ID with cover URL resolution.
+/// Fetches a comic and requested relations with object URL resolution.
 #[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
     id: String,
+    instr: GetComicInfoInstr,
 ) -> BaseRest<ComicInfoView>
 where
     C: Context,
@@ -219,11 +224,11 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_get_info(&member_info)?;
+    comic_perm_complex::ensure_user_can_get_info(&member_info)?;
 
     let comic_info = GetComicInfo {
         id: &id,
-        incls: &[],
+        incls: &instr.incl_opt,
     }
     .run_on(repo)
     .await?;
@@ -250,7 +255,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_update_info(&member_info)?;
+    comic_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     let comic_info = GetComicInfo {
         id: &instr.id,
@@ -259,7 +264,7 @@ where
     .run_on(repo)
     .await?;
 
-    ComicComplex::ensure_comic_writable(&comic_info)?;
+    comic_complex::ensure_comic_writable(&comic_info)?;
 
     let comic_info_update = ComicRepl {
         id: instr.id,
@@ -322,7 +327,7 @@ where
                 });
             };
 
-            ComicPermComplex::ensure_user_can_delete(&member_info)?;
+            comic_perm_complex::ensure_user_can_delete(&member_info)?;
 
             MarkSubtree {
                 scope: &delete_scope,
@@ -365,10 +370,10 @@ where
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
     let assignment_entry = AssignmentEntry {
-        id: AssignmentComplex::gen_id(),
+        id: assignment_complex::gen_id(),
         chapter_id: chapter_id.to_owned(),
         user_id: user_id.clone(),
-        roles: AssignmentComplex::creator_roles(preset_assignment_roles),
+        roles: assignment_complex::creator_roles(preset_assignment_roles),
     };
 
     CreateAssignment {

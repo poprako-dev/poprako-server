@@ -8,9 +8,9 @@
 /// The data needed to insert a new comic row.
 ///
 /// Supplied at comic-creation time. The `id` is typically generated via
-/// [`ComicComplex::gen_id`]; the `index` is allocated by the repo layer.
+/// [`comic_complex::gen_id`]; the `index` is allocated by the repo layer.
 ///
-/// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
+/// [`comic_complex::gen_id`]: crate::complex::comic::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicEntry {
     /// Unique identifier for the new comic.

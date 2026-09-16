@@ -2,7 +2,7 @@
 
 use time::OffsetDateTime;
 
-use crate::complex::user::UserComplex;
+use crate::complex::user as user_complex;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
@@ -26,7 +26,7 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 /// Builds a [`UserCredential`] with a properly hashed password.
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
     //
-    let Ok(password_hash) = UserComplex::hash_password_for_test(password)
+    let Ok(password_hash) = user_complex::hash_password_for_test(password)
     else {
         panic!("failed to hash password")
     };

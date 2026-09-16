@@ -7,8 +7,8 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use crate::complex::term::TermComplex;
-use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
+use crate::complex::termbase::perm as termbase_perm_complex;
+use crate::complex::{term as term_complex, termbase as termbase_complex};
 use crate::data::instr::term::{
     CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
@@ -49,7 +49,7 @@ where
         + Send
         + Sync,
 {
-    let term_entry = TermComplex::build_entry(
+    let term_entry = term_complex::build_entry(
         instr.termbase_id,
         instr.source,
         instr.targets,
@@ -74,12 +74,15 @@ where
             )
             .await?;
 
-            TermbasePermComplex::ensure_user_can_write(
+            termbase_perm_complex::ensure_user_can_write(
                 &member_info,
                 &termbase_info,
             )?;
 
-            TermbaseComplex::ensure_term_capacity(termbase_info.term_count, 1)?;
+            termbase_complex::ensure_term_capacity(
+                termbase_info.term_count,
+                1,
+            )?;
 
             let term_info = CreateTerm { entry: &term_entry }
                 .step_on(repo, context)
@@ -126,7 +129,7 @@ where
     )
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
+    termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
     accept(term_info.into())
 }
@@ -156,9 +159,9 @@ where
     )
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
+    termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    let fuzzy_source = TermComplex::normalize_fuzzy_source(instr.fuzzy_source);
+    let fuzzy_source = term_complex::normalize_fuzzy_source(instr.fuzzy_source);
 
     let term_infos = ListTermInfos::Query {
         termbase_id: &instr.termbase_id,
@@ -190,7 +193,7 @@ where
         + Send
         + Sync,
 {
-    let term_info_update = TermComplex::build_update(
+    let term_info_update = term_complex::build_update(
         instr.id,
         instr.source,
         instr.targets,
@@ -219,7 +222,7 @@ where
         )
         .await?;
 
-        TermbasePermComplex::ensure_user_can_write(
+        termbase_perm_complex::ensure_user_can_write(
             &member_info,
             &termbase_info,
         )?;
@@ -285,7 +288,7 @@ where
         )
         .await?;
 
-        TermbasePermComplex::ensure_user_can_write(
+        termbase_perm_complex::ensure_user_can_write(
             &member_info,
             &termbase_info,
         )?;

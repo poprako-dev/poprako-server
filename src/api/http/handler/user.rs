@@ -26,7 +26,8 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::user as user_usecase;
+use crate::usecase::user::delete as user_delete_usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -46,7 +47,7 @@ pub async fn get_my_info(
     //
     let id = user_token.user_id.clone();
 
-    usecase::user::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         id,
@@ -74,7 +75,7 @@ pub async fn get_info(
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<UserInfoView> {
     //
-    usecase::user::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         token,
         user_id,
@@ -107,7 +108,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&user_id, &instr.id)?;
 
-    usecase::user::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+    user_usecase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -138,7 +139,7 @@ pub async fn update_password(
     Json(instr): Json<UpdateUserPasswordInstr>,
 ) -> HttpNoContent {
     //
-    usecase::user::update_password::<_, RdbContext<ReptRead>, HybRepo>(
+    user_usecase::update_password::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         user_id,
@@ -169,7 +170,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::user::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+    user_delete_usecase::delete::<_, RdbContext<Serial>, HybRepo, _>(
         (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         user_id,
@@ -201,7 +202,7 @@ pub async fn alloc_avatar(
     //
     ensure_current_user(&user_id, &user_token)?;
 
-    usecase::user::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
+    user_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -235,7 +236,7 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkUserAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::user::mark_avatar_uploaded::<RdbContext, _>(
+    user_usecase::mark_avatar_uploaded::<RdbContext, _>(
         (harn.obj_dept(),),
         user_token,
         user_id,

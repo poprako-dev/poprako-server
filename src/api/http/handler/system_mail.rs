@@ -17,7 +17,7 @@ use crate::data::instr::system_mail::{
 };
 use crate::data::view::system_mail::SystemMailInfoView;
 use crate::model::shared::user::UserToken;
-use crate::usecase;
+use crate::usecase::system_mail as system_mail_usecase;
 
 /// `GET /api/v1/system-mails` — list the current user's system mails.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -37,7 +37,7 @@ pub async fn list_infos(
     Query(instr): Query<ListSystemMailInfosInstr>,
 ) -> HttpResult<Vec<SystemMailInfoView>> {
     //
-    usecase::system_mail::list_infos((harn.repo(),), user_token, instr)
+    system_mail_usecase::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -60,7 +60,7 @@ pub async fn mark_read(
     Json(instr): Json<MarkSystemMailReadInstr>,
 ) -> HttpNoContent {
     //
-    usecase::system_mail::mark_read((harn.repo(),), user_token, instr.ids)
+    system_mail_usecase::mark_read((harn.repo(),), user_token, instr.ids)
         .await?;
 
     no_content()

@@ -13,12 +13,12 @@ use crate::value::chapter::mask::StageMask;
 /// The data needed to insert a new chapter row.
 ///
 /// Supplied at chapter-creation time by the use case layer. The `id` is
-/// typically generated via [`ChapterComplex::gen_id`] before constructing
+/// typically generated via [`chapter_complex::gen_id`] before constructing
 /// this form. The `is_pinned` initial value is determined by the caller
 /// (usually `true` for the first chapter in a comic, or the new
 /// highest-index chapter).
 ///
-/// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
+/// [`chapter_complex::gen_id`]: crate::complex::chapter::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterEntry {
     /// Unique identifier to insert for the new chapter.

@@ -12,7 +12,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::chapter_port::export_translation as chapter_port_export_translation_usecase;
 use crate::value::chapter_port::ExportFormatSpec;
 
 /// Internal payload carrying serialised export content and response metadata.
@@ -38,7 +38,7 @@ pub async fn export_payload(
     with_raw_ident: bool,
 ) -> Result<TranslationExportPayload, HttpError> {
     //
-    let val = usecase::chapter_port::export_translation::export_translation::<
+    let val = chapter_port_export_translation_usecase::export_translation::<
         _,
         RdbContext<ReptRead>,
         HybRepo,

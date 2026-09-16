@@ -8,6 +8,93 @@ use crate::model::write::term::{TermEntry, TermImport, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::{next_snowflake_id, trim_owned};
 
+/// Normalize an optional terminology-entry source filter.
+pub fn normalize_fuzzy_source(fuzzy_source: Option<String>) -> Option<String> {
+    normalize_comment(fuzzy_source)
+}
+
+/// Build a validated terminology entry.
+pub fn build_entry(
+    termbase_id: String,
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
+    creator_id: String,
+) -> BaseRest<TermEntry> {
+    //
+    let (source, targets, comment) = (
+        normalize_source(source)?,
+        normalize_targets(targets)?,
+        normalize_comment(comment),
+    );
+
+    accept(TermEntry {
+        id: next_snowflake_id(),
+        termbase_id,
+        source,
+        targets,
+        comment,
+        creator_id,
+    })
+}
+
+/// Build normalized portable terminology-entry content.
+pub fn build_import(
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
+) -> BaseRest<TermImport> {
+    //
+    let (source, targets, comment) = (
+        normalize_source(source)?,
+        normalize_targets(targets)?,
+        normalize_comment(comment),
+    );
+
+    accept(TermImport {
+        source,
+        targets,
+        comment,
+    })
+}
+
+/// Build a validated terminology-entry replacement.
+pub fn build_update(
+    id: String,
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
+) -> BaseRest<TermRepl> {
+    //
+    let (source, targets, comment) = (
+        normalize_source(source)?,
+        normalize_targets(targets)?,
+        normalize_comment(comment),
+    );
+
+    accept(TermRepl {
+        id,
+        source,
+        targets,
+        comment,
+    })
+}
+
+// Normalize an optional comment value; empty content becomes `None`.
+fn normalize_comment(comment: Option<String>) -> Option<String> {
+    //
+    comment.and_then(|comment| {
+        //
+        let comment = trim_owned(comment);
+
+        if comment.is_empty() {
+            None
+        } else {
+            Some(comment)
+        }
+    })
+}
+
 // Trim a term source and reject empty values after normalization.
 fn normalize_source(source: String) -> BaseRest<String> {
     //
@@ -102,98 +189,4 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
     }
 
     accept(normalized_targets)
-}
-
-// Normalize an optional comment value; empty content becomes `None`.
-fn normalize_comment(comment: Option<String>) -> Option<String> {
-    //
-    comment.and_then(|comment| {
-        //
-        let comment = trim_owned(comment);
-
-        if comment.is_empty() {
-            None
-        } else {
-            Some(comment)
-        }
-    })
-}
-
-/// Pure terminology-entry construction and validation helpers.
-pub struct TermComplex;
-
-impl TermComplex {
-    /// Normalize an optional terminology-entry source filter.
-    pub fn normalize_fuzzy_source(
-        fuzzy_source: Option<String>,
-    ) -> Option<String> {
-        normalize_comment(fuzzy_source)
-    }
-
-    /// Build a validated terminology entry.
-    pub fn build_entry(
-        termbase_id: String,
-        source: String,
-        targets: Vec<String>,
-        comment: Option<String>,
-        creator_id: String,
-    ) -> BaseRest<TermEntry> {
-        //
-        let (source, targets, comment) = (
-            normalize_source(source)?,
-            normalize_targets(targets)?,
-            normalize_comment(comment),
-        );
-
-        accept(TermEntry {
-            id: next_snowflake_id(),
-            termbase_id,
-            source,
-            targets,
-            comment,
-            creator_id,
-        })
-    }
-
-    /// Build normalized portable terminology-entry content.
-    pub fn build_import(
-        source: String,
-        targets: Vec<String>,
-        comment: Option<String>,
-    ) -> BaseRest<TermImport> {
-        //
-        let (source, targets, comment) = (
-            normalize_source(source)?,
-            normalize_targets(targets)?,
-            normalize_comment(comment),
-        );
-
-        accept(TermImport {
-            source,
-            targets,
-            comment,
-        })
-    }
-
-    /// Build a validated terminology-entry replacement.
-    pub fn build_update(
-        id: String,
-        source: String,
-        targets: Vec<String>,
-        comment: Option<String>,
-    ) -> BaseRest<TermRepl> {
-        //
-        let (source, targets, comment) = (
-            normalize_source(source)?,
-            normalize_targets(targets)?,
-            normalize_comment(comment),
-        );
-
-        accept(TermRepl {
-            id,
-            source,
-            targets,
-            comment,
-        })
-    }
 }

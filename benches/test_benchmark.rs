@@ -4,7 +4,7 @@ use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 
 use tokio::runtime::Runtime;
 
-use poprako_server::{UserComplex, benchmark};
+use poprako_server::{benchmark, user_complex};
 
 fn benchmark_password_operations(criterion: &mut Criterion) {
     //
@@ -13,7 +13,7 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
     let runtime = Runtime::new().expect("benchmark runtime must initialize");
 
     let password_hash = runtime
-        .block_on(UserComplex::hash_password(password))
+        .block_on(user_complex::hash_password(password))
         .expect("benchmark fixture password must hash");
 
     let mut hash_group = criterion.benchmark_group("password_hash");
@@ -23,7 +23,7 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
         bencher.iter(|| {
             //
             runtime
-                .block_on(UserComplex::hash_password(black_box(password)))
+                .block_on(user_complex::hash_password(black_box(password)))
                 .expect("password hashing must succeed");
         });
     });
@@ -36,7 +36,7 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
         //
         bencher.iter(|| {
             //
-            assert!(runtime.block_on(UserComplex::verify_password(
+            assert!(runtime.block_on(user_complex::verify_password(
                 black_box(password),
                 black_box(&password_hash),
             )));

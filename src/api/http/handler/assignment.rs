@@ -24,7 +24,8 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::assignment as assignment_usecase;
+use crate::usecase::assignment::update_roles as assignment_update_roles_usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -46,7 +47,7 @@ pub async fn list_infos(
     Query(instr): Query<ListAssignmentInfosInstr>,
 ) -> HttpResult<Vec<AssignmentInfoView>> {
     //
-    usecase::assignment::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    assignment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -84,7 +85,7 @@ pub async fn update_roles(
 
     ensure_path_matches_body_id(&user_id, &instr.user_id)?;
 
-    usecase::assignment::update_roles::update_roles::<
+    assignment_update_roles_usecase::update_roles::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -113,7 +114,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::assignment::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    assignment_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_id,
@@ -142,7 +143,7 @@ pub async fn join(
     Json(instr): Json<JoinChapterAssignmentInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    usecase::assignment::join::<_, RdbContext<ReptRead>, HybRepo>(
+    assignment_usecase::join::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,

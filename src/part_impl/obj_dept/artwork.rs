@@ -3,7 +3,7 @@
 use poprako_obj_dept::key::KeyMap;
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
-use crate::complex::chapter_port::artwork::ChapterArtworkComplex;
+use crate::complex::chapter_port::artwork as chapter_artwork_complex;
 use crate::part::obj_dept::ChapterArtwork;
 use crate::value::artwork::ChapterArtworkKey;
 
@@ -34,7 +34,7 @@ impl KeyMap for ChapterArtwork {
                 //
                 !id.is_empty()
                     && !id.contains('/')
-                    && ChapterArtworkComplex::valid_extension(ext)
+                    && chapter_artwork_complex::valid_extension(ext)
             })
             .map(|(id, ver, ext)| {
                 //

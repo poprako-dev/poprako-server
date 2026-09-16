@@ -5,8 +5,8 @@ use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::GenObjSlot;
 
-use crate::complex::comic::{ComicComplex, ComicPermComplex};
-use crate::complex::image::ImageComplex;
+use crate::complex::comic::perm as comic_perm_complex;
+use crate::complex::{comic as comic_complex, image as image_complex};
 use crate::config::image::ImageConfig;
 use crate::data::instr::comic::AllocComicCoverInstr;
 use crate::data::val::comic::AllocComicCoverVal;
@@ -38,7 +38,7 @@ where
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     O: ObjDept<ComicCover, C> + Send + Sync,
 {
-    ImageComplex::ensure_byte_length(
+    image_complex::ensure_byte_length(
         image_config,
         instr.new_byte_len,
         ImageKind::ComicCover,
@@ -52,7 +52,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_alloc_cover(&member_info)?;
+    comic_perm_complex::ensure_user_can_alloc_cover(&member_info)?;
 
     let obj_slot = nucl
         .coord(async move |context| {
@@ -64,7 +64,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            ComicComplex::ensure_comic_writable(&comic_info)?;
+            comic_complex::ensure_comic_writable(&comic_info)?;
 
             let obj_spec = ObjSlotSpec {
                 dom: ComicCoverKey {

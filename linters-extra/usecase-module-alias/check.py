@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Require complex free functions and qualified module-alias references."""
+"""Require qualified module aliases for public use-case operations."""
 
 from __future__ import annotations
 
@@ -26,7 +26,6 @@ from production_source import production_files, production_source
 
 DEFAULT_ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
-COMPLEX_TYPE = re.compile(r"(?:^|::)([A-Za-z_][A-Za-z0-9_]*)\s*(?:<.*>)?$")
 
 
 @dataclass(frozen=True)
@@ -48,7 +47,7 @@ def is_public(node: tree_sitter.Node) -> bool:
 def file_module(path: Path, root: Path) -> tuple[str, ...]:
     relative = path.relative_to(root / "src")
 
-    if relative == Path("complex.rs"):
+    if relative == Path("usecase.rs"):
         return ()
 
     parts = list(relative.parts[1:])
@@ -58,9 +57,9 @@ def file_module(path: Path, root: Path) -> tuple[str, ...]:
 
 
 def rust_files(root: Path) -> list[RustFile]:
-    complex_dir = root / "src" / "complex"
-    paths = production_files(root, "src/complex") if complex_dir.is_dir() else []
-    root_module = root / "src" / "complex.rs"
+    usecase_dir = root / "src" / "usecase"
+    paths = production_files(root, "src/usecase") if usecase_dir.is_dir() else []
+    root_module = root / "src" / "usecase.rs"
 
     if root_module.is_file():
         paths.insert(0, root_module)
@@ -144,17 +143,6 @@ def enclosing_impl(node: tree_sitter.Node) -> tree_sitter.Node | None:
         current = current.parent
 
     return None
-
-
-def impl_type_name(node: tree_sitter.Node, source: bytes) -> str | None:
-    target = node.child_by_field_name("type")
-
-    if target is None:
-        return None
-
-    match = COMPLEX_TYPE.search(node_text(source, target))
-
-    return match.group(1) if match is not None else None
 
 
 def public_free_functions(
@@ -242,39 +230,15 @@ def diagnostic(root, file, node, code, message):
     return f"{file.path.relative_to(root)}:{node.start_point.row + 1}:{node.start_point.column + 1}: {code}: {message}"
 
 
-def namespace_diagnostics(root, files):
-    diagnostics = []
-    for file in files:
-        nodes = list(descendants(file.tree.root_node))
-        for node in nodes:
-            if node.type != "struct_item":
-                continue
-            name = node_text(file.source, node.child_by_field_name("name"))
-            body = node.child_by_field_name("body")
-            if not name.endswith("Complex") or (body is not None and body.named_children):
-                continue
-            module = inline_module_path(file.module, node, file.source)
-            impls = [item for item in nodes if item.type == "impl_item"
-                     and impl_type_name(item, file.source) == name
-                     and inline_module_path(file.module, item, file.source) == module]
-            meaningful = any(item.child_by_field_name("trait") is not None
-                             or any(child.type == "self_parameter" for child in descendants(item))
-                             for item in impls)
-            if not meaningful:
-                diagnostics.append(diagnostic(root, file, node, "CPX001",
-                    f"empty namespace `{name}` must be replaced with module free functions"))
-    return diagnostics
-
-
 def check_root(root: Path) -> list[str]:
     files = rust_files(root)
     exported_modules = public_modules(files)
-    functions = {("complex",) + module + (name,)
+    functions = {("usecase",) + module + (name,)
                  for (module, name) in public_free_functions(files)
-                 if module in exported_modules}
+                 if module in exported_modules and "view" not in module}
     behavior_modules = {path[:-1] for path in functions}
-    diagnostics = namespace_diagnostics(root, files)
-    alias_pattern = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*_complex"
+    diagnostics = []
+    alias_pattern = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*_usecase"
     for path in production_files(root):
         source = production_source(path, root)
         file = RustFile(path, source_module(path, root), source, PARSER.parse(source))
@@ -301,11 +265,11 @@ def check_root(root: Path) -> list[str]:
                 target = resolve_path(parts, current, bindings)
                 scopes.setdefault(node.parent.id, {})[alias] = target
                 if target in functions or (target[-1:] == ("*",) and target[:-1] in behavior_modules):
-                    diagnostics.append(diagnostic(root, file, leaf, "CPX002",
-                        "import the complex behavior module as `*_complex`, not its free functions"))
+                    diagnostics.append(diagnostic(root, file, leaf, "UCA001",
+                        "import the usecase behavior module as `*_usecase`, not its free functions"))
                 elif target in behavior_modules and re.fullmatch(alias_pattern, alias) is None:
-                    diagnostics.append(diagnostic(root, file, leaf, "CPX003",
-                        "complex behavior modules require a snake_case `*_complex` alias"))
+                    diagnostics.append(diagnostic(root, file, leaf, "UCA002",
+                        "usecase behavior modules require a snake_case `*_usecase` alias"))
         for node in nodes:
             if node.type != "scoped_identifier" or (node.parent is not None and node.parent.type == "scoped_identifier"):
                 continue
@@ -323,54 +287,61 @@ def check_root(root: Path) -> list[str]:
                 continue
             if len(parts) == 2 and re.fullmatch(alias_pattern, parts[0]):
                 continue
-            diagnostics.append(diagnostic(root, file, node, "CPX004",
-                "reference complex free functions through an imported `*_complex` module alias"))
+            diagnostics.append(diagnostic(root, file, node, "UCA003",
+                "reference usecase free functions through an imported `*_usecase` module alias"))
     return sorted(diagnostics)
 
 
 def self_test() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        complex_dir = root / "src" / "complex"
-        complex_dir.mkdir(parents=True)
-        (root / "src" / "complex.rs").write_text("pub mod team; mod private;\n")
-        (complex_dir / "team.rs").write_text(
-            "pub fn run() { helper(); run(); }\n"
-            "fn helper() {}\n"
-            "pub mod perm { pub fn check() {} }\n"
-            "pub struct DataComplex { value: u32 }\n"
-            "impl DataComplex { pub fn new() -> Self { todo!() } }\n"
-            "pub struct MarkerComplex;\n"
-            "impl SomeTrait for MarkerComplex {}\n"
-            "pub struct ReceiverComplex;\n"
-            "impl ReceiverComplex { pub fn run(&self) {} }\n"
-            "#[cfg(test)] mod tests { pub struct IgnoredComplex; }\n",
+        usecase_dir = root / "src" / "usecase"
+        usecase_dir.mkdir(parents=True)
+        (root / "src" / "usecase.rs").write_text(
+            "pub mod user; mod internal; mod stage;\n",
         )
-        (complex_dir / "private.rs").write_text("pub fn helper() {}\n")
+        (usecase_dir / "user.rs").write_text(
+            "pub fn run<T>() { helper(); run::<()>(); }\n"
+            "fn helper() {}\n"
+            "pub mod delete { pub async fn apply<T>() {} }\n"
+            "pub mod view { pub fn render() {} }\n"
+            "mod code { pub fn check() {} }\n"
+            "pub struct UserData { value: u32 }\n"
+            "impl UserData { pub fn new() -> Self { todo!() } }\n",
+        )
+        (usecase_dir / "internal.rs").write_text("pub fn helper() {}\n")
+        (usecase_dir / "stage.rs").write_text("pub fn check() {}\n")
         fixture = root / "src" / "lib.rs"
         valid = (
-            "use crate::complex::{team as team_complex, team::{perm as team_perm_complex, DataComplex}};\n"
-            "use crate::complex::private::helper;\n"
-            "fn run() { team_complex::run(); team_perm_complex::check(); helper(); }\n"
-            "fn reference() { let _ = team_complex::run; }\n"
-            "#[cfg(test)] mod tests { use crate::complex::team::run; }\n"
+            "use crate::usecase::{user as user_usecase, user::{delete as user_delete_usecase, UserData}};\n"
+            "use crate::usecase::user::view::render;\n"
+            "use crate::usecase::user::code::check;\n"
+            "use crate::usecase::internal::helper;\n"
+            "use crate::usecase::stage;\n"
+            "fn run() { user_usecase::run::<()>(); user_delete_usecase::apply::<()>(); helper(); }\n"
+            "fn reference() { let _ = user_usecase::run::<()>; stage::check(); }\n"
+            "#[cfg(test)] mod tests { use crate::usecase::user::run; }\n"
+            "mod local { use crate::usecase::user::delete as action_usecase; fn f() { action_usecase::apply::<()>(); } }\n"
         )
         fixture.write_text(valid)
+        (usecase_dir / "tests.rs").write_text("use crate::usecase::user::run;\n")
         diagnostics = check_root(root)
         if diagnostics:
-            print("self-test: valid module interface rejected", *diagnostics, sep="\n", file=sys.stderr)
+            print("self-test: valid module aliases rejected", *diagnostics, sep="\n", file=sys.stderr)
             return 1
         cases = [
-            ("use crate::complex::team::run;", "CPX002"),
-            ("use crate::complex::{team::{run as action}};", "CPX002"),
-            ("use crate::complex::team::*;", "CPX002"),
-            ("use crate::complex::{team::{*}};", "CPX002"),
-            ("use crate::complex::team;", "CPX003"),
-            ("use crate::complex::team as TeamComplex;", "CPX003"),
-            ("fn f() { crate::complex::team::run(); }", "CPX004"),
-            ("use crate::complex as c; fn f() { c::team::run(); }", "CPX004"),
-            ("use crate::complex::team as team_complex; fn f() { team_complex::perm::check(); }", "CPX004"),
-            ("mod nested { use super::complex::team::run; }", "CPX002"),
+            ("use crate::usecase::user::run;", "UCA001"),
+            ("use crate::usecase::{user::{run as action}};", "UCA001"),
+            ("use crate::usecase::user::*;", "UCA001"),
+            ("use crate::usecase::{user::{*}};", "UCA001"),
+            ("use crate::usecase::user;", "UCA002"),
+            ("use crate::usecase::user as UserUsecase;", "UCA002"),
+            ("fn f() { crate::usecase::user::run::<()>(); }", "UCA003"),
+            ("use crate::usecase; fn f() { usecase::user::run::<()>(); }", "UCA003"),
+            ("use crate::usecase as u; fn f() { u::user::run::<()>(); }", "UCA003"),
+            ("use crate::usecase::user as user_usecase; fn f() { user_usecase::delete::apply::<()>(); }", "UCA003"),
+            ("use crate::usecase; fn f() { let _ = usecase::user::run::<()>; }", "UCA003"),
+            ("mod nested { use super::usecase::user::run; }", "UCA001"),
         ]
         for sample, code in cases:
             fixture.write_text(sample)
@@ -378,15 +349,19 @@ def self_test() -> int:
             if len(diagnostics) != 1 or code not in diagnostics[0]:
                 print(f"self-test: expected {code} for {sample!r}", *diagnostics, sep="\n", file=sys.stderr)
                 return 1
-        fixture.write_text(valid)
-        with (complex_dir / "team.rs").open("a") as file:
-            file.write("pub struct TeamComplex; impl TeamComplex { pub fn run() {} }\n"
-                       "pub struct EmptyComplex {}\n"
-                       "pub struct TupleComplex();\n")
+
+        # Nested imports must not overwrite another lexical scope's binding.
+        fixture.write_text(
+            "use crate::usecase::user as action_usecase;\n"
+            "fn outer() { action_usecase::run::<()>(); }\n"
+            "mod nested { use crate::usecase as action_usecase;\n"
+            "fn inner() { action_usecase::user::run::<()>(); } }\n",
+        )
         diagnostics = check_root(root)
-        if len(diagnostics) != 3 or any("CPX001" not in item for item in diagnostics):
-            print("self-test: namespace structs were not rejected", *diagnostics, sep="\n", file=sys.stderr)
+        if len(diagnostics) != 1 or "UCA003" not in diagnostics[0]:
+            print("self-test: lexical module aliases resolved incorrectly", *diagnostics, sep="\n", file=sys.stderr)
             return 1
+
     print("self-test passed")
     return 0
 

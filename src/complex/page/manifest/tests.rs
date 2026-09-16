@@ -1,4 +1,5 @@
 use super::*;
+use crate::complex::page::manifest as page_manifest_complex;
 
 use crate::value::image::{ImageExt, ImageHash};
 
@@ -41,8 +42,8 @@ fn explicit_identity_is_reserved_before_automatic_matching() {
         input(Some("page-b"), 0, ImageExt::Png),
     ];
 
-    let plan =
-        PageManifestComplex::build("chapter-1", &candidates, &inputs).unwrap();
+    let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
+        .unwrap();
 
     assert_eq!(plan.matches[0].existing_index, Some(0));
     assert_eq!(plan.matches[1].existing_index, Some(1));
@@ -62,8 +63,8 @@ fn automatic_matching_uses_units_availability_index_and_id_priority() {
         input(None, 0, ImageExt::Png),
     ];
 
-    let plan =
-        PageManifestComplex::build("chapter-1", &candidates, &inputs).unwrap();
+    let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
+        .unwrap();
 
     assert_eq!(plan.matches[0].existing_index, Some(3));
     assert_eq!(plan.matches[1].existing_index, Some(2));
@@ -76,8 +77,8 @@ fn explicit_identity_can_replace_the_image_hash() {
     let candidates = vec![candidate("page-a", 0, true, true, "png")];
     let inputs = vec![input(Some("page-a"), 1, ImageExt::Png)];
 
-    let plan =
-        PageManifestComplex::build("chapter-1", &candidates, &inputs).unwrap();
+    let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
+        .unwrap();
 
     assert_eq!(plan.matches[0].existing_index, Some(0));
     assert!(plan.deleted_existing_indexes.is_empty());
@@ -88,8 +89,8 @@ fn same_hash_with_different_extension_is_a_distinct_identity() {
     let candidates = vec![candidate("page-a", 0, false, true, "png")];
     let inputs = vec![input(None, 0, ImageExt::Jpg)];
 
-    let plan =
-        PageManifestComplex::build("chapter-1", &candidates, &inputs).unwrap();
+    let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
+        .unwrap();
 
     assert!(plan.matches[0].existing_index.is_none());
     assert_eq!(plan.deleted_existing_indexes, vec![0]);

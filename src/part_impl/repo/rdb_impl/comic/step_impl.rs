@@ -11,7 +11,7 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::ComicComplex;
+use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
@@ -299,7 +299,7 @@ pub async fn update_info(
 
     let comic_info = get_info_by_id(conn, &update.id, &[]).await?;
 
-    let composed_title = ComicComplex::compose_title(
+    let composed_title = comic_complex::compose_title(
         comic_info.index,
         &update.author,
         &update.title,

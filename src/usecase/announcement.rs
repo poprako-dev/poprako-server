@@ -13,9 +13,8 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
-use crate::complex::announcement::{
-    AnnouncementComplex, AnnouncementPermComplex,
-};
+use crate::complex::announcement as announcement_complex;
+use crate::complex::announcement::perm as announcement_perm_complex;
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
     UpdateAnnouncementInfoInstr,
@@ -65,7 +64,7 @@ where
         });
     };
 
-    AnnouncementPermComplex::ensure_user_can_list_infos(&member_info)?;
+    announcement_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let announcement_infos = ListAnnouncementInfos {
         spec: &announcement_list_spec,
@@ -105,10 +104,10 @@ where
         });
     };
 
-    AnnouncementPermComplex::ensure_user_can_create(&member_info)?;
+    announcement_perm_complex::ensure_user_can_create(&member_info)?;
 
     let announcement_entry = AnnouncementEntry {
-        id: AnnouncementComplex::gen_id(),
+        id: announcement_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
         title: instr.title,
@@ -166,7 +165,7 @@ where
         });
     };
 
-    AnnouncementPermComplex::ensure_user_can_update_info(&member_info)?;
+    announcement_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     let announcement_repl = AnnouncementRepl {
         id: instr.id,
@@ -223,7 +222,7 @@ where
         });
     };
 
-    AnnouncementPermComplex::ensure_user_can_delete(&member_info)?;
+    announcement_perm_complex::ensure_user_can_delete(&member_info)?;
 
     DeleteAnnouncement {
         id: &announcement_info.id,

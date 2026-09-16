@@ -18,8 +18,7 @@ use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
 
-use crate::complex::image::ImageComplex;
-use crate::complex::user::UserComplex;
+use crate::complex::{image as image_complex, user as user_complex};
 use crate::config::image::ImageConfig;
 use crate::data::instr::user::{
     AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
@@ -190,7 +189,7 @@ where
     .run_on(repo)
     .await?;
 
-    if !UserComplex::verify_password(
+    if !user_complex::verify_password(
         &instr.current_password,
         &user_credential.password_hash,
     )
@@ -212,7 +211,8 @@ where
         });
     }
 
-    let password_hash = UserComplex::hash_password(&instr.new_password).await?;
+    let password_hash =
+        user_complex::hash_password(&instr.new_password).await?;
 
     let credentials_repl = UserCredsRepl {
         id: user_id,
@@ -267,7 +267,7 @@ where
     R: UserRepo<C> + Send + Sync,
     O: ObjDept<UserAvatar, C> + Send + Sync,
 {
-    ImageComplex::ensure_byte_length(
+    image_complex::ensure_byte_length(
         image_config,
         instr.new_byte_len,
         ImageKind::UserAvatar,

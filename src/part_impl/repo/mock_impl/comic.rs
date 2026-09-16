@@ -3,7 +3,7 @@ mod run;
 // Step orchestration for comic opers.
 mod step;
 
-use crate::complex::comic::ComicComplex;
+use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -132,7 +132,7 @@ fn apply_comic_incls(
 // Check title/index fuzzy condition for list filtering.
 fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     //
-    let composed_title = ComicComplex::compose_title(
+    let composed_title = comic_complex::compose_title(
         comic_info.index,
         &comic_info.author,
         &comic_info.title,

@@ -8,7 +8,10 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::usecase::system_mail;
+use crate::usecase::system_mail::{
+    chapter as system_mail_chapter_usecase,
+    invitation as system_mail_invitation_usecase,
+};
 
 /// Routes a delivered event to domain-oriented application use cases.
 #[instrument(level = "info", skip_all)]
@@ -21,7 +24,7 @@ where
         //
         Event::UserSignedUp { payload } => {
             //
-            system_mail::invitation::notify_invitor::<C, R>(
+            system_mail_invitation_usecase::notify_invitor::<C, R>(
                 repo,
                 &payload.invitor_id,
                 &payload.invitee_qid,
@@ -32,7 +35,7 @@ where
 
         Event::ChapterPublished { payload } => {
             //
-            system_mail::chapter::notify_reviewers_on_publish::<C, R>(
+            system_mail_chapter_usecase::notify_reviewers_on_publish::<C, R>(
                 repo,
                 &payload.chapter_id,
             )
@@ -41,14 +44,14 @@ where
 
         Event::ChapterWorkflowCompleted { payload } => {
             //
-            system_mail::chapter::notify_next_phase::<C, R>(
+            system_mail_chapter_usecase::notify_next_phase::<C, R>(
                 repo,
                 &payload.chapter_id,
                 payload.completed_stage,
             )
             .await;
 
-            system_mail::chapter::notify_reviewers_on_progress::<C, R>(
+            system_mail_chapter_usecase::notify_reviewers_on_progress::<C, R>(
                 repo,
                 &payload.chapter_id,
                 payload.completed_stage,

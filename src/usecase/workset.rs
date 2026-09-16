@@ -9,7 +9,8 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
+use crate::complex::workset as workset_complex;
+use crate::complex::workset::perm as workset_perm_complex;
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
@@ -62,7 +63,7 @@ where
         });
     };
 
-    WorksetPermComplex::ensure_user_can_create(&member_info)?;
+    workset_perm_complex::ensure_user_can_create(&member_info)?;
 
     let workset_id = nucl
         .coord(async move |context| {
@@ -72,7 +73,7 @@ where
                 .await?;
 
             let workset_entry = WorksetEntry {
-                id: WorksetComplex::gen_id(),
+                id: workset_complex::gen_id(),
                 team_id: instr.team_id,
                 index,
                 name: instr.name,
@@ -111,7 +112,7 @@ where
     )
     .await?;
 
-    WorksetPermComplex::ensure_user_can_get_info(&member_info)?;
+    workset_perm_complex::ensure_user_can_get_info(&member_info)?;
 
     let workset_info = GetWorksetInfo { id: &id }.run_on(repo).await?;
 
@@ -144,7 +145,7 @@ where
         });
     };
 
-    WorksetPermComplex::ensure_user_can_list_infos(&member_info)?;
+    workset_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
     let workset_infos = ListWorksetInfos {
         team_id: &instr.team_id,
@@ -176,7 +177,7 @@ where
     )
     .await?;
 
-    WorksetPermComplex::ensure_user_can_update_info(&member_info)?;
+    workset_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     let workset_info_update = WorksetRepl {
         id: instr.id,
@@ -238,7 +239,7 @@ where
                 });
             };
 
-            WorksetPermComplex::ensure_user_can_delete(&member_info)?;
+            workset_perm_complex::ensure_user_can_delete(&member_info)?;
 
             MarkSubtree {
                 scope: &delete_scope,

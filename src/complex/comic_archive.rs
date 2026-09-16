@@ -1,16 +1,31 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
 
+/// Pure permission rules.
+pub mod perm {
+    use crate::complex::util::check_user_is_team_admin;
+    use crate::model::read::proj::member::MemberInfo;
+    use crate::result::BaseRest;
+
+    /// Verify that the caller is an administrator of the requested team.
+    pub fn ensure_user_can_export(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
+    }
+
+    /// Verify that the caller is an administrator of the comic's owning team.
+    pub fn ensure_user_can_archive(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
+    }
+}
+
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli as _;
 
-use crate::complex::util::check_user_is_team_admin;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
-use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
@@ -23,48 +38,14 @@ use crate::value::comic_archive::{
     ArchivedWorksetPayload,
 };
 
-/// Constructs one immutable comic archive record from a fully locked snapshot.
-pub struct ComicArchiveComplex;
-
-impl ComicArchiveComplex {
-    /// Rejects archive attempts until every retained chapter has published.
-    pub fn ensure_snapshot_archivable(
-        comic_archive_snapshot: &ComicArchiveSnapshot,
-    ) -> BaseRest<()> {
+/// Rejects archive attempts until every retained chapter has published.
+pub fn ensure_snapshot_archivable(
+    comic_archive_snapshot: &ComicArchiveSnapshot,
+) -> BaseRest<()> {
+    //
+    if comic_archive_snapshot.comic_info.archived_at.is_some() {
         //
-        if comic_archive_snapshot.comic_info.archived_at.is_some() {
-            //
-            let message = trl("error-comic-archived");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                "expected comic archive error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
-
-        let is_archivable =
-            !comic_archive_snapshot.chapter_snapshots.is_empty()
-                && comic_archive_snapshot.chapter_snapshots.iter().all(
-                    |chapter_snapshot| {
-                        //
-                        chapter_snapshot
-                            .chapter_info
-                            .stages
-                            .has_phase(Stage::Publish, StagePhase::Completed)
-                    },
-                );
-
-        if is_archivable {
-            return accept(());
-        }
-
-        let message = trl("error-comic-archive-incomplete");
+        let message = trl("error-comic-archived");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
@@ -72,58 +53,181 @@ impl ComicArchiveComplex {
             "expected comic archive error",
         );
 
-        Err(BaseError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message,
-        })
+        });
     }
 
-    /// Builds one compressed archive row on Tokio's blocking pool.
-    pub async fn prepare_entry(
-        comic_archive_snapshot: ComicArchiveSnapshot,
-        archiver_id: String,
-        archived_at: OffsetDateTime,
-    ) -> BaseRest<ComicArchiveEntry> {
-        //
-        tokio::task::spawn_blocking(move || {
-            //
-            let comic_archive_entry =
-                build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
+    let is_archivable = !comic_archive_snapshot.chapter_snapshots.is_empty()
+        && comic_archive_snapshot.chapter_snapshots.iter().all(
+            |chapter_snapshot| {
+                //
+                chapter_snapshot
+                    .chapter_info
+                    .stages
+                    .has_phase(Stage::Publish, StagePhase::Completed)
+            },
+        );
 
-            accept(comic_archive_entry)
-        })
-        .await
-        .map_err(|error| {
+    if is_archivable {
+        return accept(());
+    }
+
+    let message = trl("error-comic-archive-incomplete");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %message,
+        "expected comic archive error",
+    );
+
+    Err(BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message,
+    })
+}
+
+/// Builds one compressed archive row on Tokio's blocking pool.
+pub async fn prepare_entry(
+    comic_archive_snapshot: ComicArchiveSnapshot,
+    archiver_id: String,
+    archived_at: OffsetDateTime,
+) -> BaseRest<ComicArchiveEntry> {
+    //
+    tokio::task::spawn_blocking(move || {
+        //
+        let comic_archive_entry =
+            build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
+
+        accept(comic_archive_entry)
+    })
+    .await
+    .map_err(|error| {
+        //
+        tracing::error!(
+            operation = "prepare_comic_archive",
+            sdk_err = ?error,
+            "Tokio SDK blocking task error",
+        );
+
+        BaseError::Unrecoverable {
+                message: format!(
+                    "[comic_archive_complex::prepare_entry] blocking task failed: {}",
+                    error,
+            ),
+        }
+    })?
+}
+
+// Builds one compressed archive row and source cleanup identifiers.
+fn build_entry(
+    comic_archive_snapshot: ComicArchiveSnapshot,
+    archiver_id: String,
+    archived_at: OffsetDateTime,
+) -> BaseRest<ComicArchiveEntry> {
+    //
+    let archived_comic_id = next_snowflake_id();
+
+    let archived_payload = {
+        //
+        let comic_payload = build_comic_payload(&comic_archive_snapshot)?;
+
+        serde_json::to_string(&comic_payload).map_err(|error| {
             //
             tracing::error!(
-                operation = "prepare_comic_archive",
+                operation = "serialize_comic_archive",
                 sdk_err = ?error,
-                "Tokio SDK blocking task error",
+                "JSON SDK serialization error",
             );
 
             BaseError::Unrecoverable {
                     message: format!(
-                        "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
+                        "[comic_archive_complex::build_entry] failed to serialize archive payload: {}",
                         error,
                 ),
             }
         })?
+    };
+
+    let ComicArchiveSnapshot {
+        comic_info,
+        workset_info,
+        chapter_snapshots,
+    } = comic_archive_snapshot;
+
+    let record = ComicArchiveRecord {
+        id: archived_comic_id,
+        team_id: workset_info.team_id,
+        source_comic_id: comic_info.id,
+        archived_payload,
+        archiver_id,
+        created_at: archived_at,
+    };
+
+    let (mut source_chapter_ids, mut source_page_ids) =
+        (Vec::new(), Vec::new());
+
+    for chapter_snapshot in chapter_snapshots {
+        //
+        source_chapter_ids.push(chapter_snapshot.chapter_info.id);
+
+        source_page_ids.extend(
+            chapter_snapshot
+                .page_snapshots
+                .into_iter()
+                .map(|page_snapshot| page_snapshot.page_info.id),
+        );
     }
+
+    accept(ComicArchiveEntry {
+        record,
+        source_chapter_ids,
+        source_page_ids,
+    })
 }
 
-/// Permission gates for immutable comic archive operations.
-pub struct ComicArchivePermComplex;
+// Convert the comic and directly loaded workset into the archive payload.
+fn build_comic_payload(
+    comic_archive_snapshot: &ComicArchiveSnapshot,
+) -> BaseRest<ArchivedComicPayload<'_>> {
+    //
+    let (comic_info, workset_info) = (
+        &comic_archive_snapshot.comic_info,
+        &comic_archive_snapshot.workset_info,
+    );
 
-impl ComicArchivePermComplex {
-    /// Verify that the caller is an administrator of the requested team.
-    pub fn ensure_user_can_export(member_info: &MemberInfo) -> BaseRest<()> {
-        check_user_is_team_admin(member_info)
-    }
+    let chapters = comic_archive_snapshot
+        .chapter_snapshots
+        .iter()
+        .map(build_chapter_payload)
+        .collect::<BaseRest<Vec<_>>>()?;
 
-    /// Verify that the caller is an administrator of the comic's owning team.
-    pub fn ensure_user_can_archive(member_info: &MemberInfo) -> BaseRest<()> {
-        check_user_is_team_admin(member_info)
-    }
+    accept(ArchivedComicPayload {
+        source_comic_id: &comic_info.id,
+        workset: ArchivedWorksetPayload {
+            id: &workset_info.id,
+            team_id: &workset_info.team_id,
+            index: workset_info.index,
+            name: &workset_info.name,
+            description: workset_info.description.as_deref(),
+            comic_count: workset_info.comic_count,
+            comic_next_index: 0,
+            created_at: workset_info.created_at.to_unix_milli(),
+            updated_at: workset_info.updated_at.to_unix_milli(),
+        },
+        index: comic_info.index,
+        title: &comic_info.title,
+        author: &comic_info.author,
+        description: comic_info.description.as_deref(),
+        chapter_count: comic_info.chapter_count,
+        chapter_next_index: 0,
+        creator_id: &comic_info.creator_id,
+        last_active_at: comic_info.last_active_at.to_unix_milli(),
+        created_at: comic_info.created_at.to_unix_milli(),
+        updated_at: comic_info.updated_at.to_unix_milli(),
+        chapters,
+    })
 }
 
 // Convert page and unit data while intentionally excluding image metadata.
@@ -174,49 +278,6 @@ fn build_page_payloads(
         .collect()
 }
 
-// Convert the comic and directly loaded workset into the archive payload.
-fn build_comic_payload(
-    comic_archive_snapshot: &ComicArchiveSnapshot,
-) -> BaseRest<ArchivedComicPayload<'_>> {
-    //
-    let (comic_info, workset_info) = (
-        &comic_archive_snapshot.comic_info,
-        &comic_archive_snapshot.workset_info,
-    );
-
-    let chapters = comic_archive_snapshot
-        .chapter_snapshots
-        .iter()
-        .map(build_chapter_payload)
-        .collect::<BaseRest<Vec<_>>>()?;
-
-    accept(ArchivedComicPayload {
-        source_comic_id: &comic_info.id,
-        workset: ArchivedWorksetPayload {
-            id: &workset_info.id,
-            team_id: &workset_info.team_id,
-            index: workset_info.index,
-            name: &workset_info.name,
-            description: workset_info.description.as_deref(),
-            comic_count: workset_info.comic_count,
-            comic_next_index: 0,
-            created_at: workset_info.created_at.to_unix_milli(),
-            updated_at: workset_info.updated_at.to_unix_milli(),
-        },
-        index: comic_info.index,
-        title: &comic_info.title,
-        author: &comic_info.author,
-        description: comic_info.description.as_deref(),
-        chapter_count: comic_info.chapter_count,
-        chapter_next_index: 0,
-        creator_id: &comic_info.creator_id,
-        last_active_at: comic_info.last_active_at.to_unix_milli(),
-        created_at: comic_info.created_at.to_unix_milli(),
-        updated_at: comic_info.updated_at.to_unix_milli(),
-        chapters,
-    })
-}
-
 // Convert an assignment and its directly loaded user into archive data.
 fn build_assignment_payload(
     assignment_info: &AssignmentInfo,
@@ -225,7 +286,7 @@ fn build_assignment_payload(
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
         //
         BaseError::Unrecoverable {
-            message: "[ComicArchiveComplex::build_assignment_payload] assignment user was not loaded".into(),
+            message: "[comic_archive_complex::build_assignment_payload] assignment user was not loaded".into(),
         }
     })?;
 
@@ -288,72 +349,5 @@ fn build_chapter_payload(
             })
             .collect(),
         pages: build_page_payloads(chapter_snapshot),
-    })
-}
-
-// Builds one compressed archive row and source cleanup identifiers.
-fn build_entry(
-    comic_archive_snapshot: ComicArchiveSnapshot,
-    archiver_id: String,
-    archived_at: OffsetDateTime,
-) -> BaseRest<ComicArchiveEntry> {
-    //
-    let archived_comic_id = next_snowflake_id();
-
-    let archived_payload = {
-        //
-        let comic_payload = build_comic_payload(&comic_archive_snapshot)?;
-
-        serde_json::to_string(&comic_payload).map_err(|error| {
-            //
-            tracing::error!(
-                operation = "serialize_comic_archive",
-                sdk_err = ?error,
-                "JSON SDK serialization error",
-            );
-
-            BaseError::Unrecoverable {
-                    message: format!(
-                        "[ComicArchiveComplex::build_entry] failed to serialize archive payload: {}",
-                        error,
-                ),
-            }
-        })?
-    };
-
-    let ComicArchiveSnapshot {
-        comic_info,
-        workset_info,
-        chapter_snapshots,
-    } = comic_archive_snapshot;
-
-    let record = ComicArchiveRecord {
-        id: archived_comic_id,
-        team_id: workset_info.team_id,
-        source_comic_id: comic_info.id,
-        archived_payload,
-        archiver_id,
-        created_at: archived_at,
-    };
-
-    let (mut source_chapter_ids, mut source_page_ids) =
-        (Vec::new(), Vec::new());
-
-    for chapter_snapshot in chapter_snapshots {
-        //
-        source_chapter_ids.push(chapter_snapshot.chapter_info.id);
-
-        source_page_ids.extend(
-            chapter_snapshot
-                .page_snapshots
-                .into_iter()
-                .map(|page_snapshot| page_snapshot.page_info.id),
-        );
-    }
-
-    accept(ComicArchiveEntry {
-        record,
-        source_chapter_ids,
-        source_page_ids,
     })
 }

@@ -28,7 +28,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase;
+use crate::usecase::termbase as termbase_usecase;
 use crate::value::pagination::PubListLimit;
 
 /// Query parameters for terminology-base lists.
@@ -64,7 +64,7 @@ pub async fn create(
     Json(instr): Json<CreateTermbaseInstr>,
 ) -> HttpResult<CreateTermbaseVal> {
     //
-    usecase::termbase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -99,7 +99,7 @@ pub async fn list_team_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_team_infos::<RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::list_team_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -135,7 +135,7 @@ pub async fn list_comic_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_comic_infos::<RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::list_comic_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -163,7 +163,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoView> {
     //
-    usecase::termbase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         termbase_id,
@@ -195,7 +195,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&termbase_id, &instr.id)?;
 
-    usecase::termbase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -224,7 +224,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::termbase::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    termbase_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         termbase_id,

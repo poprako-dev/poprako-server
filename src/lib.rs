@@ -86,7 +86,7 @@ pub use poprako_rdb_core::RdbCore;
 pub use crate::api::http::openapi::ApiDoc;
 
 #[cfg(feature = "benchmark")]
-pub use crate::complex::user::UserComplex;
+pub use crate::complex::user as user_complex;
 
 pub use crate::api::http::server::serve;
 pub use crate::api::http::state::AppHarn;

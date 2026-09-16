@@ -4,7 +4,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::oper::DeleteObjs;
 
-use crate::complex::page::PagePermComplex;
+use crate::complex::page::perm as page_perm_complex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
@@ -50,7 +50,7 @@ where
     )
     .await?;
 
-    PagePermComplex::ensure_user_can_delete(&member_info)?;
+    page_perm_complex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
         //

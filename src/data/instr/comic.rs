@@ -85,6 +85,16 @@ pub struct UpdateComicInfoInstr {
     pub description: Option<String>,
 }
 
+/// Related data requested when retrieving one comic.
+#[derive(Debug, Default, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+pub struct GetComicInfoInstr {
+    /// Related rows to embed. Dotted values include their parent segments.
+    #[serde(default, rename = "incl")]
+    pub incl_opt: Vec<ComicInclOpt>,
+}
+
 /// Input parameters for listing comics within a workset.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
