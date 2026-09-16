@@ -164,6 +164,45 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
 
     await deleteAssignment(guest01.api, guestAssignment.id);
 
+    // E1.4d: the chapter admin can join review and leave it while retaining ADMIN.
+    const adminAssignment = assignments.find((assignment) => assignment.user_id === ctx.ids.defaultUserId);
+
+    assert.assert(adminAssignment, "chapter creator must have an assignment");
+    assert.assertEquals(adminAssignment.roles, ROLE.ADMIN);
+
+    const adminJoinedReview = await joinChapterAssignment(ctx.sadmin, mainChapterId, ROLE.REVIEWER);
+
+    assert.assertEquals(adminJoinedReview.id, adminAssignment.id);
+    assert.assertEquals(adminJoinedReview.roles, ROLE.ADMIN | ROLE.REVIEWER);
+
+    await updateAssignmentRoles(ctx.sadmin, mainChapterId, ctx.ids.defaultUserId, ROLE.ADMIN);
+
+    const adminAssignmentsAfterExit = await listOwnerAssignments(ctx.sadmin, ctx.ids.defaultUserId);
+    const adminAfterExit = adminAssignmentsAfterExit.find((assignment) => assignment.id === adminAssignment.id);
+
+    assert.assert(adminAfterExit, "leaving review must preserve the admin assignment");
+    assert.assertEquals(adminAfterExit.roles, ROLE.ADMIN);
+
+    // E1.4e: an ordinary assignee cannot acquire ADMIN through a self-update.
+    expectError(
+        await review01.api.put<ErrorBody>(
+            `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
+            { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
+        ),
+        403,
+        4,
+    );
+
+    // E1.4f: preserving ADMIN does not permit granting it to another assignee.
+    expectError(
+        await ctx.sadmin.put<ErrorBody>(
+            `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
+            { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
+        ),
+        422,
+        2,
+    );
+
     // E1.5: join with non-existent chapter_id -> 422/2.
     expectError(
         await trans01.api.post<ErrorBody>("/api/v1/assignments/join", {

@@ -56,6 +56,13 @@ block. Every current module exports `IMPLEMENTED = true`.
 | it_11  | `it_11_comic_archive.ts`                    | Permanent comic archive snapshots, lifecycle list filtering, and image-delete prom records.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | it_12  | `it_12_termbase_term.ts`                    | Termbase/term lifecycle, native JSON import/export and force merge, inherited lookup, fuzzy isolation, the 200-term capacity boundary, write perms, response contracts, and termbase/comic/team cascades.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
+## it_04 — Assignment role removal
+
+- E1.4c: an assignee can leave one worker role while preserving the assignment and remaining roles.
+- E1.4d: a chapter admin can join review, then leave review while preserving the same assignment and ADMIN.
+- E1.4e: an ordinary assignee cannot add ADMIN through a self-update (403/code 4).
+- E1.4f: a chapter admin cannot grant ADMIN to another assignee through a role update (422/code 2).
+
 ## Shared fixtures and invariants
 
 - `src/db/seed.ts` owns reset, cleanup (including object metadata and durable object tasks), and seed-only assertions.

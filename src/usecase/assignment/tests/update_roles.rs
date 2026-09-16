@@ -7,6 +7,9 @@
 // update_roles(update_roles)(negative): admin role should be rejected.
 // update_roles(update_roles)(negative): target member role mismatch should be rejected.
 // update_roles(update_roles)(negative): only chapter admin should not remove own admin role.
+// update_roles(update_roles)(positive): chapter admins can leave worker roles while retaining admin.
+// update_roles(update_roles)(negative): retaining admin cannot grant unsupported worker roles.
+// update_roles(update_roles)(negative): existing assignments cannot gain admin through role updates.
 
 use super::*;
 
@@ -315,4 +318,164 @@ async fn update_roles_only_chapter_admin_does_not_remove_own_admin_role() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn update_roles_chapter_admin_can_join_and_leave_review() {
+    for remaining_roles in [
+        role(RoleField::ADMIN),
+        roles(RoleField::ADMIN, RoleField::TRANSLATOR),
+    ] {
+        let mock = Mock::new();
+
+        seed_scope(&mock);
+
+        mock.seed_assignment(assignment(
+            "chapter-1",
+            "admin-user",
+            remaining_roles,
+        ));
+
+        mock.seed_member(member(
+            "admin-user",
+            roles(RoleField::REVIEWER, RoleField::TRANSLATOR),
+        ));
+
+        let joined = join(
+            (&mock, &mock),
+            token("admin-user"),
+            JoinChapterAssignmentInstr {
+                chapter_id: "chapter-1".into(),
+                roles: role(RoleField::REVIEWER),
+            },
+        )
+        .await
+        .unwrap();
+
+        let joined_roles = remaining_roles.union(role(RoleField::REVIEWER));
+
+        assert_eq!(joined.roles, joined_roles);
+
+        update_roles(
+            (&mock, &mock),
+            token("admin-user"),
+            update_roles_data("chapter-1", "admin-user", remaining_roles),
+        )
+        .await
+        .unwrap();
+
+        let snapshot = mock.snapshot();
+
+        assert_eq!(snapshot.assignments.len(), 1);
+
+        assert_eq!(snapshot.assignments[0].id, joined.id);
+
+        assert_eq!(snapshot.assignments[0].roles, remaining_roles);
+
+        assert_eq!(snapshot.chapter_workflow_records.len(), 2);
+
+        let workflow_record = &snapshot.chapter_workflow_records[1];
+
+        assert_eq!(workflow_record.chapter_id, "chapter-1");
+
+        assert_eq!(
+            workflow_record.actor_user_id.as_deref(),
+            Some("admin-user")
+        );
+
+        assert!(matches!(
+            &workflow_record.payload,
+            ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
+                subject_user_id,
+                previous_roles,
+                next_roles,
+            } if subject_user_id == "admin-user"
+                && *previous_roles == joined_roles
+                && *next_roles == remaining_roles
+        ));
+    }
+}
+
+#[tokio::test]
+async fn update_roles_chapter_admin_cannot_add_unsupported_worker_roles() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let original_roles = roles(RoleField::ADMIN, RoleField::REVIEWER);
+
+    mock.seed_assignment(assignment("chapter-1", "admin-user", original_roles));
+
+    mock.seed_member(member("admin-user", role(RoleField::REVIEWER)));
+
+    let err = update_roles(
+        (&mock, &mock),
+        token("admin-user"),
+        update_roles_data(
+            "chapter-1",
+            "admin-user",
+            roles(RoleField::ADMIN, RoleField::PUBLISHER),
+        ),
+    )
+    .await
+    .unwrap_err();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.assignments[0].roles, original_roles);
+
+    assert!(snapshot.chapter_workflow_records.is_empty());
+}
+
+#[tokio::test]
+async fn update_roles_existing_assignment_cannot_gain_admin() {
+    for actor_user_id in ["worker-user", "admin-user"] {
+        let mock = Mock::new();
+
+        seed_scope(&mock);
+
+        mock.seed_assignment(assignment(
+            "chapter-1",
+            "admin-user",
+            role(RoleField::ADMIN),
+        ));
+
+        mock.seed_assignment(assignment(
+            "chapter-1",
+            "worker-user",
+            role(RoleField::REVIEWER),
+        ));
+
+        mock.seed_member(member(
+            "worker-user",
+            roles(RoleField::ADMIN, RoleField::REVIEWER),
+        ));
+
+        let err = update_roles(
+            (&mock, &mock),
+            token(actor_user_id),
+            update_roles_data(
+                "chapter-1",
+                "worker-user",
+                roles(RoleField::ADMIN, RoleField::REVIEWER),
+            ),
+        )
+        .await
+        .unwrap_err();
+
+        let expected_variant = match actor_user_id {
+            "worker-user" => ExpectedVariant::Perm,
+            _ => ExpectedVariant::Args,
+        };
+
+        assert_expected_variant(err, expected_variant);
+
+        let snapshot = mock.snapshot();
+
+        assert_eq!(snapshot.assignments[1].roles, role(RoleField::REVIEWER));
+
+        assert!(snapshot.chapter_workflow_records.is_empty());
+    }
 }

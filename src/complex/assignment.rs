@@ -117,7 +117,27 @@ pub mod perm {
         match access {
             //
             AssignmentRoleUpdateAccess::Admin { assignment_info } => {
+                //
                 check_admin(assignment_info)?;
+
+                // Retaining chapter admin is distinct from assigning it anew.
+                if assignment_info.user_id == subject_member_info.user_id
+                    && roles.has_any_role(&[RoleField::ADMIN])
+                {
+                    let assignable_roles = subject_member_info
+                        .roles
+                        .union(RoleMask::from(RoleField::ADMIN));
+
+                    if assignable_roles.contains_mask(roles) {
+                        return accept(());
+                    }
+
+                    return reject(
+                        ExpectedVariant::Perm,
+                        "error-chapter-role-not-assignable",
+                        "chapter_target_roles_missing",
+                    );
+                }
             }
 
             AssignmentRoleUpdateAccess::SelfReduce { assignment_info } => {
