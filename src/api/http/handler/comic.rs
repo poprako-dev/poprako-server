@@ -1,5 +1,8 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
+#[cfg(test)]
+mod tests;
+
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
@@ -20,8 +23,8 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::comic::{
-    AllocComicCoverInstr, CreateComicInstr, ListComicInfosInstr,
-    MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
+    AllocComicCoverInstr, CreateComicInstr, GetComicInfoInstr,
+    ListComicInfosInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
 };
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
 use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
@@ -189,7 +192,7 @@ pub async fn list_infos(
     get,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
-    params(("comic_id" = String, Path, description = "Comic ID")),
+    params(("comic_id" = String, Path, description = "Comic ID"), GetComicInfoInstr),
     responses(
         (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoView>),
         (status = 403, description = "No perm to view this comic"),
@@ -201,12 +204,14 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
+    Query(instr): Query<GetComicInfoInstr>,
 ) -> HttpResult<ComicInfoView> {
     //
     comic_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)

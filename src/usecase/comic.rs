@@ -23,7 +23,9 @@ use crate::complex::{
     assignment as assignment_complex, chapter as chapter_complex,
     comic as comic_complex,
 };
-use crate::data::instr::comic::{CreateComicInstr, UpdateComicInfoInstr};
+use crate::data::instr::comic::{
+    CreateComicInstr, GetComicInfoInstr, UpdateComicInfoInstr,
+};
 use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
@@ -192,12 +194,13 @@ where
     })
 }
 
-/// Fetches a comic by ID with cover URL resolution.
+/// Fetches a comic and requested relations with object URL resolution.
 #[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
     id: String,
+    instr: GetComicInfoInstr,
 ) -> BaseRest<ComicInfoView>
 where
     C: Context,
@@ -225,7 +228,7 @@ where
 
     let comic_info = GetComicInfo {
         id: &id,
-        incls: &[],
+        incls: &instr.incl_opt,
     }
     .run_on(repo)
     .await?;

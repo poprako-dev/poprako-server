@@ -1499,6 +1499,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "incl",
+            "in": "query",
+            "description": "Related rows to embed. Dotted values include their parent segments.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ComicInclOpt"
+              }
+            }
           }
         ],
         "responses": {

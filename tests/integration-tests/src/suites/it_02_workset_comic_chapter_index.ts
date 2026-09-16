@@ -33,8 +33,8 @@
 import * as assert from "@std/assert";
 
 import { testEnv } from "../config/env.ts";
-import { expectError, expectStatus } from "../http/assertions.ts";
-import type { ErrorBody } from "../http/apiClient.ts";
+import { expectError, expectStatus, expectSuccessData } from "../http/assertions.ts";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.ts";
 import { ApiClient } from "../http/apiClient.ts";
 import { assertSubtreeInvariants, assertTeamInvariant } from "../http/invariants.ts";
 import {
@@ -57,7 +57,7 @@ import {
     updateTeam,
     updateWorkset,
 } from "../http/fixtures.ts";
-import type { WorksetInfoView } from "../http/types.ts";
+import type { ComicInfoView, WorksetInfoView } from "../http/types.ts";
 import { stagePhase } from "../state/stages.ts";
 import { titled } from "../state/prefix.ts";
 import type { RunCtx } from "../state/runCtx.ts";
@@ -192,6 +192,23 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         assert.assertEquals(comicInfo.index, i, `comic ${spec.label} index monotonic`);
         assert.assertEquals(comicInfo.chapter_count, 1);
         assert.assertEquals(comicInfo.cover_url ?? null, null);
+
+        assert.assertEquals(comicInfo.workset ?? null, null);
+        assert.assertEquals(comicInfo.team ?? null, null);
+
+        const included = expectSuccessData(
+            await ctx.sadmin.get<SuccessBody<ComicInfoView>>(
+                `/api/v1/comics/${comic.id}?incl=workset.team&incl=creator`,
+            ),
+            200,
+        );
+
+        assert.assertEquals(included.workset?.id, serialWsId);
+        assert.assertEquals(included.workset?.team_id, teamId);
+        assert.assertEquals(included.team?.id, teamId);
+        assert.assertEquals(included.creator?.id, ctx.ids.defaultUserId);
+
+        expectStatus(await ctx.sadmin.get(`/api/v1/comics/${comic.id}?incl=unknown`), 400);
 
         const chapterInfo = await getChapter(ctx.sadmin, comic.chapter_id);
 

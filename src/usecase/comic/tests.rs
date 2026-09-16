@@ -1,5 +1,6 @@
 mod cover;
 mod fixture;
+mod incl;
 mod list;
 mod preset_assignment;
 mod view;
@@ -229,10 +230,15 @@ async fn get_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = get_info((&mock, &mock), token("user-1"), "missing".into())
-        .await
-        .err()
-        .unwrap();
+    let err = get_info(
+        (&mock, &mock),
+        token("user-1"),
+        "missing".into(),
+        GetComicInfoInstr::default(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 }
