@@ -30,7 +30,7 @@ fn patch_fields_distinguish_missing_null_and_value() {
     .unwrap();
 
     let edits =
-        into_unit_edits(edits, "editor-1", || "unused".to_string()).unwrap();
+        into_unit_edits(edits, "editor-1", |_| "unused".to_string()).unwrap();
 
     let UnitEdit::Save {
         next_id,
@@ -129,7 +129,7 @@ fn create_requires_structure_and_resolves_local_references() {
 
     let mut next_id = 0;
 
-    let edits = into_unit_edits(edits, "editor-1", || {
+    let edits = into_unit_edits(edits, "editor-1", |_| {
         //
         next_id += 1;
 
@@ -171,7 +171,7 @@ fn conversion_rejects_duplicate_local_ids() {
     ]))
     .unwrap();
 
-    assert!(into_unit_edits(duplicate, "editor-1", String::new).is_err());
+    assert!(into_unit_edits(duplicate, "editor-1", |_| String::new()).is_err());
 }
 
 #[test]

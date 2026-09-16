@@ -447,7 +447,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
 
         expectError(
             await trans03.api.post<ErrorBody>(
-                `/api/v1/pages/${aMainPageId}/units/save`,
+                `/api/v1/pages/${aMainPageId}/units/save?save_id=${crypto.randomUUID()}`,
                 [
                     {
                         edit: "create",

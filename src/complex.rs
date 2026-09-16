@@ -36,6 +36,8 @@ pub mod term;
 pub mod termbase;
 /// Unit ordering, mutation, and perm rules.
 pub mod unit;
+/// Immutable Unit save receipt rules.
+pub mod unit_save;
 /// User business rules and perm checks.
 pub mod user;
 /// Workset lifecycle business rules and perm checks.

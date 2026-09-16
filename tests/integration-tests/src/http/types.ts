@@ -454,3 +454,7 @@ export interface ChapterPageRawIdentVal {
     page_id: string;
     raw_ident: string;
 }
+
+export interface SavePageUnitEditsVal {
+    created_unit_ids: { local_id: string; unit_id: string }[];
+}

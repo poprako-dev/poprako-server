@@ -20,7 +20,7 @@ use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr,
     SearchChapterUnitInfosInstr, TransformChapterUnitsInstr, UnitEditInstr,
 };
-use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
@@ -28,6 +28,16 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::unit::UnitTextPart;
+
+/// Identity of one immutable Unit save batch.
+#[derive(Deserialize)]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[serde(deny_unknown_fields)]
+pub struct UnitSaveQuery {
+    /// Client-generated save UUID, reused only for the identical batch.
+    pub save_id: String,
+}
 
 /// Query parameters for Chapter Unit text searches.
 #[derive(Deserialize)]
@@ -114,10 +124,10 @@ pub async fn search_infos(
     post,
     path = "/api/v1/pages/{page_id}/units/save",
     tag = "units",
-    params(("page_id" = String, Path, description = "Page ID")),
+    params(("page_id" = String, Path, description = "Page ID"), UnitSaveQuery),
     request_body = Vec<UnitEditInstr>,
     responses(
-        (status = 204, description = "Unit edits saved"),
+        (status = 200, description = "Unit edits saved", body = HttpBody<SavePageUnitEditsVal>),
         (status = 409, description = "Serializable conflict; retry the complete request"),
         (status = 403, description = "No perm to save units in this page"),
         (status = 422, description = "Invalid Unit edit"),
@@ -128,19 +138,23 @@ pub async fn save_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
+    Query(query): Query<UnitSaveQuery>,
     Json(edits): Json<Vec<UnitEditInstr>>,
-) -> HttpNoContent {
+) -> HttpResult<SavePageUnitEditsVal> {
     //
-    let instr = SavePageUnitEditsInstr { page_id, edits };
+    let instr = SavePageUnitEditsInstr {
+        page_id,
+        edits,
+        save_id: query.save_id,
+    };
 
     usecase::unit::save_edits::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
     )
-    .await?;
-
-    no_content()
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/units/transform` — transform Unit text.

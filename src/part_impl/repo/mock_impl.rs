@@ -39,6 +39,8 @@ pub mod term;
 pub mod termbase;
 /// Mock implementations for unit repository operations.
 pub mod unit;
+/// Transactional mock storage for immutable Unit save receipts.
+pub mod unit_save;
 /// Mock implementations for user repository operations.
 pub mod user;
 /// Mock implementations for workset repository operations.
@@ -85,6 +87,9 @@ use crate::result::{BaseError, ExpectedVariant};
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
+    /// Durable receipts participating in mock transaction rollback.
+    pub unit_saves: Vec<crate::model::read::proj::unit_save::UnitSaveInfo>,
+
     /// Original filenames keyed by the owning page identity.
     pub page_raw_idents:
         HashMap<String, crate::model::read::proj::page::PageRawIdentInfo>,

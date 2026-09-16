@@ -1,7 +1,9 @@
 # Unit Save API
 
 `POST /api/v1/pages/{page_id}/units/save` applies one ordered batch of Unit
-edits. A successful save returns `204 No Content`; the client then calls
+edits. Every request requires a `save_id` UUID query parameter. A successful save
+returns `200 OK` with `data.created_unit_ids`, an array of `{ local_id, unit_id }`
+structs (empty when nothing was created). The client then calls
 `GET /api/v1/pages/{page_id}/units` to obtain the latest visible sequence and
 counters.
 
@@ -57,7 +59,14 @@ fields are rejected.
 
 Each batch contains 1–100 edits. `local_id` exists only within the current
 batch so Create edits and their `next_id` references can be resolved together.
-The server generates permanent IDs and does not return a mapping.
+The server generates permanent IDs and returns explicit identity pairs.
+
+`t_unit_save` records the authenticated user, page, save ID, typed-payload SHA-256
+and created identities atomically with the edits. Retry an uncertain result with
+the same save ID and identical edits. Successful replays return the original
+identity pairs without applying edits or workflow effects again. A changed payload
+with the same save ID returns 422; rolled-back batches consume no save identity.
+Authorization is checked on replay. Receipts cascade with their page or user.
 
 `last_translator_id` and `last_proofreader_id` are always derived from the
 authenticated token and are not accepted from the client.

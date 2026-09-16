@@ -30,6 +30,8 @@ pub mod term;
 pub mod termbase;
 /// Unit mutation models.
 pub mod unit;
+/// Durable Unit save identities and receipts.
+pub mod unit_save;
 /// User mutation models.
 pub mod user;
 /// Workset mutation models.
