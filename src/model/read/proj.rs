@@ -32,6 +32,8 @@ pub mod term;
 pub mod termbase;
 /// Unit read projection.
 pub mod unit;
+/// Durable Unit save identities and receipts.
+pub mod unit_save;
 /// User read projection.
 pub mod user;
 /// Workset read projection.

@@ -2598,6 +2598,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "save_id",
+            "in": "query",
+            "description": "Client-generated save UUID, reused only for the identical batch.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -2614,8 +2623,15 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "Unit edits saved"
+          "200": {
+            "description": "Unit edits saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_SavePageUnitEditsVal"
+                }
+              }
+            }
           },
           "403": {
             "description": "No perm to save units in this page"
@@ -6270,6 +6286,24 @@
           }
         }
       },
+      "CreatedUnitIdVal": {
+        "type": "object",
+        "description": "One explicit identity pair returned for a newly created Unit.",
+        "required": [
+          "local_id",
+          "unit_id"
+        ],
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "description": "Client identity from the create operation."
+          },
+          "unit_id": {
+            "type": "string",
+            "description": "Permanent Unit identity."
+          }
+        }
+      },
       "ExportChapterArtworkVal": {
         "type": "object",
         "description": "Current available artwork and its direct object-storage download address.",
@@ -7973,6 +8007,39 @@
               "user_id": {
                 "type": "string",
                 "description": "Unique user identifier."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_SavePageUnitEditsVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Result of every successful Unit save, including replayed saves.",
+            "required": [
+              "created_unit_ids"
+            ],
+            "properties": {
+              "created_unit_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreatedUnitIdVal"
+                },
+                "description": "Explicit identity pairs; empty when the batch creates no Units."
               }
             }
           }
@@ -10542,6 +10609,22 @@
         "description": "A composite bitmask combining multiple role perm flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = `RAW_PROVIDER`, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
         "example": 34,
         "minimum": 0
+      },
+      "SavePageUnitEditsVal": {
+        "type": "object",
+        "description": "Result of every successful Unit save, including replayed saves.",
+        "required": [
+          "created_unit_ids"
+        ],
+        "properties": {
+          "created_unit_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatedUnitIdVal"
+            },
+            "description": "Explicit identity pairs; empty when the batch creates no Units."
+          }
+        }
       },
       "StageMask": {
         "type": "integer",

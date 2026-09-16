@@ -64,9 +64,9 @@ diesel::table! {
         f_reviewed_at -> Nullable<Timestamptz>,
         f_published_at -> Nullable<Timestamptz>,
         f_creator_id -> Text,
+        f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -108,9 +108,9 @@ diesel::table! {
         f_creator_id -> Text,
         f_last_active_at -> Timestamptz,
         f_archived_at -> Nullable<Timestamptz>,
+        f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -156,10 +156,10 @@ diesel::table! {
         f_payload -> Jsonb,
         f_last_error -> Nullable<Text>,
         f_retried_count -> Int8,
+        f_claim_token -> Nullable<Uuid>,
         f_visible_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_claim_token -> Nullable<Uuid>,
     }
 }
 
@@ -210,10 +210,10 @@ diesel::table! {
         f_status -> Text,
         f_visible_at -> Timestamptz,
         f_retried_count -> Int8,
+        f_claim_token -> Nullable<Uuid>,
         f_error -> Nullable<Text>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_claim_token -> Nullable<Uuid>,
     }
 }
 
@@ -269,9 +269,9 @@ diesel::table! {
         f_name -> Text,
         f_description -> Nullable<Text>,
         f_workset_next_index -> Int4,
+        f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -335,6 +335,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_unit_save (f_user_id, f_page_id, f_save_id) {
+        f_user_id -> Text,
+        f_page_id -> Text,
+        f_save_id -> Text,
+        f_payload_digest -> Bytea,
+        f_created_unit_ids -> Jsonb,
+        f_created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_user (f_id) {
         f_id -> Text,
         f_nickname -> Text,
@@ -369,9 +380,9 @@ diesel::table! {
         f_description -> Nullable<Text>,
         f_comic_count -> Int4,
         f_comic_next_index -> Int4,
+        f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -402,6 +413,8 @@ diesel::joinable!(t_termbase -> t_comic (f_comic_id));
 diesel::joinable!(t_termbase -> t_team (f_team_id));
 diesel::joinable!(t_termbase -> t_user (f_creator_id));
 diesel::joinable!(t_unit -> t_page (f_page_id));
+diesel::joinable!(t_unit_save -> t_page (f_page_id));
+diesel::joinable!(t_unit_save -> t_user (f_user_id));
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -428,6 +441,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_term,
     t_termbase,
     t_unit,
+    t_unit_save,
     t_user,
     t_user_avatar,
     t_workset,

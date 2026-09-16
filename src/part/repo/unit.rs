@@ -6,6 +6,7 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
+use crate::part::repo::oper::unit_save::{FindUnitSave, InsertUnitSave};
 use crate::result::BaseError;
 
 /// Unit repository operations.
@@ -22,3 +23,9 @@ use crate::result::BaseError;
     ),
 )]
 pub trait UnitRepo<C> {}
+
+/// Durable receipts used by serializable Unit saves.
+#[drive(context = C, error = BaseError,
+    step(for<'a> FindUnitSave<'a>, for<'a> InsertUnitSave<'a>),
+)]
+pub trait UnitSaveRepo<C> {}

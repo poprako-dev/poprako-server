@@ -11,7 +11,7 @@ mod tests;
 
 use std::collections::{HashMap, HashSet};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
@@ -44,6 +44,9 @@ pub struct SearchChapterUnitInfosInstr {
 /// Input parameters for saving a batch of Unit edits.
 #[derive(Deserialize)]
 pub struct SavePageUnitEditsInstr {
+    /// Client-generated identity of this immutable save batch.
+    pub save_id: String,
+
     /// Page whose Units are being edited.
     pub page_id: String,
 
@@ -177,7 +180,7 @@ pub fn into_unit_transforms(
 }
 
 /// One transport-facing Unit edit.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "edit", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitEditInstr {
@@ -247,7 +250,7 @@ pub enum UnitEditInstr {
 }
 
 /// Page-relative Unit coordinates.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitCoordInstr {
@@ -269,7 +272,7 @@ impl From<UnitCoordInstr> for UnitCoord {
 }
 
 /// Translation assignment accepted from the client.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTranslationInstr {
@@ -278,7 +281,7 @@ pub struct UnitTranslationInstr {
 }
 
 /// Revision assignment accepted from the client.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitRevisionInstr {
@@ -382,7 +385,7 @@ pub fn into_unit_edits<F>(
     mut gen_id: F,
 ) -> BaseRest<Vec<UnitEdit>>
 where
-    F: FnMut() -> String,
+    F: FnMut(&str) -> String,
 {
     let mut local_id_map = HashMap::new();
 
@@ -394,7 +397,7 @@ where
 
         validate_id(local_id)?;
 
-        let unit_id = gen_id();
+        let unit_id = gen_id(local_id);
 
         if local_id_map.insert(local_id.clone(), unit_id).is_some() {
             //

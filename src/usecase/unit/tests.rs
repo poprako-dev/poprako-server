@@ -7,6 +7,8 @@
 mod search;
 // Unit list consistency and tombstone-chain tests.
 mod list;
+// Save receipt replay, identity, and rollback contracts.
+mod save_receipts;
 
 use super::transform::transform;
 use super::*;
@@ -422,6 +424,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
 // Build save request instr for a fixed page id.
 fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageUnitEditsInstr {
     SavePageUnitEditsInstr {
+        save_id: uuid::Uuid::new_v4().to_string(),
         page_id: "page-1".to_string(),
         edits,
     }

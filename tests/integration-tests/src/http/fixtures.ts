@@ -30,6 +30,7 @@ import type {
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImageVal,
+    SavePageUnitEditsVal,
     SystemMailInfoView,
     TeamInfoView,
     UnitInfoView,
@@ -825,11 +826,12 @@ export async function savePageUnits(
     pageId: string,
     edits: UnitEdit[],
 ): Promise<ListPageUnitInfosVal> {
+    const saveId = crypto.randomUUID();
     const maxConflictRetries = 5;
 
     for (let attempt = 0; attempt <= maxConflictRetries; attempt++) {
-        const response = await api.post<ErrorBody>(
-            `/api/v1/pages/${pageId}/units/save`,
+        const response = await api.post<SuccessBody<SavePageUnitEditsVal> | ErrorBody>(
+            `/api/v1/pages/${pageId}/units/save?save_id=${saveId}`,
             edits,
         );
 
@@ -839,7 +841,9 @@ export async function savePageUnits(
             continue;
         }
 
-        expectNoContent(response);
+        const saved = expectSuccessData<SavePageUnitEditsVal>(response, 200);
+        assert.assert(Array.isArray(saved.created_unit_ids));
+        assert.assertEquals(saved.created_unit_ids.length, edits.filter((edit) => edit.edit === "create").length);
 
         return listPageUnits(api, pageId);
     }

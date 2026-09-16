@@ -17,11 +17,13 @@ use poprako_util::i18n::trl_kv;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::UnitComplex;
 use crate::complex::unit::perm::UnitPermComplex;
+use crate::complex::unit_save::UnitSaveComplex;
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr,
-    SearchChapterUnitInfosInstr, UnitEditInstr, into_unit_edits,
+    SearchChapterUnitInfosInstr, UnitEditInstr,
 };
-use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::instr::unit_save::prepare_save;
+use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::shared::user::UserToken;
@@ -43,9 +45,10 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosInChapterOrder,
     ListUnitOrders, SearchChapterUnitIds,
 };
+use crate::part::repo::oper::unit_save::{FindUnitSave, InsertUnitSave};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::unit::{UnitRepo, UnitSaveRepo};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage::start_pending_stages;
@@ -257,7 +260,7 @@ where
     accept(found_infos)
 }
 
-/// Saves one authorized batch of Unit edits without returning a payload.
+/// Saves or replays one authorized immutable batch of Unit edits.
 #[instrument(
     level = "info",
     skip(nucl, repo, token, instr),
@@ -272,13 +275,14 @@ pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     instr: SavePageUnitEditsInstr,
-) -> BaseRest<()>
+) -> BaseRest<SavePageUnitEditsVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: PageRepo<C>
         + UnitRepo<C>
+        + UnitSaveRepo<C>
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
@@ -286,13 +290,13 @@ where
         + Send
         + Sync,
 {
-    let SavePageUnitEditsInstr { page_id, edits } = instr;
+    let (edits, save_entry) = prepare_save(instr, &token.user_id)?;
 
-    let edits = into_unit_edits(edits, &token.user_id, UnitComplex::gen_id)?;
+    let page_id = save_entry.page_id.clone();
 
     let stages = UnitComplex::submitted_stage_advances(&edits);
 
-    let () = nucl
+    let created_unit_ids = nucl
         .coord(async move |context| {
             //
             let chapter_scope =
@@ -335,16 +339,27 @@ where
                 });
             }
 
-            let orders = ListUnitOrders {
-                page_id: &page_scope.id,
-            }
+            if let Some(receipt) = (FindUnitSave {
+                user_id: &token.user_id,
+                page_id: &page_id,
+                save_id: &save_entry.save_id,
+            })
             .step_on(repo, context)
-            .await?;
+            .await?
+            {
+                return UnitSaveComplex::replay_saved_units(
+                    receipt,
+                    &save_entry.payload_digest,
+                );
+            }
 
-            let base_ids = orders
-                .iter()
-                .map(|order| order.id.as_str())
-                .collect::<Vec<_>>();
+            let orders = ListUnitOrders { page_id: &page_id }
+                .step_on(repo, context)
+                .await?;
+
+            let order_ids = orders.iter().map(|order| order.id.as_str());
+
+            let base_ids = order_ids.collect::<Vec<_>>();
 
             let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
 
@@ -388,11 +403,15 @@ where
             )
             .await?;
 
-            accept(())
+            InsertUnitSave { entry: &save_entry }
+                .step_on(repo, context)
+                .await?;
+
+            accept(save_entry.created_unit_ids)
         })
         .await?;
 
-    accept(())
+    accept(SavePageUnitEditsVal::from(created_unit_ids))
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.

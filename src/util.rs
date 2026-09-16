@@ -72,7 +72,7 @@ fn load_snowflake_node_id() -> u16 {
 ///
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq, serde::Serialize)]
 #[cfg_attr(test, derive(Debug))]
 pub enum Patch<T> {
     /// Resets the stored field.
