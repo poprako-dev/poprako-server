@@ -9,6 +9,7 @@ fn create_edit(id: &str, text: &str) -> UnitEdit {
         id: id.to_string(),
         next_id: None,
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,
@@ -64,6 +65,7 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
         id: "unit-1".to_string(),
         next_id: Patch::Skip,
         is_bubble: None,
+        is_flagged: None,
         coord: None,
         translation: Patch::Skip,
         revision: Patch::Assign {

@@ -28,6 +28,9 @@ pub struct UnitTranslationPortView {
 
     /// Whether this unit represents a speech bubble area.
     pub is_bubble: bool,
+    /// Whether this Unit is flagged for later review.
+    #[serde(default)]
+    pub is_flagged: bool,
 
     /// Translated text content, or [`None`] if not translated.
     #[serde(skip_serializing_if = "Option::is_none")]

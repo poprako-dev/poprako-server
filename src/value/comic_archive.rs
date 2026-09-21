@@ -186,24 +186,31 @@ pub struct ArchivedPagePayload<'a> {
 pub struct ArchivedUnitPayload<'a> {
     /// Original database identifier of the unit before archiving.
     pub source_unit_id: &'a str,
+
     /// Display ordering index of the unit within its page.
     pub index: usize,
     /// Whether this unit is a speech bubble (true) or narration box.
     pub is_bubble: bool,
+    /// Whether this Unit is flagged for later review.
+    pub is_flagged: bool,
     /// Whether the proofread pass has been completed for this unit.
     pub is_proofread: bool,
+
     /// Horizontal coordinate of the unit's bounding box on the page.
     pub x_coord: f64,
     /// Vertical coordinate of the unit's bounding box on the page.
     pub y_coord: f64,
+
     /// Final translated text, or None if not yet translated.
     pub translated_text: Option<&'a str>,
     /// Identifier of the user who last edited the translation, or None.
     pub last_translator_id: Option<&'a str>,
+
     /// Proofread revision of the translated text, or None.
     pub proofread_text: Option<&'a str>,
     /// Identifier of the user who last edited the proofread text, or None.
     pub last_proofreader_id: Option<&'a str>,
+
     /// Unix timestamp of when the unit was created.
     pub created_at: i64,
     /// Unix timestamp of when the unit was last modified.

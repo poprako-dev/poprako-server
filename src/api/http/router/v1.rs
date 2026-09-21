@@ -207,6 +207,10 @@ pub fn v1_page_router() -> Router<AppHarn> {
     //
     Router::new()
         .route(
+            "/chapters/{chapter_id}/pages/unit-flagged-stats",
+            get(page::list_unit_flagged_stats),
+        )
+        .route(
             "/chapters/{chapter_id}/pages/unit-diff-stats",
             get(page::list_unit_diff_stats),
         )

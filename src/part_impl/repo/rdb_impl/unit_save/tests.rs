@@ -27,6 +27,7 @@ fn batch(page_id: &str, save_id: &str) -> SavePageUnitEditsInstr {
             local_id: "local".into(),
             next_id: None,
             is_bubble: true,
+            is_flagged: false,
             coord: UnitCoordInstr {
                 x_coord: 0.2,
                 y_coord: 0.3,

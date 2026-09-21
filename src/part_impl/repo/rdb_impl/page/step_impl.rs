@@ -18,7 +18,7 @@ use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::page::{
-    PageInfo, PageUnitDiffStats, PageUnitScope,
+    PageInfo, PageUnitDiffStats, PageUnitFlaggedStats, PageUnitScope,
 };
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
@@ -33,8 +33,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_id, f_index, f_updated_at, t_page,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_hidden_at as unit_hidden_at, f_page_id as unit_page_id,
-    f_proofread_text as unit_proofread_text,
+    f_hidden_at as unit_hidden_at, f_is_flagged as unit_is_flagged,
+    f_page_id as unit_page_id, f_proofread_text as unit_proofread_text,
     f_translated_text as unit_translated_text, t_unit,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -474,6 +474,48 @@ pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+/// Lists flagged Unit counts while retaining the original Chapter Page order.
+#[instrument(level = "info", skip_all)]
+pub async fn list_unit_flagged_stats(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageUnitFlaggedStats>> {
+    // Retain zero-count Pages until the complete Chapter count is checked.
+    let rows = t_page
+        .filter(f_chapter_id.eq(chapter_id))
+        .left_join(
+            t_unit.on(unit_page_id
+                .eq(f_id)
+                .and(unit_hidden_at.is_null())
+                .and(unit_is_flagged.eq(true))),
+        )
+        .group_by((f_id, f_index))
+        .select((f_id, f_index, count(unit_page_id.nullable())))
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SENTINEL_LIMIT)
+        .load::<(String, i32, i64)>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let rows =
+        ensure_chapter_page_count(rows, chapter_id, "list_unit_flagged_stats")?;
+
+    rows.into_iter()
+        .filter(|(_, _, flagged)| *flagged > 0)
+        .map(|(page_id, index, flagged)| {
+            //
+            accept(PageUnitFlaggedStats {
+                page_id,
+                index: usize_from_i32(index, "t_page.f_index")?,
+                flagged_unit_count: usize_from_i64(
+                    flagged,
+                    "unit_flagged_stats.flagged_unit_count",
+                )?,
+            })
+        })
+        .collect()
 }
 
 // Builds the expected error used when a Page scope cannot be found.

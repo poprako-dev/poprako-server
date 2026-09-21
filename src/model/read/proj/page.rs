@@ -88,3 +88,14 @@ pub struct PageRawIdentInfo {
     /// Time the association was last assigned.
     pub updated_at: OffsetDateTime,
 }
+
+/// Visible flagged Unit count for one Page.
+pub struct PageUnitFlaggedStats {
+    /// Permanent Page identifier.
+    pub page_id: String,
+    /// Original zero-based Chapter position.
+    pub index: usize,
+
+    /// Number of visible Units flagged for later review.
+    pub flagged_unit_count: usize,
+}

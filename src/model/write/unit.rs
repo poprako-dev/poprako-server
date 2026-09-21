@@ -32,6 +32,8 @@ pub enum UnitEdit {
 
         /// Whether this Unit identifies a speech bubble.
         is_bubble: bool,
+        /// Whether this Unit is flagged for later review.
+        is_flagged: bool,
         /// Initial page-relative coordinate.
         coord: UnitCoord,
 
@@ -50,6 +52,8 @@ pub enum UnitEdit {
 
         /// Optional updated speech-bubble flag.
         is_bubble: Option<bool>,
+        /// Optional review flag replacement.
+        is_flagged: Option<bool>,
         /// Optional updated coordinate.
         coord: Option<UnitCoord>,
 

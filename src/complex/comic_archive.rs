@@ -258,6 +258,7 @@ fn build_page_payloads(
                         source_unit_id: &unit_info.id,
                         index,
                         is_bubble: unit_info.is_bubble,
+                        is_flagged: unit_info.is_flagged,
                         is_proofread: unit_info.is_proofread,
                         x_coord: unit_info.coord.x_coord,
                         y_coord: unit_info.coord.y_coord,

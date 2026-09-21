@@ -1091,6 +1091,44 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/pages/unit-flagged-stats": {
+      "get": {
+        "tags": [
+          "pages"
+        ],
+        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats` — list Pages containing visible flagged Units.",
+        "operationId": "list_unit_flagged_stats",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visible flagged Unit counts for Pages, in original Page order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageUnitFlaggedStatsVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to list Pages in this Chapter"
+          },
+          "422": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/stage/advance": {
       "post": {
         "tags": [
@@ -9150,6 +9188,51 @@
           }
         }
       },
+      "HttpBody_Vec_PageUnitFlaggedStatsVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Visible flagged Unit statistics for one matching Page.",
+              "required": [
+                "page_id",
+                "index",
+                "flagged_unit_count"
+              ],
+              "properties": {
+                "flagged_unit_count": {
+                  "type": "integer",
+                  "description": "Number of visible Units flagged for later review.",
+                  "minimum": 0
+                },
+                "index": {
+                  "type": "integer",
+                  "description": "Original zero-based Chapter position, preserved after filtering.",
+                  "minimum": 0
+                },
+                "page_id": {
+                  "type": "string",
+                  "description": "Permanent Page identifier."
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_String": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -9477,6 +9560,7 @@
                 "id",
                 "page_id",
                 "is_bubble",
+                "is_flagged",
                 "is_proofread",
                 "x_coord",
                 "y_coord",
@@ -9496,6 +9580,10 @@
                 "is_bubble": {
                   "type": "boolean",
                   "description": "Whether the Unit identifies a speech bubble."
+                },
+                "is_flagged": {
+                  "type": "boolean",
+                  "description": "Whether this Unit is flagged for later review."
                 },
                 "is_proofread": {
                   "type": "boolean",
@@ -10562,6 +10650,31 @@
           }
         }
       },
+      "PageUnitFlaggedStatsVal": {
+        "type": "object",
+        "description": "Visible flagged Unit statistics for one matching Page.",
+        "required": [
+          "page_id",
+          "index",
+          "flagged_unit_count"
+        ],
+        "properties": {
+          "flagged_unit_count": {
+            "type": "integer",
+            "description": "Number of visible Units flagged for later review.",
+            "minimum": 0
+          },
+          "index": {
+            "type": "integer",
+            "description": "Original zero-based Chapter position, preserved after filtering.",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Permanent Page identifier."
+          }
+        }
+      },
       "RegisterAuthInstr": {
         "type": "object",
         "description": "Input parameters for user registration.",
@@ -10941,6 +11054,10 @@
                 "type": "boolean",
                 "description": "Whether the Unit identifies a speech bubble."
               },
+              "is_flagged": {
+                "type": "boolean",
+                "description": "Initial review flag; omitted values are false and excluded from save digests."
+              },
               "local_id": {
                 "type": "string",
                 "description": "Request-local ID used for references within this batch."
@@ -11012,6 +11129,13 @@
                 ],
                 "description": "Optional speech-bubble flag replacement."
               },
+              "is_flagged": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Optional review flag replacement; null leaves it unchanged."
+              },
               "next_id": {
                 "type": [
                   "string",
@@ -11073,6 +11197,7 @@
           "id",
           "page_id",
           "is_bubble",
+          "is_flagged",
           "is_proofread",
           "x_coord",
           "y_coord",
@@ -11092,6 +11217,10 @@
           "is_bubble": {
             "type": "boolean",
             "description": "Whether the Unit identifies a speech bubble."
+          },
+          "is_flagged": {
+            "type": "boolean",
+            "description": "Whether this Unit is flagged for later review."
           },
           "is_proofread": {
             "type": "boolean",
@@ -11247,6 +11376,10 @@
           "is_bubble": {
             "type": "boolean",
             "description": "Whether this unit represents a speech bubble area."
+          },
+          "is_flagged": {
+            "type": "boolean",
+            "description": "Whether this Unit is flagged for later review."
           },
           "is_proofread": {
             "type": "boolean",

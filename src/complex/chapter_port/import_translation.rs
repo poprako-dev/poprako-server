@@ -65,6 +65,7 @@ pub fn build_unit_create(
         id: unit_id,
         next_id: None,
         is_bubble: parsed_unit.is_bubble,
+        is_flagged: parsed_unit.is_flagged,
         coord: UnitCoord {
             x_coord: parsed_unit.x_coord,
             y_coord: parsed_unit.y_coord,
@@ -168,6 +169,7 @@ fn convert_poprako_document(
                 x_coord: unit.x_coord,
                 y_coord: unit.y_coord,
                 is_bubble: unit.is_bubble,
+                is_flagged: unit.is_flagged,
                 source: UnitTranslationImportSource::PopRaKo {
                     translated_text: normalize_optional_poprako_text(
                         unit.translated_text,

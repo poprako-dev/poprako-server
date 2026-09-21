@@ -9,6 +9,8 @@ mod search;
 mod list;
 // Save receipt replay, identity, and rollback contracts.
 mod save_receipts;
+// Shared review flag lifecycle and save compatibility.
+mod flagged;
 
 use super::transform::transform;
 use super::*;
@@ -214,6 +216,7 @@ async fn delete_then_patch_restores_the_tombstone() {
             id: unit_id,
             next_id: Patch::Skip,
             is_bubble: Some(false),
+            is_flagged: None,
             coord: None,
             translation: Patch::Skip,
             revision: Patch::Skip,
@@ -253,6 +256,7 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
             id: before.units[0].id.clone(),
             next_id: Patch::Skip,
             is_bubble: None,
+            is_flagged: None,
             coord: None,
             translation: Patch::Skip,
             revision: Patch::Assign {
@@ -296,6 +300,7 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
             local_id: "proofreader-local".to_string(),
             next_id: None,
             is_bubble: true,
+            is_flagged: false,
             coord: UnitCoordInstr {
                 x_coord: 1.0,
                 y_coord: 2.0,
@@ -329,6 +334,7 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
             local_id: "dual-local".to_string(),
             next_id: None,
             is_bubble: true,
+            is_flagged: false,
             coord: UnitCoordInstr {
                 x_coord: 1.0,
                 y_coord: 2.0,
@@ -440,6 +446,7 @@ fn create(
         local_id: local_id.to_string(),
         next_id,
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoordInstr {
             x_coord: 1.0,
             y_coord: 2.0,

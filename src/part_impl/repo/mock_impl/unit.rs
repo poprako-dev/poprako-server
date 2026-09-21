@@ -126,6 +126,7 @@ fn unit_from_edit(
     let UnitEdit::Create {
         id,
         is_bubble,
+        is_flagged,
         coord,
         translation,
         revision,
@@ -163,6 +164,7 @@ fn unit_from_edit(
         page_id: page_id.to_string(),
         next_id: next_id.map(str::to_string),
         is_bubble: *is_bubble,
+        is_flagged: *is_flagged,
         coord: coord.clone(),
         translated_text,
         last_translator_id,
@@ -195,6 +197,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
     // Update textual and proofread fields and bump timestamp.
     let UnitEdit::Save {
         is_bubble,
+        is_flagged,
         coord,
         translation,
         revision,
@@ -208,6 +211,10 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 
     if let Some(is_bubble) = is_bubble {
         unit_info.is_bubble = *is_bubble;
+    }
+
+    if let Some(is_flagged) = is_flagged {
+        unit_info.is_flagged = *is_flagged;
     }
 
     if let Some(coord) = coord {

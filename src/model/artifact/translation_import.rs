@@ -40,6 +40,8 @@ pub struct UnitTranslationImport {
 
     /// Whether this unit is a speech bubble contour.
     pub is_bubble: bool,
+    /// Whether this Unit is flagged for later review.
+    pub is_flagged: bool,
 
     /// Format-specific source text and workflow state.
     pub source: UnitTranslationImportSource,

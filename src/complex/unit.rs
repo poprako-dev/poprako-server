@@ -98,6 +98,7 @@ pub fn build_transform_edit(
         id: unit_info.id.clone(),
         next_id: Patch::Skip,
         is_bubble: None,
+        is_flagged: None,
         coord: None,
         translation,
         revision,
@@ -447,6 +448,7 @@ fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
         UnitEdit::Save {
             next_id: earlier_next_id,
             is_bubble: earlier_is_bubble,
+            is_flagged: earlier_is_flagged,
             coord: earlier_coord,
             translation: earlier_translation,
             revision: earlier_revision,
@@ -455,6 +457,7 @@ fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
         UnitEdit::Save {
             next_id: later_next_id,
             is_bubble: later_is_bubble,
+            is_flagged: later_is_flagged,
             coord: later_coord,
             translation: later_translation,
             revision: later_revision,
@@ -466,6 +469,8 @@ fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
     };
 
     inherit_option(earlier_is_bubble, later_is_bubble);
+
+    inherit_option(earlier_is_flagged, later_is_flagged);
 
     inherit_option(earlier_coord, later_coord);
 

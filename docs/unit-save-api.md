@@ -52,6 +52,9 @@ fields are rejected.
   inserts at the tail. Translation and revision are optional.
 - `patch` requires a permanent `id`. Missing or null `is_bubble` and `coord`
   leave the stored value unchanged.
+- `is_flagged` is a shared review flag: Create defaults it to false; Patch
+  accepts true/false, while omission or null preserves it. See
+  [Unit review flags](unit-flagged-api.md) for page navigation and upgrade steps.
 - `next_id`, `translation`, and `revision` are three-state patch fields:
   missing or null means Skip; use `{ "type": "clear" }` to Clear, or
   `{ "type": "assign", "value": ... }` to Assign.

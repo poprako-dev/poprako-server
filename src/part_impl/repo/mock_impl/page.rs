@@ -6,7 +6,8 @@ mod orchestra;
 use poprako_orchestra::{Run, Step};
 
 use crate::model::read::proj::page::{
-    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitScope,
+    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitFlaggedStats,
+    PageUnitScope,
 };
 use crate::model::read::proj::unit::{UnitCountMetrics, has_unit_text};
 use crate::model::write::page::PageManifestEntry;
@@ -262,4 +263,37 @@ impl Step<UpdatePageRawIdents<'_>, MockContext> for Mock {
 
         accept(())
     }
+}
+
+// Count visible flagged Units without changing the original Page positions.
+fn list_unit_flagged_stats(
+    state: &MockState,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageUnitFlaggedStats>> {
+    //
+    let page_unit_flagged_stats = list_bounded_infos(state, chapter_id)?
+        .into_iter()
+        .map(|page_info| {
+            //
+            let flagged_unit_count = state
+                .units
+                .iter()
+                .filter(|unit_info| {
+                    //
+                    unit_info.page_id == page_info.id
+                        && unit_info.hidden_at.is_none()
+                        && unit_info.is_flagged
+                })
+                .count();
+
+            PageUnitFlaggedStats {
+                page_id: page_info.id,
+                index: page_info.index,
+                flagged_unit_count,
+            }
+        })
+        .filter(|stats| stats.flagged_unit_count > 0)
+        .collect();
+
+    accept(page_unit_flagged_stats)
 }

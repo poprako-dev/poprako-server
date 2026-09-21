@@ -244,3 +244,53 @@ fn transform_conversion_rejects_duplicate_ids_origins_and_empty_origin() {
 
     assert!(into_unit_transforms(empty_origin).is_err());
 }
+
+// flagged(unit_instr)(positive): create defaults and nullable patches preserve existing clients.
+#[test]
+fn flagged_transport_defaults_and_types() {
+    let create = json!({"edit":"create","local_id":"a","is_bubble":true,
+        "coord":{"x_coord":0.0,"y_coord":0.0}});
+
+    let instr =
+        serde_json::from_value::<UnitEditInstr>(create.clone()).unwrap();
+
+    assert!(matches!(
+        instr,
+        UnitEditInstr::Create {
+            is_flagged: false,
+            ..
+        }
+    ));
+
+    for value in [json!(false), json!(true)] {
+        let mut payload = create.clone();
+
+        payload["is_flagged"] = value.clone();
+
+        let instr = serde_json::from_value::<UnitEditInstr>(payload).unwrap();
+
+        assert!(
+            matches!(instr, UnitEditInstr::Create { is_flagged, .. } if Some(is_flagged) == value.as_bool())
+        );
+    }
+
+    for value in [json!(null), json!(false), json!(true)] {
+        let instr = serde_json::from_value::<UnitEditInstr>(json!({
+            "edit":"patch","id":"a","is_flagged":value,
+        }))
+        .unwrap();
+
+        assert!(
+            matches!(instr, UnitEditInstr::Patch { is_flagged, .. } if is_flagged == value.as_bool())
+        );
+    }
+
+    for value in [json!("true"), json!(1), json!({"type":"clear"})] {
+        assert!(
+            serde_json::from_value::<UnitEditInstr>(json!({
+                "edit":"patch","id":"a","is_flagged":value,
+            }))
+            .is_err()
+        );
+    }
+}

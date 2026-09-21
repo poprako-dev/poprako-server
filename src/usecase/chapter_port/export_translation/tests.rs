@@ -157,6 +157,7 @@ fn unit(
         page_id: page_id.into(),
         next_id: next_id.map(str::to_string),
         is_bubble: true,
+        is_flagged: true,
         is_proofread: proofread_text.is_some(),
         coord: UnitCoord {
             x_coord: 0.25,
@@ -233,6 +234,8 @@ async fn export_returns_both_formats_and_records_one_export() {
     let poprako = exported.poprako.unwrap();
 
     assert_eq!(poprako.chapter_id, "chapter-1");
+
+    assert!(poprako.pages[0].units[0].is_flagged);
 
     assert_eq!(poprako.chapter_index, 3);
 

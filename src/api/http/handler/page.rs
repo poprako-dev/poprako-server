@@ -16,10 +16,12 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::instr::page::{
     AllocChapterPagesInstr, AllocPageImageInstr, ListPageInfosInstr,
-    ListPageUnitDiffStatsInstr, MarkPageImageUploadedInstr,
+    ListPageUnitDiffStatsInstr, ListPageUnitFlaggedStatsInstr,
+    MarkPageImageUploadedInstr,
 };
 use crate::data::val::page::{
     AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
+    PageUnitFlaggedStatsVal,
 };
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
@@ -84,6 +86,36 @@ pub async fn list_unit_diff_stats(
     let instr = ListPageUnitDiffStatsInstr { chapter_id };
 
     page_list_usecase::list_unit_diff_stats::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats` — list Pages containing visible flagged Units.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/chapters/{chapter_id}/pages/unit-flagged-stats",
+    tag = "pages",
+    params(("chapter_id" = String, Path, description = "Chapter ID")),
+    responses(
+        (status = 200, description = "Visible flagged Unit counts for Pages, in original Page order", body = HttpBody<Vec<PageUnitFlaggedStatsVal>>),
+        (status = 403, description = "No perm to list Pages in this Chapter"),
+        (status = 422, description = "Chapter not found"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn list_unit_flagged_stats(
+    State(harn): State<AppHarn>,
+    Path(chapter_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<Vec<PageUnitFlaggedStatsVal>> {
+    //
+    let instr = ListPageUnitFlaggedStatsInstr { chapter_id };
+
+    page_list_usecase::list_unit_flagged_stats::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,

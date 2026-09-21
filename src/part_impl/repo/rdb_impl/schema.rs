@@ -322,6 +322,7 @@ diesel::table! {
         f_next_id -> Nullable<Text>,
         f_hidden_at -> Nullable<Timestamptz>,
         f_is_bubble -> Bool,
+        f_is_flagged -> Bool,
         f_is_proofread -> Bool,
         f_x_coord -> Float8,
         f_y_coord -> Float8,

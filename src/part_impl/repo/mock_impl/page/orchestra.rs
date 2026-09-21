@@ -4,18 +4,19 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::page::{
-    PageInfo, PageUnitDiffStats, PageUnitScope,
+    PageInfo, PageUnitDiffStats, PageUnitFlaggedStats, PageUnitScope,
 };
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
     GetPageUnitScope, GetPageUnitScopeExcluded, ListFirstPageInfos,
     ListPageInfos, ListPageInfosExcluded, ListPageUnitDiffStats,
-    SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
+    ListPageUnitFlaggedStats, SetPageUnitCountMetrics,
+    ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, get_page_unit_scope, list_bounded_infos, list_first_pages,
-    list_unit_diff_stats, page_from_manifest_entry,
+    list_unit_diff_stats, list_unit_flagged_stats, page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -105,6 +106,23 @@ impl Run<ListPageUnitDiffStats<'_>> for Mock {
         let state = self.state.lock().unwrap();
 
         list_unit_diff_stats(&state, oper.chapter_id)
+    }
+}
+
+impl Run<ListPageUnitFlaggedStats<'_>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists matching Page flagged Unit statistics in stable Chapter Page order.
+    async fn run(
+        &self,
+        oper: &ListPageUnitFlaggedStats<'_>,
+    ) -> BaseRest<Vec<PageUnitFlaggedStats>> {
+        //
+        let state = self.state.lock().unwrap();
+
+        list_unit_flagged_stats(&state, oper.chapter_id)
     }
 }
 

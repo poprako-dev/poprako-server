@@ -189,6 +189,7 @@ fn unit(id: &str, page_id: &str, _index: usize, text: &str) -> UnitInfo {
         page_id: page_id.into(),
         next_id: None,
         is_bubble: true,
+        is_flagged: false,
         is_proofread: false,
         coord: UnitCoord {
             x_coord: 0.25,

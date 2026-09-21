@@ -414,6 +414,7 @@ fn create_text_edit(
         id: id.to_string(),
         next_id: None,
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,

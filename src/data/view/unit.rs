@@ -22,11 +22,14 @@ use crate::model::read::proj::unit::UnitInfo;
 pub struct UnitInfoView {
     /// Permanent Unit ID.
     pub id: String,
+
     /// Owning Page ID.
     pub page_id: String,
 
     /// Whether the Unit identifies a speech bubble.
     pub is_bubble: bool,
+    /// Whether this Unit is flagged for later review.
+    pub is_flagged: bool,
     /// Whether the current revision is approved.
     pub is_proofread: bool,
 
@@ -63,6 +66,7 @@ impl From<UnitInfo> for UnitInfoView {
             id: model.id,
             page_id: model.page_id,
             is_bubble: model.is_bubble,
+            is_flagged: model.is_flagged,
             is_proofread: model.is_proofread,
             x_coord: model.coord.x_coord,
             y_coord: model.coord.y_coord,
