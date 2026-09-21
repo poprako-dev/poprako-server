@@ -27,6 +27,7 @@ import type {
     PageImageInput,
     PageInfoView,
     PageUnitDiffStatsVal,
+    PageUnitFlaggedStatsVal,
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImageVal,
@@ -726,6 +727,7 @@ export interface UnitCreateEdit {
     local_id: string;
     next_id?: string | null;
     is_bubble: boolean;
+    is_flagged?: boolean;
     coord: UnitCoordInput;
     translation?: UnitTranslationInput | null;
     revision?: UnitRevisionInput | null;
@@ -736,6 +738,7 @@ export interface UnitPatchEdit {
     id: string;
     next_id?: PatchInput<string>;
     is_bubble?: boolean | null;
+    is_flagged?: boolean | null;
     coord?: UnitCoordInput | null;
     translation?: PatchInput<UnitTranslationInput>;
     revision?: PatchInput<UnitRevisionInput>;
@@ -769,6 +772,7 @@ export function newBubbleUnit(
 export interface UnitPatchFixture {
     next_id?: string | null;
     is_bubble?: boolean | null;
+    is_flagged?: boolean | null;
     x_coord?: number;
     y_coord?: number;
     translated_text?: string | null;
@@ -784,6 +788,10 @@ export function updateUnit(unitId: string, patch: UnitPatchFixture): UnitPatchEd
 
     if ("next_id" in patch) {
         edit.next_id = patch.next_id == null ? { type: "clear" } : { type: "assign", value: patch.next_id };
+    }
+
+    if ("is_flagged" in patch) {
+        edit.is_flagged = patch.is_flagged;
     }
 
     if ("is_bubble" in patch) {
@@ -865,6 +873,18 @@ export async function listPageUnitDiffStats(
     return expectSuccessData(
         await api.get<SuccessBody<PageUnitDiffStatsVal[]>>(
             `/api/v1/chapters/${chapterId}/pages/unit-diff-stats`,
+        ),
+        200,
+    );
+}
+
+export async function listPageUnitFlaggedStats(
+    api: ApiClient,
+    chapterId: string,
+): Promise<PageUnitFlaggedStatsVal[]> {
+    return expectSuccessData(
+        await api.get<SuccessBody<PageUnitFlaggedStatsVal[]>>(
+            `/api/v1/chapters/${chapterId}/pages/unit-flagged-stats`,
         ),
         200,
     );

@@ -94,3 +94,10 @@ pub struct ListPageUnitDiffStatsInstr {
     /// Chapter whose Pages are checked for Unit text diffs.
     pub chapter_id: String,
 }
+
+/// Input parameters for listing Pages containing flagged Units.
+#[derive(Debug)]
+pub struct ListPageUnitFlaggedStatsInstr {
+    /// Chapter whose Pages are checked for flagged Units.
+    pub chapter_id: String,
+}

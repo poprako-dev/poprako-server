@@ -10,6 +10,7 @@
 mod tests;
 
 use std::collections::{HashMap, HashSet};
+use std::ops::Not as _;
 
 use serde::{Deserialize, Serialize};
 
@@ -195,6 +196,9 @@ pub enum UnitEditInstr {
 
         /// Whether the Unit identifies a speech bubble.
         is_bubble: bool,
+        /// Initial review flag; omitted values are false and excluded from save digests.
+        #[serde(default, skip_serializing_if = "<&bool>::not")]
+        is_flagged: bool,
         /// Initial page-relative coordinate.
         coord: UnitCoordInstr,
 
@@ -222,6 +226,9 @@ pub enum UnitEditInstr {
         /// Optional speech-bubble flag replacement.
         #[serde(default)]
         is_bubble: Option<bool>,
+        /// Optional review flag replacement; null leaves it unchanged.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        is_flagged: Option<bool>,
         /// Optional coordinate replacement.
         #[serde(default)]
         coord: Option<UnitCoordInstr>,
@@ -307,6 +314,7 @@ impl UnitEditInstr {
                 local_id,
                 next_id,
                 is_bubble,
+                is_flagged,
                 coord,
                 translation,
                 revision,
@@ -333,6 +341,7 @@ impl UnitEditInstr {
                     id,
                     next_id,
                     is_bubble,
+                    is_flagged,
                     coord: coord.into(),
                     translation,
                     revision,
@@ -343,6 +352,7 @@ impl UnitEditInstr {
                 id,
                 next_id,
                 is_bubble,
+                is_flagged,
                 coord,
                 translation,
                 revision,
@@ -356,6 +366,7 @@ impl UnitEditInstr {
                     id,
                     next_id,
                     is_bubble,
+                    is_flagged,
                     coord: coord.map(UnitCoord::from),
                     translation: translation.map(|value| UnitTranslation {
                         translated_text: value.translated_text,

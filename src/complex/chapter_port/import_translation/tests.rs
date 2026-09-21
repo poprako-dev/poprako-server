@@ -36,6 +36,8 @@ fn parse_label_plus_parses_real_material() {
 
     assert_eq!(pages[0].units[0].index, 0);
 
+    assert!(!pages[0].units[0].is_flagged);
+
     assert!(matches!(
         &pages[0].units[0].source,
         UnitTranslationImportSource::LabelPlus { text }
@@ -93,6 +95,8 @@ fn parse_poprako_preserves_zero_based_indexes() {
 
     assert_eq!(pages[0].units[0].index, 7);
 
+    assert!(!pages[0].units[0].is_flagged);
+
     assert!(matches!(
         &pages[0].units[0].source,
         UnitTranslationImportSource::PopRaKo {
@@ -125,6 +129,7 @@ fn build_unit_create_produces_a_complete_create() {
             id,
             next_id: None,
             is_bubble: true,
+            is_flagged: false,
             revision: Some(_),
             ..
         } if id == "unit-new"
@@ -195,6 +200,7 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
                     x_coord: 0.4,
                     y_coord: 0.5,
                     is_bubble: false,
+                    is_flagged: false,
                     translated_text: Some("second".into()),
                     translator_id: Some("source-translator".into()),
                     is_proofread: false,
@@ -214,6 +220,7 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
                         x_coord: 0.2,
                         y_coord: 0.3,
                         is_bubble: true,
+                        is_flagged: false,
                         translated_text: Some("first".into()),
                         translator_id: None,
                         is_proofread: false,
@@ -228,6 +235,7 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
                         x_coord: 0.1,
                         y_coord: 0.2,
                         is_bubble: true,
+                        is_flagged: false,
                         translated_text: None,
                         translator_id: None,
                         is_proofread: false,

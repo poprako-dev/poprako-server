@@ -25,6 +25,7 @@ pub struct UnitInfoRow {
     pub f_hidden_at: Option<OffsetDateTime>,
 
     pub f_is_bubble: bool,
+    pub f_is_flagged: bool,
     pub f_is_proofread: bool,
 
     pub f_x_coord: f64,
@@ -48,6 +49,7 @@ impl From<UnitInfoRow> for UnitInfo {
             page_id: row.f_page_id,
             next_id: row.f_next_id,
             is_bubble: row.f_is_bubble,
+            is_flagged: row.f_is_flagged,
             coord: UnitCoord {
                 x_coord: row.f_x_coord,
                 y_coord: row.f_y_coord,
@@ -74,6 +76,7 @@ pub struct UnitEntryRow<'a> {
     pub f_hidden_at: Option<OffsetDateTime>,
 
     pub f_is_bubble: bool,
+    pub f_is_flagged: bool,
     pub f_is_proofread: bool,
 
     pub f_x_coord: f64,
@@ -99,6 +102,7 @@ impl<'a> UnitEntryRow<'a> {
         let UnitEdit::Create {
             id,
             is_bubble,
+            is_flagged,
             coord,
             translation,
             revision,
@@ -135,6 +139,7 @@ impl<'a> UnitEntryRow<'a> {
             f_next_id: next_id,
             f_hidden_at: None,
             f_is_bubble: *is_bubble,
+            f_is_flagged: *is_flagged,
             f_is_proofread: is_proofread,
             f_x_coord: coord.x_coord,
             f_y_coord: coord.y_coord,
@@ -155,6 +160,7 @@ pub struct UnitAspectRow<'a> {
     pub f_hidden_at: Option<Option<OffsetDateTime>>,
 
     pub f_is_bubble: Option<bool>,
+    pub f_is_flagged: Option<bool>,
     pub f_is_proofread: Option<bool>,
 
     pub f_x_coord: Option<f64>,
@@ -176,6 +182,7 @@ impl<'a> UnitAspectRow<'a> {
             f_next_id: None,
             f_hidden_at: None,
             f_is_bubble: None,
+            f_is_flagged: None,
             f_is_proofread: None,
             f_x_coord: None,
             f_y_coord: None,
@@ -205,6 +212,7 @@ impl<'a> UnitAspectRow<'a> {
         //
         let UnitEdit::Save {
             is_bubble,
+            is_flagged,
             coord,
             translation,
             revision,
@@ -217,6 +225,8 @@ impl<'a> UnitAspectRow<'a> {
         self.f_hidden_at = Some(None);
 
         self.f_is_bubble = *is_bubble;
+
+        self.f_is_flagged = *is_flagged;
 
         if let Some(coord) = coord {
             //

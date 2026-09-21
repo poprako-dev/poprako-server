@@ -26,9 +26,9 @@ use crate::part_impl::repo::rdb_impl::entity::unit::{
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i64;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_hidden_at, f_id, f_is_bubble, f_is_proofread, f_last_proofreader_id,
-    f_last_translator_id, f_next_id, f_page_id, f_proofread_text,
-    f_translated_text, f_updated_at, f_x_coord, f_y_coord,
+    f_hidden_at, f_id, f_is_bubble, f_is_flagged, f_is_proofread,
+    f_last_proofreader_id, f_last_translator_id, f_next_id, f_page_id,
+    f_proofread_text, f_translated_text, f_updated_at, f_x_coord, f_y_coord,
     t_unit as unit_table,
 };
 use crate::result::{BaseError, BaseRest, accept};
@@ -188,6 +188,11 @@ async fn apply_update_rows(
     let is_bubble_case =
         bool_case(changes, Box::new(f_is_bubble), |change| change.f_is_bubble);
 
+    let is_flagged_case =
+        bool_case(changes, Box::new(f_is_flagged), |change| {
+            change.f_is_flagged
+        });
+
     let is_proofread_case =
         bool_case(changes, Box::new(f_is_proofread), |change| {
             change.f_is_proofread
@@ -231,6 +236,7 @@ async fn apply_update_rows(
         f_next_id.eq(next_id_case),
         f_hidden_at.eq(hidden_at_case),
         f_is_bubble.eq(is_bubble_case),
+        f_is_flagged.eq(is_flagged_case),
         f_is_proofread.eq(is_proofread_case),
         f_x_coord.eq(x_coord_case),
         f_y_coord.eq(y_coord_case),

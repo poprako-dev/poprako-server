@@ -281,6 +281,7 @@ fn unit_info(
         page_id: page_id.to_string(),
         next_id: next_id.map(str::to_string),
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,

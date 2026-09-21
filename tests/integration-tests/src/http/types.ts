@@ -239,6 +239,7 @@ export interface UnitInfoView {
     id: string;
     page_id: string;
     is_bubble: boolean;
+    is_flagged: boolean;
     is_proofread: boolean;
     x_coord: number;
     y_coord: number;
@@ -416,6 +417,7 @@ export interface UnitTranslationPortView {
     y_coord: number;
 
     is_bubble: boolean;
+    is_flagged: boolean;
 
     translated_text: string | null;
     translator_id: string | null;
@@ -457,4 +459,10 @@ export interface ChapterPageRawIdentVal {
 
 export interface SavePageUnitEditsVal {
     created_unit_ids: { local_id: string; unit_id: string }[];
+}
+
+export interface PageUnitFlaggedStatsVal {
+    page_id: string;
+    index: number;
+    flagged_unit_count: number;
 }

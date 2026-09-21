@@ -11,7 +11,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::data::view::image::ImageUploadSlotView;
-use crate::model::read::proj::page::PageUnitDiffStats;
+use crate::model::read::proj::page::{PageUnitDiffStats, PageUnitFlaggedStats};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Visible Unit text statistics for a Page with revision differences.
@@ -72,4 +72,30 @@ pub struct AllocatedPageVal {
 
     /// Presigned upload slot, if a new image must be uploaded.
     pub slot: Option<ImageUploadSlotView>,
+}
+
+/// Visible flagged Unit statistics for one matching Page.
+#[derive(Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
+pub struct PageUnitFlaggedStatsVal {
+    /// Permanent Page identifier.
+    pub page_id: String,
+    /// Original zero-based Chapter position, preserved after filtering.
+    pub index: usize,
+
+    /// Number of visible Units flagged for later review.
+    pub flagged_unit_count: usize,
+}
+
+impl From<PageUnitFlaggedStats> for PageUnitFlaggedStatsVal {
+    // Converts the persisted aggregate into its response value.
+    fn from(model: PageUnitFlaggedStats) -> Self {
+        //
+        Self {
+            page_id: model.page_id,
+            index: model.index,
+            flagged_unit_count: model.flagged_unit_count,
+        }
+    }
 }

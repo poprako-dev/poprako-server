@@ -354,6 +354,7 @@ fn unit_info(
             format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1)
         }),
         is_bubble: unit_index.is_multiple_of(2),
+        is_flagged: false,
         is_proofread: true,
         coord: UnitCoord {
             x_coord: f64::from(unit_index),

@@ -14,7 +14,9 @@ import {
     exportTranslations,
     getChapter,
     importTranslations,
+    joinChapterAssignment,
     listPageUnitDiffStats,
+    listPageUnitFlaggedStats,
     newBubbleUnit,
     newPageManifest,
     reserveChapterPages,
@@ -23,6 +25,7 @@ import {
     transformChapterUnits,
 } from "../http/fixtures.ts";
 import { titled } from "../state/prefix.ts";
+import { ROLE } from "../state/roles.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 import { PHASE, stagePhase } from "../state/stages.ts";
 
@@ -37,9 +40,15 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     const trans01 = ctx.users.get("trans_01")!;
     const proof02 = ctx.users.get("proof_02")!;
 
+    // Establish the editor assignments needed by this Unit suite itself.
+    await joinChapterAssignment(trans01.api, mainChapterId, ROLE.TRANSLATOR);
+    await joinChapterAssignment(proof02.api, mainChapterId, ROLE.PROOFREADER);
+
     // ---------- F1. create 5 bubble units on p0 ----------
 
     const f1Edits = Array.from({ length: 5 }, (_, i) => newBubbleUnit(`p0_lu_0${i + 1}`, 0.1 * (i + 1), 0.1 * (i + 1)));
+
+    f1Edits[0]!.is_flagged = true;
 
     const f1Save = await savePageUnits(trans01.api, p0Id, f1Edits);
 
@@ -62,6 +71,31 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     // Capture unit IDs in export order for F2.
     const p0UnitIds = f1Save.unit_infos.map((unit) => unit.id);
+
+    // F1 flags: shared ordinary fields, nullable patches, tombstones, and page navigation.
+    const flaggedId = p0UnitIds[0]!;
+    const flaggedStats = [{ page_id: p0Id, index: 0, flagged_unit_count: 1 }];
+    const stagesBeforeFlags = (await getChapter(ctx.sadmin, mainChapterId)).stages;
+
+    assert.assertEquals(f1Save.unit_infos.map((unit) => unit.is_flagged), [true, false, false, false, false]);
+    assert.assertEquals(await listPageUnitFlaggedStats(proof02.api, mainChapterId), flaggedStats);
+
+    const unchangedFlag = await savePageUnits(trans01.api, p0Id, [
+        { edit: "patch", id: flaggedId, is_flagged: null },
+    ]);
+    assert.assert(unchangedFlag.unit_infos[0]!.is_flagged);
+    assert.assertEquals(unchangedFlag.translated_unit_count, 0);
+    assert.assertEquals(unchangedFlag.proofread_unit_count, 0);
+
+    await savePageUnits(proof02.api, p0Id, [{ edit: "patch", id: flaggedId, is_flagged: false }]);
+    assert.assertEquals(await listPageUnitFlaggedStats(trans01.api, mainChapterId), []);
+    await savePageUnits(trans01.api, p0Id, [{ edit: "patch", id: flaggedId, is_flagged: true }]);
+    await savePageUnits(proof02.api, p0Id, [{ edit: "delete", id: flaggedId }]);
+    assert.assertEquals(await listPageUnitFlaggedStats(trans01.api, mainChapterId), []);
+    const restoredFlag = await savePageUnits(proof02.api, p0Id, [{ edit: "patch", id: flaggedId }]);
+    assert.assert(restoredFlag.unit_infos[0]!.is_flagged);
+    assert.assertEquals(await listPageUnitFlaggedStats(trans01.api, mainChapterId), flaggedStats);
+    assert.assertEquals((await getChapter(ctx.sadmin, mainChapterId)).stages, stagesBeforeFlags);
 
     // ---------- F2. next_id insert ----------
 
@@ -390,6 +424,8 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     // ---------- F10. import/export regression ----------
 
+    await savePageUnits(trans01.api, p0Id, [{ edit: "patch", id: flaggedId, is_flagged: true }]);
+
     const mainExports = await exportTranslations(ctx.sadmin, mainChapterId, [
         "poprako",
         "label_plus",
@@ -400,6 +436,8 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     assert.assert(mainExports.label_plus, "combined export must contain LabelPlus");
 
     const mainExport = mainExports.poprako;
+
+    assert.assert(mainExport.pages.some((page) => page.units.some((unit) => unit.is_flagged)));
 
     assert.assert(mainExport.chapter_id);
     assert.assert(mainExport.comic_id);
@@ -546,6 +584,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
             assert.assertEquals(targetUnit.x_coord, sourceUnit.x_coord);
             assert.assertEquals(targetUnit.y_coord, sourceUnit.y_coord);
             assert.assertEquals(targetUnit.is_bubble, sourceUnit.is_bubble);
+            assert.assertEquals(targetUnit.is_flagged, sourceUnit.is_flagged);
             assert.assertEquals(targetUnit.translated_text, sourceUnit.translated_text);
             assert.assertEquals(targetUnit.is_proofread, sourceUnit.is_proofread);
             assert.assertEquals(targetUnit.proofread_text, sourceUnit.proofread_text);
@@ -573,6 +612,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     assert.assert(keepSourcePage, "export fixture must contain a populated page");
 
     keepSourcePage.units[0]!.translated_text = "keep must not replace this text";
+    keepSourcePage.units[0]!.is_flagged = !keepSourcePage.units[0]!.is_flagged;
 
     const beforeKeepExport = await exportPoprako(ctx.sadmin, f10Chapter.id);
     const kept = await importTranslations(
@@ -587,6 +627,13 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     assert.assertEquals(kept.imported_page_count, 0);
     assert.assertEquals(kept.imported_unit_count, 0);
     assert.assertEquals(afterKeepExport, beforeKeepExport);
+
+    // Older PopRaKo documents without flags still import as unflagged.
+    const legacyExport = JSON.stringify(mainExport, (key, value) => key === "is_flagged" ? undefined : value);
+    await importTranslations(ctx.sadmin, f10Chapter.id, "poprako", "overwrite", legacyExport);
+    const legacyRoundtrip = await exportPoprako(ctx.sadmin, f10Chapter.id);
+    assert.assert(legacyRoundtrip.pages.every((page) => page.units.every((unit) => unit.is_flagged === false)));
+    assert.assertEquals(await listPageUnitFlaggedStats(ctx.sadmin, f10Chapter.id), []);
 
     // cleanup F10 aux chapter
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/chapters/${f10Chapter.id}`), 204);

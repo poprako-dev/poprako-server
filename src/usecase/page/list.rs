@@ -9,8 +9,9 @@ use poprako_util::i18n::trl;
 use crate::complex::page::perm as page_perm_complex;
 use crate::data::instr::page::{
     ListPageInfosInstr, ListPageUnitDiffStatsInstr,
+    ListPageUnitFlaggedStatsInstr,
 };
-use crate::data::val::page::PageUnitDiffStatsVal;
+use crate::data::val::page::{PageUnitDiffStatsVal, PageUnitFlaggedStatsVal};
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::PageImage;
@@ -19,7 +20,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
-    GetPageInfo, ListPageInfos, ListPageUnitDiffStats,
+    GetPageInfo, ListPageInfos, ListPageUnitDiffStats, ListPageUnitFlaggedStats,
 };
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
@@ -74,6 +75,37 @@ where
     .await?;
 
     accept(page_unit_diff_stats.into_iter().map(Into::into).collect())
+}
+
+/// Lists flagged Unit statistics for Pages containing visible flagged Units.
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(chapter_id = %instr.chapter_id),
+)]
+pub async fn list_unit_flagged_stats<C, R>(
+    (repo,): (&R,),
+    token: UserToken,
+    instr: ListPageUnitFlaggedStatsInstr,
+) -> BaseRest<Vec<PageUnitFlaggedStatsVal>>
+where
+    C: Context,
+    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
+{
+    ensure_user_can_list_infos(repo, &token, &instr.chapter_id).await?;
+
+    let page_unit_flagged_stats = ListPageUnitFlaggedStats {
+        chapter_id: &instr.chapter_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    accept(
+        page_unit_flagged_stats
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    )
 }
 
 /// Fetches one page by ID.

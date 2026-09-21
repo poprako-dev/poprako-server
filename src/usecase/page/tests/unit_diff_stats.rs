@@ -1,10 +1,14 @@
 use super::*;
 
-use crate::data::instr::page::ListPageUnitDiffStatsInstr;
+use crate::data::instr::page::{
+    ListPageUnitDiffStatsInstr, ListPageUnitFlaggedStatsInstr,
+};
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::result::{BaseError, ExpectedVariant};
-use crate::usecase::page::list::list_unit_diff_stats;
+use crate::usecase::page::list::{
+    list_unit_diff_stats, list_unit_flagged_stats,
+};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::role::RoleField;
 
@@ -321,6 +325,7 @@ fn unit_info(
         next_id: None,
 
         is_bubble: true,
+        is_flagged: false,
 
         coord: UnitCoord {
             x_coord: 1.0,
@@ -339,4 +344,113 @@ fn unit_info(
         created_at: current_time,
         updated_at: current_time,
     }
+}
+
+// list_unit_flagged_stats(flagged)(positive): filters hidden Units and preserves original Page order.
+#[tokio::test]
+async fn flagged_stats_count_visible_units_in_page_order() {
+    let mock = diff_scope();
+
+    for (id, page_id, flagged, hidden) in [
+        ("a", "page-1", true, false),
+        ("b", "page-1", true, false),
+        ("c", "page-1", true, true),
+        ("d", "page-2", false, false),
+        ("e", "page-3", true, false),
+        ("f", "unrelated-page", true, false),
+    ] {
+        let mut unit = unit_info(id, page_id, None, None, false, hidden);
+
+        unit.is_flagged = flagged;
+
+        mock.seed_unit(unit);
+    }
+
+    let stats = list_unit_flagged_stats(
+        (&mock,),
+        page_token("user-1"),
+        ListPageUnitFlaggedStatsInstr {
+            chapter_id: "chapter-1".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(
+        serde_json::to_value(stats).unwrap(),
+        serde_json::json!([
+            {"page_id":"page-3","index":0,"flagged_unit_count":1},
+            {"page_id":"page-1","index":2,"flagged_unit_count":2},
+        ])
+    );
+}
+
+// list_unit_flagged_stats(flagged)(negative): access and whole-Chapter page bounds match other Page reads.
+#[tokio::test]
+async fn flagged_stats_enforce_access_and_page_limit_without_matches() {
+    let mock = read_scope();
+
+    mock.seed_member(page_member(
+        "member-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    let request = || ListPageUnitFlaggedStatsInstr {
+        chapter_id: "chapter-1".into(),
+    };
+
+    assert!(
+        list_unit_flagged_stats((&mock,), page_token("member-1"), request())
+            .await
+            .unwrap()
+            .is_empty()
+    );
+
+    let denied =
+        list_unit_flagged_stats((&mock,), page_token("outsider"), request())
+            .await;
+
+    assert!(matches!(
+        denied,
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            ..
+        })
+    ));
+
+    let missing = list_unit_flagged_stats(
+        (&mock,),
+        page_token("user-1"),
+        ListPageUnitFlaggedStatsInstr {
+            chapter_id: "missing".into(),
+        },
+    )
+    .await;
+
+    assert!(matches!(
+        missing,
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        })
+    ));
+
+    for index in 1..MAX_CHAPTER_PAGE_COUNT {
+        mock.seed_page(page_model(&format!("extra-{index}"), index));
+    }
+
+    assert!(
+        list_unit_flagged_stats((&mock,), page_token("user-1"), request())
+            .await
+            .unwrap()
+            .is_empty()
+    );
+
+    mock.seed_page(page_model("excess", MAX_CHAPTER_PAGE_COUNT));
+
+    assert!(matches!(
+        list_unit_flagged_stats((&mock,), page_token("user-1"), request())
+            .await,
+        Err(BaseError::Unrecoverable { .. })
+    ));
 }

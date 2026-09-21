@@ -189,6 +189,7 @@ pub fn flush_label_plus_unit(
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
         is_bubble: label_plus_unit.is_bubble,
+        is_flagged: false,
         source: UnitTranslationImportSource::LabelPlus {
             text: normalize_label_plus_text(main_text_lines.join("\n")),
         },

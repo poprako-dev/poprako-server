@@ -15,6 +15,7 @@ fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
         id: id.to_string(),
         next_id,
         is_bubble: None,
+        is_flagged: None,
         coord: None,
         translation: Patch::Skip,
         revision: Patch::Skip,
@@ -27,6 +28,7 @@ fn create(id: &str, next_id: Option<String>) -> UnitEdit {
         id: id.to_string(),
         next_id,
         is_bubble: false,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,
@@ -53,6 +55,7 @@ fn unit(translated_text: &str, proofread_text: &str) -> UnitInfo {
         page_id: "page-1".to_string(),
         next_id: None,
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,
@@ -95,6 +98,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
             id: "a".to_string(),
             next_id: Patch::Skip,
             is_bubble: Some(false),
+            is_flagged: None,
             coord: Some(UnitCoord {
                 x_coord: 2.0,
                 y_coord: 3.0,
@@ -113,6 +117,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
         UnitEdit::Save {
             next_id: Patch::Clear,
             is_bubble: Some(false),
+            is_flagged: None,
             coord: Some(_),
             ..
         }

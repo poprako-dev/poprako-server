@@ -1,7 +1,8 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::{
-    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitScope,
+    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitFlaggedStats,
+    PageUnitScope,
 };
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::{PageManifestEntry, PageRawIdentsRepl};
@@ -127,4 +128,12 @@ pub struct ListPageRawIdentInfos<'a> {
 pub struct UpdatePageRawIdents<'a> {
     /// Paired filenames with distinct resolved page identifiers.
     pub repl: &'a PageRawIdentsRepl<'a>,
+}
+
+/// Lists visible flagged Unit counts for matching Pages in a Chapter.
+#[derive(Oper)]
+#[oper(output = Vec<PageUnitFlaggedStats>)]
+pub struct ListPageUnitFlaggedStats<'a> {
+    /// Chapter whose Pages should be checked.
+    pub chapter_id: &'a str,
 }

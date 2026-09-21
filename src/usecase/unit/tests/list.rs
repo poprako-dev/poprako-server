@@ -89,6 +89,7 @@ fn unit_info(id: &str) -> UnitInfo {
         next_id: None,
 
         is_bubble: true,
+        is_flagged: false,
 
         coord: UnitCoord {
             x_coord: 1.0,

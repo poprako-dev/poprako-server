@@ -1,6 +1,8 @@
 // unit_roundtrip_uses_testcontainer(UnitRepo)(positive): batch apply creates, hides, restores, orders, and counts Units.
 
 mod regression;
+// Review flag persistence and page aggregation.
+mod flagged;
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
@@ -47,6 +49,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
                 value: second_id.clone(),
             },
             is_bubble: None,
+            is_flagged: None,
             coord: None,
             translation: Patch::Assign {
                 value: UnitTranslation {
@@ -116,6 +119,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             id: first_id.clone(),
             next_id: Patch::Skip,
             is_bubble: None,
+            is_flagged: None,
             coord: None,
             translation: Patch::Assign {
                 value: UnitTranslation {
@@ -129,6 +133,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             id: missing_id,
             next_id: Patch::Skip,
             is_bubble: None,
+            is_flagged: None,
             coord: None,
             translation: Patch::Skip,
             revision: Patch::Skip,
@@ -185,6 +190,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
                 value: second_id.clone(),
             },
             is_bubble: Some(false),
+            is_flagged: None,
             coord: Some(UnitCoord {
                 x_coord: 3.0,
                 y_coord: 4.0,
@@ -196,6 +202,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             id: second_id.clone(),
             next_id: Patch::Skip,
             is_bubble: None,
+            is_flagged: None,
             coord: None,
             translation: Patch::Assign {
                 value: UnitTranslation {
@@ -284,6 +291,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: first_id.clone(),
         next_id: Patch::Clear,
         is_bubble: None,
+        is_flagged: None,
         coord: None,
         translation: Patch::Skip,
         revision: Patch::Assign {
@@ -389,6 +397,8 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     regression::verify_chunking_and_diff(&repo, &nucl, &page_fixture).await;
 
+    flagged::verify_flags(shared.clone()).await;
+
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
@@ -401,6 +411,7 @@ fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
         id: id.to_string(),
         next_id: None,
         is_bubble: true,
+        is_flagged: false,
         coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,

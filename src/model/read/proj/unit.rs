@@ -30,6 +30,8 @@ pub struct UnitInfo {
 
     /// Whether this Unit identifies a speech bubble.
     pub is_bubble: bool,
+    /// Whether this Unit is flagged for later review.
+    pub is_flagged: bool,
 
     /// Page-relative coordinate.
     pub coord: UnitCoord,

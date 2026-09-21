@@ -260,6 +260,7 @@ fn make_unit_export(
         x_coord: unit_info.coord.x_coord,
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,
+        is_flagged: unit_info.is_flagged,
         translated_text: unit_info.translated_text.clone(),
         translator_id: unit_info.last_translator_id.clone(),
         is_proofread: unit_info.is_proofread,

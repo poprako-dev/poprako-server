@@ -1,5 +1,13 @@
 # Unit v2 的逻辑与存储
 
+## Review flags
+
+`is_flagged` is a shared review reminder saved through the ordinary Unit save
+endpoint. It does not affect progress or workflow. The chapter Page navigation
+endpoint is `GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats`.
+See [Unit review flags](../unit-flagged-api.md) for the contract and the standalone
+existing-database upgrade script.
+
 ## 存储模型
 
 一个 Page 的全部 Unit 通过 `f_next_id` 组成单链表。链中同时包含 visible

@@ -160,6 +160,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         page_id: "page-1".into(),
         next_id: None,
         is_bubble: true,
+        is_flagged: true,
         is_proofread: true,
         coord: UnitCoord {
             x_coord: 1.5,
@@ -299,6 +300,11 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
     assert_eq!(
         archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["source_unit_id"],
         "unit-1"
+    );
+
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["is_flagged"],
+        true
     );
 
     assert!(snapshot.objs["comic_cover"]["comic-1"].meta.is_none());

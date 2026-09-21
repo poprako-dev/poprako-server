@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS "t_unit" (
     "f_hidden_at"                  TIMESTAMPTZ,
 
     "f_is_bubble"                  BOOLEAN     NOT NULL DEFAULT FALSE,
+    "f_is_flagged"                 BOOLEAN     NOT NULL DEFAULT FALSE,
     "f_is_proofread"               BOOLEAN     NOT NULL DEFAULT FALSE,
 
     "f_x_coord"                    DOUBLE PRECISION NOT NULL,

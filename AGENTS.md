@@ -23,10 +23,7 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 - Never hand-edit generated `schema.rs` or `docs/swagger.json`. Locally,
   regenerate schema only with `just mgr-schema`; see the fullchain skill for
   migrations and `docs/AGENTS.md` for OpenAPI generation.
-- Releases and production deployments must run through GitHub Actions.
-  Production SSH is allowed only from the protected Actions environment
-  through the dedicated deployment account. Maintainer machines must never
-  execute production deployment scripts.
+- Releases and production deployments must run through GitHub Actions or on user explicit requirements.
 - Do not run local image/release builds, release helpers, or deployment
   scripts unless the user explicitly requests that exact operation. Use the
   checked-in CI validation scripts for deployment preparation.
