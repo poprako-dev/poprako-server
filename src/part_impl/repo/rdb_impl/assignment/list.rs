@@ -12,7 +12,7 @@ use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
-    f_assigned_admin_at, f_assigned_proofreader_at, f_assigned_publisher_at,
+    f_assigned_proofreader_at, f_assigned_publisher_at,
     f_assigned_raw_provider_at, f_assigned_redrawer_at, f_assigned_reviewer_at,
     f_assigned_translator_at, f_assigned_typesetter_at, f_chapter_id,
     f_created_at, f_id, f_user_id, t_assignment,
@@ -121,9 +121,7 @@ pub async fn list_infos(
                 query.filter(f_assigned_publisher_at.is_not_null())
             }
 
-            RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
-
-            _ => query,
+            _ => query.filter(f_id.eq_any(Vec::<String>::new())),
         };
     }
 

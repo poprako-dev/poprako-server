@@ -5,8 +5,8 @@
 //!
 //! Read-level access (list, get) requires the caller to be a team member of the
 //! owning workset's team. Write-level access (create, update info, delete) requires
-//! team admin. Workflow transitions additionally validate that the caller holds a
-//! role consistent with the target stage and event.
+//! team admin. Workflow transitions also permit chapter workers holding the
+//! appropriate role; team administrators do not require worker assignments.
 
 // Workflow role validation for chapter stage transitions.
 mod role;

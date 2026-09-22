@@ -23,10 +23,8 @@
 //   - workset/comic/chapter create/update/delete: team ADMIN. sadmin is the
 //     only team admin in the seed (member roles include ADMIN=128). The 14
 //     personas are workers (no ADMIN bit) -> 403/4 on create.
-//   - chapter create auto-creates an ADMIN assignment for the creator, so
-//     sadmin can later pin/patch chapters sadmin created.
-//   - chapter pin/subtitle patch: caller needs a chapter ADMIN assignment
-//     (check_admin). sadmin has it from create; trans_01 does not -> 403/4.
+//   - chapter creation only assigns explicitly requested worker roles.
+//   - chapter pin/subtitle patch requires owning-team ADMIN, without a chapter assignment.
 //
 // Status: IMPLEMENTED.
 
@@ -663,14 +661,14 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         2,
     );
 
-    // non-existent chapter patch -> 403/4 (admin check runs before existence check)
+    // non-existent chapter patch -> 422/2 (ownership resolution requires a chapter)
     expectError(
         await ctx.sadmin.patch<ErrorBody>("/api/v1/chapters/chapter-does-not-exist", {
             id: "chapter-does-not-exist",
             subtitle: "x",
         }),
-        403,
-        4,
+        422,
+        2,
     );
 
     // ---------- aux: cascade subtree on 归档池 for it_10 ----------

@@ -250,3 +250,22 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
 }
+
+// list_infos(list_infos)(negative): chapter assignments cannot be filtered by team-only roles.
+#[tokio::test]
+async fn list_infos_rejects_admin_and_bot_filters() {
+    let mock = Mock::new();
+
+    for role in [RoleField::ADMIN, RoleField::BOT] {
+        let mut instr = list_by_chapter_data("chapter-1");
+
+        instr.role = Some(role);
+
+        let err = list_infos((&mock, &mock), token("viewer-user"), instr)
+            .await
+            .err()
+            .unwrap();
+
+        assert_expected_variant(err, ExpectedVariant::Args);
+    }
+}

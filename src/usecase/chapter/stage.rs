@@ -25,6 +25,7 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
     FindAssignmentInfo, ListAssignmentInfos,
 };
@@ -35,11 +36,15 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{ListPageInfos, UpdatePageRawIdents};
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
+use crate::value::role::RoleField;
 
 /// Outcome of checking whether raw provisioning can advance.
 pub enum RawProvideAdvance {
@@ -178,6 +183,8 @@ where
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + PageRepo<C>
         + Send
         + Sync,
@@ -300,8 +307,22 @@ async fn ensure_update_stage_perm<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C> + Sync,
+    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
+    let member_info = MemberLoader::find_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
+        &token.user_id,
+        &instr.id,
+    )
+    .await?;
+
+    if let Some(member_info) = member_info
+        && member_info.roles.has_any_role(&[RoleField::ADMIN])
+    {
+        return chapter_perm_complex::ensure_user_can_manage(&member_info);
+    }
+
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id: &instr.id,
         user_id: &token.user_id,

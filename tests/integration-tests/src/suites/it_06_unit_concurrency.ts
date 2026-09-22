@@ -373,10 +373,10 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     assert.assert(p1FinalExport.units.length >= 12, "p1 has at least 12 units after F6-F9");
 
-    // Translation edits and the earlier export auto-start their corresponding
-    // workflow stages. it_07 resets these through the public revert API.
+    // Translation edits auto-start translation; exports without a typesetter
+    // or redrawer assignment leave typeset/redraw pending.
     assert.assertEquals(stagePhase(mainFinal.stages, "translate"), PHASE.ACTIVE);
-    assert.assertEquals(stagePhase(mainFinal.stages, "typeset-redraw"), PHASE.ACTIVE);
+    assert.assertEquals(stagePhase(mainFinal.stages, "typeset-redraw"), PHASE.PENDING);
     assert.assertEquals(stagePhase(mainFinal.stages, "raw-provide"), PHASE.PENDING);
     assert.assertEquals(stagePhase(mainFinal.stages, "proofread"), PHASE.PENDING);
     assert.assertEquals(stagePhase(mainFinal.stages, "review"), PHASE.PENDING);

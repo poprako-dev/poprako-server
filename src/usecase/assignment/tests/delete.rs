@@ -1,5 +1,5 @@
 // delete(delete)(positive): owner should delete own assignment.
-// delete(delete)(positive): reviewer should delete another user's assignment.
+// delete(delete)(positive): team admin should delete another user's assignment.
 // delete(delete)(negative): non-reviewer should not delete another user's assignment.
 
 use super::*;
@@ -32,17 +32,13 @@ async fn delete_owner_deletes_own_assignment() {
 }
 
 #[tokio::test]
-async fn delete_reviewer_deletes_another_user_assignment() {
+async fn delete_team_admin_deletes_another_user_assignment() {
     //
     let mock = Mock::new();
 
     seed_scope(&mock);
 
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "admin-user",
-        role(RoleField::ADMIN),
-    ));
+    mock.seed_member(member("admin-user", role(RoleField::ADMIN)));
 
     mock.seed_assignment(assignment(
         "chapter-1",
@@ -58,7 +54,7 @@ async fn delete_reviewer_deletes_another_user_assignment() {
     .await
     .unwrap();
 
-    assert_eq!(mock.snapshot().assignments.len(), 1);
+    assert!(mock.snapshot().assignments.is_empty());
 }
 
 #[tokio::test]

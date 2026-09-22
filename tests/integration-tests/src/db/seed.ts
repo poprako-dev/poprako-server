@@ -153,15 +153,16 @@ export async function grantChapterWorkerRoles(chapterId: string, userId: string)
     await withDatabaseClient(async (client) => {
         await client.queryObject(
             `
-        UPDATE "t_assignment"
-        SET
-          "f_assigned_raw_provider_at" = COALESCE("f_assigned_raw_provider_at", NOW()),
-          "f_assigned_translator_at" = COALESCE("f_assigned_translator_at", NOW()),
+        INSERT INTO "t_assignment" (
+          "f_id", "f_chapter_id", "f_user_id",
+          "f_assigned_raw_provider_at", "f_assigned_translator_at"
+        ) VALUES ($3, $1, $2, NOW(), NOW())
+        ON CONFLICT ("f_chapter_id", "f_user_id") DO UPDATE SET
+          "f_assigned_raw_provider_at" = COALESCE("t_assignment"."f_assigned_raw_provider_at", NOW()),
+          "f_assigned_translator_at" = COALESCE("t_assignment"."f_assigned_translator_at", NOW()),
           "f_updated_at" = NOW()
-        WHERE "f_chapter_id" = $1
-          AND "f_user_id" = $2
       `,
-            [chapterId, userId],
+            [chapterId, userId, crypto.randomUUID()],
         );
     });
 }

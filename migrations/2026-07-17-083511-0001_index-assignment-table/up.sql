@@ -35,10 +35,6 @@ CREATE INDEX IF NOT EXISTS "idx_assignment_chapter_publisher_created_at"
     ON "t_assignment" ("f_chapter_id", "f_created_at" DESC, "f_id" ASC)
     WHERE "f_assigned_publisher_at" IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS "idx_assignment_chapter_admin_created_at"
-    ON "t_assignment" ("f_chapter_id", "f_created_at" DESC, "f_id" ASC)
-    WHERE "f_assigned_admin_at" IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS "idx_assignment_user_raw_provider_created_at"
     ON "t_assignment" ("f_user_id", "f_created_at" DESC, "f_id" ASC)
     WHERE "f_assigned_raw_provider_at" IS NOT NULL;
@@ -66,7 +62,3 @@ CREATE INDEX IF NOT EXISTS "idx_assignment_user_reviewer_created_at"
 CREATE INDEX IF NOT EXISTS "idx_assignment_user_publisher_created_at"
     ON "t_assignment" ("f_user_id", "f_created_at" DESC, "f_id" ASC)
     WHERE "f_assigned_publisher_at" IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS "idx_assignment_user_admin_created_at"
-    ON "t_assignment" ("f_user_id", "f_created_at" DESC, "f_id" ASC)
-    WHERE "f_assigned_admin_at" IS NOT NULL;

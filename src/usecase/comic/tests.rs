@@ -6,7 +6,7 @@ mod preset_assignment;
 mod view;
 
 // create(create)(positive): creating a comic should allocate workset-scoped index and update comic count.
-// create(create)(positive): first-chapter creator preset roles are merged with chapter admin.
+// create(create)(positive): first-chapter creator receives only the preset worker roles.
 // create(create)(negative): missing workset should rollback without creating a comic.
 // create(create)(negative): creator cannot preset a role missing from team membership.
 // get_info(get_info)(positive): existing comic should return uploaded cover URL.
@@ -156,17 +156,16 @@ async fn create_allocates_index_and_updates_count() {
     // last_active_at should be set (not epoch)
     assert!(snapshot.comics[0].last_active_at.unix_timestamp() > 0);
 
-    // Creator admin assignment
+    // Creator worker assignment
     assert_eq!(snapshot.assignments.len(), 1);
 
     assert_eq!(snapshot.assignments[0].chapter_id, created.chapter_id);
 
     assert_eq!(snapshot.assignments[0].user_id, "user-1");
 
-    assert!(
-        snapshot.assignments[0]
-            .roles
-            .has_every_role(&[RoleField::ADMIN, RoleField::TRANSLATOR])
+    assert_eq!(
+        snapshot.assignments[0].roles,
+        RoleMask::from(RoleField::TRANSLATOR)
     );
 }
 

@@ -22,6 +22,50 @@ use crate::usecase::internal::util::LoadMode;
 pub struct MemberLoader;
 
 impl MemberLoader {
+    /// Finds optional membership in the team that owns a chapter.
+    pub async fn find_info_from_chapter<C, R>(
+        repo: &R,
+        mode: LoadMode<'_, C>,
+        user_id: &str,
+        chapter_id: &str,
+    ) -> BaseRest<Option<MemberInfo>>
+    where
+        C: Context,
+        R: MemberRepo<C> + TeamRepo<C> + Sync,
+    {
+        //
+        match mode {
+            //
+            LoadMode::Run => {
+                //
+                let team_id = ResolveTeamId::Chapter { id: chapter_id }
+                    .run_on(repo)
+                    .await?;
+
+                FindMemberInfo {
+                    user_id,
+                    team_id: &team_id,
+                }
+                .run_on(repo)
+                .await
+            }
+
+            LoadMode::Step { context } => {
+                //
+                let team_id = ResolveTeamId::Chapter { id: chapter_id }
+                    .step_on(repo, context)
+                    .await?;
+
+                FindMemberInfo {
+                    user_id,
+                    team_id: &team_id,
+                }
+                .step_on(repo, context)
+                .await
+            }
+        }
+    }
+
     /// Loads a user's membership in the team that owns a comic.
     pub async fn load_info_from_comic<C, R>(
         repo: &R,
@@ -77,38 +121,11 @@ impl MemberLoader {
         C: Context,
         R: MemberRepo<C> + TeamRepo<C> + Sync,
     {
-        match mode {
-            //
-            LoadMode::Run => {
-                //
-                let team_id = ResolveTeamId::Chapter { id: chapter_id }
-                    .run_on(repo)
-                    .await?;
+        let member_info =
+            Self::find_info_from_chapter(repo, mode, user_id, chapter_id)
+                .await?;
 
-                Self::load_info_from_team(
-                    repo,
-                    LoadMode::Run,
-                    user_id,
-                    &team_id,
-                )
-                .await
-            }
-
-            LoadMode::Step { context } => {
-                //
-                let team_id = ResolveTeamId::Chapter { id: chapter_id }
-                    .step_on(repo, context)
-                    .await?;
-
-                Self::load_info_from_team(
-                    repo,
-                    LoadMode::Step { context },
-                    user_id,
-                    &team_id,
-                )
-                .await
-            }
-        }
+        Self::require_info(member_info)
     }
 
     /// Loads a user's membership in the team that owns a workset.

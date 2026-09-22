@@ -21,18 +21,6 @@ async fn update_stage_admin_advances_any_stage() {
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::ADMIN),
-    ));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-2",
-        RoleMask::from(RoleField::PUBLISHER),
-    ));
-
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
@@ -76,12 +64,6 @@ async fn update_stage_noop_does_not_create_workflow_record() {
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::ADMIN),
-    ));
 
     update_stage(
         (&mock, &mock, &mock, &mock),
@@ -285,12 +267,6 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
         .unwrap();
 
     mock.seed_chapter(chapter_info);
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::ADMIN),
-    ));
 
     let info_result = update_info(
         (&mock, &mock),

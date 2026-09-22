@@ -28,3 +28,29 @@ async fn create_rejects_preset_role_missing_from_membership() {
 
     assert!(snapshot.assignments.is_empty());
 }
+
+// creation(create)(positive): no preset leaves the first chapter unassigned while recording creation.
+#[tokio::test]
+async fn create_without_preset_preserves_creation_history() {
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    let created =
+        create((&mock, &mock), token("user-1"), create_instr("workset-1"))
+            .await
+            .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.assignments.is_empty());
+
+    assert!(snapshot.chapter_workflow_records.iter().any(|record| {
+        record.chapter_id == created.chapter_id && matches!(
+            record.payload,
+            crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload::ChapterCreated
+        )
+    }));
+}

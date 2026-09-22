@@ -2,12 +2,12 @@
 
 /// Pure permission rules.
 pub mod perm {
+    use crate::complex::assignment::perm as assignment_perm_complex;
     use crate::complex::util::{
-        check_user_is_team_admin, check_user_is_team_admin_with_roles,
-        check_user_is_team_member,
+        check_user_is_team_admin, check_user_is_team_member,
     };
     use crate::model::read::proj::member::MemberInfo;
-    use crate::result::BaseRest;
+    use crate::result::{BaseRest, accept};
     use crate::value::role::RoleMask;
 
     /// Verify the caller may create a comic with the requested preset roles.
@@ -16,10 +16,17 @@ pub mod perm {
         preset_assignment_roles: Option<RoleMask>,
     ) -> BaseRest<()> {
         //
-        check_user_is_team_admin_with_roles(
-            member_info,
-            preset_assignment_roles,
-        )
+        check_user_is_team_admin(member_info)?;
+
+        if let Some(roles) = preset_assignment_roles {
+            //
+            assignment_perm_complex::ensure_user_can_take_roles(
+                member_info,
+                roles,
+            )?;
+        }
+
+        accept(())
     }
 
     /// Verify the caller may list comics.

@@ -369,18 +369,21 @@ where
     C: Context,
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
-    let assignment_entry = AssignmentEntry {
-        id: assignment_complex::gen_id(),
-        chapter_id: chapter_id.to_owned(),
-        user_id: user_id.clone(),
-        roles: assignment_complex::creator_roles(preset_assignment_roles),
-    };
+    if let Some(roles) = preset_assignment_roles {
+        //
+        let assignment_entry = AssignmentEntry {
+            id: assignment_complex::gen_id(),
+            chapter_id: chapter_id.to_owned(),
+            user_id: user_id.clone(),
+            roles,
+        };
 
-    CreateAssignment {
-        entry: &assignment_entry,
+        CreateAssignment {
+            entry: &assignment_entry,
+        }
+        .step_on(repo, context)
+        .await?;
     }
-    .step_on(repo, context)
-    .await?;
 
     let workflow_record_entry = ChapterWorkflowRecordEntry::new(
         chapter_id.to_owned(),

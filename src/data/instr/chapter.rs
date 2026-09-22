@@ -28,7 +28,7 @@ pub struct CreateChapterInstr {
     /// [`default_subtitle`]: crate::complex::chapter::default_subtitle
     pub subtitle: Option<String>,
 
-    /// Roles assigned to the creator in addition to the mandatory admin role.
+    /// Optional worker roles assigned to the creator; absent means no assignment.
     /// Every requested role must exist on the creator's team membership.
     pub preset_assignment_roles: Option<RoleMask>,
 }
