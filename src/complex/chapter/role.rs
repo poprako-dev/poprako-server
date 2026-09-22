@@ -31,10 +31,6 @@ pub fn check_workflow_role(
         }
     }
 
-    if assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return accept(());
-    }
-
     if required_roles.is_empty()
         || !assignment_info.roles.has_any_role(required_roles)
     {

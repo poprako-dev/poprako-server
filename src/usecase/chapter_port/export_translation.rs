@@ -78,7 +78,7 @@ where
         + Sync,
     O: ObjDeptView<PageImage, C> + Sync,
 {
-    let actor_is_chapter_assignee =
+    let actor_has_artwork_assignment =
         chapter_port_perm_usecase::ensure_export_access::<C, R>(
             repo,
             &token,
@@ -237,7 +237,7 @@ where
         &chapter_info.id,
         token.user_id,
         formats,
-        actor_is_chapter_assignee,
+        actor_has_artwork_assignment,
     )
     .await?;
 
@@ -286,7 +286,7 @@ async fn persist_export_record<N, C, R>(
     chapter_id: &str,
     actor_user_id: String,
     formats: ExportFormatSpec,
-    actor_is_chapter_assignee: bool,
+    actor_has_artwork_assignment: bool,
 ) -> BaseRest<()>
 where
     C: Context + Send,
@@ -316,7 +316,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            if actor_is_chapter_assignee {
+            if actor_has_artwork_assignment {
                 //
                 stage_usecase::start_pending_stages(
                     repo,

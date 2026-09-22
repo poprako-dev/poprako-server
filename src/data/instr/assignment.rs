@@ -37,7 +37,7 @@ pub struct ListAssignmentInfosInstr {
     /// with `chapter_id`.
     pub owner_id: Option<String>,
 
-    /// Single role-bit filter. Must be a singular valid role bit; composite
+    /// Single worker role-bit filter. ADMIN and BOT are rejected; composite
     /// values are rejected.
     pub role: Option<RoleField>,
 
@@ -69,6 +69,20 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             offset,
             limit,
         } = self;
+
+        if role.is_some_and(|role| {
+            matches!(role, RoleField::ADMIN | RoleField::BOT)
+        }) {
+            //
+            let message = trl("error-chapter-role-not-assignable");
+
+            tracing::warn!(err_variant = ?ExpectedVariant::Args, err_message = %message, "assignment filter requires a worker role");
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
 
         if chapter_id.is_some() == owner_id.is_some() {
             //
@@ -138,7 +152,7 @@ pub struct UpdateAssignmentRolesInstr {
     /// Target user identifier.
     pub user_id: String,
 
-    /// New role mask to apply.
+    /// Non-empty worker role mask to apply; ADMIN is not assignable.
     pub roles: RoleMask,
 }
 

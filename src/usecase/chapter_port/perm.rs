@@ -15,8 +15,9 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::role::RoleField;
 
-/// Authorizes chapter export and returns whether the caller is assigned to the chapter.
+/// Authorizes chapter export and returns whether the caller holds a typesetter or redrawer assignment.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn ensure_export_access<C, R>(
     repo: &R,
@@ -53,7 +54,11 @@ where
                 &ChapterExportAccess::Member { member_info },
             )?;
 
-            accept(assignment_info.is_some())
+            accept(assignment_info.is_some_and(|info| {
+                //
+                info.roles
+                    .has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
+            }))
         }
 
         (None, Some(assignment_info)) => {
@@ -62,7 +67,12 @@ where
                 &ChapterExportAccess::Assignee { assignment_info },
             )?;
 
-            accept(true)
+            accept(
+                assignment_info.roles.has_any_role(&[
+                    RoleField::TYPESETTER,
+                    RoleField::REDRAWER,
+                ]),
+            )
         }
 
         (None, None) => {

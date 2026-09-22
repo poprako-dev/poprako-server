@@ -25,7 +25,6 @@ pub struct AssignmentInfoRow {
     pub f_assigned_redrawer_at: Option<OffsetDateTime>,
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
-    pub f_assigned_admin_at: Option<OffsetDateTime>,
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -67,10 +66,6 @@ impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
             bits |= u32::from(RoleField::PUBLISHER);
         }
 
-        if row.f_assigned_admin_at.is_some() {
-            bits |= u32::from(RoleField::ADMIN);
-        }
-
         let roles = RoleMask::try_from(bits)?;
 
         Ok(Self {
@@ -102,7 +97,6 @@ pub struct AssignmentEntryRow<'a> {
     pub f_assigned_redrawer_at: Option<OffsetDateTime>,
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
-    pub f_assigned_admin_at: Option<OffsetDateTime>,
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -128,7 +122,6 @@ impl<'a> AssignmentEntryRow<'a> {
             f_assigned_redrawer_at: timestamps.f_redrawer,
             f_assigned_reviewer_at: timestamps.f_reviewer,
             f_assigned_publisher_at: timestamps.f_publisher,
-            f_assigned_admin_at: timestamps.f_admin,
             f_created_at: now,
             f_updated_at: now,
         }
@@ -146,7 +139,6 @@ pub struct AssignmentAspectRow {
     pub f_assigned_redrawer_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_reviewer_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_publisher_at: Option<Option<OffsetDateTime>>,
-    pub f_assigned_admin_at: Option<Option<OffsetDateTime>>,
 
     pub f_updated_at: OffsetDateTime,
 }
@@ -162,7 +154,6 @@ impl AssignmentAspectRow {
             f_assigned_redrawer_at: None,
             f_assigned_reviewer_at: None,
             f_assigned_publisher_at: None,
-            f_assigned_admin_at: None,
             f_updated_at: updated_at,
         }
     }
@@ -186,8 +177,6 @@ impl AssignmentAspectRow {
 
         self.f_assigned_publisher_at = Some(timestamps.f_publisher);
 
-        self.f_assigned_admin_at = Some(timestamps.f_admin);
-
         self
     }
 }
@@ -202,7 +191,6 @@ pub struct AssignmentRoleTimestamps {
     pub f_redrawer: Option<OffsetDateTime>,
     pub f_reviewer: Option<OffsetDateTime>,
     pub f_publisher: Option<OffsetDateTime>,
-    pub f_admin: Option<OffsetDateTime>,
 }
 
 impl AssignmentRoleTimestamps {
@@ -220,7 +208,6 @@ impl AssignmentRoleTimestamps {
             f_redrawer: timestamp_fn(RoleField::REDRAWER),
             f_reviewer: timestamp_fn(RoleField::REVIEWER),
             f_publisher: timestamp_fn(RoleField::PUBLISHER),
-            f_admin: timestamp_fn(RoleField::ADMIN),
         }
     }
 }

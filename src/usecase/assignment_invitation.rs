@@ -16,6 +16,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter as chapter_complex;
+use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, ListAssignmentInvitationInfosInstr,
 };
@@ -33,6 +34,7 @@ use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
@@ -41,11 +43,14 @@ use crate::part::repo::oper::assignment_invitation::{
 };
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::user::FindUserInfo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::assignment_invitation::code::{
     gen_assignment_invitation_id, gen_code,
 };
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -75,7 +80,7 @@ pub async fn list_infos<C, R>(
 ) -> BaseRest<Vec<AssignmentInvitationInfoView>>
 where
     C: Context,
-    R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
+    R: AssignmentInvitationRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
 
@@ -112,9 +117,11 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + UserRepo<C>
+        + AssignmentRepo<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -228,7 +235,8 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + Send
         + Sync,
@@ -268,7 +276,7 @@ where
 // Assignment invitation code expiration window.
 const EXPIRY_DELAY: Duration = Duration::from_hours(72);
 
-// Verifies that the current user is assigned as a chapter administrator.
+// Verifies that the caller administers the chapter's owning team.
 #[instrument(level = "info", skip(repo))]
 async fn ensure_user_admin<C, R>(
     repo: &R,
@@ -277,47 +285,17 @@ async fn ensure_user_admin<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C>,
+    R: MemberRepo<C> + TeamRepo<C> + Sync,
 {
-    let assignment_info = FindAssignmentInfo::ChapterUser {
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
+        current_user_id,
         chapter_id,
-        user_id: current_user_id,
-    }
-    .run_on(repo)
+    )
     .await?;
 
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-chapter-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            chapter_id = %chapter_id,
-            user_id = %current_user_id,
-            "expected error: chapter administrator perm required",
-        );
-
-        return Err(expected(ExpectedVariant::Perm, err_message));
-    };
-
-    if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        //
-        let err_message = trl("error-chapter-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            chapter_id = %chapter_id,
-            user_id = %current_user_id,
-            roles = ?assignment_info.roles,
-            "expected error: chapter administrator perm required",
-        );
-
-        return Err(expected(ExpectedVariant::Perm, err_message));
-    }
-
-    accept(())
+    chapter_perm_complex::ensure_user_can_manage(&member_info)
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.

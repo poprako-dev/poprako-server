@@ -85,7 +85,6 @@ where
                     &token,
                     &instr,
                     &chapter_info,
-                    &assignment_infos,
                     assignment_info,
                 )
                 .await?;
@@ -93,15 +92,8 @@ where
 
             None => {
                 //
-                create_assignment(
-                    repo,
-                    context,
-                    &token,
-                    instr,
-                    &chapter_info,
-                    &assignment_infos,
-                )
-                .await?;
+                create_assignment(repo, context, &token, instr, &chapter_info)
+                    .await?;
             }
         }
 
@@ -121,20 +113,12 @@ async fn update_existing_assignment<C, R>(
     token: &UserToken,
     instr: &UpdateAssignmentRolesInstr,
     chapter_info: &ChapterInfo,
-    assignment_infos: &[AssignmentInfo],
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()>
 where
     C: Context,
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
-    ensure_existing_update_keeps_admin(
-        token,
-        instr,
-        assignment_infos,
-        assignment_info,
-    )?;
-
     if assignment_info.roles == instr.roles {
         return accept(());
     }
@@ -176,37 +160,11 @@ async fn create_assignment<C, R>(
     token: &UserToken,
     instr: UpdateAssignmentRolesInstr,
     chapter_info: &ChapterInfo,
-    assignment_infos: &[AssignmentInfo],
 ) -> BaseRest<()>
 where
     C: Context,
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
-    if !assignment_complex::chapter_has_admin_after_role_update(
-        assignment_infos,
-        &instr.user_id,
-        instr.roles,
-    ) {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            chapter_id = %instr.chapter_id,
-            user_id = %token.user_id,
-            affected_user_id = %instr.user_id,
-            roles = ?instr.roles,
-            operation = "assign administrator role",
-            "expected error: chapter administrator perm required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
     let assignment_entry = AssignmentEntry {
         id: assignment_complex::gen_id(),
         chapter_id: instr.chapter_id,
@@ -238,83 +196,6 @@ where
     accept(())
 }
 
-// Preserve an administrator when updating an existing assignment.
-fn ensure_existing_update_keeps_admin(
-    token: &UserToken,
-    instr: &UpdateAssignmentRolesInstr,
-    assignment_infos: &[AssignmentInfo],
-    assignment_info: &AssignmentInfo,
-) -> BaseRest<()> {
-    //
-    if assignment_complex::is_self_admin_role_removal(
-        &token.user_id,
-        assignment_info,
-        instr.roles,
-    ) {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            chapter_id = %instr.chapter_id,
-            user_id = %token.user_id,
-            affected_user_id = %instr.user_id,
-            roles = ?instr.roles,
-            operation = "remove own administrator role",
-            "expected error: chapter administrator perm required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    if assignment_complex::chapter_has_admin_after_role_update(
-        assignment_infos,
-        &instr.user_id,
-        instr.roles,
-    ) {
-        return accept(());
-    }
-
-    let err_message = trl("error-forbidden");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Perm,
-        err_message = %err_message,
-        chapter_id = %instr.chapter_id,
-        user_id = %token.user_id,
-        affected_user_id = %instr.user_id,
-        roles = ?instr.roles,
-        operation = "remove last chapter administrator role",
-        "expected error: chapter administrator perm required",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: err_message,
-    })
-}
-
-// Select the permission context for an administrator or self-reduction.
-fn role_update_access(
-    assignment_info: &AssignmentInfo,
-) -> assignment_perm_complex::AssignmentRoleUpdateAccess<'_> {
-    //
-    if assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        //
-        return assignment_perm_complex::AssignmentRoleUpdateAccess::Admin {
-            assignment_info,
-        };
-    }
-
-    assignment_perm_complex::AssignmentRoleUpdateAccess::SelfReduce {
-        assignment_info,
-    }
-}
-
 // Ensure the caller may apply the requested role change.
 async fn ensure_user_can_update_roles<C, R>(
     repo: &R,
@@ -325,6 +206,39 @@ where
     C: Context,
     R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
+    let member_info = MemberLoader::find_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
+        &token.user_id,
+        &instr.chapter_id,
+    )
+    .await?;
+
+    let subject_member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
+        &instr.user_id,
+        &instr.chapter_id,
+    )
+    .await?;
+
+    assignment_perm_complex::ensure_user_can_take_roles(
+        &subject_member_info,
+        instr.roles,
+    )?;
+
+    if let Some(member_info) = member_info
+        && member_info.roles.has_any_role(&[RoleField::ADMIN])
+    {
+        return assignment_perm_complex::ensure_user_can_update_roles(
+            &assignment_perm_complex::AssignmentRoleUpdateAccess::Admin {
+                member_info: &member_info,
+            },
+            &subject_member_info,
+            instr.roles,
+        );
+    }
+
     let current_assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id: &instr.chapter_id,
         user_id: &token.user_id,
@@ -334,7 +248,7 @@ where
 
     let Some(current_assignment_info) = current_assignment_info else {
         //
-        let err_message = trl("error-chapter-admin-required");
+        let err_message = trl("error-team-admin-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
@@ -350,15 +264,10 @@ where
         });
     };
 
-    let update_access = role_update_access(&current_assignment_info);
-
-    let subject_member_info = MemberLoader::load_info_from_chapter(
-        repo,
-        LoadMode::<C>::Run,
-        &instr.user_id,
-        &instr.chapter_id,
-    )
-    .await?;
+    let update_access =
+        assignment_perm_complex::AssignmentRoleUpdateAccess::SelfReduce {
+            assignment_info: &current_assignment_info,
+        };
 
     assignment_perm_complex::ensure_user_can_update_roles(
         &update_access,

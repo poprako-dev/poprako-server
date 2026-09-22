@@ -55,6 +55,7 @@ pub struct AssignmentInvitationListQuery {
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
+    description = "Requires owning-team administrator membership, without a chapter assignment. Invitations contain worker roles only.",
     request_body = CreateAssignmentInvitationInstr,
     responses(
         (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
@@ -88,7 +89,7 @@ pub async fn create(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
-    description = "Lists a chapter's assignment invitations. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
+    description = "Lists a chapter's assignment invitations. Requires owning-team administrator membership. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
     params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),

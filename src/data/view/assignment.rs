@@ -31,7 +31,7 @@ pub struct AssignmentInfoView {
     /// Resolved chapter information, when included.
     pub chapter: Option<ChapterInfoView>,
 
-    /// Role mask assigned to this user for the chapter.
+    /// Worker role mask assigned to this user for the chapter; excludes ADMIN.
     pub roles: RoleMask,
 
     /// Timestamp of creation in milliseconds.

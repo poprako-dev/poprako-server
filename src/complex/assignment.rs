@@ -5,7 +5,8 @@ pub mod perm {
     use poprako_util::i18n::trl;
 
     use crate::complex::util::{
-        check_user_is_chapter_assignee, check_user_is_team_member,
+        check_user_is_chapter_assignee, check_user_is_team_admin,
+        check_user_is_team_member,
     };
     use crate::model::read::proj::assignment::AssignmentInfo;
     use crate::model::read::proj::member::MemberInfo;
@@ -42,10 +43,10 @@ pub mod perm {
 
     /// Evidence that grants an assignment-role update.
     pub enum AssignmentRoleUpdateAccess<'a> {
-        /// The caller is a chapter admin.
+        /// The caller is an administrator of the owning team.
         Admin {
-            /// Chapter assignment used to verify admin status.
-            assignment_info: &'a AssignmentInfo,
+            /// Membership used to verify admin status.
+            member_info: &'a MemberInfo,
         },
 
         /// The caller is reducing their own existing roles.
@@ -60,10 +61,10 @@ pub mod perm {
         /// The caller owns the assignment.
         Owner,
 
-        /// The caller is a chapter admin.
+        /// The caller is an administrator of the owning team.
         Admin {
-            /// Chapter assignment used to verify admin status.
-            assignment_info: &'a AssignmentInfo,
+            /// Membership used to verify admin status.
+            member_info: &'a MemberInfo,
         },
     }
 
@@ -116,28 +117,8 @@ pub mod perm {
         //
         match access {
             //
-            AssignmentRoleUpdateAccess::Admin { assignment_info } => {
-                //
-                check_admin(assignment_info)?;
-
-                // Retaining chapter admin is distinct from assigning it anew.
-                if assignment_info.user_id == subject_member_info.user_id
-                    && roles.has_any_role(&[RoleField::ADMIN])
-                {
-                    let assignable_roles = subject_member_info
-                        .roles
-                        .union(RoleMask::from(RoleField::ADMIN));
-
-                    if assignable_roles.contains_mask(roles) {
-                        return accept(());
-                    }
-
-                    return reject(
-                        ExpectedVariant::Perm,
-                        "error-chapter-role-not-assignable",
-                        "chapter_target_roles_missing",
-                    );
-                }
+            AssignmentRoleUpdateAccess::Admin { member_info } => {
+                check_user_is_team_admin(member_info)?;
             }
 
             AssignmentRoleUpdateAccess::SelfReduce { assignment_info } => {
@@ -174,8 +155,8 @@ pub mod perm {
             //
             AssignmentDeleteAccess::Owner => accept(()),
 
-            AssignmentDeleteAccess::Admin { assignment_info } => {
-                check_admin(assignment_info)
+            AssignmentDeleteAccess::Admin { member_info } => {
+                check_user_is_team_admin(member_info)
             }
         }
     }
@@ -210,33 +191,18 @@ pub mod perm {
         })
     }
 
-    // Verify that assignment evidence contains the chapter-admin role.
-    fn check_admin(assignment_info: &AssignmentInfo) -> BaseRest<()> {
-        //
-        if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-            //
-            return reject(
-                ExpectedVariant::Perm,
-                "error-chapter-admin-required",
-                "chapter_admin_role_missing",
-            );
-        }
-
-        accept(())
-    }
-
     // Verify that membership evidence permits all requested assignment roles.
     fn check_target_roles(
         member_info: &MemberInfo,
         roles: RoleMask,
     ) -> BaseRest<()> {
         //
-        if roles.has_any_role(&[RoleField::ADMIN]) {
+        if roles.has_any_role(&[RoleField::ADMIN, RoleField::BOT]) {
             //
             return reject(
                 ExpectedVariant::Args,
                 "error-chapter-role-not-assignable",
-                "chapter_admin_role_not_assignable",
+                "assignment_worker_role_required",
             );
         }
 
@@ -256,19 +222,11 @@ pub mod perm {
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::util::next_snowflake_id;
-use crate::value::role::{RoleField, RoleMask};
+use crate::value::role::RoleMask;
 
 /// Generate a unique assignment identifier backed by a snowflake value.
 pub fn gen_id() -> String {
     next_snowflake_id()
-}
-
-/// Build the creator assignment roles, always preserving chapter admin.
-pub fn creator_roles(preset_roles: Option<RoleMask>) -> RoleMask {
-    //
-    let admin_roles = RoleMask::from(RoleField::ADMIN);
-
-    preset_roles.map_or(admin_roles, |roles| roles.union(admin_roles))
 }
 
 /// Merge new roles into an existing assignment.
@@ -281,33 +239,4 @@ pub fn merge_roles(
         id: assignment_info.id.clone(),
         roles: assignment_info.roles.union(roles),
     }
-}
-
-/// Checks whether a role update would remove the caller's own admin role.
-pub fn is_self_admin_role_removal(
-    current_user_id: &str,
-    assignment_info: &AssignmentInfo,
-    roles: RoleMask,
-) -> bool {
-    //
-    current_user_id == assignment_info.user_id
-        && assignment_info.roles.has_any_role(&[RoleField::ADMIN])
-        && !roles.has_any_role(&[RoleField::ADMIN])
-}
-
-/// Checks whether a chapter still has an admin after a role update.
-pub fn chapter_has_admin_after_role_update(
-    assignment_infos: &[AssignmentInfo],
-    user_id: &str,
-    roles: RoleMask,
-) -> bool {
-    //
-    assignment_infos.iter().any(|assignment_info| {
-        //
-        if assignment_info.user_id == user_id {
-            roles.has_any_role(&[RoleField::ADMIN])
-        } else {
-            assignment_info.roles.has_any_role(&[RoleField::ADMIN])
-        }
-    })
 }

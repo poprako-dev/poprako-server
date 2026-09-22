@@ -32,7 +32,7 @@ use crate::usecase::assignment::update_roles as assignment_update_roles_usecase;
     get,
     path = "/api/v1/assignments",
     tag = "assignments",
-    description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single role bit. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
+    description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single worker role bit; ADMIN and BOT are rejected. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
     params(ListAssignmentInfosInstr),
     responses(
         (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoView>>),
@@ -65,6 +65,7 @@ pub async fn list_infos(
         ("chapter_id" = String, Path, description = "Chapter ID"),
         ("user_id" = String, Path, description = "Assignee user ID"),
     ),
+    description = "Owning-team administrators may assign worker roles without a chapter assignment. Other callers may only reduce their own roles. ADMIN is not assignable.",
     request_body = UpdateAssignmentRolesInstr,
     responses(
         (status = 204, description = "Assignment roles updated"),

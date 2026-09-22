@@ -232,6 +232,7 @@ pub async fn list_workflow_record_infos(
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
+    description = "Requires owning-team administrator membership; no chapter assignment is needed.",
     request_body = UpdateChapterInfoInstr,
     responses(
         (status = 204, description = "Chapter updated"),
@@ -264,6 +265,7 @@ pub async fn update_info(
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/mark-pinned",
+    description = "Requires owning-team administrator membership; no chapter assignment is needed.",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
@@ -296,6 +298,7 @@ pub async fn mark_pinned(
     path = "/api/v1/chapters/{chapter_id}/stage/advance",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
+    description = "Owning-team administrators may advance or revert without a chapter assignment or worker role holder. Other callers require the appropriate chapter worker role. State transitions and published freezing still apply.",
     request_body = UpdateChapterStageInstr,
     responses(
         (status = 204, description = "Stage advanced"),

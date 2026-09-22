@@ -16,7 +16,6 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDeptView;
-use poprako_util::i18n::trl;
 
 use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::complex::{
@@ -40,9 +39,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo,
-};
+use crate::part::repo::oper::assignment::CreateAssignment;
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, LockChapters, UnpinOtherChapters,
@@ -55,7 +52,7 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::chapter::view::chapter_info_views;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -268,20 +265,21 @@ where
             .step_on(repo, context)
             .await?;
 
-            let assignment_entry = AssignmentEntry {
-                id: assignment_complex::gen_id(),
-                chapter_id: chapter_info.id.clone(),
-                user_id: token.user_id.clone(),
-                roles: assignment_complex::creator_roles(
-                    instr.preset_assignment_roles,
-                ),
-            };
+            if let Some(roles) = instr.preset_assignment_roles {
+                //
+                let assignment_entry = AssignmentEntry {
+                    id: assignment_complex::gen_id(),
+                    chapter_id: chapter_info.id.clone(),
+                    user_id: token.user_id.clone(),
+                    roles,
+                };
 
-            CreateAssignment {
-                entry: &assignment_entry,
+                CreateAssignment {
+                    entry: &assignment_entry,
+                }
+                .step_on(repo, context)
+                .await?;
             }
-            .step_on(repo, context)
-            .await?;
 
             let prev_pinned_chapter_id =
                 prev_pinned_chapter.map(|chapter_info| chapter_info.id);
@@ -316,26 +314,20 @@ where
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
-        + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + Send
         + Sync,
 {
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &instr.id,
-        user_id: &token.user_id,
-    }
-    .run_on(repo)
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::Run,
+        &token.user_id,
+        &instr.id,
+    )
     .await?;
 
-    let Some(assignment_info) = assignment_info else {
-        //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-admin-required"),
-        });
-    };
-
-    chapter_perm_complex::ensure_user_can_update_info(&assignment_info)?;
+    chapter_perm_complex::ensure_user_can_update_info(&member_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -410,26 +402,20 @@ where
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
-        + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + Send
         + Sync,
 {
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &id,
-        user_id: &token.user_id,
-    }
-    .run_on(repo)
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::Run,
+        &token.user_id,
+        &id,
+    )
     .await?;
 
-    let Some(assignment_info) = assignment_info else {
-        //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-admin-required"),
-        });
-    };
-
-    chapter_perm_complex::ensure_user_can_mark_pinned(&assignment_info)?;
+    chapter_perm_complex::ensure_user_can_mark_pinned(&member_info)?;
 
     let chapter_info = GetChapterInfo {
         id: &id,

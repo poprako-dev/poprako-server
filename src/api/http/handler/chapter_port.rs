@@ -79,6 +79,7 @@ pub async fn import_translation(
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
+    description = "Team members and chapter assignees may export. Only a chapter TYPESETTER or REDRAWER assignment triggers the pending typeset/redraw stage.",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
@@ -116,6 +117,7 @@ pub async fn export_translation(
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
+    description = "Uses the same permissions and TYPESETTER/REDRAWER stage trigger as translation export.",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),

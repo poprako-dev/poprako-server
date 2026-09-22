@@ -147,11 +147,21 @@ fn seed(role: RoleField) -> Mock {
 
     mock.seed_chapter(chapter("chapter-1"));
 
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(role),
-    ));
+    match role {
+        RoleField::ADMIN => {
+            let mut member_info = member("user-1");
+
+            member_info.roles = RoleMask::from(RoleField::ADMIN);
+
+            mock.seed_member(member_info);
+        }
+
+        _ => mock.seed_assignment(assignment(
+            "chapter-1",
+            "user-1",
+            RoleMask::from(role),
+        )),
+    }
 
     mock
 }

@@ -496,6 +496,33 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         "an unassigned team member export must not start typeset/redraw",
     );
 
+    // F10.roles: only chapter artwork workers start typesetting on export.
+    await exportPoprako(ctx.sadmin, f10Chapter.id);
+
+    await joinChapterAssignment(trans01.api, f10Chapter.id, ROLE.TRANSLATOR);
+
+    await exportPoprako(trans01.api, f10Chapter.id);
+
+    assert.assertEquals(
+        stagePhase((await getChapter(ctx.sadmin, f10Chapter.id)).stages, "typeset-redraw"),
+        PHASE.PENDING,
+        "team administration and translation assignment must not start typesetting on export",
+    );
+
+    const type01 = ctx.users.get("type_01")!;
+
+    await joinChapterAssignment(type01.api, f10Chapter.id, ROLE.TYPESETTER);
+
+    await exportPoprako(type01.api, f10Chapter.id);
+
+    await exportPoprako(type01.api, f10Chapter.id);
+
+    assert.assertEquals(
+        stagePhase((await getChapter(ctx.sadmin, f10Chapter.id)).stages, "typeset-redraw"),
+        PHASE.ACTIVE,
+        "a typesetter export starts typesetting idempotently",
+    );
+
     await grantChapterWorkerRoles(f10Chapter.id, ctx.ids.defaultUserId);
 
     await withDatabaseClient(async (client) => {

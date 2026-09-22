@@ -4,7 +4,7 @@
 //   - The default team, main comic, proofreader, and translator exist.
 //
 // Postconditions:
-//   - All terminology fixtures and temporary comic/team roots are deleted.
+//   - Terminology fixtures are deleted or inaccessible under roots marked for cleanup.
 //
 // Covers team/comic scopes, comic inheritance, name/source-only fuzzy search,
 // full replacement, target order, counters, native import/export and merge,
@@ -411,8 +411,25 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     );
 
     expectNoContent(await ctx.sadmin.delete<null>(`/api/v1/teams/${cascadeTeam.id}`));
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/termbases/${cascadeTeamTermbase.id}`), 422, 2);
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/terms/${cascadeTeamTerm.id}`), 422, 2);
+
+    // Team deletion hides membership immediately; background cleanup removes
+    // terminology rows later. Neither state may expose the deleted team's data.
+    for (
+        const path of [
+            `/api/v1/termbases/${cascadeTeamTermbase.id}`,
+            `/api/v1/terms/${cascadeTeamTerm.id}`,
+        ]
+    ) {
+        const response = await ctx.sadmin.get<ErrorBody>(path);
+
+        if (response.status === 403) {
+            expectError(response, 403, 4);
+
+            continue;
+        }
+
+        expectError(response, 422, 2);
+    }
 
     expectNoContent(await translator.api.delete<null>(`/api/v1/termbases/${comicTermbase.id}`));
     expectNoContent(await proofreader.api.delete<null>(`/api/v1/termbases/${teamTermbase.id}`));

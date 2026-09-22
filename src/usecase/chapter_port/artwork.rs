@@ -15,6 +15,7 @@ use poprako_obj_dept::oper::{
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 
 use crate::complex::chapter as chapter_complex;
+use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::complex::chapter_port::artwork as chapter_artwork_complex;
 use crate::config::artwork::ArtworkConfig;
 use crate::data::instr::chapter_port::{
@@ -46,11 +47,14 @@ use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::artwork::{ArtworkHash, ChapterArtworkKey};
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
+use crate::value::role::RoleField;
 
 /// Allocates a direct upload or returns the already available content's version.
 #[instrument(level = "info", skip(nucl, repo, obj_dept, config, token), fields(actor_user_id = %token.user_id))]
@@ -64,7 +68,12 @@ where
     C: Context + Send,
     C::Level: AtLeast<ReptRead>,
     N: Nucl<Context = C, Error = BaseError> + Sync,
-    R: ChapterRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: ChapterRepo<C>
+        + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
+        + Send
+        + Sync,
     O: ObjDept<ChapterArtwork, C> + Send + Sync,
 {
     //
@@ -154,6 +163,8 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     R: ChapterRepo<C>
         + AssignmentRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + Send
@@ -366,7 +377,7 @@ where
     accept(artwork_export)
 }
 
-// Checks assignment evidence inside the owning chapter transaction.
+// Checks team administration or worker assignment inside the chapter transaction.
 async fn ensure_upload_access<C, R>(
     repo: &R,
     context: &mut C,
@@ -375,8 +386,22 @@ async fn ensure_upload_access<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C> + Sync,
+    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
+    let member_info = MemberLoader::find_info_from_chapter(
+        repo,
+        LoadMode::Step { context },
+        user_id,
+        chapter_id,
+    )
+    .await?;
+
+    if let Some(member_info) = member_info
+        && member_info.roles.has_any_role(&[RoleField::ADMIN])
+    {
+        return chapter_perm_complex::ensure_user_can_manage(&member_info);
+    }
+
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id,
         user_id,

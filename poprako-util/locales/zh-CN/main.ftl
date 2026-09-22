@@ -37,7 +37,6 @@ error-page-not-found = 页面不存在
 error-invalid-workflow-transition = 无效的工作流状态转换
 error-invalid-stage = 无效的工作流阶段值
 error-invalid-stage-phase = 无效的工作流阶段状态
-error-chapter-admin-required = 需要章节管理权限
 error-chapter-workflow-role-required = 缺少所需的章节工作流权限
 error-chapter-no-role-holder = 该章节中无人担任所需的工作流岗位，请先分配对应人员
 error-chapter-translator-or-proofreader-required = 需要章节翻译或校对分工
@@ -105,6 +104,6 @@ mail-comic-archive-purged-body = 系统已按保留策略清理漫画归档
 
 error-invalid-artwork-upload = 嵌字产物大小或文件扩展名不合法。
 error-invalid-page-raw-ident = 原始页面文件名不能为空白，且不能包含控制字符或路径分隔符。
-error-artwork-upload-role-required = 需要本章嵌字、修图或管理员权限。
+error-artwork-upload-role-required = 需要本章嵌字、修图分工或所属团队管理员权限。
 error-stale-artwork-upload = 嵌字产物上传版本不存在或已过期。
 error-artwork-unavailable = 当前章节没有可用的嵌字产物。

@@ -1,4 +1,3 @@
-DROP INDEX IF EXISTS "idx_assignment_user_admin_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_publisher_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_reviewer_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_redrawer_created_at";
@@ -6,7 +5,6 @@ DROP INDEX IF EXISTS "idx_assignment_user_typesetter_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_proofreader_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_translator_created_at";
 DROP INDEX IF EXISTS "idx_assignment_user_raw_provider_created_at";
-DROP INDEX IF EXISTS "idx_assignment_chapter_admin_created_at";
 DROP INDEX IF EXISTS "idx_assignment_chapter_publisher_created_at";
 DROP INDEX IF EXISTS "idx_assignment_chapter_reviewer_created_at";
 DROP INDEX IF EXISTS "idx_assignment_chapter_redrawer_created_at";

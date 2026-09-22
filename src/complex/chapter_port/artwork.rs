@@ -51,16 +51,14 @@ pub fn ensure_allocation(
     accept(())
 }
 
-/// Requires a chapter typesetter, redrawer, or administrator assignment.
+/// Requires a chapter typesetter or redrawer assignment.
 pub fn ensure_user_can_upload(
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()> {
     //
-    let can_upload = assignment_info.roles.has_any_role(&[
-        RoleField::TYPESETTER,
-        RoleField::REDRAWER,
-        RoleField::ADMIN,
-    ]);
+    let can_upload = assignment_info
+        .roles
+        .has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER]);
 
     if !can_upload {
         //

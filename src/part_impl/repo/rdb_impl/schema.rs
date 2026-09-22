@@ -23,7 +23,6 @@ diesel::table! {
         f_assigned_redrawer_at -> Nullable<Timestamptz>,
         f_assigned_reviewer_at -> Nullable<Timestamptz>,
         f_assigned_publisher_at -> Nullable<Timestamptz>,
-        f_assigned_admin_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }

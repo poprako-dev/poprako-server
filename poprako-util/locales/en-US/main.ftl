@@ -35,7 +35,6 @@ error-page-not-found = Page not found
 error-invalid-workflow-transition = Invalid workflow transition
 error-invalid-stage = Invalid workflow stage value
 error-invalid-stage-phase = Invalid workflow stage phase
-error-chapter-admin-required = Chapter admin role is required
 error-chapter-workflow-role-required = Required chapter workflow role is missing
 error-chapter-no-role-holder = No one on the chapter holds the required workflow role
 error-chapter-translator-or-proofreader-required = Chapter translator or proofreader assignment is required
@@ -103,6 +102,6 @@ mail-comic-archive-purged-body = Expired comic archives were purged by the reten
 
 error-invalid-artwork-upload = Artwork size or file extension is invalid.
 error-invalid-page-raw-ident = Original page filename must be nonblank and contain no control characters or path separators.
-error-artwork-upload-role-required = A chapter typesetter, redrawer, or administrator assignment is required.
+error-artwork-upload-role-required = A chapter typesetter or redrawer assignment, or owning-team administrator role, is required.
 error-stale-artwork-upload = The artwork upload version is missing or stale.
 error-artwork-unavailable = No artwork is currently available for this chapter.

@@ -19,16 +19,15 @@
 //     Non-ADMIN bit not in member roles -> 403/4.
 //   - duplicate join: upsert (merge_roles), NOT an error. `(chapter_id,
 //     user_id)` stays unique.
-//   - assignment invitation create/list: chapter ADMIN only. sadmin has it
-//     from chapter create. trans_01 -> 403/4.
+//   - assignment invitation create/list: team ADMIN only. sadmin holds membership ADMIN. trans_01 -> 403/4.
 //   - invitation create for already-assigned invitee -> 422/2
 //     (`error-assignment-already-exists`).
 //   - invitation join with wrong user (qid mismatch) -> 422/2
 //     (`error-no-pending-invitation`).
 //   - invitation join with non-existent code -> 422/2 (not found).
-//   - assignment roles update: chapter admin OR self-reduce (caller == target
+//   - assignment roles update: team admin OR self-reduce (caller == target
 //     and new roles subset of existing). Non-admin updating another -> 403/4.
-//   - assignment delete: self OR chapter admin.
+//   - assignment delete: self OR team admin.
 //
 // Status: IMPLEMENTED.
 
@@ -164,24 +163,24 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
 
     await deleteAssignment(guest01.api, guestAssignment.id);
 
-    // E1.4d: the chapter admin can join review and leave it while retaining ADMIN.
+    // E1.4d: the team admin can join review and leave it while retaining the original worker roles.
     const adminAssignment = assignments.find((assignment) => assignment.user_id === ctx.ids.defaultUserId);
 
     assert.assert(adminAssignment, "chapter creator must have an assignment");
-    assert.assertEquals(adminAssignment.roles, ROLE.ADMIN);
+    assert.assertEquals(adminAssignment.roles & ROLE.ADMIN, 0);
 
     const adminJoinedReview = await joinChapterAssignment(ctx.sadmin, mainChapterId, ROLE.REVIEWER);
 
     assert.assertEquals(adminJoinedReview.id, adminAssignment.id);
-    assert.assertEquals(adminJoinedReview.roles, ROLE.ADMIN | ROLE.REVIEWER);
+    assert.assertEquals(adminJoinedReview.roles, adminAssignment.roles | ROLE.REVIEWER);
 
-    await updateAssignmentRoles(ctx.sadmin, mainChapterId, ctx.ids.defaultUserId, ROLE.ADMIN);
+    await updateAssignmentRoles(ctx.sadmin, mainChapterId, ctx.ids.defaultUserId, adminAssignment.roles);
 
     const adminAssignmentsAfterExit = await listOwnerAssignments(ctx.sadmin, ctx.ids.defaultUserId);
     const adminAfterExit = adminAssignmentsAfterExit.find((assignment) => assignment.id === adminAssignment.id);
 
-    assert.assert(adminAfterExit, "leaving review must preserve the admin assignment");
-    assert.assertEquals(adminAfterExit.roles, ROLE.ADMIN);
+    assert.assert(adminAfterExit, "leaving review must preserve the original worker assignment");
+    assert.assertEquals(adminAfterExit.roles, adminAssignment.roles);
 
     // E1.4e: an ordinary assignee cannot acquire ADMIN through a self-update.
     expectError(
@@ -189,15 +188,24 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
             `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
             { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
         ),
-        403,
-        4,
+        422,
+        2,
     );
 
-    // E1.4f: preserving ADMIN does not permit granting it to another assignee.
+    // E1.4f: team administration never permits assigning ADMIN on a chapter.
     expectError(
         await ctx.sadmin.put<ErrorBody>(
             `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
             { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
+        ),
+        422,
+        2,
+    );
+
+    // E1.4g: ADMIN cannot be used as a chapter assignment filter.
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(
+            `/api/v1/assignments?chapter_id=${mainChapterId}&role=${ROLE.ADMIN}&offset=0&limit=20`,
         ),
         422,
         2,

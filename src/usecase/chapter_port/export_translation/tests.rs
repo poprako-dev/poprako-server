@@ -192,7 +192,7 @@ fn seed_scope(mock: &Mock) {
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleField::PROOFREADER),
+        RoleMask::from(RoleField::TYPESETTER),
     ));
 }
 
@@ -454,4 +454,72 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
     assert!(native_export.label_plus.is_none());
     assert!(native_export.poprako.is_some());
     assert_eq!(native_export.raw_idents.unwrap().len(), 2);
+}
+
+// export_roles(export_translation)(positive): only artwork assignees start the stage, regardless of membership.
+#[tokio::test]
+async fn export_only_artwork_assignees_start_stage() {
+    for role in [
+        RoleField::RAW_PROVIDER,
+        RoleField::TRANSLATOR,
+        RoleField::PROOFREADER,
+        RoleField::TYPESETTER,
+        RoleField::REDRAWER,
+        RoleField::REVIEWER,
+        RoleField::PUBLISHER,
+        RoleField::ADMIN,
+    ] {
+        for is_member in [false, true] {
+            let mock = Mock::new();
+
+            seed_scope(&mock);
+
+            mock.state.lock().unwrap().assignments.clear();
+
+            if role != RoleField::ADMIN {
+                mock.seed_assignment(assignment(
+                    "chapter-1",
+                    "user-1",
+                    RoleMask::from(role),
+                ));
+            }
+
+            if is_member || role == RoleField::ADMIN {
+                let mut member_info = member("user-1");
+
+                member_info.roles = RoleMask::from(role);
+
+                mock.seed_member(member_info);
+            }
+
+            for _ in 0..2 {
+                export_translation(
+                    (&mock, &mock, &mock),
+                    token("user-1"),
+                    "chapter-1".into(),
+                    ExportFormatSpec::POPRAKO,
+                    false,
+                )
+                .await
+                .unwrap();
+            }
+
+            let snapshot = mock.snapshot();
+
+            let should_start =
+                matches!(role, RoleField::TYPESETTER | RoleField::REDRAWER);
+
+            assert_eq!(
+                snapshot.chapters[0]
+                    .stages
+                    .has_phase(Stage::TypesetRedraw, StagePhase::Active),
+                should_start,
+            );
+
+            assert_eq!(
+                snapshot.chapter_workflow_records.len(),
+                2 + usize::from(should_start)
+            );
+        }
+    }
 }

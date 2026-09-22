@@ -60,9 +60,9 @@ pub struct CreateComicInstr {
     /// Optional subtitle for the first chapter created alongside the comic.
     pub first_chapter_subtitle: Option<String>,
 
-    /// Roles assigned to the creator on the first chapter in addition to the
-    /// mandatory admin role. Every requested role must exist on the creator's
-    /// team membership.
+    /// Optional worker roles assigned to the creator on the first chapter.
+    /// Absent means no assignment. Every requested role must exist on the
+    /// creator's team membership.
     pub preset_assignment_roles: Option<RoleMask>,
 }
 

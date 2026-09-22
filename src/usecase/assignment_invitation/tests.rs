@@ -277,13 +277,9 @@ fn seed_published_scope(mock: &Mock) {
     mock.seed_chapter(chapter_info);
 }
 
-// Seed an admin assignment baseline used by invite/reject checks.
+// Seed an administrator membership baseline used by invite/reject checks.
 fn seed_admin(mock: &Mock) {
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "admin-user",
-        role(RoleField::ADMIN),
-    ));
+    mock.seed_member(member("admin-user", role(RoleField::ADMIN)));
 }
 
 #[tokio::test]

@@ -1,6 +1,6 @@
 use super::{
-    Mock, RoleMask, Stage, UpdateChapterStageInstr, assignment, chapter,
-    seed_scope, token, update_stage,
+    Mock, RoleMask, Stage, UpdateChapterStageInstr, chapter, seed_scope, token,
+    update_stage,
 };
 
 use crate::value::chapter::stage::{StageOper, StagePhase};
@@ -22,12 +22,6 @@ async fn update_stage_admin_reverts_without_role_holder() {
         .unwrap();
 
     mock.seed_chapter(chapter_info);
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::ADMIN),
-    ));
 
     update_stage(
         (&mock, &mock, &mock, &mock),

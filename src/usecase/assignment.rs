@@ -244,6 +244,8 @@ where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
         + Send
         + Sync,
 {
@@ -254,42 +256,27 @@ where
     .run_on(repo)
     .await?;
 
+    if token.user_id != assignment_info.user_id {
+        //
+        let member_info = MemberLoader::load_info_from_chapter(
+            repo,
+            LoadMode::Run,
+            &token.user_id,
+            &assignment_info.chapter_id,
+        )
+        .await?;
+
+        assignment_perm_complex::ensure_user_can_delete(
+            &assignment_perm_complex::AssignmentDeleteAccess::Admin {
+                member_info: &member_info,
+            },
+        )?;
+    }
+
     if token.user_id == assignment_info.user_id {
         //
         assignment_perm_complex::ensure_user_can_delete(
             &assignment_perm_complex::AssignmentDeleteAccess::Owner,
-        )?;
-    } else {
-        //
-        let admin_assignment_info = FindAssignmentInfo::ChapterUser {
-            chapter_id: &assignment_info.chapter_id,
-            user_id: &token.user_id,
-        }
-        .run_on(repo)
-        .await?;
-
-        let Some(admin_assignment_info) = admin_assignment_info else {
-            //
-            let err_message = trl("error-chapter-admin-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_message = %err_message,
-                user_id = %token.user_id,
-                chapter_id = %assignment_info.chapter_id,
-                "expected error: chapter admin assignment missing",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                message: err_message,
-            });
-        };
-
-        assignment_perm_complex::ensure_user_can_delete(
-            &assignment_perm_complex::AssignmentDeleteAccess::Admin {
-                assignment_info: &admin_assignment_info,
-            },
         )?;
     }
 
