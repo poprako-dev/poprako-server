@@ -101,7 +101,7 @@ pub async fn verify_flags(shared: RdbCore) {
             assert_eq!(units[0].translated_text.as_deref(), Some("flagged"));
             assert_eq!(
                 units[0].last_translator_id.as_deref(),
-                Some(fixture.chapter_entry.creator_id.as_str())
+                Some(fixture.chapter_entry.creator_id.as_ref())
             );
 
             accept(())

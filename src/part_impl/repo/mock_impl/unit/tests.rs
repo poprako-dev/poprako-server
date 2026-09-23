@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::result::BaseError;
 
 // Internal implementation of `create_edit`.
 fn create_edit(id: &str, text: &str) -> UnitEdit {
@@ -92,4 +93,89 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
     assert_eq!(restored.proofread, 1);
 
     assert!(state.units[0].hidden_at.is_none());
+}
+
+#[test]
+fn reads_preserve_page_repetitions_tombstones_and_independent_snapshots() {
+    //
+    let mut state = MockState::default();
+
+    let first_edit = create_edit("first", "first content");
+
+    let second_edit = create_edit("second", "second content");
+
+    let other_edit = create_edit("other", "other content");
+
+    let first = unit_from_edit("page-1", &first_edit, Some("second")).unwrap();
+
+    let mut second = unit_from_edit("page-1", &second_edit, None).unwrap();
+
+    second.hidden_at = Some(now());
+
+    let other = unit_from_edit("page-2", &other_edit, None).unwrap();
+
+    state.units = vec![second, other, first];
+
+    let orders = list_orders(&state, "page-1").unwrap();
+
+    assert_eq!(
+        orders
+            .iter()
+            .map(|order| (order.id.as_str(), order.is_hidden))
+            .collect::<Vec<_>>(),
+        [("first", false), ("second", true)],
+    );
+
+    let snapshots = list_infos_by_page_ids(
+        &state,
+        &["page-2", "page-1", "missing", "page-1"],
+    )
+    .unwrap();
+
+    assert_eq!(
+        snapshots
+            .iter()
+            .map(|unit_info| unit_info.id.as_str())
+            .collect::<Vec<_>>(),
+        ["other", "first", "second", "first", "second"],
+    );
+
+    state.units[2].translated_text = Some("updated".into());
+
+    assert_eq!(
+        snapshots[1].translated_text.as_deref(),
+        Some("first content")
+    );
+
+    assert!(snapshots[2].hidden_at.is_some());
+}
+
+#[test]
+fn reads_and_edit_counts_reject_corrupt_hidden_links() {
+    //
+    let mut state = MockState::default();
+
+    let edit = create_edit("hidden", "content");
+
+    let mut unit_info =
+        unit_from_edit("page-1", &edit, Some("missing")).unwrap();
+
+    unit_info.hidden_at = Some(now());
+
+    state.units.push(unit_info);
+
+    assert!(matches!(
+        list_orders(&state, "page-1"),
+        Err(BaseError::Unrecoverable { .. }),
+    ));
+
+    assert!(matches!(
+        list_infos_by_page_ids(&state, &["page-1"]),
+        Err(BaseError::Unrecoverable { .. }),
+    ));
+
+    assert!(matches!(
+        apply_edits(&mut state, "page-1", &[], &[]),
+        Err(BaseError::Unrecoverable { .. }),
+    ));
 }

@@ -80,12 +80,12 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
     let comics = (0..scale.comics)
         .map(|comic_index| ComicEntry {
             id: format!("{prefix}comic-{comic_index:04}"),
-            workset_id: fixture.workset_entry.id.clone(),
+            workset_id: fixture.workset_entry.id.clone().into(),
             index: comic_index,
             title: "Benchmark comic".into(),
             author: "Benchmark author".into(),
             description: None,
-            creator_id: creator_id.clone(),
+            creator_id: creator_id.clone().into(),
         })
         .collect::<Vec<_>>();
 
@@ -100,11 +100,11 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
                         "{}chapter-{}-{chapter_index:04}",
                         prefix, comic.id
                     ),
-                    comic_id: comic.id.clone(),
+                    comic_id: comic.id.clone().into(),
                     is_pinned: chapter_index == 0,
                     index: chapter_index,
                     subtitle: "Benchmark chapter".into(),
-                    creator_id: creator_id.clone(),
+                    creator_id: creator_id.clone().into(),
                 }
             })
         })

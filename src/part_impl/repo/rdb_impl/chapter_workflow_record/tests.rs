@@ -39,15 +39,15 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     let entries = [
         ChapterWorkflowRecordEntry {
             id: format!("{}record-a", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone(),
-            actor_user_id: Some(chapter_fixture.creator_form.id.clone()),
+            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
+            actor_user_id: Some(chapter_fixture.creator_form.id.clone().into()),
             payload: ChapterWorkflowRecordPayload::ChapterCreated,
             created_at,
         },
         ChapterWorkflowRecordEntry {
             id: format!("{}record-b", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone(),
-            actor_user_id: Some(chapter_fixture.creator_form.id.clone()),
+            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
+            actor_user_id: Some(chapter_fixture.creator_form.id.clone().into()),
             payload: ChapterWorkflowRecordPayload::StageTransitioned {
                 stage: Stage::Translate,
                 previous_phase: StagePhase::Pending,
@@ -58,7 +58,7 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
         },
         ChapterWorkflowRecordEntry {
             id: format!("{}record-c", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone(),
+            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
             actor_user_id: None,
             payload: ChapterWorkflowRecordPayload::ChapterPinned,
             created_at: OffsetDateTime::UNIX_EPOCH,

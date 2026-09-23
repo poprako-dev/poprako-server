@@ -196,7 +196,7 @@ async fn list_chapter_assignments_excluded(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    model_entry: &AssignmentEntry,
+    model_entry: &AssignmentEntry<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();

@@ -296,12 +296,12 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
 
     let comic_entry = ComicEntry {
         id: format!("{PREFIX}blocked-comic"),
-        workset_id: fixture.workset_entry.id.clone(),
+        workset_id: fixture.workset_entry.id.clone().into(),
         index: 0,
         title: "Blocked comic".into(),
         author: "Author".into(),
         description: None,
-        creator_id: format!("{PREFIX}user-owner"),
+        creator_id: format!("{PREFIX}user-owner").into(),
     };
     let comic_row = ComicEntryRow::try_from(&comic_entry).unwrap();
 

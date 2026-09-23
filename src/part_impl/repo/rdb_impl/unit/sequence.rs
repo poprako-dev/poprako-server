@@ -185,25 +185,35 @@ pub async fn list_infos_by_page_ids(
         .await
         .map_err(diesel)?;
 
-    let mut unit_infos_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
+    let mut position_by_page_id = HashMap::with_capacity(page_ids.len());
+
+    for (position, page_id) in page_ids.iter().enumerate() {
+        position_by_page_id.entry(*page_id).or_insert(position);
+    }
+
+    let mut unit_infos_by_position =
+        (0..page_ids.len()).map(|_| Vec::new()).collect::<Vec<_>>();
 
     for row in rows {
         //
         let unit_info = UnitInfo::from(row);
 
-        unit_infos_by_page_id
-            .entry(unit_info.page_id.clone())
-            .or_default()
-            .push(unit_info);
+        let position = position_by_page_id
+            .get(unit_info.page_id.as_str())
+            .copied()
+            .ok_or_else(corrupt_unit_chain_err)?;
+
+        let page_unit_infos = unit_infos_by_position
+            .get_mut(position)
+            .ok_or_else(corrupt_unit_chain_err)?;
+
+        page_unit_infos.push(unit_info);
     }
 
     let mut unit_infos = Vec::new();
 
-    for page_id in page_ids {
+    for mut page_unit_infos in unit_infos_by_position {
         //
-        let mut page_unit_infos =
-            unit_infos_by_page_id.remove(*page_id).unwrap_or_default();
-
         unit_sequence_complex::order_units(
             &mut page_unit_infos,
             |unit_info| unit_info.id.as_str(),
@@ -240,14 +250,13 @@ pub async fn list_orders(
     page_id: &str,
 ) -> BaseRest<Vec<UnitOrder>> {
     //
-    let mut rows = Vec::new();
-
-    let mut after_id = None::<String>;
+    let mut rows =
+        Vec::<(String, Option<String>, Option<OffsetDateTime>)>::new();
 
     loop {
         //
         let mut chunk =
-            match after_id.as_deref() {
+            match rows.last().map(|(id, _, _)| id.as_str()) {
                 //
                 Some(after_id) => t_unit
                     .filter(f_page_id.eq(page_id))
@@ -281,16 +290,14 @@ pub async fn list_orders(
             let _ = chunk.pop();
         }
 
-        after_id = chunk.last().map(|(id, _, _)| id.clone());
+        if has_next_chunk && chunk.is_empty() {
+            return Err(corrupt_unit_chain_err());
+        }
 
         rows.extend(chunk);
 
         if !has_next_chunk {
             break;
-        }
-
-        if after_id.is_none() {
-            return Err(corrupt_unit_chain_err());
         }
     }
 
@@ -336,12 +343,12 @@ async fn load_unit_ranks(
     //
     let mut page_ids = candidates
         .iter()
-        .map(|candidate| candidate.unit_info.page_id.clone())
+        .map(|candidate| candidate.unit_info.page_id.as_str())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
-    page_ids.sort();
+    page_ids.sort_unstable();
 
     let rows = t_unit
         .filter(f_page_id.eq_any(&page_ids))
@@ -364,7 +371,7 @@ async fn load_unit_ranks(
 
     for page_id in page_ids {
         //
-        let mut links = links_by_page_id.remove(&page_id).unwrap_or_default();
+        let mut links = links_by_page_id.remove(page_id).unwrap_or_default();
 
         unit_sequence_complex::order_units(
             &mut links,

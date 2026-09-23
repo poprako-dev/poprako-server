@@ -38,21 +38,21 @@ where
         .into_iter()
         .collect();
 
-    let (user_urls, team_urls) = futures_util::try_join!(
+    let (mut user_urls, mut team_urls) = futures_util::try_join!(
         user_avatar_urls(obj_dept, user_ids),
         team_avatar_urls(obj_dept, team_ids),
     )?;
 
     let user = model.user.take().map(|user_info| {
         //
-        let avatar_urls = user_urls.get(&user_info.id);
+        let avatar_urls = user_urls.take(&user_info.id);
 
         user_info_view_from_urls(user_info, avatar_urls)
     });
 
     let team = model.team.take().map(|team_info| {
         //
-        let avatar_urls = team_urls.get(&team_info.id);
+        let avatar_urls = team_urls.take(&team_info.id);
 
         team_info_view_from_urls(team_info, avatar_urls)
     });
@@ -83,7 +83,7 @@ where
         })
         .collect();
 
-    let (user_urls, team_urls) = futures_util::try_join!(
+    let (mut user_urls, mut team_urls) = futures_util::try_join!(
         user_avatar_urls(obj_dept, user_ids),
         team_avatar_urls(obj_dept, team_ids),
     )?;
@@ -95,14 +95,14 @@ where
                 //
                 let user = model.user.take().map(|user_info| {
                     //
-                    let avatar_urls = user_urls.get(&user_info.id);
+                    let avatar_urls = user_urls.take(&user_info.id);
 
                     user_info_view_from_urls(user_info, avatar_urls)
                 });
 
                 let team = model.team.take().map(|team_info| {
                     //
-                    let avatar_urls = team_urls.get(&team_info.id);
+                    let avatar_urls = team_urls.take(&team_info.id);
 
                     team_info_view_from_urls(team_info, avatar_urls)
                 });

@@ -67,11 +67,11 @@ where
 
     let chapter_entry = ChapterEntry {
         id: chapter_id,
-        comic_id: comic_info.id.clone(),
+        comic_id: comic_info.id.as_str().into(),
         is_pinned: true,
         index,
         subtitle,
-        creator_id: token.user_id.clone(),
+        creator_id: token.user_id.as_str().into(),
     };
 
     let chapter_info = CreateChapter {
@@ -97,8 +97,8 @@ where
         //
         let assignment_entry = AssignmentEntry {
             id: assignment_complex::gen_id(),
-            chapter_id: chapter_info.id.clone(),
-            user_id: token.user_id.clone(),
+            chapter_id: chapter_info.id.as_str().into(),
+            user_id: token.user_id.as_str().into(),
             roles,
         };
 
@@ -109,15 +109,16 @@ where
         .await?;
     }
 
-    let prev_pinned_chapter_id =
-        prev_pinned_chapter.map(|chapter_info| chapter_info.id);
+    let prev_pinned_chapter_id = prev_pinned_chapter
+        .as_ref()
+        .map(|chapter_info| chapter_info.id.as_str());
 
     record_created_chapter(
         repo,
         context,
-        token.user_id.clone(),
+        &token.user_id,
         prev_pinned_chapter_id,
-        chapter_info.id.clone(),
+        &chapter_info.id,
     )
     .await?;
 
@@ -128,9 +129,9 @@ where
 async fn record_created_chapter<C, R>(
     repo: &R,
     context: &mut C,
-    user_id: String,
-    prev_pinned_chapter_id: Option<String>,
-    chapter_id: String,
+    user_id: &str,
+    prev_pinned_chapter_id: Option<&str>,
+    chapter_id: &str,
 ) -> BaseRest<()>
 where
     C: Context,
@@ -142,14 +143,14 @@ where
         //
         workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
             prev_pinned_chapter_id,
-            Some(user_id.clone()),
+            Some(user_id.into()),
             ChapterWorkflowRecordPayload::ChapterUnpinned,
         ));
     }
 
     workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
         chapter_id,
-        Some(user_id),
+        Some(user_id.into()),
         ChapterWorkflowRecordPayload::ChapterCreated,
     ));
 

@@ -53,14 +53,16 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
+    let source_comic_id =
+        page_fixture.chapter_entry.comic_id.clone().into_owned();
 
-    let archiver_id = page_fixture.chapter_entry.creator_id.clone();
+    let archiver_id =
+        page_fixture.chapter_entry.creator_id.clone().into_owned();
 
     let workflow_record_entry = ChapterWorkflowRecordEntry {
         id: format!("{}workflow-record", PREFIX),
-        chapter_id: page_fixture.chapter_entry.id.clone(),
-        actor_user_id: Some(archiver_id.clone()),
+        chapter_id: page_fixture.chapter_entry.id.clone().into(),
+        actor_user_id: Some(archiver_id.clone().into()),
         payload: ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
             previous_subtitle: "before archive".into(),
             next_subtitle: "after archive".into(),
@@ -274,9 +276,11 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
+    let source_comic_id =
+        page_fixture.chapter_entry.comic_id.clone().into_owned();
 
-    let archiver_id = page_fixture.chapter_entry.creator_id.clone();
+    let archiver_id =
+        page_fixture.chapter_entry.creator_id.clone().into_owned();
 
     let comic_archive_snapshot = nucl
         .coord(async |context| {

@@ -126,7 +126,7 @@ where
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_id,
-                    actor_user_id,
+                    actor_user_id.map(Into::into),
                     ChapterWorkflowRecordPayload::StageTransitioned {
                         stage: Stage::RawProvide,
                         previous_phase: StagePhase::Pending,
@@ -235,8 +235,8 @@ where
                 .await?;
 
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.clone(),
-                    Some(token.user_id.clone()),
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::StageTransitioned {
                         stage,
                         previous_phase: prev_phase,

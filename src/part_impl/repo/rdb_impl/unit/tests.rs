@@ -38,7 +38,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let second_id = format!("{}second", PREFIX);
 
-    let creator_id = page_fixture.chapter_entry.creator_id.clone();
+    let creator_id = page_fixture.chapter_entry.creator_id.clone().into_owned();
 
     let create_edits = [
         create_edit(&first_id, &creator_id, "translated"),
@@ -210,7 +210,8 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
                     last_translator_id: page_fixture
                         .chapter_entry
                         .creator_id
-                        .clone(),
+                        .clone()
+                        .into_owned(),
                 },
             },
             revision: Patch::Skip,

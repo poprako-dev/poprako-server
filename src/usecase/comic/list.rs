@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
@@ -23,7 +21,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::util::LoadMode;
-use crate::usecase::internal::view::comic_list_val;
+use crate::usecase::internal::view::{ComicListData, comic_list_val};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
@@ -77,17 +75,17 @@ where
 
     let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 
-    let comic_ids = comic_infos
-        .iter()
-        .map(|comic_info| comic_info.id.as_str())
-        .collect::<Vec<_>>();
-
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
     let pinned_chapter_snapshot = match (with_pinned_chapter,) {
         //
         (true,) => Some(
-            PinnedChapterSnapshot::load_from_comics(repo, &comic_ids).await?,
+            PinnedChapterSnapshot::load_from_comics(
+                repo,
+                &comic_infos,
+                0..comic_infos.len(),
+            )
+            .await?,
         ),
 
         (false,) => None,
@@ -95,7 +93,7 @@ where
 
     let pinned_chapter_infos = pinned_chapter_snapshot
         .as_ref()
-        .map(PinnedChapterSnapshot::infos_by_comic_id);
+        .map(PinnedChapterSnapshot::infos);
 
     let pinned_chapter_assignment_infos = match (with_pinned_chapter_assignment,)
     {
@@ -103,52 +101,30 @@ where
             //
             let chapter_ids = pinned_chapter_infos
                 .into_iter()
-                .flat_map(|pinned_chapter_infos| pinned_chapter_infos.values())
+                .flatten()
                 .map(|chapter_info| chapter_info.id.as_str())
                 .collect::<Vec<_>>();
 
             let assignment_incls = [AssignmentInclOpt::User];
 
-            let assignment_infos = ListAssignmentInfos::Chapters {
+            ListAssignmentInfos::Chapters {
                 chapter_ids: &chapter_ids,
                 incls: &assignment_incls,
             }
             .run_on(repo)
-            .await?;
-
-            let mut assignment_infos_by_chapter = HashMap::<_, Vec<_>>::new();
-
-            for assignment_info in assignment_infos {
-                //
-                if let Some(chapter_assignments) = assignment_infos_by_chapter
-                    .get_mut(&assignment_info.chapter_id)
-                {
-                    //
-                    chapter_assignments.push(assignment_info);
-
-                    continue;
-                }
-
-                assignment_infos_by_chapter.insert(
-                    assignment_info.chapter_id.clone(),
-                    vec![assignment_info],
-                );
-            }
-
-            assignment_infos_by_chapter
+            .await?
         }
 
-        (false,) => HashMap::new(),
+        (false,) => Vec::new(),
     };
 
-    comic_list_val(
-        repo,
-        obj_dept,
+    let data = ComicListData::new(
         comic_infos,
         pinned_chapter_snapshot,
         pinned_chapter_assignment_infos,
-    )
-    .await
+    );
+
+    comic_list_val(repo, obj_dept, data).await
 }
 
 // Validate dependencies between optional pinned-chapter response fields.

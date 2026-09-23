@@ -50,14 +50,14 @@ async fn unit_save_receipts_are_atomic() {
 
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
-    let user_id = fixture.chapter_entry.creator_id.clone();
+    let user_id = fixture.chapter_entry.creator_id.clone().into_owned();
 
     let page_id = fixture.page_entry.id.clone();
 
     let entry = AssignmentEntry {
         id: "save-receipt-assignment".into(),
-        chapter_id: fixture.chapter_entry.id.clone(),
-        user_id: user_id.clone(),
+        chapter_id: fixture.chapter_entry.id.as_str().into(),
+        user_id: user_id.as_str().into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };
 

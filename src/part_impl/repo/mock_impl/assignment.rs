@@ -246,7 +246,7 @@ fn find_assignment(
 // Internal implementation of `create_assignment`.
 fn create_assignment(
     state: &mut MockState,
-    entry: &AssignmentEntry,
+    entry: &AssignmentEntry<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
     // Internal implementation detail.
@@ -271,8 +271,8 @@ fn create_assignment(
 
     let assignment_info = AssignmentInfo {
         id: entry.id.clone(),
-        chapter_id: entry.chapter_id.clone(),
-        user_id: entry.user_id.clone(),
+        chapter_id: entry.chapter_id.to_string(),
+        user_id: entry.user_id.to_string(),
         user: None,
         chapter: None,
         roles: entry.roles,

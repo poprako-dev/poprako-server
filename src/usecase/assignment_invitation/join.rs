@@ -161,7 +161,7 @@ where
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_info.id,
-                    Some(current_user_id),
+                    Some(current_user_id.into()),
                     payload,
                 );
 
@@ -282,8 +282,8 @@ where
 
     let assignment_entry = AssignmentEntry {
         id: assignment_complex::gen_id(),
-        chapter_id: assignment_invitation_info.chapter_id.clone(),
-        user_id: current_user_id.to_owned(),
+        chapter_id: assignment_invitation_info.chapter_id.as_str().into(),
+        user_id: current_user_id.into(),
         roles: assignment_invitation_info.roles,
     };
 

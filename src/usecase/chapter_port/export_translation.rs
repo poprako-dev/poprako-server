@@ -305,8 +305,8 @@ where
             .await?;
 
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(actor_user_id.clone()),
+                chapter_info.id.as_str(),
+                Some(actor_user_id.as_str().into()),
                 ChapterWorkflowRecordPayload::TranslationExported { formats },
             );
 
@@ -322,7 +322,7 @@ where
                     repo,
                     context,
                     &chapter_info.id,
-                    Some(actor_user_id),
+                    Some(&actor_user_id),
                     ChapterWorkflowRecordOrigin::TranslationExport,
                     &[Stage::TypesetRedraw],
                 )

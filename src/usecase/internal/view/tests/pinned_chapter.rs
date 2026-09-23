@@ -1,9 +1,7 @@
 //! Comic list rendering shares lookup state across its complete response graph.
 
-use std::collections::HashMap;
-
 use crate::usecase::internal::page::PinnedChapterSnapshot;
-use crate::usecase::internal::view::comic_list_val;
+use crate::usecase::internal::view::{ComicListData, comic_list_val};
 
 use super::fixture::{TestObjDept, TestRepo, assignment_info};
 
@@ -11,6 +9,126 @@ use super::fixture::{TestObjDept, TestRepo, assignment_info};
 // partial_snapshot_only_loads_unqueried_comics(comic_list_val)(positive): cover fallback only reads comics outside the existing snapshot range.
 // empty_comic_list_performs_no_lookups(comic_list_val)(positive): empty results preserve all aligned vectors without object or repository reads.
 // absent_pinned_chapters_skip_first_page_lookup(comic_list_val)(positive): deduplicated known-absent comics require no repeated pin query or empty first-page query.
+// distinct_comics_keep_nested_urls_aligned(comic_list_val)(positive): different root, chapter, and assignment orders retain each model's own cover and avatar.
+
+#[tokio::test]
+async fn distinct_comics_keep_nested_urls_aligned() {
+    //
+    let obj_dept = TestObjDept::default();
+
+    let mut assignments = Vec::new();
+
+    for suffix in ["z", "a"] {
+        //
+        let mut assignment = assignment_info();
+
+        assignment.id = format!("assignment-{suffix}");
+
+        assignment.chapter_id = format!("chapter-{suffix}");
+
+        assignment.user_id = format!("user-{suffix}");
+
+        assignment.user.as_mut().unwrap().id = assignment.user_id.clone();
+
+        let chapter = assignment.chapter.as_mut().unwrap();
+
+        chapter.id = assignment.chapter_id.clone();
+
+        chapter.comic_id = format!("comic-{suffix}");
+
+        chapter.creator_id = format!("creator-{suffix}");
+
+        chapter.creator.as_mut().unwrap().id = chapter.creator_id.clone();
+
+        let comic = chapter.comic.as_mut().unwrap();
+
+        comic.id = chapter.comic_id.clone();
+
+        comic.creator_id = format!("owner-{suffix}");
+
+        comic.creator.as_mut().unwrap().id = comic.creator_id.clone();
+
+        assignments.push(assignment);
+    }
+
+    let comics = assignments
+        .iter()
+        .map(|assignment| {
+            assignment.chapter.as_ref().unwrap().comic.clone().unwrap()
+        })
+        .collect::<Vec<_>>();
+
+    let chapters = assignments
+        .iter()
+        .rev()
+        .map(|assignment| assignment.chapter.clone().unwrap())
+        .collect();
+
+    let repo = TestRepo::with_chapters(chapters);
+
+    let pinned_chapters = PinnedChapterSnapshot::load_from_comics(
+        &repo,
+        &comics,
+        0..comics.len(),
+    )
+    .await
+    .unwrap();
+
+    assignments.reverse();
+
+    let data = ComicListData {
+        comics,
+        pinned_chapters: Some(pinned_chapters),
+        assignments,
+    };
+
+    let list_val = comic_list_val(&repo, &obj_dept, data).await.unwrap();
+
+    for (position, suffix) in ["z", "a"].into_iter().enumerate() {
+        //
+        let expected_cover = format!("https://obj.test/comic-{suffix}");
+
+        let chapter = list_val.pinned_chapters[position].as_ref().unwrap();
+
+        let assignment = &list_val.pinned_chapter_assignments[position][0];
+
+        assert_eq!(list_val.comics[position].id, format!("comic-{suffix}"));
+
+        assert_eq!(
+            list_val.comics[position].cover_url.as_deref(),
+            Some(expected_cover.as_str())
+        );
+
+        assert_eq!(chapter.id, format!("chapter-{suffix}"));
+
+        assert_eq!(
+            chapter.comic.as_ref().unwrap().cover_url.as_deref(),
+            Some(expected_cover.as_str())
+        );
+
+        assert_eq!(assignment.id, format!("assignment-{suffix}"));
+
+        assert_eq!(
+            assignment
+                .chapter
+                .as_ref()
+                .unwrap()
+                .comic
+                .as_ref()
+                .unwrap()
+                .cover_url
+                .as_deref(),
+            Some(expected_cover.as_str())
+        );
+
+        let expected_avatar = format!("https://obj.test/user-{suffix}");
+
+        assert_eq!(
+            assignment.user.as_ref().unwrap().avatar_url.as_deref(),
+            Some(expected_avatar.as_str())
+        );
+    }
+}
 
 #[tokio::test]
 async fn mixed_comic_list_reuses_snapshot_and_batches_complete_graph() {
@@ -47,25 +165,23 @@ async fn mixed_comic_list_reuses_snapshot_and_batches_complete_graph() {
 
     second_assignment.id = "assignment-a".into();
 
-    let pinned_snapshot =
-        PinnedChapterSnapshot::load_from_comics(&repo, &["comic-z", "comic-1"])
-            .await
-            .unwrap();
+    let comics = vec![missing_comic, comic_info];
 
-    let assignments = HashMap::from([(
-        "chapter-1".into(),
-        vec![first_assignment, second_assignment],
-    )]);
-
-    let list_val = comic_list_val(
+    let pinned_snapshot = PinnedChapterSnapshot::load_from_comics(
         &repo,
-        &obj_dept,
-        vec![missing_comic, comic_info],
-        Some(pinned_snapshot),
-        assignments,
+        &comics,
+        0..comics.len(),
     )
     .await
     .unwrap();
+
+    let data = ComicListData {
+        comics,
+        pinned_chapters: Some(pinned_snapshot),
+        assignments: vec![first_assignment, second_assignment],
+    };
+
+    let list_val = comic_list_val(&repo, &obj_dept, data).await.unwrap();
 
     assert_eq!(
         list_val
@@ -199,20 +315,20 @@ async fn partial_snapshot_only_loads_unqueried_comics() {
 
     missing_comic.id = "comic-z".into();
 
+    let comics = vec![comic_info, missing_comic];
+
     let pinned_snapshot =
-        PinnedChapterSnapshot::load_from_comics(&repo, &["comic-z"])
+        PinnedChapterSnapshot::load_from_comics(&repo, &comics, 1..2)
             .await
             .unwrap();
 
-    let list_val = comic_list_val(
-        &repo,
-        &obj_dept,
-        vec![comic_info, missing_comic],
-        Some(pinned_snapshot),
-        HashMap::new(),
-    )
-    .await
-    .unwrap();
+    let data = ComicListData {
+        comics,
+        pinned_chapters: Some(pinned_snapshot),
+        assignments: Vec::new(),
+    };
+
+    let list_val = comic_list_val(&repo, &obj_dept, data).await.unwrap();
 
     assert_eq!(
         repo.pinned_chapter_calls(),
@@ -243,10 +359,13 @@ async fn empty_comic_list_performs_no_lookups() {
 
     let repo = TestRepo::default();
 
-    let list_val =
-        comic_list_val(&repo, &obj_dept, Vec::new(), None, HashMap::new())
-            .await
-            .unwrap();
+    let data = ComicListData {
+        comics: Vec::new(),
+        pinned_chapters: None,
+        assignments: Vec::new(),
+    };
+
+    let list_val = comic_list_val(&repo, &obj_dept, data).await.unwrap();
 
     assert!(list_val.comics.is_empty());
 
@@ -272,22 +391,27 @@ async fn absent_pinned_chapters_skip_first_page_lookup() {
 
     obj_dept.omit("cover-list", &comic_info.id);
 
+    let comics = vec![comic_info.clone(), comic_info];
+
     let pinned_snapshot = PinnedChapterSnapshot::load_from_comics(
         &repo,
-        &[comic_info.id.as_str(), comic_info.id.as_str()],
+        &comics,
+        0..comics.len(),
     )
     .await
     .unwrap();
 
-    let list_val = comic_list_val(
-        &repo,
-        &obj_dept,
-        vec![comic_info],
-        Some(pinned_snapshot),
-        HashMap::new(),
-    )
-    .await
-    .unwrap();
+    let data = ComicListData {
+        comics,
+        pinned_chapters: Some(pinned_snapshot),
+        assignments: Vec::new(),
+    };
+
+    let list_val = comic_list_val(&repo, &obj_dept, data).await.unwrap();
+
+    assert_eq!(list_val.comics.len(), 2);
+
+    assert!(list_val.pinned_chapters.iter().all(Option::is_none));
 
     assert!(list_val.comics[0].cover_url.is_none());
 

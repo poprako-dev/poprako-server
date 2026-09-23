@@ -49,7 +49,7 @@ async fn list_infos(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entries: &[ChapterWorkflowRecordEntry],
+    entries: &[ChapterWorkflowRecordEntry<'_>],
 ) -> BaseRest<()> {
     //
     if entries.is_empty() {

@@ -312,7 +312,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    chapter_entry: &ChapterEntry,
+    chapter_entry: &ChapterEntry<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     let entry = ChapterEntryRow::try_from(chapter_entry)?;

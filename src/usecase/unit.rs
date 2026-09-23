@@ -398,7 +398,7 @@ where
                 repo,
                 context,
                 &chapter_scope.id,
-                Some(token.user_id.clone()),
+                Some(token.user_id.as_str()),
                 ChapterWorkflowRecordOrigin::UnitEdit,
                 &stages,
             )

@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
 
+use crate::data::view::obj_url::ObjUrlView;
 use crate::data::view::team::TeamInfoView;
 use crate::data::view::user::UserInfoView;
 use crate::data::view::workset::WorksetInfoView;
@@ -44,10 +45,12 @@ pub struct ComicInfoView {
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cover_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub cover_url: Option<ObjUrlView>,
     /// Resolved signed download URL for the cover thumbnail, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cover_thumbnail_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub cover_thumbnail_url: Option<ObjUrlView>,
 
     /// Total number of chapters in this comic.
     pub chapter_count: usize,
@@ -89,8 +92,8 @@ impl ComicInfoView {
     /// [`OffsetDateTime`]: time::OffsetDateTime
     pub fn from_model(
         model: ComicInfo,
-        cover_url: Option<String>,
-        cover_thumbnail_url: Option<String>,
+        cover_url: Option<ObjUrlView>,
+        cover_thumbnail_url: Option<ObjUrlView>,
         team: Option<TeamInfoView>,
         creator: Option<UserInfoView>,
     ) -> Self {

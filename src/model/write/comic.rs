@@ -5,19 +5,23 @@
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
 
+use std::borrow::Cow;
+
 /// The data needed to insert a new comic row.
 ///
 /// Supplied at comic-creation time. The `id` is typically generated via
 /// [`comic_complex::gen_id`]; the `index` is allocated by the repo layer.
 ///
+/// Existing foreign identifiers may borrow their caller-owned storage.
+///
 /// [`comic_complex::gen_id`]: crate::complex::comic::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicEntry {
+pub struct ComicEntry<'a> {
     /// Unique identifier for the new comic.
     pub id: String,
 
     /// The workset this comic will be created under.
-    pub workset_id: String,
+    pub workset_id: Cow<'a, str>,
     /// Sorting position assigned by the insertion logic.
     pub index: usize,
 
@@ -29,7 +33,7 @@ pub struct ComicEntry {
     pub description: Option<String>,
 
     /// The user who creates this comic record.
-    pub creator_id: String,
+    pub creator_id: Cow<'a, str>,
 }
 
 /// Mutable profile (non-cover, non-counter) fields for a comic.

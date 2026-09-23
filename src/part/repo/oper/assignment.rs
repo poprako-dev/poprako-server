@@ -81,7 +81,7 @@ pub struct ListAssignmentInfosExcluded<'a> {
 #[oper(output = AssignmentInfo)]
 pub struct CreateAssignment<'a> {
     /// The assignment entry data.
-    pub entry: &'a AssignmentEntry,
+    pub entry: &'a AssignmentEntry<'a>,
 }
 
 /// Replaces the roles assigned to an assignment.

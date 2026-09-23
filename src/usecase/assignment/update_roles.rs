@@ -135,8 +135,8 @@ where
     .await?;
 
     let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-        chapter_info.id.clone(),
-        Some(token.user_id.clone()),
+        chapter_info.id.as_str(),
+        Some(token.user_id.as_str().into()),
         ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
             subject_user_id: assignment_info.user_id.clone(),
             previous_roles: assignment_info.roles,
@@ -167,8 +167,8 @@ where
 {
     let assignment_entry = AssignmentEntry {
         id: assignment_complex::gen_id(),
-        chapter_id: instr.chapter_id,
-        user_id: instr.user_id.clone(),
+        chapter_id: instr.chapter_id.into(),
+        user_id: instr.user_id.as_str().into(),
         roles: instr.roles,
     };
 
@@ -179,8 +179,8 @@ where
     .await?;
 
     let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-        chapter_info.id.clone(),
-        Some(token.user_id.clone()),
+        chapter_info.id.as_str(),
+        Some(token.user_id.as_str().into()),
         ChapterWorkflowRecordPayload::AssignmentCreated {
             subject_user_id: instr.user_id,
             roles: instr.roles,

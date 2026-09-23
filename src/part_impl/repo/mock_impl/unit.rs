@@ -16,14 +16,16 @@ use crate::result::{BaseRest, accept};
 use crate::util::Patch;
 
 // List units for one page in deterministic next-id order.
-fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
+fn list_infos<'a>(
+    state: &'a MockState,
+    page_id: &str,
+) -> BaseRest<Vec<&'a UnitInfo>> {
     //
     // Load all units and enforce chain ordering before returning.
     let mut unit_infos = state
         .units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
-        .cloned()
         .collect::<Vec<_>>();
 
     unit_sequence_complex::order_units(
@@ -190,7 +192,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 }
 
 // Count translated/proofread units among visible units only.
-fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
+fn count_infos(unit_infos: &[&UnitInfo]) -> UnitCountMetrics {
     //
     // Produce summary fields for response after edits are applied.
     unit_infos
@@ -224,7 +226,7 @@ fn list_infos_by_page_ids(
     let mut unit_infos = Vec::new();
 
     for page_id in page_ids {
-        unit_infos.extend(list_infos(state, page_id)?);
+        unit_infos.extend(list_infos(state, page_id)?.into_iter().cloned());
     }
 
     accept(unit_infos)
@@ -244,25 +246,18 @@ fn list_infos_by_ids(state: &MockState, ids: &[&str]) -> Vec<UnitInfo> {
 // List lightweight order objects for one page, kept aligned with unit sequence.
 fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
     //
-    // Load order metadata and then sort by linked-list order.
-    let mut orders = state
-        .units
-        .iter()
-        .filter(|unit_info| unit_info.page_id == page_id)
-        .map(|unit_info| UnitOrder {
-            id: unit_info.id.clone(),
-            next_id: unit_info.next_id.clone(),
-            is_hidden: unit_info.hidden_at.is_some(),
-        })
-        .collect::<Vec<_>>();
+    let unit_infos = list_infos(state, page_id)?;
 
-    unit_sequence_complex::order_units(
-        &mut orders,
-        |unit_info| unit_info.id.as_str(),
-        |unit_info| unit_info.next_id.as_deref(),
-    )?;
-
-    accept(orders)
+    accept(
+        unit_infos
+            .into_iter()
+            .map(|unit_info| UnitOrder {
+                id: unit_info.id.clone(),
+                next_id: unit_info.next_id.clone(),
+                is_hidden: unit_info.hidden_at.is_some(),
+            })
+            .collect(),
+    )
 }
 
 // Apply all create/save/delete edits for one page and return unit counters.

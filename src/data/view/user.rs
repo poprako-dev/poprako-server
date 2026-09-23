@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
 
+use crate::data::view::obj_url::ObjUrlView;
 use crate::model::read::proj::user::UserInfo;
 
 /// Presentation-ready user profile information.
@@ -30,10 +31,12 @@ pub struct UserInfoView {
     /// Resolved signed download URL for the avatar image, or [`None`] if
     /// no avatar has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub avatar_url: Option<ObjUrlView>,
     /// Resolved signed download URL for the avatar thumbnail, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_thumbnail_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub avatar_thumbnail_url: Option<ObjUrlView>,
 
     /// Whether this user has super-admin privileges.
     pub is_sadmin: bool,
@@ -56,8 +59,8 @@ impl UserInfoView {
     /// [`UserInfo`]: crate::model::read::proj::user::UserInfo
     pub fn from_model(
         model: UserInfo,
-        avatar_url: Option<String>,
-        avatar_thumbnail_url: Option<String>,
+        avatar_url: Option<ObjUrlView>,
+        avatar_thumbnail_url: Option<ObjUrlView>,
     ) -> Self {
         //
         Self {

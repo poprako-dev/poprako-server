@@ -7,7 +7,9 @@ use crate::model::write::page::PageManifestEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{ApplyPageManifest, ListPageUnitDiffStats};
-use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
+use crate::part::repo::oper::unit::{
+    ApplyUnitEdits, ListUnitInfosByPageIds, ListUnitOrders,
+};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
@@ -376,6 +378,39 @@ pub(super) async fn verify_chunking_and_diff(
     })
     .await
     .unwrap();
+
+    let selected_infos = repo
+        .run(&ListUnitInfosByPageIds {
+            page_ids: &[
+                &missing_translation_page_id,
+                &chunked_order_page_id,
+                &equal_page_id,
+                &chunked_order_page_id,
+            ],
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(selected_infos.len(), 607);
+
+    assert_eq!(
+        selected_infos[0].id,
+        format!("{}missing-translation", PREFIX)
+    );
+
+    assert_eq!(selected_infos[1].id, format!("{}chunked-0-0", PREFIX));
+
+    assert_eq!(selected_infos[600].id, format!("{}chunked-5-99", PREFIX));
+
+    assert!(
+        selected_infos[1..601]
+            .iter()
+            .all(|unit_info| unit_info.hidden_at.is_some())
+    );
+
+    assert_eq!(selected_infos[601].id, format!("{}equal", PREFIX));
+
+    assert_eq!(selected_infos[606].id, hidden_diff_id);
 
     let page_unit_diff_stats = repo
         .run(&ListPageUnitDiffStats {

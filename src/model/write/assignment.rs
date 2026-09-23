@@ -9,20 +9,23 @@
 //! [`RoleMask`]: crate::value::role::RoleMask
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
 
+use std::borrow::Cow;
+
 use crate::value::role::RoleMask;
 
 /// The data needed to insert a new assignment row.
 ///
 /// The `roles` mask specifies the initial roles.
+/// Existing foreign identifiers may borrow their caller-owned storage.
 #[cfg_attr(test, derive(Clone))]
-pub struct AssignmentEntry {
+pub struct AssignmentEntry<'a> {
     /// Unique identifier to insert for the new assignment row.
     pub id: String,
 
     /// Foreign key identifying the chapter whose workflow is joined.
-    pub chapter_id: String,
+    pub chapter_id: Cow<'a, str>,
     /// Foreign key identifying the user being added to the chapter workflow.
-    pub user_id: String,
+    pub user_id: Cow<'a, str>,
 
     /// Initial bitmask of workflow roles granted to this user.
     pub roles: RoleMask,

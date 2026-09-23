@@ -22,6 +22,8 @@ pub mod image;
 pub mod member;
 /// Member-invitation response views.
 pub mod member_invitation;
+/// Object URL presentation.
+pub mod obj_url;
 /// Page response views.
 pub mod page;
 /// Page-port response views.

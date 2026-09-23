@@ -104,7 +104,7 @@ pub struct AssignmentEntryRow<'a> {
 
 impl<'a> AssignmentEntryRow<'a> {
     pub fn from_model_entry(
-        model_entry: &'a AssignmentEntry,
+        model_entry: &'a AssignmentEntry<'_>,
         now: OffsetDateTime,
     ) -> Self {
         //

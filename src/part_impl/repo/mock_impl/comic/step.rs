@@ -42,13 +42,13 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 
         let comic = ComicInfo {
             id: oper.entry.id.clone(),
-            workset_id: oper.entry.workset_id.clone(),
+            workset_id: oper.entry.workset_id.to_string(),
             index: oper.entry.index,
             title: oper.entry.title.clone(),
             author: oper.entry.author.clone(),
             description: oper.entry.description.clone(),
             chapter_count: 0,
-            creator_id: oper.entry.creator_id.clone(),
+            creator_id: oper.entry.creator_id.to_string(),
             workset: None,
             team: None,
             creator: None,

@@ -141,3 +141,47 @@ fn order_units_preserves_tombstones_and_payload_at_every_position() {
         assert!(records == expected);
     }
 }
+
+// A sequence record whose payload cannot be cloned.
+struct OwnedUnitRecord {
+    // Persisted identity, link, and visibility.
+    order: UnitOrder,
+
+    // Content owned by this record.
+    content: String,
+}
+
+#[test]
+fn order_units_moves_non_clone_records_without_losing_payload() {
+    //
+    let mut records = [
+        OwnedUnitRecord {
+            order: order("b", None),
+            content: "tail content".into(),
+        },
+        OwnedUnitRecord {
+            order: order("a", Some("b")),
+            content: "head content".into(),
+        },
+    ];
+
+    unit_sequence_complex::order_units(
+        &mut records,
+        |record| record.order.id.as_str(),
+        |record| record.order.next_id.as_deref(),
+    )
+    .unwrap();
+
+    let actual = records
+        .into_iter()
+        .map(|record| (record.order.id, record.order.next_id, record.content))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        actual,
+        [
+            ("a".into(), Some("b".into()), "head content".into()),
+            ("b".into(), None, "tail content".into()),
+        ],
+    );
+}

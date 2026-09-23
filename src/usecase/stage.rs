@@ -18,7 +18,7 @@ pub async fn start_pending_stages<C, R>(
     repo: &R,
     context: &mut C,
     chapter_id: &str,
-    actor_user_id: Option<String>,
+    actor_user_id: Option<&str>,
     origin: ChapterWorkflowRecordOrigin,
     stages: &[Stage],
 ) -> BaseRest<()>
@@ -48,7 +48,7 @@ where
 
             entries.push(ChapterWorkflowRecordEntry::new(
                 chapter_id,
-                actor_user_id.clone(),
+                actor_user_id.map(Into::into),
                 payload,
             ));
         }

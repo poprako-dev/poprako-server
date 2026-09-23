@@ -26,7 +26,7 @@ where
         })
         .collect();
 
-    let urls = avatar_urls(obj_dept, user_ids).await?;
+    let mut urls = avatar_urls(obj_dept, user_ids).await?;
 
     accept(
         models
@@ -35,7 +35,7 @@ where
                 //
                 let user = model.user.take().map(|user_info| {
                     //
-                    let avatar_urls = urls.get(&user_info.id);
+                    let avatar_urls = urls.take(&user_info.id);
 
                     user_info_view_from_urls(user_info, avatar_urls)
                 });

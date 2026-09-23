@@ -14,7 +14,7 @@ use crate::value::chapter::stage::Stage;
 #[oper(output = ChapterInfo)]
 pub struct CreateChapter<'a> {
     /// The chapter entry data.
-    pub entry: &'a ChapterEntry,
+    pub entry: &'a ChapterEntry<'a>,
 }
 
 /// Gets a chapter that must exist.

@@ -160,8 +160,8 @@ where
             };
 
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(token.user_id.clone()),
+                chapter_info.id.as_str(),
+                Some(token.user_id.as_str().into()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
                     imported_page_count: import_val.imported_page_count,
@@ -179,7 +179,7 @@ where
                 repo,
                 context,
                 &chapter_info.id,
-                Some(token.user_id.clone()),
+                Some(&token.user_id),
                 ChapterWorkflowRecordOrigin::TranslationImport,
                 &stages,
             )

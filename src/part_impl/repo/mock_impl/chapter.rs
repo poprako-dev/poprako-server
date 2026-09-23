@@ -84,7 +84,7 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 /// Inserts a new chapter into the mock state, returning the created [`ChapterInfo`].
 pub fn create_chapter(
     state: &mut MockState,
-    chapter_entry: &ChapterEntry,
+    chapter_entry: &ChapterEntry<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     if state
@@ -99,7 +99,7 @@ pub fn create_chapter(
 
     let chapter_info = ChapterInfo {
         id: chapter_entry.id.clone(),
-        comic_id: chapter_entry.comic_id.clone(),
+        comic_id: chapter_entry.comic_id.to_string(),
         comic: None,
         is_pinned: chapter_entry.is_pinned,
         index: chapter_entry.index,
@@ -109,7 +109,7 @@ pub fn create_chapter(
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).ok().unwrap(),
-        creator_id: chapter_entry.creator_id.clone(),
+        creator_id: chapter_entry.creator_id.to_string(),
         creator: None,
         created_at: time,
         updated_at: time,

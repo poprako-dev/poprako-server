@@ -1,17 +1,16 @@
 //! Team presentation assembly.
 
-use std::collections::HashMap;
-
 use poprako_orchestra::Context;
 
 use poprako_obj_dept::ObjDeptView;
-use poprako_obj_dept::model::url::ObjUrls;
 
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
 use crate::part::obj_dept::TeamAvatar;
 use crate::result::{BaseRest, accept};
-use crate::usecase::internal::view::obj_urls::load_obj_urls;
+use crate::usecase::internal::view::obj_urls::{
+    ObjUrlBatch, ObjUrlViews, load_obj_urls,
+};
 
 /// Resolves one team model with its avatar origin and thumbnail URLs.
 pub async fn team_info_view<C, O>(
@@ -24,9 +23,9 @@ where
 {
     let team_ids = vec![model.id.as_str()];
 
-    let avatar_urls = avatar_urls(obj_dept, team_ids).await?;
+    let mut avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
-    let urls = avatar_urls.get(&model.id);
+    let urls = avatar_urls.take(&model.id);
 
     accept(team_info_view_from_urls(model, urls))
 }
@@ -34,16 +33,12 @@ where
 /// Renders one team with URLs from an already-loaded object snapshot.
 pub fn team_info_view_from_urls(
     model: TeamInfo,
-    urls: Option<&ObjUrls>,
+    urls: Option<ObjUrlViews>,
 ) -> TeamInfoView {
     //
-    TeamInfoView::from_model(
-        model,
-        urls.and_then(|urls| urls.origin_url.as_ref())
-            .map(ToString::to_string),
-        urls.and_then(|urls| urls.thumbnail_url.as_ref())
-            .map(ToString::to_string),
-    )
+    let (avatar_url, avatar_thumbnail_url) = urls.unwrap_or_default();
+
+    TeamInfoView::from_model(model, avatar_url, avatar_thumbnail_url)
 }
 
 /// Resolves team models with one avatar metadata query.
@@ -57,14 +52,14 @@ where
 {
     let team_ids = models.iter().map(|model| model.id.as_str()).collect();
 
-    let avatar_urls = avatar_urls(obj_dept, team_ids).await?;
+    let mut avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
     accept(
         models
             .into_iter()
             .map(|model| {
                 //
-                let urls = avatar_urls.get(&model.id);
+                let urls = avatar_urls.take(&model.id);
 
                 team_info_view_from_urls(model, urls)
             })
@@ -76,7 +71,7 @@ where
 pub async fn avatar_urls<C, O>(
     obj_dept: &O,
     team_ids: Vec<&str>,
-) -> BaseRest<HashMap<String, ObjUrls>>
+) -> BaseRest<ObjUrlBatch>
 where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,

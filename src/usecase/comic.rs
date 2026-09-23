@@ -95,12 +95,12 @@ where
 
             let comic_entry = ComicEntry {
                 id: comic_complex::gen_id(),
-                workset_id: instr.workset_id,
+                workset_id: instr.workset_id.into(),
                 index,
                 title: instr.title,
                 author: instr.author,
                 description: instr.description,
-                creator_id: token.user_id.clone(),
+                creator_id: token.user_id.as_str().into(),
             };
 
             let comic_info = CreateComic {

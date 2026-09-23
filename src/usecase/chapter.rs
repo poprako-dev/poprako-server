@@ -286,8 +286,8 @@ where
                 .await?;
 
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.clone(),
-                    Some(token.user_id.clone()),
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
                         previous_subtitle: chapter_info.subtitle,
                         next_subtitle,
@@ -407,7 +407,7 @@ where
                 //
                 workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
                     prev_pinned_chapter.id,
-                    Some(token.user_id.clone()),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterUnpinned,
                 ));
             }
@@ -415,8 +415,8 @@ where
             if !chapter_info.is_pinned {
                 //
                 workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.clone(),
-                    Some(token.user_id.clone()),
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterPinned,
                 ));
             }
