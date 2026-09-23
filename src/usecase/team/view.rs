@@ -11,7 +11,7 @@ use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
 use crate::part::obj_dept::TeamAvatar;
 use crate::result::{BaseRest, accept};
-use crate::usecase::internal::view::load_obj_urls;
+use crate::usecase::internal::view::obj_urls::load_obj_urls;
 
 /// Resolves one team model with its avatar origin and thumbnail URLs.
 pub async fn team_info_view<C, O>(

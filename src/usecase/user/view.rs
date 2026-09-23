@@ -11,7 +11,7 @@ use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::user::UserInfo;
 use crate::part::obj_dept::UserAvatar;
 use crate::result::{BaseRest, accept};
-use crate::usecase::internal::view::load_obj_urls;
+use crate::usecase::internal::view::obj_urls::load_obj_urls;
 
 /// Resolves one user model with its avatar origin and thumbnail URLs.
 pub async fn user_info_view<C, O>(

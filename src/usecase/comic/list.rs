@@ -9,9 +9,6 @@ use poprako_util::i18n::trl;
 use crate::complex::comic::perm as comic_perm_complex;
 use crate::data::instr::comic::ListComicInfosInstr;
 use crate::data::val::comic_list::ListComicInfosVal;
-use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::comic::ComicInfo;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -26,7 +23,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::util::LoadMode;
-use crate::usecase::internal::view::{ObjViewIds, ObjViewSnapshot};
+use crate::usecase::internal::view::comic_list_val;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
@@ -100,69 +97,49 @@ where
         .as_ref()
         .map(PinnedChapterSnapshot::infos_by_comic_id);
 
-    let pinned_chapter_assignment_infos = if with_pinned_chapter_assignment {
-        //
-        let chapter_ids = pinned_chapter_infos
-            .into_iter()
-            .flat_map(|pinned_chapter_infos| pinned_chapter_infos.values())
-            .map(|chapter_info| chapter_info.id.as_str())
-            .collect::<Vec<_>>();
-
-        let assignment_incls = [AssignmentInclOpt::User];
-
-        let assignment_infos = ListAssignmentInfos::Chapters {
-            chapter_ids: &chapter_ids,
-            incls: &assignment_incls,
-        }
-        .run_on(repo)
-        .await?;
-
-        let mut assignment_infos_by_chapter = HashMap::new();
-
-        for assignment_info in assignment_infos {
+    let pinned_chapter_assignment_infos = match (with_pinned_chapter_assignment,)
+    {
+        (true,) => {
             //
+            let chapter_ids = pinned_chapter_infos
+                .into_iter()
+                .flat_map(|pinned_chapter_infos| pinned_chapter_infos.values())
+                .map(|chapter_info| chapter_info.id.as_str())
+                .collect::<Vec<_>>();
+
+            let assignment_incls = [AssignmentInclOpt::User];
+
+            let assignment_infos = ListAssignmentInfos::Chapters {
+                chapter_ids: &chapter_ids,
+                incls: &assignment_incls,
+            }
+            .run_on(repo)
+            .await?;
+
+            let mut assignment_infos_by_chapter = HashMap::new();
+
+            for assignment_info in assignment_infos {
+                //
+                assignment_infos_by_chapter
+                    .entry(assignment_info.chapter_id.clone())
+                    .or_insert_with(Vec::new)
+                    .push(assignment_info);
+            }
+
             assignment_infos_by_chapter
-                .entry(assignment_info.chapter_id.clone())
-                .or_insert_with(Vec::new)
-                .push(assignment_info);
         }
 
-        assignment_infos_by_chapter
-    } else {
-        HashMap::new()
+        (false,) => HashMap::new(),
     };
 
-    let mut obj_view_ids = ObjViewIds::default();
-
-    obj_view_ids.collect_comics(&comic_infos);
-
-    obj_view_ids.collect_chapters(
-        pinned_chapter_infos
-            .into_iter()
-            .flat_map(|infos| infos.values()),
-    );
-
-    obj_view_ids.collect_assignments(
-        pinned_chapter_assignment_infos.values().flatten(),
-    );
-
-    let obj_view_snapshot =
-        ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
-            repo,
-            obj_dept,
-            obj_view_ids,
-            pinned_chapter_snapshot.as_ref(),
-        )
-        .await?;
-
-    accept(build_list_val(
-        &obj_view_snapshot,
+    comic_list_val(
+        repo,
+        obj_dept,
         comic_infos,
-        pinned_chapter_snapshot
-            .map(PinnedChapterSnapshot::into_infos_by_comic_id)
-            .unwrap_or_default(),
+        pinned_chapter_snapshot,
         pinned_chapter_assignment_infos,
-    ))
+    )
+    .await
 }
 
 // Validate dependencies between optional pinned-chapter response fields.
@@ -193,54 +170,4 @@ fn validate_with_options(
         variant: ExpectedVariant::Args,
         message: err_message,
     })
-}
-
-// Build aligned comic, pinned-chapter, and assignment response vectors.
-fn build_list_val(
-    obj_view_snapshot: &ObjViewSnapshot,
-    comic_infos: Vec<ComicInfo>,
-    mut pinned_chapter_infos: HashMap<String, ChapterInfo>,
-    mut assignment_infos_by_chapter: HashMap<String, Vec<AssignmentInfo>>,
-) -> ListComicInfosVal {
-    //
-    let mut comic_info_views = Vec::with_capacity(comic_infos.len());
-
-    let mut pinned_chapter_views = Vec::with_capacity(comic_infos.len());
-
-    let mut pinned_chapter_assignment_views =
-        Vec::with_capacity(comic_infos.len());
-
-    for comic_info in comic_infos {
-        //
-        let chapter_info = pinned_chapter_infos.remove(&comic_info.id);
-
-        let assignment_infos = chapter_info
-            .as_ref()
-            .and_then(|chapter_info| {
-                assignment_infos_by_chapter.remove(&chapter_info.id)
-            })
-            .unwrap_or_default();
-
-        let assignment_views = assignment_infos
-            .into_iter()
-            .map(|assignment_info| {
-                obj_view_snapshot.assignment(assignment_info)
-            })
-            .collect();
-
-        let pinned_chapter_view = chapter_info
-            .map(|chapter_info| obj_view_snapshot.chapter(chapter_info));
-
-        comic_info_views.push(obj_view_snapshot.comic(comic_info));
-
-        pinned_chapter_views.push(pinned_chapter_view);
-
-        pinned_chapter_assignment_views.push(assignment_views);
-    }
-
-    ListComicInfosVal {
-        comics: comic_info_views,
-        pinned_chapters: pinned_chapter_views,
-        pinned_chapter_assignments: pinned_chapter_assignment_views,
-    }
 }

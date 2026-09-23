@@ -2,8 +2,6 @@
 
 /// Assignment role-update orchestration.
 pub mod update_roles;
-/// Assignment presentation assembly.
-pub mod view;
 
 #[cfg(test)]
 // Unit tests that cover assignment orchestration invariants.
@@ -49,9 +47,9 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::assignment::view::assignment_info_views;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::assignment_info_views;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.

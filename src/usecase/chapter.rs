@@ -4,8 +4,6 @@
 pub mod delete;
 /// Chapter workflow stage mutation use case.
 pub mod stage;
-/// Chapter presentation assembly.
-pub mod view;
 /// Immutable workflow record listing use case.
 pub mod workflow_record;
 
@@ -46,10 +44,10 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::chapter::view::chapter_info_views;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::chapter_info_views;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.

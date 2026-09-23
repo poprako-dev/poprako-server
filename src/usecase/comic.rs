@@ -5,8 +5,6 @@ pub mod alloc;
 pub mod cover;
 /// Comic listing use cases.
 pub mod list;
-/// Comic presentation assembly.
-pub mod view;
 
 /// Comic use-case test helpers.
 #[cfg(test)]
@@ -48,10 +46,10 @@ use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::comic::view::comic_info_view;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::comic_info_view;
 
 /// Creates a comic with its first chapter and optional worker assignment.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
