@@ -1,7 +1,6 @@
 use super::*;
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::result::BaseError;
 
 // Internal implementation of `create_edit`.
 fn create_edit(id: &str, text: &str) -> UnitEdit {
@@ -93,36 +92,4 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
     assert_eq!(restored.proofread, 1);
 
     assert!(state.units[0].hidden_at.is_none());
-}
-
-#[test]
-fn order_unit_orders_rejects_a_forked_chain() {
-    //
-    // Internal implementation detail.
-    let mut unit_orders = vec![
-        UnitOrder {
-            id: "a".to_string(),
-            next_id: Some("c".to_string()),
-            is_hidden: false,
-        },
-        UnitOrder {
-            id: "b".to_string(),
-            next_id: Some("c".to_string()),
-            is_hidden: false,
-        },
-        UnitOrder {
-            id: "c".to_string(),
-            next_id: None,
-            is_hidden: false,
-        },
-    ];
-
-    let error = order_units(
-        &mut unit_orders,
-        |unit_order| unit_order.id.as_str(),
-        |unit_order| unit_order.next_id.as_deref(),
-    )
-    .unwrap_err();
-
-    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }

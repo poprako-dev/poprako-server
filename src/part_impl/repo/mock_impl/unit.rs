@@ -8,92 +8,12 @@ mod orchestra;
 mod tests;
 
 use crate::complex::unit as unit_complex;
+use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
-use crate::part_impl::repo::mock_impl::{
-    MockState, expected, now, unrecoverable,
-};
+use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
 use crate::util::Patch;
-
-// Reorders linked-list-like unit slices into a deterministic traversal order.
-fn order_units<T, I, N>(
-    units: &mut [T],
-    id_of: I,
-    next_id_of: N,
-) -> BaseRest<()>
-where
-    I: for<'a> Fn(&'a T) -> &'a str,
-    N: for<'a> Fn(&'a T) -> Option<&'a str>,
-{
-    // Validate and reorder to follow next pointers from head to tail.
-    if units.is_empty() {
-        return accept(());
-    }
-
-    for index in 0..units.len() {
-        //
-        if units[index + 1..]
-            .iter()
-            .any(|unit| id_of(unit) == id_of(&units[index]))
-        {
-            return Err(unrecoverable("persisted Unit chain is corrupt"));
-        }
-    }
-
-    let mut head_pos = None;
-
-    for cand in 0..units.len() {
-        //
-        // Detect whether this unit has any predecessor.
-        let has_predecessor = units.iter().any(|unit| {
-            //
-            next_id_of(unit)
-                .is_some_and(|next_id| next_id == id_of(&units[cand]))
-        });
-
-        if has_predecessor {
-            continue;
-        }
-
-        if head_pos.replace(cand).is_some() {
-            return Err(unrecoverable("persisted Unit chain is corrupt"));
-        }
-    }
-
-    let Some(head_pos) = head_pos else {
-        return Err(unrecoverable("persisted Unit chain is corrupt"));
-    };
-
-    units.swap(0, head_pos);
-
-    for index in 0..units.len() - 1 {
-        //
-        // Find the explicit successor and move it directly after current unit.
-        let next_pos =
-            units[index + 1..]
-                .iter()
-                .enumerate()
-                .find_map(|(pos, cand)| {
-                    //
-                    next_id_of(&units[index])
-                        .is_some_and(|next_id| next_id == id_of(cand))
-                        .then_some(pos)
-                });
-
-        let Some(next_pos) = next_pos else {
-            return Err(unrecoverable("persisted Unit chain is corrupt"));
-        };
-
-        units.swap(index + 1, index + 1 + next_pos);
-    }
-
-    if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
-        return Err(unrecoverable("persisted Unit chain is corrupt"));
-    }
-
-    accept(())
-}
 
 // List units for one page in deterministic next-id order.
 fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
@@ -106,7 +26,7 @@ fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
         .cloned()
         .collect::<Vec<_>>();
 
-    order_units(
+    unit_sequence_complex::order_units(
         &mut unit_infos,
         |unit_info| unit_info.id.as_str(),
         |unit_info| unit_info.next_id.as_deref(),
@@ -336,7 +256,7 @@ fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
         })
         .collect::<Vec<_>>();
 
-    order_units(
+    unit_sequence_complex::order_units(
         &mut orders,
         |unit_info| unit_info.id.as_str(),
         |unit_info| unit_info.next_id.as_deref(),
