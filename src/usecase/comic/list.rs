@@ -116,14 +116,23 @@ where
             .run_on(repo)
             .await?;
 
-            let mut assignment_infos_by_chapter = HashMap::new();
+            let mut assignment_infos_by_chapter = HashMap::<_, Vec<_>>::new();
 
             for assignment_info in assignment_infos {
                 //
-                assignment_infos_by_chapter
-                    .entry(assignment_info.chapter_id.clone())
-                    .or_insert_with(Vec::new)
-                    .push(assignment_info);
+                if let Some(chapter_assignments) = assignment_infos_by_chapter
+                    .get_mut(&assignment_info.chapter_id)
+                {
+                    //
+                    chapter_assignments.push(assignment_info);
+
+                    continue;
+                }
+
+                assignment_infos_by_chapter.insert(
+                    assignment_info.chapter_id.clone(),
+                    vec![assignment_info],
+                );
             }
 
             assignment_infos_by_chapter

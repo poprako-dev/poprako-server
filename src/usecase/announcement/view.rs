@@ -24,9 +24,9 @@ where
         .filter_map(|model| {
             model.user.as_ref().map(|user_info| user_info.id.as_str())
         })
-        .collect::<Vec<_>>();
+        .collect();
 
-    let urls = avatar_urls::<C, O>(obj_dept, &user_ids).await?;
+    let urls = avatar_urls(obj_dept, user_ids).await?;
 
     accept(
         models

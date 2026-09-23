@@ -12,8 +12,8 @@ use crate::result::{BaseError, BaseRest};
 /// The queried range records that a missing map entry means no pinned chapter
 /// exists, rather than that the comic has not been queried yet.
 pub struct PinnedChapterSnapshot {
-    /// Comic identifiers included in the pinned-chapter query.
-    queried_comic_ids: HashSet<String>,
+    /// Queried comics with no pinned chapter; present comics live in the map.
+    absent_comic_ids: HashSet<String>,
 
     /// Pinned chapters keyed by comic identifier.
     infos_by_comic_id: HashMap<String, ChapterInfo>,
@@ -28,19 +28,11 @@ impl PinnedChapterSnapshot {
     where
         R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError> + Sync,
     {
-        let mut queried_comic_ids = comic_ids
-            .iter()
-            .map(|comic_id| (*comic_id).to_owned())
-            .collect::<Vec<_>>();
+        let mut query_comic_ids = comic_ids.to_vec();
 
-        queried_comic_ids.sort_unstable();
+        query_comic_ids.sort_unstable();
 
-        queried_comic_ids.dedup();
-
-        let query_comic_ids = queried_comic_ids
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<_>>();
+        query_comic_ids.dedup();
 
         let chapter_infos = match query_comic_ids.as_slice() {
             //
@@ -59,10 +51,16 @@ impl PinnedChapterSnapshot {
         let infos_by_comic_id = chapter_infos
             .into_iter()
             .map(|chapter_info| (chapter_info.comic_id.clone(), chapter_info))
+            .collect::<HashMap<_, _>>();
+
+        let absent_comic_ids = query_comic_ids
+            .into_iter()
+            .filter(|comic_id| !infos_by_comic_id.contains_key(*comic_id))
+            .map(str::to_owned)
             .collect();
 
         Ok(Self {
-            queried_comic_ids: queried_comic_ids.into_iter().collect(),
+            absent_comic_ids,
             infos_by_comic_id,
         })
     }
@@ -84,7 +82,9 @@ impl PinnedChapterSnapshot {
 
     // Checks whether a comic was included in this snapshot's query range.
     fn has_queried_comic(&self, comic_id: &str) -> bool {
-        self.queried_comic_ids.contains(comic_id)
+        //
+        self.infos_by_comic_id.contains_key(comic_id)
+            || self.absent_comic_ids.contains(comic_id)
     }
 }
 
@@ -106,12 +106,6 @@ impl PageLoader {
             + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
             + Sync,
     {
-        let mut comic_ids = comic_ids.to_vec();
-
-        comic_ids.sort_unstable();
-
-        comic_ids.dedup();
-
         if comic_ids.is_empty() {
             return Ok(HashMap::new());
         }
@@ -124,7 +118,7 @@ impl PageLoader {
             //
             Some(pinned_chapter_snapshot) => {
                 //
-                for comic_id in &comic_ids {
+                for comic_id in comic_ids {
                     // A queried comic without an entry has no pinned chapter.
                     if pinned_chapter_snapshot.has_queried_comic(comic_id) {
                         //
@@ -133,8 +127,8 @@ impl PageLoader {
                         {
                             //
                             comic_ids_by_chapter_id.insert(
-                                chapter_info.id.clone(),
-                                chapter_info.comic_id.clone(),
+                                chapter_info.id.as_str(),
+                                chapter_info.comic_id.as_str(),
                             );
                         }
 
@@ -145,7 +139,7 @@ impl PageLoader {
                 }
             }
 
-            None => unloaded_comic_ids.extend(comic_ids),
+            None => unloaded_comic_ids.extend_from_slice(comic_ids),
         }
 
         let unloaded_pinned_chapter_snapshot =
@@ -157,14 +151,16 @@ impl PageLoader {
                 .infos_by_comic_id()
                 .values()
                 .map(|chapter_info| {
-                    (chapter_info.id.clone(), chapter_info.comic_id.clone())
+                    (chapter_info.id.as_str(), chapter_info.comic_id.as_str())
                 }),
         );
 
-        let chapter_ids = comic_ids_by_chapter_id
-            .keys()
-            .map(String::as_str)
-            .collect::<Vec<_>>();
+        if comic_ids_by_chapter_id.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let chapter_ids =
+            comic_ids_by_chapter_id.keys().copied().collect::<Vec<_>>();
 
         let page_infos = ListFirstPageInfos {
             chapter_ids: &chapter_ids,
@@ -177,9 +173,8 @@ impl PageLoader {
             .filter_map(|page_info| {
                 //
                 comic_ids_by_chapter_id
-                    .get(&page_info.chapter_id)
-                    .cloned()
-                    .map(|comic_id| (comic_id, page_info.id))
+                    .get(page_info.chapter_id.as_str())
+                    .map(|comic_id| ((*comic_id).to_owned(), page_info.id))
             })
             .collect();
 

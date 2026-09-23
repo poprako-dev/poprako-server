@@ -22,9 +22,9 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let team_ids = [model.id.as_str()];
+    let team_ids = vec![model.id.as_str()];
 
-    let avatar_urls = avatar_urls::<C, O>(obj_dept, &team_ids).await?;
+    let avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
     let urls = avatar_urls.get(&model.id);
 
@@ -55,12 +55,9 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let team_ids = models
-        .iter()
-        .map(|model| model.id.as_str())
-        .collect::<Vec<_>>();
+    let team_ids = models.iter().map(|model| model.id.as_str()).collect();
 
-    let avatar_urls = avatar_urls::<C, O>(obj_dept, &team_ids).await?;
+    let avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
     accept(
         models
@@ -78,11 +75,11 @@ where
 /// Resolves current avatar URLs from one metadata query for the supplied team IDs.
 pub async fn avatar_urls<C, O>(
     obj_dept: &O,
-    team_ids: &[&str],
+    team_ids: Vec<&str>,
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    load_obj_urls::<C, O, TeamAvatar>(obj_dept, team_ids).await
+    load_obj_urls(obj_dept, team_ids).await
 }

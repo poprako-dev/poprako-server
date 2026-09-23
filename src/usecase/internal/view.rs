@@ -50,10 +50,9 @@ where
 
     ids.collect_comics(std::slice::from_ref(&model));
 
-    let snapshot = ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
-        repo, obj_dept, ids, None,
-    )
-    .await?;
+    let snapshot =
+        ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
+            .await?;
 
     accept(snapshot.comic(model))
 }
@@ -79,10 +78,9 @@ where
 
     ids.collect_chapters(&models);
 
-    let snapshot = ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
-        repo, obj_dept, ids, None,
-    )
-    .await?;
+    let snapshot =
+        ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
+            .await?;
 
     accept(
         models
@@ -110,7 +108,7 @@ where
 
     ids.collect_assignments(std::slice::from_ref(&model));
 
-    let snapshot = ObjViewSnapshot::load::<C, O>(obj_dept, &ids).await?;
+    let snapshot = ObjViewSnapshot::load(obj_dept, &ids).await?;
 
     accept(snapshot.assignment(model))
 }
@@ -136,10 +134,9 @@ where
 
     ids.collect_assignments(&models);
 
-    let snapshot = ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
-        repo, obj_dept, ids, None,
-    )
-    .await?;
+    let snapshot =
+        ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
+            .await?;
 
     accept(
         models
@@ -186,14 +183,13 @@ where
         pinned_chapter_assignment_infos.values().flatten(),
     );
 
-    let obj_view_snapshot =
-        ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
-            repo,
-            obj_dept,
-            obj_view_ids,
-            pinned_chapter_snapshot.as_ref(),
-        )
-        .await?;
+    let obj_view_snapshot = ObjViewSnapshot::load_with_comic_fallbacks(
+        repo,
+        obj_dept,
+        obj_view_ids,
+        pinned_chapter_snapshot.as_ref(),
+    )
+    .await?;
 
     accept(build_list_val(
         &obj_view_snapshot,

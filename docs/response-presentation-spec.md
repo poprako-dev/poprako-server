@@ -38,6 +38,14 @@ cannot accidentally omit a phase or hydrate related graphs separately.
   existing View types. Do not alter HTTP contracts, repository operations,
   permissions, transactions, migrations, or generated files.
 - Do not introduce a generic rendering framework or new adapter traits.
+- Let Rust infer call-site type arguments wherever possible. Retain explicit
+  object markers where they select distinct adapter capabilities.
+- Borrow identifiers in temporary fallback indexes, transfer object-ID vectors
+  into the URL loader, and sort each object batch once. Retain owned strings
+  only where the cache, adapter result, or response needs ownership.
+- Record missing pinned Chapters separately from present Chapters without
+  duplicating present Comic IDs in a second set. Skip first-page queries when
+  there are no pinned Chapters. Copy Assignment grouping keys once per Chapter.
 
 ## Validation
 

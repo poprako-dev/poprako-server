@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::view::comic_list_val;
 
-use super::fixture::{TestContext, TestObjDept, TestRepo, assignment_info};
+use super::fixture::{TestObjDept, TestRepo, assignment_info};
 
 // mixed_comic_list_reuses_snapshot_and_batches_complete_graph(comic_list_val)(positive): top-level comics, pinned chapters and assignments share deduplicated URLs and preserve aligned order including known-absent chapters.
 // partial_snapshot_only_loads_unqueried_comics(comic_list_val)(positive): cover fallback only reads comics outside the existing snapshot range.
 // empty_comic_list_performs_no_lookups(comic_list_val)(positive): empty results preserve all aligned vectors without object or repository reads.
+// absent_pinned_chapters_skip_first_page_lookup(comic_list_val)(positive): deduplicated known-absent comics require no repeated pin query or empty first-page query.
 
 #[tokio::test]
 async fn mixed_comic_list_reuses_snapshot_and_batches_complete_graph() {
@@ -56,7 +57,7 @@ async fn mixed_comic_list_reuses_snapshot_and_batches_complete_graph() {
         vec![first_assignment, second_assignment],
     )]);
 
-    let list_val = comic_list_val::<TestContext, _, _>(
+    let list_val = comic_list_val(
         &repo,
         &obj_dept,
         vec![missing_comic, comic_info],
@@ -203,7 +204,7 @@ async fn partial_snapshot_only_loads_unqueried_comics() {
             .await
             .unwrap();
 
-    let list_val = comic_list_val::<TestContext, _, _>(
+    let list_val = comic_list_val(
         &repo,
         &obj_dept,
         vec![comic_info, missing_comic],
@@ -242,15 +243,10 @@ async fn empty_comic_list_performs_no_lookups() {
 
     let repo = TestRepo::default();
 
-    let list_val = comic_list_val::<TestContext, _, _>(
-        &repo,
-        &obj_dept,
-        Vec::new(),
-        None,
-        HashMap::new(),
-    )
-    .await
-    .unwrap();
+    let list_val =
+        comic_list_val(&repo, &obj_dept, Vec::new(), None, HashMap::new())
+            .await
+            .unwrap();
 
     assert!(list_val.comics.is_empty());
 
@@ -263,4 +259,43 @@ async fn empty_comic_list_performs_no_lookups() {
     assert!(repo.pinned_chapter_calls().is_empty());
 
     assert!(repo.first_page_calls().is_empty());
+}
+
+#[tokio::test]
+async fn absent_pinned_chapters_skip_first_page_lookup() {
+    //
+    let obj_dept = TestObjDept::default();
+
+    let repo = TestRepo::with_chapters(Vec::new());
+
+    let comic_info = assignment_info().chapter.unwrap().comic.unwrap();
+
+    obj_dept.omit("cover-list", &comic_info.id);
+
+    let pinned_snapshot = PinnedChapterSnapshot::load_from_comics(
+        &repo,
+        &[comic_info.id.as_str(), comic_info.id.as_str()],
+    )
+    .await
+    .unwrap();
+
+    let list_val = comic_list_val(
+        &repo,
+        &obj_dept,
+        vec![comic_info],
+        Some(pinned_snapshot),
+        HashMap::new(),
+    )
+    .await
+    .unwrap();
+
+    assert!(list_val.comics[0].cover_url.is_none());
+
+    assert!(list_val.pinned_chapters[0].is_none());
+
+    assert_eq!(repo.pinned_chapter_calls(), vec![vec!["comic-1"]]);
+
+    assert!(repo.first_page_calls().is_empty());
+
+    assert!(obj_dept.calls("page-list").is_empty());
 }

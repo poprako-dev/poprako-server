@@ -119,15 +119,9 @@ impl<'a> ObjViewIds<'a> {
         self.team_avatars.insert(&team_info.id);
     }
 
-    // Returns the sorted comic identifiers used for cover fallback lookup.
+    // Borrows comic identifiers for cover fallback lookup.
     fn comic_ids(&self) -> Vec<&str> {
-        //
-        let mut comic_ids =
-            self.comic_covers.iter().copied().collect::<Vec<_>>();
-
-        comic_ids.sort_unstable();
-
-        comic_ids
+        self.comic_covers.iter().copied().collect()
     }
 }
 
@@ -162,25 +156,16 @@ impl ObjViewSnapshot {
             + ObjDeptView<UserAvatar, C>
             + Sync,
     {
-        let mut comic_cover_ids =
-            ids.comic_covers.iter().copied().collect::<Vec<_>>();
+        let comic_cover_ids = ids.comic_covers.iter().copied().collect();
 
-        let mut team_avatar_ids =
-            ids.team_avatars.iter().copied().collect::<Vec<_>>();
+        let team_avatar_ids = ids.team_avatars.iter().copied().collect();
 
-        let mut user_avatar_ids =
-            ids.user_avatars.iter().copied().collect::<Vec<_>>();
-
-        comic_cover_ids.sort_unstable();
-
-        team_avatar_ids.sort_unstable();
-
-        user_avatar_ids.sort_unstable();
+        let user_avatar_ids = ids.user_avatars.iter().copied().collect();
 
         let (comic_covers, team_avatars, user_avatars) = futures_util::try_join!(
-            load_obj_urls::<C, O, ComicCover>(obj_dept, &comic_cover_ids),
-            load_obj_urls::<C, O, TeamAvatar>(obj_dept, &team_avatar_ids),
-            load_obj_urls::<C, O, UserAvatar>(obj_dept, &user_avatar_ids),
+            load_obj_urls::<_, _, ComicCover>(obj_dept, comic_cover_ids),
+            load_obj_urls::<_, _, TeamAvatar>(obj_dept, team_avatar_ids),
+            load_obj_urls::<_, _, UserAvatar>(obj_dept, user_avatar_ids),
         )?;
 
         accept(Self {
@@ -213,7 +198,7 @@ impl ObjViewSnapshot {
         let comic_ids = ids.comic_ids();
 
         let (mut snapshot, comic_fallback_pages) = futures_util::try_join!(
-            Self::load::<C, O>(obj_dept, &ids),
+            Self::load(obj_dept, &ids),
             PageLoader::load_ids_from_comics(
                 repo,
                 &comic_ids,
@@ -221,17 +206,11 @@ impl ObjViewSnapshot {
             ),
         )?;
 
-        let mut page_ids = comic_fallback_pages
-            .values()
-            .map(String::as_str)
-            .collect::<Vec<_>>();
-
-        page_ids.sort_unstable();
-
-        page_ids.dedup();
+        let page_ids =
+            comic_fallback_pages.values().map(String::as_str).collect();
 
         snapshot.page_images =
-            load_obj_urls::<C, O, PageImage>(obj_dept, &page_ids).await?;
+            load_obj_urls::<_, _, PageImage>(obj_dept, page_ids).await?;
 
         snapshot.comic_fallback_pages = comic_fallback_pages;
 

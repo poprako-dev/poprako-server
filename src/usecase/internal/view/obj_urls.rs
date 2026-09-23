@@ -14,7 +14,7 @@ use crate::result::{BaseError, BaseRest, accept};
 /// Loads origin and thumbnail URLs for deduplicated object marker identifiers.
 pub async fn load_obj_urls<C, O, K>(
     obj_dept: &O,
-    ids: &[&str],
+    mut ids: Vec<&str>,
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,
@@ -25,20 +25,18 @@ where
         return accept(HashMap::new());
     }
 
-    let mut ids = ids.to_vec();
-
     ids.sort_unstable();
 
     ids.dedup();
 
-    let obj_metas = ListObjMetas::<K>::new(&ids)
+    let obj_metas = ListObjMetas::new(&ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
     let obj_url_spec = ObjUrlSpec::default().with_origin().with_thumbnail();
 
-    let obj_urls = GenObjUrls::<K>::new(&obj_metas, obj_url_spec)
+    let obj_urls = GenObjUrls::new(&obj_metas, obj_url_spec)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

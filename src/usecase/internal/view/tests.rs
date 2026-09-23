@@ -8,7 +8,7 @@ use crate::usecase::internal::view::{
     comic_info_view,
 };
 
-use fixture::{TestContext, TestObjDept, TestRepo, assignment_info};
+use fixture::{TestObjDept, TestRepo, assignment_info};
 
 // comic_uses_pinned_first_page_when_dedicated_cover_is_absent(comic_info_view)(positive): a missing dedicated cover uses the pinned chapter's first page.
 // comic_prefers_dedicated_cover_over_pinned_first_page(comic_info_view)(positive): available dedicated covers win over page images.
@@ -33,9 +33,7 @@ async fn comic_uses_pinned_first_page_when_dedicated_cover_is_absent() {
     let comic_info = assignment_info().chapter.unwrap().comic.unwrap();
 
     let comic_view =
-        comic_info_view::<TestContext, _, _>(&repo, &obj_dept, comic_info)
-            .await
-            .unwrap();
+        comic_info_view(&repo, &obj_dept, comic_info).await.unwrap();
 
     assert_eq!(
         comic_view.cover_url.as_deref(),
@@ -58,9 +56,7 @@ async fn comic_prefers_dedicated_cover_over_pinned_first_page() {
     let comic_info = assignment_info().chapter.unwrap().comic.unwrap();
 
     let comic_view =
-        comic_info_view::<TestContext, _, _>(&repo, &obj_dept, comic_info)
-            .await
-            .unwrap();
+        comic_info_view(&repo, &obj_dept, comic_info).await.unwrap();
 
     assert_eq!(
         comic_view.cover_url.as_deref(),
@@ -88,7 +84,7 @@ async fn chapter_list_preserves_order_and_renders_nested_fallback() {
 
     second_chapter.id = "chapter-2".into();
 
-    let chapter_views = chapter_info_views::<TestContext, _, _>(
+    let chapter_views = chapter_info_views(
         &repo,
         &obj_dept,
         vec![second_chapter, first_chapter],
@@ -139,7 +135,7 @@ async fn nested_repeated_models_load_once_per_object_marker() {
 
     let assignment_info = assignment_info();
 
-    let assignment_views = assignment_info_views::<TestContext, _, _>(
+    let assignment_views = assignment_info_views(
         &repo,
         &obj_dept,
         vec![assignment_info.clone(), assignment_info],
@@ -196,18 +192,13 @@ async fn empty_lists_perform_no_object_or_repository_operations() {
 
     let repo = TestRepo::default();
 
-    let chapters =
-        chapter_info_views::<TestContext, _, _>(&repo, &obj_dept, Vec::new())
-            .await
-            .unwrap();
+    let chapters = chapter_info_views(&repo, &obj_dept, Vec::new())
+        .await
+        .unwrap();
 
-    let assignments = assignment_info_views::<TestContext, _, _>(
-        &repo,
-        &obj_dept,
-        Vec::new(),
-    )
-    .await
-    .unwrap();
+    let assignments = assignment_info_views(&repo, &obj_dept, Vec::new())
+        .await
+        .unwrap();
 
     assert!(chapters.is_empty());
 
@@ -229,10 +220,9 @@ async fn partial_assignment_skips_absent_markers() {
 
     assignment_info.chapter = None;
 
-    let assignment_view =
-        assignment_info_view::<TestContext, _>(&obj_dept, assignment_info)
-            .await
-            .unwrap();
+    let assignment_view = assignment_info_view(&obj_dept, assignment_info)
+        .await
+        .unwrap();
 
     assert!(assignment_view.chapter.is_none());
 
@@ -274,13 +264,10 @@ async fn assignment_list_deduplicates_and_sorts_each_batch() {
         assignment_infos.push(assignment_info);
     }
 
-    let assignment_views = assignment_info_views::<TestContext, _, _>(
-        &repo,
-        &obj_dept,
-        assignment_infos,
-    )
-    .await
-    .unwrap();
+    let assignment_views =
+        assignment_info_views(&repo, &obj_dept, assignment_infos)
+            .await
+            .unwrap();
 
     assert_eq!(
         assignment_views
@@ -310,9 +297,7 @@ async fn metadata_error_is_propagated_without_url_generation() {
 
     assignment_info.chapter = None;
 
-    let result =
-        assignment_info_view::<TestContext, _>(&obj_dept, assignment_info)
-            .await;
+    let result = assignment_info_view(&obj_dept, assignment_info).await;
 
     assert!(result.is_err());
 
@@ -330,9 +315,7 @@ async fn url_error_is_propagated_after_metadata_load() {
 
     assignment_info.chapter = None;
 
-    let result =
-        assignment_info_view::<TestContext, _>(&obj_dept, assignment_info)
-            .await;
+    let result = assignment_info_view(&obj_dept, assignment_info).await;
 
     assert!(result.is_err());
 
@@ -350,10 +333,9 @@ async fn single_assignment_does_not_load_cover_fallback() {
 
     let assignment_info = assignment_info();
 
-    let assignment_view =
-        assignment_info_view::<TestContext, _>(&obj_dept, assignment_info)
-            .await
-            .unwrap();
+    let assignment_view = assignment_info_view(&obj_dept, assignment_info)
+        .await
+        .unwrap();
 
     let comic_view = assignment_view.chapter.unwrap().comic.unwrap();
 
