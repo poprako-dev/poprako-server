@@ -18,11 +18,8 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
+use crate::complex::comic as comic_complex;
 use crate::complex::comic::perm as comic_perm_complex;
-use crate::complex::{
-    assignment as assignment_complex, chapter as chapter_complex,
-    comic as comic_complex,
-};
 use crate::data::instr::comic::{
     CreateComicInstr, GetComicInfoInstr, UpdateComicInfoInstr,
 };
@@ -30,9 +27,6 @@ use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter::ChapterEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
@@ -41,13 +35,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::CreateAssignment;
-use crate::part::repo::oper::chapter::{CreateChapter, UnpinOtherChapters};
-use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
-use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, GetComicInfo, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
-};
+use crate::part::repo::oper::comic::{CreateComic, GetComicInfo, UpdateComic};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::subtree_delete::{
     LockSubtreeDeleteScope, MarkSubtree, SubtreeRoot,
@@ -61,12 +49,11 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::comic::view::comic_info_view;
+use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
-use crate::value::role::RoleMask;
 
-/// Creates a comic with its first chapter and creator assignment.
+/// Creates a comic with its first chapter and optional worker assignment.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
@@ -131,55 +118,13 @@ where
             .step_on(repo, context)
             .await?;
 
-            let chapter_index = AllocComicChapterIndex { id: &comic_info.id }
-                .step_on(repo, context)
-                .await?;
-
-            let subtitle = chapter_complex::subtitle_or_default(
-                instr.first_chapter_subtitle,
-                chapter_index,
-            );
-
-            let chapter_entry = ChapterEntry {
-                id: chapter_complex::gen_id(),
-                comic_id: comic_info.id.clone(),
-                is_pinned: true,
-                index: chapter_index,
-                subtitle,
-                creator_id: token.user_id.clone(),
-            };
-
-            let chapter_info = CreateChapter {
-                entry: &chapter_entry,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            UnpinOtherChapters {
-                comic_id: &chapter_info.comic_id,
-                excluded_id: &chapter_info.id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            UpdateComicChapterCount {
-                id: &chapter_info.comic_id,
-                delta: 1,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            create_creator_assignment(
+            let chapter_info = chapter_creation_usecase::create(
                 repo,
                 context,
-                &chapter_info.id,
-                token.user_id,
+                &comic_info,
+                None,
+                &token,
+                instr.first_chapter_subtitle,
                 instr.preset_assignment_roles,
             )
             .await?;
@@ -353,49 +298,6 @@ where
             accept(())
         })
         .await?;
-
-    accept(())
-}
-
-// Creates the initial assignment for a comic creator.
-async fn create_creator_assignment<C, R>(
-    repo: &R,
-    context: &mut C,
-    chapter_id: &str,
-    user_id: String,
-    preset_assignment_roles: Option<RoleMask>,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
-{
-    if let Some(roles) = preset_assignment_roles {
-        //
-        let assignment_entry = AssignmentEntry {
-            id: assignment_complex::gen_id(),
-            chapter_id: chapter_id.to_owned(),
-            user_id: user_id.clone(),
-            roles,
-        };
-
-        CreateAssignment {
-            entry: &assignment_entry,
-        }
-        .step_on(repo, context)
-        .await?;
-    }
-
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-        chapter_id.to_owned(),
-        Some(user_id),
-        ChapterWorkflowRecordPayload::ChapterCreated,
-    );
-
-    CreateChapterWorkflowRecords {
-        entries: std::slice::from_ref(&workflow_record_entry),
-    }
-    .step_on(repo, context)
-    .await?;
 
     accept(())
 }

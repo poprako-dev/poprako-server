@@ -1,3 +1,5 @@
+/// Shared Chapter creation inside caller-owned transactions.
+pub mod chapter_creation;
 /// Multi-operation member model loaders.
 pub mod member;
 /// Page relationships used by presentation fallback rules.

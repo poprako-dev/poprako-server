@@ -167,6 +167,16 @@ async fn create_allocates_index_and_updates_count() {
         snapshot.assignments[0].roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
+
+    assert_eq!(snapshot.chapter_workflow_records.len(), 1);
+
+    let record = &snapshot.chapter_workflow_records[0];
+
+    assert_eq!(record.chapter_id, created.chapter_id);
+
+    assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
+
+    assert!(matches!(record.payload, crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload::ChapterCreated));
 }
 
 #[tokio::test]

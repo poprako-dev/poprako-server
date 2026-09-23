@@ -35,7 +35,20 @@ async fn create_only_assigns_explicit_worker_presets() {
 
         if let Some(roles) = preset {
             assert_eq!(snapshot.assignments[0].roles, roles);
+
+            assert_eq!(snapshot.assignments[0].chapter_id, created.id);
+
+            assert_eq!(snapshot.assignments[0].user_id, "user-1");
         }
+
+        assert_eq!(snapshot.chapter_workflow_records.len(), 1);
+
+        assert_eq!(
+            snapshot.chapter_workflow_records[0]
+                .actor_user_id
+                .as_deref(),
+            Some("user-1")
+        );
 
         assert!(snapshot.chapter_workflow_records.iter().any(|record| {
             record.chapter_id == created.id
