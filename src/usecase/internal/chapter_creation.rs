@@ -26,6 +26,42 @@ use crate::result::{BaseRest, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
+/// Inputs for creating a pinned Chapter within an existing transaction.
+pub struct ChapterCreation<'a> {
+    /// Comic that owns the new Chapter.
+    comic_info: &'a ComicInfo,
+    /// Previously pinned Chapter, when one exists.
+    prev_pinned_chapter: Option<ChapterInfo>,
+
+    /// User creating the Chapter.
+    token: &'a UserToken,
+
+    /// Requested subtitle for the new Chapter.
+    subtitle: Option<String>,
+    /// Roles to assign to the creator, when requested.
+    preset_assignment_roles: Option<RoleMask>,
+}
+
+impl<'a> ChapterCreation<'a> {
+    /// Collects authorized creation inputs for a Chapter.
+    pub const fn new(
+        comic_info: &'a ComicInfo,
+        prev_pinned_chapter: Option<ChapterInfo>,
+        token: &'a UserToken,
+        subtitle: Option<String>,
+        preset_assignment_roles: Option<RoleMask>,
+    ) -> Self {
+        //
+        Self {
+            comic_info,
+            prev_pinned_chapter,
+            token,
+            subtitle,
+            preset_assignment_roles,
+        }
+    }
+}
+
 /// Creates a pinned Chapter and its counters, activity, assignment, and history.
 ///
 /// The caller authorizes creation, validates preset roles, and owns the
@@ -35,11 +71,7 @@ use crate::value::role::RoleMask;
 pub async fn create<C, R>(
     repo: &R,
     context: &mut C,
-    comic_info: &ComicInfo,
-    prev_pinned_chapter: Option<ChapterInfo>,
-    token: &UserToken,
-    subtitle: Option<String>,
-    preset_assignment_roles: Option<RoleMask>,
+    creation: ChapterCreation<'_>,
 ) -> BaseRest<ChapterInfo>
 where
     C: Context,
@@ -50,6 +82,14 @@ where
         + ChapterWorkflowRecordRepo<C>
         + Sync,
 {
+    let ChapterCreation {
+        comic_info,
+        prev_pinned_chapter,
+        token,
+        subtitle,
+        preset_assignment_roles,
+    } = creation;
+
     let index = AllocComicChapterIndex { id: &comic_info.id }
         .step_on(repo, context)
         .await?;

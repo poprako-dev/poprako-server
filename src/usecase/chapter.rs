@@ -214,11 +214,13 @@ where
             let chapter_info = chapter_creation_usecase::create(
                 repo,
                 context,
-                &comic_info,
-                prev_pinned_chapter,
-                &token,
-                instr.subtitle,
-                instr.preset_assignment_roles,
+                chapter_creation_usecase::ChapterCreation::new(
+                    &comic_info,
+                    prev_pinned_chapter,
+                    &token,
+                    instr.subtitle,
+                    instr.preset_assignment_roles,
+                ),
             )
             .await?;
 

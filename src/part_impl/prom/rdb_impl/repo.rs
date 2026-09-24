@@ -267,29 +267,25 @@ async fn fail_message(
 #[instrument(level = "info", skip_all)]
 async fn retry_message(
     conn: &mut RdbConn,
-    id: &str,
-    claim_token: Uuid,
-    error: &str,
-    visible_at: &OffsetDateTime,
-    retry_delta: i64,
+    oper: &RetryMessage<'_>,
 ) -> BaseRest<()> {
     //
     diesel::update(
         t_local_message::table
-            .filter(t_local_message::f_id.eq(id))
+            .filter(t_local_message::f_id.eq(oper.id))
             .filter(
                 t_local_message::f_status
                     .eq(LocalMessageStatus::Processing.as_str()),
             )
-            .filter(t_local_message::f_claim_token.eq(claim_token)),
+            .filter(t_local_message::f_claim_token.eq(oper.claim_token)),
     )
     .set((
         t_local_message::f_claim_token.eq(None::<Uuid>),
         t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-        t_local_message::f_last_error.eq(Some(error)),
+        t_local_message::f_last_error.eq(Some(oper.error)),
         t_local_message::f_retried_count
-            .eq(t_local_message::f_retried_count + retry_delta),
-        t_local_message::f_visible_at.eq(*visible_at),
+            .eq(t_local_message::f_retried_count + oper.retry_delta),
+        t_local_message::f_visible_at.eq(*oper.visible_at),
         t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
     ))
     .execute(conn)
@@ -469,16 +465,7 @@ where
         context: &mut RdbContext<L>,
         oper: &RetryMessage<'a>,
     ) -> BaseRest<()> {
-        //
-        retry_message(
-            context.conn(),
-            oper.id,
-            oper.claim_token,
-            oper.error,
-            oper.visible_at,
-            oper.retry_delta,
-        )
-        .await
+        retry_message(context.conn(), oper).await
     }
 }
 

@@ -54,10 +54,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
-use crate::value::role::RoleField;
-use crate::value::unit::{
-    MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT, UnitEditPerm,
-};
+use crate::value::unit::{MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT};
 
 // Fixed-size diagnostics for a potentially large Unit edit request.
 #[derive(Debug, Default)]
@@ -317,14 +314,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let edit_perm = UnitEditPerm {
-                can_translate: assignment.as_ref().is_some_and(|assignment| {
-                    assignment.roles.has_any_role(&[RoleField::TRANSLATOR])
-                }),
-                can_proofread: assignment.as_ref().is_some_and(|assignment| {
-                    assignment.roles.has_any_role(&[RoleField::PROOFREADER])
-                }),
-            };
+            let edit_perm = unit_perm_complex::edit_perm(assignment.as_ref());
 
             unit_perm_complex::ensure_user_can_edit_fields(edit_perm, &edits)?;
 
@@ -394,12 +384,16 @@ where
             .step_on(repo, context)
             .await?;
 
-            stage_usecase::start_pending_stages(
-                repo,
-                context,
+            let stage_start = stage_usecase::PendingStageStart::new(
                 &chapter_scope.id,
                 Some(token.user_id.as_str()),
                 ChapterWorkflowRecordOrigin::UnitEdit,
+            );
+
+            stage_usecase::start_pending_stages(
+                repo,
+                context,
+                stage_start,
                 &stages,
             )
             .await?;

@@ -40,8 +40,7 @@ use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
-use crate::value::role::RoleField;
-use crate::value::unit::{UnitEditPerm, UnitTextPart};
+use crate::value::unit::UnitTextPart;
 
 /// Builds the client-visible error for an invalid Chapter Unit transform.
 pub fn invalid_unit_transform(
@@ -176,8 +175,10 @@ where
                 context,
                 &chapter_id,
                 &token.user_id,
-                part,
-                &unit_ids,
+                TransformTargets {
+                    part,
+                    unit_ids: &unit_ids,
+                },
             )
             .await?;
 
@@ -197,9 +198,11 @@ where
                     repo,
                     context,
                     &page_info.id,
-                    part,
-                    &unit_transforms,
-                    &unit_infos,
+                    PageTransformData {
+                        part,
+                        unit_transforms: &unit_transforms,
+                        unit_infos: &unit_infos,
+                    },
                     &token.user_id,
                 )
                 .await?;
@@ -218,8 +221,10 @@ where
                 context,
                 &transform_scope.chapter_info,
                 &token,
-                total_delta,
-                &applied_edits,
+                TransformChanges {
+                    total_delta,
+                    applied_edits: &applied_edits,
+                },
             )
             .await
         })
@@ -228,14 +233,21 @@ where
     accept(())
 }
 
+// Selects the text part and Units to transform.
+struct TransformTargets<'a> {
+    // Text field selected for transformation.
+    part: UnitTextPart,
+    // Unit IDs submitted by the caller.
+    unit_ids: &'a [&'a str],
+}
+
 // Locks and validates the Chapter-scoped models selected for transformation.
 async fn load_transform_scope<C, R>(
     repo: &R,
     context: &mut C,
     chapter_id: &str,
     user_id: &str,
-    part: UnitTextPart,
-    unit_ids: &[&str],
+    targets: TransformTargets<'_>,
 ) -> BaseRest<TransformScope>
 where
     C: Context + Send,
@@ -247,6 +259,8 @@ where
         + Send
         + Sync,
 {
+    let TransformTargets { part, unit_ids } = targets;
+
     let chapter_info = GetChapterInfoExcluded {
         id: chapter_id,
         incls: &[],
@@ -263,21 +277,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    let edit_perm = UnitEditPerm {
-        can_translate: assignment_info.as_ref().is_some_and(
-            |assignment_info| {
-                assignment_info.roles.has_any_role(&[RoleField::TRANSLATOR])
-            },
-        ),
-        can_proofread: assignment_info.as_ref().is_some_and(
-            |assignment_info| {
-                //
-                assignment_info
-                    .roles
-                    .has_any_role(&[RoleField::PROOFREADER])
-            },
-        ),
-    };
+    let edit_perm = unit_perm_complex::edit_perm(assignment_info.as_ref());
 
     unit_perm_complex::ensure_user_can_transform(edit_perm, part)?;
 
@@ -315,14 +315,22 @@ where
     })
 }
 
+// Prepared Unit transforms and their current models for one Page.
+struct PageTransformData<'a> {
+    // Text field selected for transformation.
+    part: UnitTextPart,
+    // Requested edits for the selected Units.
+    unit_transforms: &'a [UnitTransform],
+    // Persisted Unit projections indexed by ID.
+    unit_infos: &'a HashMap<&'a str, &'a UnitInfo>,
+}
+
 // Applies the selected text transforms and counter update to one Page.
 async fn apply_page_transforms<C, R>(
     repo: &R,
     context: &mut C,
     page_id: &str,
-    part: UnitTextPart,
-    unit_transforms: &[UnitTransform],
-    unit_infos: &HashMap<&str, &UnitInfo>,
+    data: PageTransformData<'_>,
     user_id: &str,
 ) -> BaseRest<Option<(UnitCountDelta, Vec<UnitEdit>)>>
 where
@@ -330,6 +338,12 @@ where
     C::Level: AtLeast<Serial>,
     R: PageRepo<C> + UnitRepo<C> + Send + Sync,
 {
+    let PageTransformData {
+        part,
+        unit_transforms,
+        unit_infos,
+    } = data;
+
     let edits =
         build_page_edits(page_id, part, unit_transforms, unit_infos, user_id)?;
 
@@ -380,14 +394,21 @@ where
     accept(Some((count_delta, edits)))
 }
 
+// Aggregates persisted Unit changes across the transformed Pages.
+struct TransformChanges<'a> {
+    // Combined Chapter count change across Pages.
+    total_delta: UnitCountDelta,
+    // Unit edits that were actually applied.
+    applied_edits: &'a [UnitEdit],
+}
+
 // Applies Chapter aggregates and workflow effects after Unit edits.
 async fn finish_transform<C, R>(
     repo: &R,
     context: &mut C,
     chapter_info: &ChapterInfo,
     token: &UserToken,
-    total_delta: UnitCountDelta,
-    applied_edits: &[UnitEdit],
+    changes: TransformChanges<'_>,
 ) -> BaseRest<()>
 where
     C: Context + Send,
@@ -398,6 +419,11 @@ where
         + Send
         + Sync,
 {
+    let TransformChanges {
+        total_delta,
+        applied_edits,
+    } = changes;
+
     if applied_edits.is_empty() {
         return accept(());
     }
@@ -420,9 +446,11 @@ where
     stage_usecase::start_pending_stages(
         repo,
         context,
-        &chapter_info.id,
-        Some(token.user_id.as_str()),
-        ChapterWorkflowRecordOrigin::UnitEdit,
+        stage_usecase::PendingStageStart::new(
+            &chapter_info.id,
+            Some(token.user_id.as_str()),
+            ChapterWorkflowRecordOrigin::UnitEdit,
+        ),
         &stages,
     )
     .await?;

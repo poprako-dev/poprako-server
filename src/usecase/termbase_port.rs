@@ -161,9 +161,11 @@ where
                     repo,
                     context,
                     &token,
-                    termbase_info,
+                    ImportDestination {
+                        termbase_info,
+                        created: true,
+                    },
                     termbase_import,
-                    true,
                 )
                 .await;
             };
@@ -176,9 +178,11 @@ where
                 repo,
                 context,
                 &token,
-                termbase_info,
+                ImportDestination {
+                    termbase_info,
+                    created: false,
+                },
                 termbase_import,
-                false,
             )
             .await
         })
@@ -295,19 +299,31 @@ where
     }
 }
 
+// Identify the target and whether this import created it.
+struct ImportDestination {
+    // Termbase receiving the imported terms.
+    termbase_info: TermbaseInfo,
+    // Whether the current transaction created this termbase.
+    created: bool,
+}
+
 // Apply normalized portable content to one newly-created or existing termbase.
 async fn apply_import<C, R>(
     repo: &R,
     context: &mut C,
     token: &UserToken,
-    termbase_info: TermbaseInfo,
+    destination: ImportDestination,
     termbase_import: TermbaseImport,
-    created: bool,
 ) -> BaseRest<ImportTermbaseVal>
 where
     C: Context,
     R: TermbaseRepo<C> + TermRepo<C> + Sync,
 {
+    let ImportDestination {
+        termbase_info,
+        created,
+    } = destination;
+
     let TermbaseImport {
         name,
         description,

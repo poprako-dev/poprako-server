@@ -84,7 +84,6 @@ where
                     context,
                     &token,
                     &instr,
-                    &chapter_info,
                     assignment_info,
                 )
                 .await?;
@@ -112,7 +111,6 @@ async fn update_existing_assignment<C, R>(
     context: &mut C,
     token: &UserToken,
     instr: &UpdateAssignmentRolesInstr,
-    chapter_info: &ChapterInfo,
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()>
 where
@@ -135,7 +133,7 @@ where
     .await?;
 
     let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-        chapter_info.id.as_str(),
+        instr.chapter_id.as_str(),
         Some(token.user_id.as_str().into()),
         ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
             subject_user_id: assignment_info.user_id.clone(),

@@ -321,9 +321,11 @@ where
                 stage_usecase::start_pending_stages(
                     repo,
                     context,
-                    &chapter_info.id,
-                    Some(&actor_user_id),
-                    ChapterWorkflowRecordOrigin::TranslationExport,
+                    stage_usecase::PendingStageStart::new(
+                        &chapter_info.id,
+                        Some(&actor_user_id),
+                        ChapterWorkflowRecordOrigin::TranslationExport,
+                    ),
                     &[Stage::TypesetRedraw],
                 )
                 .await?;

@@ -17,10 +17,12 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
 };
+use crate::part::repo::oper::chapter::SetChapterPageCountMetrics;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspectRow, ChapterEntryRow, ChapterInfoRow, ChapterUnitEditScopeRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
+use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_comic_id, f_deleted_at, f_id, f_index, f_is_pinned, f_page_count,
     f_proofread_at, f_proofread_unit_count, f_proofreading_at, f_published_at,
@@ -485,23 +487,30 @@ pub async fn complete_raw_provide(
 #[instrument(level = "info", skip_all)]
 pub async fn set_page_counts(
     conn: &mut RdbConn,
-    id: &str,
-    page_count: i32,
-    total_unit_count: i32,
-    translated_unit_count: i32,
-    proofread_unit_count: i32,
+    oper: &SetChapterPageCountMetrics<'_>,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let aspect = ChapterAspectRow::new(now)
-        .page_count(page_count)
-        .total_unit_count(total_unit_count)
-        .translated_unit_count(translated_unit_count)
-        .proofread_unit_count(proofread_unit_count);
+        .page_count(i32_from_usize(oper.page_count, "t_chapter.f_page_count")?)
+        .total_unit_count(i32_from_usize(
+            oper.total_unit_count,
+            "t_chapter.f_total_unit_count",
+        )?)
+        .translated_unit_count(i32_from_usize(
+            oper.translated_unit_count,
+            "t_chapter.f_translated_unit_count",
+        )?)
+        .proofread_unit_count(i32_from_usize(
+            oper.proofread_unit_count,
+            "t_chapter.f_proofread_unit_count",
+        )?);
 
     let updated_count = diesel::update(
-        t_chapter.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+        t_chapter
+            .filter(f_id.eq(oper.id))
+            .filter(f_deleted_at.is_null()),
     )
     .set(&aspect)
     .execute(conn)
@@ -509,7 +518,7 @@ pub async fn set_page_counts(
     .map_err(diesel)?;
 
     if updated_count == 0 {
-        return Err(missing_chapter(id, "set chapter page counters"));
+        return Err(missing_chapter(oper.id, "set chapter page counters"));
     }
 
     accept(())
