@@ -497,3 +497,37 @@ impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
         submit_query!(self.rdb_core, purge_pending, oper.id)
     }
 }
+
+impl Run<UpdateMemberInvitation<'_>> for HybRepo {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Apply either metadata updates or used-state transition by variant.
+    #[instrument(level = "info", skip_all)]
+    async fn run(&self, oper: &UpdateMemberInvitation<'_>) -> BaseRest<()> {
+        //
+        let mut conn = self.rdb_core.get().await?;
+
+        match oper {
+            //
+            UpdateMemberInvitation::Info { update } => {
+                update_info(&mut conn, update.id.as_str(), update.roles).await
+            }
+
+            UpdateMemberInvitation::MarkUsed { id } => {
+                mark_pending_as_used(&mut conn, id).await
+            }
+        }
+    }
+}
+
+impl Run<DeleteMemberInvitation<'_>> for HybRepo {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Removes one invitation using an independent query connection.
+    #[instrument(level = "info", skip_all)]
+    async fn run(&self, oper: &DeleteMemberInvitation<'_>) -> BaseRest<()> {
+        submit_query!(self.rdb_core, delete, oper.id)
+    }
+}

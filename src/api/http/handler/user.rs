@@ -139,8 +139,8 @@ pub async fn update_password(
     Json(instr): Json<UpdateUserPasswordInstr>,
 ) -> HttpNoContent {
     //
-    user_usecase::update_password::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
+    user_usecase::update_password::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
         user_token,
         user_id,
         instr,

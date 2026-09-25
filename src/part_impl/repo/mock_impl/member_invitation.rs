@@ -437,3 +437,41 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
         accept(())
     }
 }
+
+impl<'a> Run<UpdateMemberInvitation<'a>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Applies the operation directly to shared mock state.
+    async fn run(&self, oper: &UpdateMemberInvitation<'a>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        update_member_invitation(&mut state, oper)
+    }
+}
+
+impl<'a> Run<DeleteMemberInvitation<'a>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Applies the operation directly to shared mock state.
+    async fn run(&self, oper: &DeleteMemberInvitation<'a>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        let position = state
+            .member_invitations
+            .iter()
+            .position(|member_invitation_info| {
+                member_invitation_info.id == oper.id
+            })
+            .ok_or_else(|| expected("error-invitation-not-found"))?;
+
+        state.member_invitations.remove(position);
+
+        accept(())
+    }
+}

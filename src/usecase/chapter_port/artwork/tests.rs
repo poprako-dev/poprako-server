@@ -197,8 +197,8 @@ async fn mark(mock: &Mock, version: u32) -> BaseRest<()> {
 }
 
 async fn export(mock: &Mock, user: &str) -> BaseRest<ExportChapterArtworkVal> {
-    export_artwork::<_, MockContext, _, _>(
-        (mock, mock, mock),
+    export_artwork::<MockContext, _, _>(
+        (mock, mock),
         token(user),
         "chapter-1".into(),
     )

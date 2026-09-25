@@ -152,12 +152,8 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
-    member_invitation_usecase::update_roles::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-    >(
-        (harn.nucl().rept_read(), harn.repo()),
+    member_invitation_usecase::update_roles::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
         user_token,
         instr,
     )
@@ -185,8 +181,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    member_invitation_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
+    member_invitation_usecase::delete::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
         user_token,
         member_invitation_id,
     )

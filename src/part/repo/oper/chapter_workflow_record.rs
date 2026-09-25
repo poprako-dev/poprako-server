@@ -14,7 +14,7 @@ pub struct ListChapterWorkflowRecordInfos<'a> {
     pub spec: &'a ChapterWorkflowRecordListSpec,
 }
 
-/// Inserts one or more immutable workflow records within the caller's transaction.
+/// Inserts one or more immutable workflow records in one operation.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct CreateChapterWorkflowRecords<'a> {

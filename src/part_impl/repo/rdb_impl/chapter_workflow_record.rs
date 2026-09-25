@@ -45,7 +45,7 @@ async fn list_infos(
     rows.into_iter().map(TryInto::try_into).collect()
 }
 
-// Inserts a batch of immutable workflow records in the active transaction.
+// Inserts a batch of immutable workflow records in one statement.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
@@ -102,5 +102,19 @@ where
         oper: &CreateChapterWorkflowRecords<'_>,
     ) -> BaseRest<()> {
         create(context.conn(), oper.entries).await
+    }
+}
+
+impl Run<CreateChapterWorkflowRecords<'_>> for HybRepo {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Inserts all records using an independent query connection.
+    async fn run(
+        &self,
+        oper: &CreateChapterWorkflowRecords<'_>,
+    ) -> BaseRest<()> {
+        submit_query!(self.rdb_core, create, oper.entries)
     }
 }

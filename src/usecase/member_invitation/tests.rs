@@ -285,7 +285,7 @@ async fn update_roles_admin_updates_role_mask() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    update_roles((&mock, &mock), token("admin-user"), update_instr("inv-1"))
+    update_roles((&mock,), token("admin-user"), update_instr("inv-1"))
         .await
         .unwrap();
 
@@ -309,14 +309,11 @@ async fn update_roles_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = update_roles(
-        (&mock, &mock),
-        token("normal-user"),
-        update_instr("inv-1"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err =
+        update_roles((&mock,), token("normal-user"), update_instr("inv-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }
@@ -335,7 +332,7 @@ async fn delete_admin_deletes_invitation() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    delete((&mock, &mock), token("admin-user"), "inv-1".into())
+    delete((&mock,), token("admin-user"), "inv-1".into())
         .await
         .unwrap();
 
@@ -356,7 +353,7 @@ async fn delete_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = delete((&mock, &mock), token("normal-user"), "inv-1".into())
+    let err = delete((&mock,), token("normal-user"), "inv-1".into())
         .await
         .err()
         .unwrap();
