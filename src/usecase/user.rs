@@ -144,23 +144,21 @@ where
 /// Replaces a user's password after verifying their current password.
 #[instrument(
     level = "info",
-    skip(nucl, repo, token, instr),
+    skip(repo, token, instr),
     fields(
         actor_user_id = %token.user_id,
         current_password = "[REDACTED]",
         new_password = "[REDACTED]",
     )
 )]
-pub async fn update_password<N, C, R>(
-    (nucl, repo): (&N, &R),
+pub async fn update_password<C, R>(
+    (repo,): (&R,),
     token: UserToken,
     user_id: String,
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
-    C::Level: AtLeast<ReptRead>,
+    C: Context,
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != user_id {
@@ -219,16 +217,10 @@ where
         password_hash,
     };
 
-    nucl.coord(async move |context| {
-        //
-        UpdateUser::PasswordHash {
-            repl: &credentials_repl,
-        }
-        .step_on(repo, context)
-        .await?;
-
-        accept(())
-    })
+    UpdateUser::PasswordHash {
+        repl: &credentials_repl,
+    }
+    .run_on(repo)
     .await?;
 
     accept(())

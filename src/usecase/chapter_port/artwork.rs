@@ -274,16 +274,14 @@ where
 }
 
 /// Exports metadata and the original URL of the current available artwork.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
-pub async fn export_artwork<N, C, R, O>(
-    (nucl, repo, obj_dept): (&N, &R, &O),
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+pub async fn export_artwork<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     chapter_id: String,
 ) -> BaseRest<ExportChapterArtworkVal>
 where
-    C: Context + Send,
-    C::Level: AtLeast<ReptRead>,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
+    C: Context,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + TeamRepo<C>
@@ -353,26 +351,19 @@ where
         download_url: download_url.to_string(),
     };
 
-    let () = nucl
-        .coord(async move |context| {
-            //
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id,
-                Some(token.user_id.into()),
-                ChapterWorkflowRecordPayload::ArtworkExported {
-                    artwork_ver: artwork_meta.key.ver,
-                },
-            );
+    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+        chapter_info.id,
+        Some(token.user_id.into()),
+        ChapterWorkflowRecordPayload::ArtworkExported {
+            artwork_ver: artwork_meta.key.ver,
+        },
+    );
 
-            CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
-            }
-            .step_on(repo, context)
-            .await?;
-
-            accept(())
-        })
-        .await?;
+    CreateChapterWorkflowRecords {
+        entries: std::slice::from_ref(&workflow_record_entry),
+    }
+    .run_on(repo)
+    .await?;
 
     accept(artwork_export)
 }

@@ -275,16 +275,14 @@ where
 }
 
 /// Updates the roles of an invitation.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
-pub async fn update_roles<N, C, R>(
-    (nucl, repo): (&N, &R),
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+pub async fn update_roles<C, R>(
+    (repo,): (&R,),
     token: UserToken,
     instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
-    C::Level: AtLeast<ReptRead>,
+    C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_member_invitation(
@@ -297,39 +295,29 @@ where
 
     member_invitation_perm_complex::ensure_user_can_update_info(&member_info)?;
 
-    nucl.coord(async move |context| {
-        //
-        let member_invitation_update = MemberInvitationRoleRepl {
-            id: instr.id,
-            roles: instr.roles,
-        };
+    let member_invitation_update = MemberInvitationRoleRepl {
+        id: instr.id,
+        roles: instr.roles,
+    };
 
-        UpdateMemberInvitation::Info {
-            update: &member_invitation_update,
-        }
-        .step_on(repo, context)
-        .await?;
-
-        accept(())
-    })
+    UpdateMemberInvitation::Info {
+        update: &member_invitation_update,
+    }
+    .run_on(repo)
     .await?;
-
-    let () = ();
 
     accept(())
 }
 
 /// Deletes an invitation.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
-pub async fn delete<N, C, R>(
-    (nucl, repo): (&N, &R),
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+pub async fn delete<C, R>(
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
-    C::Level: AtLeast<ReptRead>,
+    C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_member_invitation(
@@ -342,17 +330,7 @@ where
 
     member_invitation_perm_complex::ensure_user_can_delete(&member_info)?;
 
-    nucl.coord(async move |context| {
-        //
-        DeleteMemberInvitation { id: &id }
-            .step_on(repo, context)
-            .await?;
-
-        accept(())
-    })
-    .await?;
-
-    let () = ();
+    DeleteMemberInvitation { id: &id }.run_on(repo).await?;
 
     accept(())
 }

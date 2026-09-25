@@ -104,3 +104,37 @@ impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
         accept(())
     }
 }
+
+impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Appends immutable records to the shared mock state.
+    async fn run(
+        &self,
+        oper: &CreateChapterWorkflowRecords<'a>,
+    ) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        state
+            .chapter_workflow_records
+            .extend(oper.entries.iter().map(|entry| {
+                //
+                ChapterWorkflowRecordInfo {
+                    id: entry.id.clone(),
+                    chapter_id: entry.chapter_id.to_string(),
+                    actor_user_id: entry
+                        .actor_user_id
+                        .as_deref()
+                        .map(str::to_owned),
+                    kind: entry.payload.kind(),
+                    payload: entry.payload.clone(),
+                    created_at: entry.created_at,
+                }
+            }));
+
+        accept(())
+    }
+}

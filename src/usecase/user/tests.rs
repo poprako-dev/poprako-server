@@ -356,7 +356,7 @@ async fn update_password_replaces_the_verified_password() {
     );
 
     update_password(
-        (&mock, &mock),
+        (&mock,),
         token("user-1"),
         "user-1".into(),
         update_password_instr("old-password", "new-password"),
@@ -394,7 +394,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
     );
 
     let err = update_password(
-        (&mock, &mock),
+        (&mock,),
         token("user-1"),
         "user-1".into(),
         update_password_instr("wrong-password", "new-password"),

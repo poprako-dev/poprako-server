@@ -11,12 +11,14 @@ use crate::result::BaseError;
 
 /// Member-invitation repository operations.
 ///
-/// Standalone reads use [`poprako_orchestra::Run`]. Transactional reads, mutations, and locks
+/// Standalone reads and mutations use [`poprako_orchestra::Run`]. Coordinated operations
 /// use [`poprako_orchestra::Step`] with the context coordinated by the caller.
 #[drive(
     context = C,
     error = BaseError,
     run(
+        for<'a> UpdateMemberInvitation<'a>,
+        for<'a> DeleteMemberInvitation<'a>,
         for<'a> ListMemberInvitationInfos<'a>,
         for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
         for<'a> PurgeExpiredMemberInvitation<'a>,
