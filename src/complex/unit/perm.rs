@@ -9,6 +9,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::role::RoleField;
 use crate::value::unit::{UnitEditPerm, UnitTextPart};
 
 /// Concrete evidence that grants Unit list access.
@@ -24,6 +25,19 @@ pub enum UnitListAccess<'a> {
         /// Chapter assignment used to establish access.
         assignment_info: &'a AssignmentInfo,
     },
+}
+
+/// Derives field edit permissions from an optional Chapter assignment.
+pub fn edit_perm(assignment_info: Option<&AssignmentInfo>) -> UnitEditPerm {
+    //
+    let has_role = |role| {
+        assignment_info.is_some_and(|info| info.roles.has_any_role(&[role]))
+    };
+
+    UnitEditPerm {
+        can_translate: has_role(RoleField::TRANSLATOR),
+        can_proofread: has_role(RoleField::PROOFREADER),
+    }
 }
 
 /// Verifies that the caller may transform the selected Unit text part.

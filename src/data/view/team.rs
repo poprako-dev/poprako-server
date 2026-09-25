@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
 
+use crate::data::view::obj_url::ObjUrlView;
 use crate::model::read::proj::team::TeamInfo;
 
 /// Presentation-ready team profile information.
@@ -29,10 +30,12 @@ pub struct TeamInfoView {
 
     /// Signed avatar download URL, when one has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub avatar_url: Option<ObjUrlView>,
     /// Signed avatar-thumbnail download URL, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avatar_thumbnail_url: Option<String>,
+    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
+    pub avatar_thumbnail_url: Option<ObjUrlView>,
 
     /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
@@ -50,8 +53,8 @@ impl TeamInfoView {
     /// [`TeamInfo`]: crate::model::read::proj::team::TeamInfo
     pub fn from_model(
         model: TeamInfo,
-        avatar_url: Option<String>,
-        avatar_thumbnail_url: Option<String>,
+        avatar_url: Option<ObjUrlView>,
+        avatar_thumbnail_url: Option<ObjUrlView>,
     ) -> Self {
         //
         Self {

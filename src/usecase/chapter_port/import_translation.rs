@@ -11,6 +11,7 @@ use crate::complex::chapter_port::{
     import_translation as chapter_translation_import_complex,
     perm as chapter_port_perm_complex,
 };
+use crate::complex::unit::perm as unit_perm_complex;
 use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
@@ -48,7 +49,6 @@ use crate::value::chapter_port::{
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
-use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
 /// Imports chapter translation content through the Unit edit pipeline.
@@ -107,6 +107,12 @@ where
                 page_scopes.len(),
             )?;
 
+            let import_settings = ImportSettings {
+                user_id: &token.user_id,
+                edit_perm,
+                mode,
+            };
+
             let (
                 final_page_count_metrics,
                 imported_page_count,
@@ -116,9 +122,7 @@ where
                 context,
                 &page_scopes,
                 &imported_pages,
-                &token.user_id,
-                edit_perm,
-                mode,
+                &import_settings,
             )
             .await?;
 
@@ -160,8 +164,8 @@ where
             };
 
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(token.user_id.clone()),
+                chapter_info.id.as_str(),
+                Some(token.user_id.as_str().into()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
                     imported_page_count: import_val.imported_page_count,
@@ -178,9 +182,11 @@ where
             stage_usecase::start_pending_stages(
                 repo,
                 context,
-                &chapter_info.id,
-                Some(token.user_id.clone()),
-                ChapterWorkflowRecordOrigin::TranslationImport,
+                stage_usecase::PendingStageStart::new(
+                    &chapter_info.id,
+                    Some(&token.user_id),
+                    ChapterWorkflowRecordOrigin::TranslationImport,
+                ),
                 &stages,
             )
             .await?;
@@ -238,14 +244,7 @@ where
         &assignment_info,
     )?;
 
-    let edit_perm = UnitEditPerm {
-        can_translate: assignment_info
-            .roles
-            .has_any_role(&[RoleField::TRANSLATOR]),
-        can_proofread: assignment_info
-            .roles
-            .has_any_role(&[RoleField::PROOFREADER]),
-    };
+    let edit_perm = unit_perm_complex::edit_perm(Some(&assignment_info));
 
     let format = TranslationFormat::from(instr.format);
 
@@ -270,15 +269,23 @@ where
     accept((edit_perm, format, mode, imported_pages, stages))
 }
 
+// Carries the actor and strategy through each page import.
+struct ImportSettings<'a> {
+    // User responsible for imported Unit edits.
+    user_id: &'a str,
+    // Fields the user may import.
+    edit_perm: UnitEditPerm,
+    // Strategy for existing Unit content.
+    mode: ChapterTranslationImportMode,
+}
+
 // Applies imported pages and collects their counters and import totals.
 async fn import_pages<C, R>(
     repo: &R,
     context: &mut C,
     page_scopes: &[PageInfo],
     imported_pages: &[PageTranslationImport],
-    user_id: &str,
-    edit_perm: UnitEditPerm,
-    mode: ChapterTranslationImportMode,
+    import_settings: &ImportSettings<'_>,
 ) -> BaseRest<(Vec<UnitCountMetrics>, usize, usize)>
 where
     C: Context,
@@ -305,9 +312,7 @@ where
             context,
             page_scope,
             imported_page,
-            user_id,
-            edit_perm,
-            mode,
+            import_settings,
         )
         .await?;
 
@@ -357,9 +362,7 @@ async fn replace_page_units<C, R>(
     context: &mut C,
     page_scope: &PageInfo,
     imported_page: &PageTranslationImport,
-    user_id: &str,
-    edit_perm: UnitEditPerm,
-    mode: ChapterTranslationImportMode,
+    import_settings: &ImportSettings<'_>,
 ) -> BaseRest<PageImportOutcome>
 where
     C: Context,
@@ -389,7 +392,7 @@ where
         });
     }
 
-    match mode {
+    match import_settings.mode {
         //
         ChapterTranslationImportMode::Keep if !visible_unit_ids.is_empty() => {
             //
@@ -403,7 +406,7 @@ where
         _ => {}
     }
 
-    let orders = match mode {
+    let orders = match import_settings.mode {
         //
         ChapterTranslationImportMode::Overwrite
             if !visible_unit_ids.is_empty() =>
@@ -436,7 +439,7 @@ where
         repo,
         context,
         (&page_scope.id, &orders, imported_page),
-        (user_id, edit_perm),
+        (import_settings.user_id, import_settings.edit_perm),
     )
     .await?;
 

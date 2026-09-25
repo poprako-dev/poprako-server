@@ -10,7 +10,7 @@ use crate::value::comic::ComicInclOpt;
 #[oper(output = ComicInfo)]
 pub struct CreateComic<'a> {
     /// The comic entry to insert.
-    pub entry: &'a ComicEntry,
+    pub entry: &'a ComicEntry<'a>,
 }
 
 /// Retrieves a single comic's info by ID with optional includes.

@@ -1,8 +1,5 @@
 //! RDB-backed Unit sequence reads and chain validation.
 
-#[cfg(test)]
-mod tests;
-
 use std::collections::{HashMap, HashSet};
 
 use diesel::expression::functions::declare_sql_function;
@@ -17,6 +14,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
+use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
@@ -71,148 +69,6 @@ pub fn corrupt_unit_chain_err() -> BaseError {
     BaseError::Unrecoverable {
         message: "persisted Unit chain is corrupt".to_string(),
     }
-}
-
-/// Orders Units in linked-list order, detecting cycles and multiple heads.
-pub fn order_units<T, I, N>(
-    units: &mut [T],
-    id_of: I,
-    next_id_of: N,
-) -> BaseRest<()>
-where
-    I: for<'a> Fn(&'a T) -> &'a str,
-    N: for<'a> Fn(&'a T) -> Option<&'a str>,
-{
-    //
-    if units.is_empty() {
-        return accept(());
-    }
-
-    let mut index_by_id = HashMap::with_capacity(units.len());
-
-    for (index, unit) in units.iter().enumerate() {
-        //
-        if index_by_id.insert(id_of(unit), index).is_some() {
-            return Err(corrupt_unit_chain_err());
-        }
-    }
-
-    let mut next_index_by_index = Vec::with_capacity(units.len());
-
-    let mut has_predecessor = vec![false; units.len()];
-
-    for unit in units.iter() {
-        //
-        let next_index = match next_id_of(unit) {
-            //
-            Some(next_id) => {
-                //
-                let Some(next_index) = index_by_id.get(next_id).copied() else {
-                    return Err(corrupt_unit_chain_err());
-                };
-
-                let Some(has_predecessor) = has_predecessor.get_mut(next_index)
-                else {
-                    return Err(corrupt_unit_chain_err());
-                };
-
-                if std::mem::replace(has_predecessor, true) {
-                    return Err(corrupt_unit_chain_err());
-                }
-
-                Some(next_index)
-            }
-
-            None => None,
-        };
-
-        next_index_by_index.push(next_index);
-    }
-
-    let mut head_indexes = has_predecessor.iter().enumerate().filter_map(
-        |(index, has_predecessor)| (!has_predecessor).then_some(index),
-    );
-
-    let Some(head_index) = head_indexes.next() else {
-        return Err(corrupt_unit_chain_err());
-    };
-
-    if head_indexes.next().is_some() {
-        return Err(corrupt_unit_chain_err());
-    }
-
-    let mut ordered_indexes = Vec::with_capacity(units.len());
-
-    let mut current_index = Some(head_index);
-
-    while let Some(index) = current_index {
-        //
-        if ordered_indexes.len() >= units.len() {
-            return Err(corrupt_unit_chain_err());
-        }
-
-        ordered_indexes.push(index);
-
-        let Some(next_index) = next_index_by_index.get(index).copied() else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        current_index = next_index;
-    }
-
-    if ordered_indexes.len() != units.len() {
-        return Err(corrupt_unit_chain_err());
-    }
-
-    drop(index_by_id);
-
-    let mut original_index_by_position = (0..units.len()).collect::<Vec<_>>();
-
-    let mut position_by_original_index = (0..units.len()).collect::<Vec<_>>();
-
-    for (target_position, desired_original_index) in
-        ordered_indexes.into_iter().enumerate()
-    {
-        //
-        let Some(current_position) = position_by_original_index
-            .get(desired_original_index)
-            .copied()
-        else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        let Some(displaced_original_index) =
-            original_index_by_position.get(target_position).copied()
-        else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        if target_position >= units.len() || current_position >= units.len() {
-            return Err(corrupt_unit_chain_err());
-        }
-
-        units.swap(target_position, current_position);
-
-        original_index_by_position.swap(target_position, current_position);
-
-        let Some(desired_position) =
-            position_by_original_index.get_mut(desired_original_index)
-        else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        *desired_position = target_position;
-
-        let Some(displaced_position) =
-            position_by_original_index.get_mut(displaced_original_index)
-        else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        *displaced_position = current_position;
-    }
-
-    accept(())
 }
 
 /// Searches at most the requested number of visible matching Unit IDs.
@@ -329,26 +185,36 @@ pub async fn list_infos_by_page_ids(
         .await
         .map_err(diesel)?;
 
-    let mut unit_infos_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
+    let mut position_by_page_id = HashMap::with_capacity(page_ids.len());
+
+    for (position, page_id) in page_ids.iter().enumerate() {
+        position_by_page_id.entry(*page_id).or_insert(position);
+    }
+
+    let mut unit_infos_by_position =
+        (0..page_ids.len()).map(|_| Vec::new()).collect::<Vec<_>>();
 
     for row in rows {
         //
         let unit_info = UnitInfo::from(row);
 
-        unit_infos_by_page_id
-            .entry(unit_info.page_id.clone())
-            .or_default()
-            .push(unit_info);
+        let position = position_by_page_id
+            .get(unit_info.page_id.as_str())
+            .copied()
+            .ok_or_else(corrupt_unit_chain_err)?;
+
+        let page_unit_infos = unit_infos_by_position
+            .get_mut(position)
+            .ok_or_else(corrupt_unit_chain_err)?;
+
+        page_unit_infos.push(unit_info);
     }
 
     let mut unit_infos = Vec::new();
 
-    for page_id in page_ids {
+    for mut page_unit_infos in unit_infos_by_position {
         //
-        let mut page_unit_infos =
-            unit_infos_by_page_id.remove(*page_id).unwrap_or_default();
-
-        order_units(
+        unit_sequence_complex::order_units(
             &mut page_unit_infos,
             |unit_info| unit_info.id.as_str(),
             |unit_info| unit_info.next_id.as_deref(),
@@ -384,14 +250,13 @@ pub async fn list_orders(
     page_id: &str,
 ) -> BaseRest<Vec<UnitOrder>> {
     //
-    let mut rows = Vec::new();
-
-    let mut after_id = None::<String>;
+    let mut rows =
+        Vec::<(String, Option<String>, Option<OffsetDateTime>)>::new();
 
     loop {
         //
         let mut chunk =
-            match after_id.as_deref() {
+            match rows.last().map(|(id, _, _)| id.as_str()) {
                 //
                 Some(after_id) => t_unit
                     .filter(f_page_id.eq(page_id))
@@ -425,16 +290,14 @@ pub async fn list_orders(
             let _ = chunk.pop();
         }
 
-        after_id = chunk.last().map(|(id, _, _)| id.clone());
+        if has_next_chunk && chunk.is_empty() {
+            return Err(corrupt_unit_chain_err());
+        }
 
         rows.extend(chunk);
 
         if !has_next_chunk {
             break;
-        }
-
-        if after_id.is_none() {
-            return Err(corrupt_unit_chain_err());
         }
     }
 
@@ -447,7 +310,7 @@ pub async fn list_orders(
         })
         .collect::<Vec<_>>();
 
-    order_units(
+    unit_sequence_complex::order_units(
         &mut orders,
         |order| order.id.as_str(),
         |order| order.next_id.as_deref(),
@@ -480,12 +343,12 @@ async fn load_unit_ranks(
     //
     let mut page_ids = candidates
         .iter()
-        .map(|candidate| candidate.unit_info.page_id.clone())
+        .map(|candidate| candidate.unit_info.page_id.as_str())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
-    page_ids.sort();
+    page_ids.sort_unstable();
 
     let rows = t_unit
         .filter(f_page_id.eq_any(&page_ids))
@@ -508,9 +371,9 @@ async fn load_unit_ranks(
 
     for page_id in page_ids {
         //
-        let mut links = links_by_page_id.remove(&page_id).unwrap_or_default();
+        let mut links = links_by_page_id.remove(page_id).unwrap_or_default();
 
-        order_units(
+        unit_sequence_complex::order_units(
             &mut links,
             |link| link.id.as_str(),
             |link| link.next_id.as_deref(),

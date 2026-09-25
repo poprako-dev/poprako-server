@@ -405,3 +405,20 @@ fn assert_args(error: BaseError) {
         }
     ));
 }
+
+#[test]
+fn edit_sequence_plan_rejects_shuffled_and_duplicate_input() {
+    //
+    let invalid_orders = [
+        vec![order("b", None, false), order("a", Some("b"), false)],
+        vec![order("a", Some("a"), false), order("a", None, false)],
+    ];
+
+    for orders in invalid_orders {
+        //
+        assert!(matches!(
+            unit_complex::plan_edit_sequence(&orders, &[]),
+            Err(BaseError::Unrecoverable { .. }),
+        ));
+    }
+}

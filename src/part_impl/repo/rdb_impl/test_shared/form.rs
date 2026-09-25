@@ -39,36 +39,36 @@ pub fn comic_entry(
     prefix: &str,
     workset_entry: &WorksetEntry,
     creator_form: &UserEntry,
-) -> ComicEntry {
+) -> ComicEntry<'static> {
     //
     ComicEntry {
         id: format!("{}comic", prefix),
-        workset_id: workset_entry.id.clone(),
+        workset_id: workset_entry.id.clone().into(),
         index: 0,
         title: "RDB Comic".into(),
         author: "RDB Author".into(),
         description: Some("comic".into()),
-        creator_id: creator_form.id.clone(),
+        creator_id: creator_form.id.clone().into(),
     }
 }
 
 pub fn chapter_entry(
     prefix: &str,
-    comic_entry: &ComicEntry,
+    comic_entry: &ComicEntry<'_>,
     creator_form: &UserEntry,
-) -> ChapterEntry {
+) -> ChapterEntry<'static> {
     //
     ChapterEntry {
         id: format!("{}chapter", prefix),
-        comic_id: comic_entry.id.clone(),
+        comic_id: comic_entry.id.clone().into(),
         is_pinned: true,
         index: 0,
         subtitle: "RDB Chapter".into(),
-        creator_id: creator_form.id.clone(),
+        creator_id: creator_form.id.clone().into(),
     }
 }
 
-pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry) -> PageEntry {
+pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry<'_>) -> PageEntry {
     //
     PageEntry {
         id: format!("{}page", prefix),

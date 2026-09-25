@@ -4,8 +4,6 @@
 pub mod delete;
 /// Chapter workflow stage mutation use case.
 pub mod stage;
-/// Chapter presentation assembly.
-pub mod view;
 /// Immutable workflow record listing use case.
 pub mod workflow_record;
 
@@ -18,10 +16,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 
 use crate::complex::chapter::perm as chapter_perm_complex;
-use crate::complex::{
-    assignment as assignment_complex, chapter as chapter_complex,
-    comic as comic_complex,
-};
+use crate::complex::{chapter as chapter_complex, comic as comic_complex};
 use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
 };
@@ -29,8 +24,7 @@ use crate::data::val::chapter::CreateChapterVal;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
+use crate::model::write::chapter::ChapterPatch;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
@@ -39,23 +33,21 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::CreateAssignment;
 use crate::part::repo::oper::chapter::{
-    CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, LockChapters, UnpinOtherChapters,
-    UpdateChapter,
+    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfos, LockChapters, UnpinOtherChapters, UpdateChapter,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, GetComicInfoExcluded, TouchComicLastActive,
-    UpdateComicChapterCount,
+    GetComicInfoExcluded, TouchComicLastActive,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::chapter::view::chapter_info_views;
+use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::chapter_info_views;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
@@ -219,77 +211,16 @@ where
             .step_on(repo, context)
             .await?;
 
-            let index = AllocComicChapterIndex {
-                id: &instr.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let subtitle =
-                chapter_complex::subtitle_or_default(instr.subtitle, index);
-
-            let chapter_id = chapter_complex::gen_id();
-
-            UnpinOtherChapters {
-                comic_id: &instr.comic_id,
-                excluded_id: &chapter_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let chapter_entry = ChapterEntry {
-                id: chapter_id,
-                comic_id: instr.comic_id,
-                is_pinned: true,
-                index,
-                subtitle,
-                creator_id: token.user_id.clone(),
-            };
-
-            let chapter_info = CreateChapter {
-                entry: &chapter_entry,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            UpdateComicChapterCount {
-                id: &chapter_info.comic_id,
-                delta: 1,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            if let Some(roles) = instr.preset_assignment_roles {
-                //
-                let assignment_entry = AssignmentEntry {
-                    id: assignment_complex::gen_id(),
-                    chapter_id: chapter_info.id.clone(),
-                    user_id: token.user_id.clone(),
-                    roles,
-                };
-
-                CreateAssignment {
-                    entry: &assignment_entry,
-                }
-                .step_on(repo, context)
-                .await?;
-            }
-
-            let prev_pinned_chapter_id =
-                prev_pinned_chapter.map(|chapter_info| chapter_info.id);
-
-            record_created_chapter(
+            let chapter_info = chapter_creation_usecase::create(
                 repo,
                 context,
-                token.user_id,
-                prev_pinned_chapter_id,
-                chapter_info.id.clone(),
+                chapter_creation_usecase::ChapterCreation::new(
+                    &comic_info,
+                    prev_pinned_chapter,
+                    &token,
+                    instr.subtitle,
+                    instr.preset_assignment_roles,
+                ),
             )
             .await?;
 
@@ -357,8 +288,8 @@ where
                 .await?;
 
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.clone(),
-                    Some(token.user_id.clone()),
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
                         previous_subtitle: chapter_info.subtitle,
                         next_subtitle,
@@ -478,7 +409,7 @@ where
                 //
                 workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
                     prev_pinned_chapter.id,
-                    Some(token.user_id.clone()),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterUnpinned,
                 ));
             }
@@ -486,8 +417,8 @@ where
             if !chapter_info.is_pinned {
                 //
                 workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.clone(),
-                    Some(token.user_id.clone()),
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterPinned,
                 ));
             }
@@ -507,44 +438,6 @@ where
             accept(())
         })
         .await?;
-
-    accept(())
-}
-
-// Records creation and any displaced pinned chapter in the workflow history.
-async fn record_created_chapter<C, R>(
-    repo: &R,
-    context: &mut C,
-    user_id: String,
-    prev_pinned_chapter_id: Option<String>,
-    chapter_id: String,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: ChapterWorkflowRecordRepo<C> + Sync,
-{
-    let mut workflow_record_entries = Vec::with_capacity(2);
-
-    if let Some(prev_pinned_chapter_id) = prev_pinned_chapter_id {
-        //
-        workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-            prev_pinned_chapter_id,
-            Some(user_id.clone()),
-            ChapterWorkflowRecordPayload::ChapterUnpinned,
-        ));
-    }
-
-    workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-        chapter_id,
-        Some(user_id),
-        ChapterWorkflowRecordPayload::ChapterCreated,
-    ));
-
-    CreateChapterWorkflowRecords {
-        entries: &workflow_record_entries,
-    }
-    .step_on(repo, context)
-    .await?;
 
     accept(())
 }

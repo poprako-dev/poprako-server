@@ -5,6 +5,8 @@ mod edit;
 
 /// Perm gates for Unit reads and edit fields.
 pub mod perm;
+/// Reconstruction of complete persisted Unit chains.
+pub mod sequence;
 
 #[cfg(test)]
 mod tests;

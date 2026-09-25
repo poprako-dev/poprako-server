@@ -99,10 +99,10 @@ pub struct ComicEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ComicEntry> for ComicEntryRow<'a> {
+impl<'a> TryFrom<&'a ComicEntry<'_>> for ComicEntryRow<'a> {
     type Error = BaseError;
 
-    fn try_from(comic_entry: &'a ComicEntry) -> Result<Self, Self::Error> {
+    fn try_from(comic_entry: &'a ComicEntry<'_>) -> Result<Self, Self::Error> {
         //
         Ok(Self {
             f_id: &comic_entry.id,

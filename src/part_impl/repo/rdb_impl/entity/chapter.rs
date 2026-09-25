@@ -126,10 +126,12 @@ pub struct ChapterEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ChapterEntry> for ChapterEntryRow<'a> {
+impl<'a> TryFrom<&'a ChapterEntry<'_>> for ChapterEntryRow<'a> {
     type Error = BaseError;
 
-    fn try_from(chapter_entry: &'a ChapterEntry) -> Result<Self, Self::Error> {
+    fn try_from(
+        chapter_entry: &'a ChapterEntry<'_>,
+    ) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 

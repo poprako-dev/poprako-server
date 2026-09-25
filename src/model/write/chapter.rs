@@ -8,6 +8,8 @@
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
 //! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
+use std::borrow::Cow;
+
 use crate::value::chapter::mask::StageMask;
 
 /// The data needed to insert a new chapter row.
@@ -18,13 +20,16 @@ use crate::value::chapter::mask::StageMask;
 /// (usually `true` for the first chapter in a comic, or the new
 /// highest-index chapter).
 ///
+/// Existing foreign identifiers may borrow their caller-owned storage.
+///
 /// [`chapter_complex::gen_id`]: crate::complex::chapter::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterEntry {
+pub struct ChapterEntry<'a> {
     /// Unique identifier to insert for the new chapter.
     pub id: String,
+
     /// Foreign key identifying the parent comic.
-    pub comic_id: String,
+    pub comic_id: Cow<'a, str>,
 
     /// Whether the new chapter should become the active chapter immediately.
     pub is_pinned: bool,
@@ -34,7 +39,7 @@ pub struct ChapterEntry {
     pub subtitle: String,
 
     /// Foreign key identifying the user creating the chapter.
-    pub creator_id: String,
+    pub creator_id: Cow<'a, str>,
 }
 
 /// Mutable non-workflow fields for a chapter.

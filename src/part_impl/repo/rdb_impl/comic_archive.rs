@@ -346,23 +346,45 @@ async fn load_archive_pages(
     accept((page_infos, unit_infos))
 }
 
+// Loaded descendants needed to assemble Chapter snapshots.
+struct ArchiveChapterParts {
+    // Chapters included in the archive.
+    chapter_infos: Vec<ChapterInfo>,
+
+    // Chapter stage history.
+    workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
+    // Chapter assignments.
+    assignment_infos: Vec<AssignmentInfo>,
+    // Assignment users indexed by ID.
+    users_by_id: HashMap<String, UserInfo>,
+
+    // Ordered Pages included in the archive.
+    page_infos: Vec<PageInfo>,
+    // Units belonging to the selected Pages.
+    unit_infos: Vec<UnitInfo>,
+}
+
 // Assemble loaded archive descendants into Chapter snapshots.
 fn assemble_chapter_snapshots(
     source_comic_id: &str,
-    chapter_infos: Vec<ChapterInfo>,
-    workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
-    assignment_infos: Vec<AssignmentInfo>,
-    user_infos: &HashMap<String, UserInfo>,
-    page_infos: Vec<PageInfo>,
-    unit_infos: Vec<UnitInfo>,
+    parts: ArchiveChapterParts,
 ) -> BaseRest<Vec<ComicArchiveChapterSnapshot>> {
     //
+    let ArchiveChapterParts {
+        chapter_infos,
+        workflow_record_infos,
+        assignment_infos,
+        users_by_id,
+        page_infos,
+        unit_infos,
+    } = parts;
+
     let mut assignment_infos_by_chapter =
         HashMap::<String, Vec<AssignmentInfo>>::new();
 
     for mut assignment_info in assignment_infos {
         //
-        let Some(user_info) = user_infos.get(&assignment_info.user_id) else {
+        let Some(user_info) = users_by_id.get(&assignment_info.user_id) else {
             //
             let message = trl("error-user-not-found");
 
@@ -485,12 +507,14 @@ async fn get_snapshot_excluded(
 
     let chapter_snapshots = assemble_chapter_snapshots(
         source_comic_id,
-        chapter_infos,
-        workflow_record_infos,
-        assignment_infos,
-        &user_infos,
-        page_infos,
-        unit_infos,
+        ArchiveChapterParts {
+            chapter_infos,
+            workflow_record_infos,
+            assignment_infos,
+            users_by_id: user_infos,
+            page_infos,
+            unit_infos,
+        },
     )?;
 
     accept(ComicArchiveSnapshot {

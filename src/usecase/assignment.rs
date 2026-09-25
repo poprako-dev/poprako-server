@@ -2,8 +2,6 @@
 
 /// Assignment role-update orchestration.
 pub mod update_roles;
-/// Assignment presentation assembly.
-pub mod view;
 
 #[cfg(test)]
 // Unit tests that cover assignment orchestration invariants.
@@ -49,9 +47,9 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::assignment::view::assignment_info_views;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::assignment_info_views;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
@@ -189,8 +187,8 @@ where
                 //
                 let assignment_entry = AssignmentEntry {
                     id: assignment_complex::gen_id(),
-                    chapter_id: instr.chapter_id,
-                    user_id: token.user_id.clone(),
+                    chapter_id: instr.chapter_id.into(),
+                    user_id: token.user_id.as_str().into(),
                     roles: instr.roles,
                 };
 
@@ -212,7 +210,7 @@ where
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_info.id,
-                    Some(token.user_id),
+                    Some(token.user_id.into()),
                     payload,
                 );
 
@@ -297,7 +295,7 @@ where
 
         let workflow_record_entry = ChapterWorkflowRecordEntry::new(
             chapter_info.id,
-            Some(token.user_id),
+            Some(token.user_id.into()),
             ChapterWorkflowRecordPayload::AssignmentDeleted {
                 subject_user_id: assignment_info.user_id,
                 previous_roles: assignment_info.roles,

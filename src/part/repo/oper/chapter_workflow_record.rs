@@ -19,5 +19,5 @@ pub struct ListChapterWorkflowRecordInfos<'a> {
 #[oper(output = ())]
 pub struct CreateChapterWorkflowRecords<'a> {
     /// Entries to persist together.
-    pub entries: &'a [ChapterWorkflowRecordEntry],
+    pub entries: &'a [ChapterWorkflowRecordEntry<'a>],
 }

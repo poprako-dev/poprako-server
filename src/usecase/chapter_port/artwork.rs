@@ -232,8 +232,8 @@ where
             .await?;
 
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(token.user_id),
+                chapter_info.id.as_str(),
+                Some(token.user_id.into()),
                 ChapterWorkflowRecordPayload::StageTransitioned {
                     stage: Stage::TypesetRedraw,
                     previous_phase,
@@ -358,7 +358,7 @@ where
             //
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                 chapter_info.id,
-                Some(token.user_id),
+                Some(token.user_id.into()),
                 ChapterWorkflowRecordPayload::ArtworkExported {
                     artwork_ver: artwork_meta.key.ver,
                 },

@@ -194,11 +194,11 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let chapter_entry = ChapterEntry {
         id: format!("{}stage-chapter", PREFIX),
-        comic_id: comic_fixture.comic_entry.id.clone(),
+        comic_id: comic_fixture.comic_entry.id.clone().into(),
         is_pinned: true,
         index: 0,
         subtitle: "Stage Chapter".into(),
-        creator_id: comic_fixture.creator_form.id.clone(),
+        creator_id: comic_fixture.creator_form.id.clone().into(),
     };
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
@@ -228,21 +228,21 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let sibling_comic = ComicEntry {
         id: format!("{}sibling-comic", PREFIX),
-        workset_id: sibling_workset.id.clone(),
+        workset_id: sibling_workset.id.clone().into(),
         index: 0,
         title: "Sibling Comic".into(),
         author: "Sibling Author".into(),
         description: None,
-        creator_id: comic_fixture.creator_form.id.clone(),
+        creator_id: comic_fixture.creator_form.id.clone().into(),
     };
 
     let sibling_chapter = ChapterEntry {
         id: format!("{}sibling-chapter", PREFIX),
-        comic_id: sibling_comic.id.clone(),
+        comic_id: sibling_comic.id.clone().into(),
         is_pinned: true,
         index: 0,
         subtitle: "Sibling Chapter".into(),
-        creator_id: comic_fixture.creator_form.id.clone(),
+        creator_id: comic_fixture.creator_form.id.clone().into(),
     };
 
     let sibling_stage_update = ChapterStageRepl {

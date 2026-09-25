@@ -63,12 +63,12 @@ fn search_chapter_ids(
         for unit_info in list_infos(state, &page_info.id)? {
             //
             if unit_info.hidden_at.is_some()
-                || !text_part_contains(&unit_info, part, phrase)
+                || !text_part_contains(unit_info, part, phrase)
             {
                 continue;
             }
 
-            ids.push(unit_info.id);
+            ids.push(unit_info.id.clone());
 
             if ids.len() >= fetch_count {
                 return accept(ids);
@@ -111,7 +111,8 @@ fn list_infos_in_chapter_order(
                     //
                     unit_info.hidden_at.is_none()
                         && ids.contains(&unit_info.id.as_str())
-                }),
+                })
+                .cloned(),
         );
     }
 

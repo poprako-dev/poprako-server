@@ -332,7 +332,7 @@ pub async fn update_info(
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    comic_entry: &ComicEntry,
+    comic_entry: &ComicEntry<'_>,
 ) -> BaseRest<ComicInfo> {
     //
     let entry = ComicEntryRow::try_from(comic_entry)?;

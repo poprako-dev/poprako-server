@@ -90,8 +90,11 @@ impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
                 //
                 ChapterWorkflowRecordInfo {
                     id: entry.id.clone(),
-                    chapter_id: entry.chapter_id.clone(),
-                    actor_user_id: entry.actor_user_id.clone(),
+                    chapter_id: entry.chapter_id.to_string(),
+                    actor_user_id: entry
+                        .actor_user_id
+                        .as_deref()
+                        .map(str::to_owned),
                     kind: entry.payload.kind(),
                     payload: entry.payload.clone(),
                     created_at: entry.created_at,

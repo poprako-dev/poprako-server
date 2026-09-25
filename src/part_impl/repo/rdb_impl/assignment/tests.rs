@@ -44,8 +44,8 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let assignment_entry = AssignmentEntry {
         id: format!("{}assignment", PREFIX),
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
-        user_id: assignee_form.id.clone(),
+        chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
+        user_id: assignee_form.id.clone().into(),
         roles: translator_role,
     };
 

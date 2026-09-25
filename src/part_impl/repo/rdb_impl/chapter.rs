@@ -28,7 +28,6 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     list_pinned_infos_by_comic_ids, lock_chapters, set_page_counts,
     start_stage, unpin_others, update_info, update_stage,
 };
-use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
@@ -382,25 +381,7 @@ where
         context: &mut RdbContext<L>,
         oper: &SetChapterPageCountMetrics<'_>,
     ) -> BaseRest<()> {
-        //
-        set_page_counts(
-            context.conn(),
-            oper.id,
-            i32_from_usize(oper.page_count, "t_chapter.f_page_count")?,
-            i32_from_usize(
-                oper.total_unit_count,
-                "t_chapter.f_total_unit_count",
-            )?,
-            i32_from_usize(
-                oper.translated_unit_count,
-                "t_chapter.f_translated_unit_count",
-            )?,
-            i32_from_usize(
-                oper.proofread_unit_count,
-                "t_chapter.f_proofread_unit_count",
-            )?,
-        )
-        .await
+        set_page_counts(context.conn(), oper).await
     }
 }
 

@@ -50,7 +50,7 @@ pub struct ComicFixture {
     pub creator_form: UserEntry,
     pub team_entry: TeamEntry,
     pub workset_entry: WorksetEntry,
-    pub comic_entry: ComicEntry,
+    pub comic_entry: ComicEntry<'static>,
 }
 
 pub struct ChapterFixture {
@@ -61,15 +61,15 @@ pub struct ChapterFixture {
 
     pub workset_entry: WorksetEntry,
 
-    pub comic_entry: ComicEntry,
+    pub comic_entry: ComicEntry<'static>,
 
-    pub chapter_entry: ChapterEntry,
+    pub chapter_entry: ChapterEntry<'static>,
 }
 
 pub struct PageFixture {
     //
     pub team_entry: TeamEntry,
-    pub chapter_entry: ChapterEntry,
+    pub chapter_entry: ChapterEntry<'static>,
     pub page_entry: PageEntry,
 }
 

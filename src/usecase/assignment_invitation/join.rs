@@ -41,7 +41,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::assignment::view::assignment_info_view;
+use crate::usecase::internal::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -161,7 +161,7 @@ where
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_info.id,
-                    Some(current_user_id),
+                    Some(current_user_id.into()),
                     payload,
                 );
 
@@ -282,8 +282,8 @@ where
 
     let assignment_entry = AssignmentEntry {
         id: assignment_complex::gen_id(),
-        chapter_id: assignment_invitation_info.chapter_id.clone(),
-        user_id: current_user_id.to_owned(),
+        chapter_id: assignment_invitation_info.chapter_id.as_str().into(),
+        user_id: current_user_id.into(),
         roles: assignment_invitation_info.roles,
     };
 

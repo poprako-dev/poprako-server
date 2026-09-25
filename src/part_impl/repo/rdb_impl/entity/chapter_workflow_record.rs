@@ -282,10 +282,10 @@ pub struct ChapterWorkflowRecordEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ChapterWorkflowRecordEntry>
+impl<'a> From<&'a ChapterWorkflowRecordEntry<'_>>
     for ChapterWorkflowRecordEntryRow<'a>
 {
-    fn from(entry: &'a ChapterWorkflowRecordEntry) -> Self {
+    fn from(entry: &'a ChapterWorkflowRecordEntry<'_>) -> Self {
         //
         Self {
             f_id: &entry.id,

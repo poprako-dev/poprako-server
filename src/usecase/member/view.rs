@@ -29,30 +29,30 @@ where
         .as_ref()
         .map(|user_info| user_info.id.as_str())
         .into_iter()
-        .collect::<Vec<_>>();
+        .collect();
 
     let team_ids = model
         .team
         .as_ref()
         .map(|team_info| team_info.id.as_str())
         .into_iter()
-        .collect::<Vec<_>>();
+        .collect();
 
-    let (user_urls, team_urls) = futures_util::try_join!(
-        user_avatar_urls::<C, O>(obj_dept, &user_ids),
-        team_avatar_urls::<C, O>(obj_dept, &team_ids),
+    let (mut user_urls, mut team_urls) = futures_util::try_join!(
+        user_avatar_urls(obj_dept, user_ids),
+        team_avatar_urls(obj_dept, team_ids),
     )?;
 
     let user = model.user.take().map(|user_info| {
         //
-        let avatar_urls = user_urls.get(&user_info.id);
+        let avatar_urls = user_urls.take(&user_info.id);
 
         user_info_view_from_urls(user_info, avatar_urls)
     });
 
     let team = model.team.take().map(|team_info| {
         //
-        let avatar_urls = team_urls.get(&team_info.id);
+        let avatar_urls = team_urls.take(&team_info.id);
 
         team_info_view_from_urls(team_info, avatar_urls)
     });
@@ -74,18 +74,18 @@ where
         .filter_map(|model| {
             model.user.as_ref().map(|user_info| user_info.id.as_str())
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     let team_ids = models
         .iter()
         .filter_map(|model| {
             model.team.as_ref().map(|team_info| team_info.id.as_str())
         })
-        .collect::<Vec<_>>();
+        .collect();
 
-    let (user_urls, team_urls) = futures_util::try_join!(
-        user_avatar_urls::<C, O>(obj_dept, &user_ids),
-        team_avatar_urls::<C, O>(obj_dept, &team_ids),
+    let (mut user_urls, mut team_urls) = futures_util::try_join!(
+        user_avatar_urls(obj_dept, user_ids),
+        team_avatar_urls(obj_dept, team_ids),
     )?;
 
     accept(
@@ -95,14 +95,14 @@ where
                 //
                 let user = model.user.take().map(|user_info| {
                     //
-                    let avatar_urls = user_urls.get(&user_info.id);
+                    let avatar_urls = user_urls.take(&user_info.id);
 
                     user_info_view_from_urls(user_info, avatar_urls)
                 });
 
                 let team = model.team.take().map(|team_info| {
                     //
-                    let avatar_urls = team_urls.get(&team_info.id);
+                    let avatar_urls = team_urls.take(&team_info.id);
 
                     team_info_view_from_urls(team_info, avatar_urls)
                 });
