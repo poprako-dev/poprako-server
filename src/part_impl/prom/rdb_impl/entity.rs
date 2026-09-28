@@ -6,8 +6,8 @@ use std::io::Write as _;
 
 use diesel::pg::Pg;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
-use diesel::sql_types::{BigInt, Jsonb, Text, Timestamptz, Uuid as SqlUuid};
-use diesel::{AsExpression, Insertable, Queryable, QueryableByName};
+use diesel::sql_types::Text;
+use diesel::{AsExpression, Insertable, Queryable};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -119,22 +119,16 @@ impl<'a> LocalMessageEntryRow<'a> {
 }
 
 /// Persisted attempt returned by an atomic queue claim.
-#[derive(Queryable, QueryableByName)]
+#[derive(Queryable)]
 pub struct LocalMessageRow {
-    #[diesel(sql_type = Text)]
     pub f_id: String,
 
-    #[diesel(sql_type = Text)]
     pub f_topic: String,
-    #[diesel(sql_type = Jsonb)]
     pub f_payload: serde_json::Value,
 
-    #[diesel(sql_type = BigInt)]
     pub f_retried_count: i64,
-    #[diesel(sql_type = SqlUuid)]
     pub f_claim_token: Uuid,
 
     /// Time this task was created.
-    #[diesel(sql_type = Timestamptz)]
     pub f_created_at: OffsetDateTime,
 }

@@ -1,88 +1,48 @@
-// all_application_table_columns_match_generated_schema(schema)(positive): every generated application table column is selectable and exactly matches PostgreSQL.
+// all_application_table_columns_match_generated_schema(schema)(positive): typed projections and catalog columns match every generated application table.
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use diesel::QueryableByName;
-use diesel::sql_types::{Bool, Text};
-use diesel_async::RunQueryDsl;
+use diesel::TextExpressionMethods as _;
+use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel_async::RunQueryDsl as _;
 
 use poprako_rdb_core::RdbCore;
 
-#[derive(QueryableByName)]
-struct CatalogColumn {
-    #[diesel(sql_type = Text)]
-    table_name: String,
-    #[diesel(sql_type = Text)]
-    column_name: String,
-}
+use crate::part_impl::repo::rdb_impl::schema::t_announcement;
+use crate::part_impl::repo::rdb_impl::schema::t_assignment;
+use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter_artwork;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record;
+use crate::part_impl::repo::rdb_impl::schema::t_comic;
+use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
+use crate::part_impl::repo::rdb_impl::schema::t_comic_cover;
+use crate::part_impl::repo::rdb_impl::schema::t_comment;
+use crate::part_impl::repo::rdb_impl::schema::t_local_message;
+use crate::part_impl::repo::rdb_impl::schema::t_member;
+use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
+use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
+use crate::part_impl::repo::rdb_impl::schema::t_page;
+use crate::part_impl::repo::rdb_impl::schema::t_page_image;
+use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
+use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
+use crate::part_impl::repo::rdb_impl::schema::t_team;
+use crate::part_impl::repo::rdb_impl::schema::t_team_avatar;
+use crate::part_impl::repo::rdb_impl::schema::t_term;
+use crate::part_impl::repo::rdb_impl::schema::t_termbase;
+use crate::part_impl::repo::rdb_impl::schema::t_unit;
+use crate::part_impl::repo::rdb_impl::schema::t_unit_save;
+use crate::part_impl::repo::rdb_impl::schema::t_user;
+use crate::part_impl::repo::rdb_impl::schema::t_user_avatar;
+use crate::part_impl::repo::rdb_impl::schema::t_workset;
 
-#[derive(QueryableByName)]
-struct SelectProbe {
-    #[diesel(sql_type = Bool)]
-    selected: bool,
-}
-
-pub async fn all_application_table_columns_match_generated_schema(
-    shared: RdbCore,
-) {
-    let expected_tables = parse_generated_schema();
-
-    let mut conn = shared.get().await.unwrap();
-
-    for (table_name, column_names) in &expected_tables {
-        let selected_columns = column_names
-            .iter()
-            .map(|column_name| format!("\"{}\"", column_name))
-            .collect::<Vec<_>>()
-            .join(", ");
-
-        let query = format!(
-            "SELECT \"marker\".\"selected\" AS \"selected\" \
-             FROM (VALUES (TRUE)) AS \"marker\"(\"selected\") \
-             LEFT JOIN LATERAL (\
-                 SELECT {selected_columns} FROM \"{table_name}\" LIMIT 0\
-             ) AS \"all_columns\" ON TRUE \
-             LIMIT 1",
-        );
-
-        let probes = diesel::sql_query(query)
-            .load::<SelectProbe>(&mut conn)
-            .await
-            .unwrap_or_else(|err| {
-                panic!(
-                    "failed to select every column from {}: {}",
-                    table_name, err,
-                )
-            });
-
-        assert_eq!(probes.len(), 1);
-
-        assert!(probes[0].selected);
+// PostgreSQL's catalog view is queried through typed schema expressions.
+diesel::table! {
+    information_schema.columns (table_schema, table_name, column_name) {
+        table_schema -> Text,
+        table_name -> Text,
+        column_name -> Text,
     }
-
-    let catalog_columns = diesel::sql_query(
-        "SELECT table_name, column_name \
-         FROM information_schema.columns \
-         WHERE table_schema = 'public' AND LEFT(table_name, 2) = 't_' \
-         ORDER BY table_name, column_name",
-    )
-    .load::<CatalogColumn>(&mut conn)
-    .await
-    .unwrap();
-
-    let actual_tables = catalog_columns.into_iter().fold(
-        BTreeMap::<String, BTreeSet<String>>::new(),
-        |mut tables, catalog_column| {
-            tables
-                .entry(catalog_column.table_name)
-                .or_default()
-                .insert(catalog_column.column_name);
-
-            tables
-        },
-    );
-
-    assert_eq!(actual_tables, expected_tables);
 }
 
 fn parse_generated_schema() -> BTreeMap<String, BTreeSet<String>> {
@@ -129,4 +89,81 @@ fn parse_generated_schema() -> BTreeMap<String, BTreeSet<String>> {
     assert!(!tables.is_empty());
 
     tables
+}
+
+/// Verifies every generated table projection and the complete application catalog.
+pub async fn all_application_table_columns_match_generated_schema(
+    shared: RdbCore,
+) {
+    let expected_tables = parse_generated_schema();
+
+    let mut conn = shared.get().await.unwrap();
+
+    let mut probed_tables = BTreeSet::new();
+
+    macro_rules! probe_tables {
+        ($($table:ident),+ $(,)?) => {
+            $(
+                $table::table
+                    .select($table::all_columns)
+                    .limit(0)
+                    .execute(&mut conn)
+                    .await
+                    .unwrap();
+
+                probed_tables.insert(stringify!($table).to_owned());
+            )+
+        };
+    }
+
+    probe_tables!(
+        t_announcement,
+        t_assignment,
+        t_assignment_invitation,
+        t_chapter,
+        t_chapter_artwork,
+        t_chapter_workflow_record,
+        t_comic,
+        t_comic_archive,
+        t_comic_cover,
+        t_comment,
+        t_local_message,
+        t_member,
+        t_member_invitation,
+        t_obj_prom_task,
+        t_page,
+        t_page_image,
+        t_page_raw_ident,
+        t_system_mail,
+        t_team,
+        t_team_avatar,
+        t_term,
+        t_termbase,
+        t_unit,
+        t_unit_save,
+        t_user,
+        t_user_avatar,
+        t_workset,
+    );
+
+    assert_eq!(probed_tables, expected_tables.keys().cloned().collect());
+
+    let catalog_columns = columns::table
+        .filter(columns::table_schema.eq("public"))
+        .filter(columns::table_name.like("t\\_%"))
+        .select((columns::table_name, columns::column_name))
+        .load::<(String, String)>(&mut conn)
+        .await
+        .unwrap();
+
+    let actual_tables = catalog_columns.into_iter().fold(
+        BTreeMap::<String, BTreeSet<String>>::new(),
+        |mut tables, (table_name, column_name)| {
+            tables.entry(table_name).or_default().insert(column_name);
+
+            tables
+        },
+    );
+
+    assert_eq!(actual_tables, expected_tables);
 }
