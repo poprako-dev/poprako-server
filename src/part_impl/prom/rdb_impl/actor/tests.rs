@@ -3,14 +3,14 @@ use uuid::Uuid;
 use diesel::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 use poprako_rdb_core::RdbCore;
 use time::{Duration, OffsetDateTime};
 
 use crate::part::nucl::Serial;
-use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
-use crate::part::prom::task::Task;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
@@ -386,7 +386,7 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
 
 // same_topic_batch_is_transactional(DeferBatch)(positive): all requests survive a committed batch and none survive rollback.
 async fn same_topic_batch_is_transactional(core: &RdbCore) {
-    use crate::part::prom::oper::DeferBatch;
+    use poprako_orchestra_extra::prom::oper::DeferBatch;
 
     let nucl = RdbNucl::<Serial>::new(core.clone());
 

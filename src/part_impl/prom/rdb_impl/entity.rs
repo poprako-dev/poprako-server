@@ -8,11 +8,11 @@ use diesel::pg::Pg;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
 use diesel::sql_types::Text;
 use diesel::{AsExpression, Insertable, Queryable};
+use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::task::Task;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
 

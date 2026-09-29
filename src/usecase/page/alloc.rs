@@ -9,6 +9,8 @@ pub mod validation;
 use std::time::Duration;
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
@@ -29,10 +31,8 @@ use crate::model::write::page::{PageImageSpec, PageRawIdentsRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
-use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
-use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;

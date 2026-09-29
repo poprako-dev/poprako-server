@@ -1,17 +1,13 @@
 //! Deferred-action producer port.
 
-/// Deferred-action operation descriptors.
-pub mod oper;
 /// Deferred-action payloads.
 pub mod payload;
-/// Deferred-action task data.
-pub mod task;
 /// Fixed consumption queues.
 pub mod topic;
 
-use poprako_orchestra::drive;
+use poprako_orchestra::Context;
+use poprako_orchestra_extra::prom::Prom as ExtraProm;
 
-use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::result::BaseError;
 
@@ -31,12 +27,16 @@ use crate::result::BaseError;
 ///
 /// Each task is retained independently, including tasks sharing a topic.
 /// Batch order is not guaranteed.
-#[drive(
-    context = C,
-    error = BaseError,
-    step(
-        for<'a> Defer<'a, String, TaskPayload, ()>,
-        for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>,
-    ),
-)]
-pub trait Prom<C> {}
+pub trait Prom<C>:
+    ExtraProm<C, String, TaskPayload, Error = BaseError>
+where
+    C: Context,
+{
+}
+
+impl<C, P> Prom<C> for P
+where
+    C: Context,
+    P: ExtraProm<C, String, TaskPayload, Error = BaseError> + ?Sized,
+{
+}

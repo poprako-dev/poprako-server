@@ -2827,6 +2827,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-orchestra-extra"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc4d29bf8f0d58874369f9867350706ac3ad707477983ffcfe1490623b7efb7e"
+dependencies = [
+ "poprako-orchestra",
+]
+
+[[package]]
 name = "poprako-orchestra-macro"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2880,6 +2889,7 @@ dependencies = [
  "metrics-exporter-prometheus",
  "poprako-obj-dept",
  "poprako-orchestra",
+ "poprako-orchestra-extra",
  "poprako-rdb-core",
  "poprako-util",
  "serde",
