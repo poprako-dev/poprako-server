@@ -1,12 +1,15 @@
 //! Diesel-backed transaction coordinator.
 
-use std::future::Future;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+mod tests;
+
 use std::marker::PhantomData;
 
-use diesel::pg::{Pg, PgQueryBuilder};
-use diesel::query_builder::QueryBuilder as _;
+use diesel::connection::TransactionManagerStatus;
+use diesel::define_sql_function;
+use diesel::sql_types::{Bool, Text};
 use diesel_async::{
-    AnsiTransactionManager, AsyncPgConnection, TransactionManager as _,
+    AnsiTransactionManager, RunQueryDsl as _, TransactionManager as _,
 };
 use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Level, Nucl};
@@ -39,55 +42,53 @@ impl<NR, NS> HybNucl<NR, NS> {
     }
 }
 
-// Selects the typed Diesel transaction isolation builder.
+define_sql_function! {
+    /// Reads a `PostgreSQL` setting through a typed expression.
+    fn current_setting(setting_name: Text) -> Text;
+}
+
+define_sql_function! {
+    /// Updates a `PostgreSQL` setting using bound values, not SQL fragments.
+    fn set_config(setting_name: Text, new_value: Text, is_local: Bool) -> Text;
+}
+
+// Selects the session default used by Diesel's transaction manager for BEGIN.
 trait RdbLevel: Level + Sized {
-    /// Begins a transaction at this marker's isolation level.
-    fn begin(
-        conn: &mut AsyncPgConnection,
-    ) -> impl Future<Output = diesel::QueryResult<()>> + Send;
+    /// `PostgreSQL` isolation value for the next transaction.
+    const ISOLATION: &'static str;
 }
 
 impl RdbLevel for ReptRead {
-    // Begins a repeatable-read transaction through Diesel's typed builder.
-    async fn begin(conn: &mut AsyncPgConnection) -> diesel::QueryResult<()> {
-        //
-        let begin = {
-            //
-            let transaction = conn.build_transaction().repeatable_read();
-
-            render_begin(&transaction)?
-        };
-
-        AnsiTransactionManager::begin_transaction_sql(conn, &begin).await
-    }
+    // Preserve repeatable-read semantics for this coordinator.
+    const ISOLATION: &'static str = "repeatable read";
 }
 
 impl RdbLevel for Serial {
-    // Begins a serializable transaction through Diesel's typed builder.
-    async fn begin(conn: &mut AsyncPgConnection) -> diesel::QueryResult<()> {
-        //
-        let begin = {
-            //
-            let transaction = conn.build_transaction().serializable();
-
-            render_begin(&transaction)?
-        };
-
-        AnsiTransactionManager::begin_transaction_sql(conn, &begin).await
-    }
+    // Preserve serializable semantics for this coordinator.
+    const ISOLATION: &'static str = "serializable";
 }
 
-// Renders Diesel's typed transaction builder for the transaction manager.
-fn render_begin<T>(transaction: &T) -> diesel::QueryResult<String>
-where
-    T: diesel::query_builder::QueryFragment<Pg>,
-{
-    //
-    let mut query_builder = PgQueryBuilder::default();
+// Prevent a cancelled setup or transaction from returning altered session state
+// to the pool. Disarm only after transaction completion and setting restoration.
+struct TransactionSession<L> {
+    // Connection and its Orchestra isolation marker.
+    context: RdbContext<L>,
+    // Whether the original session settings have been restored.
+    restored: bool,
+}
 
-    transaction.to_sql(&mut query_builder, &Pg)?;
+impl<L> Drop for TransactionSession<L> {
+    // The pool discards connections whose transaction manager is broken.
+    fn drop(&mut self) {
+        //
+        if self.restored {
+            return;
+        }
 
-    Ok(query_builder.finish())
+        *AnsiTransactionManager::transaction_manager_status_mut(
+            self.context.conn(),
+        ) = TransactionManagerStatus::InError;
+    }
 }
 
 /// Diesel-backed transaction coordinator that wraps operations in database transactions.
@@ -149,17 +150,37 @@ where
             .await
             .map_err(|source| NuclError::Backend(source.into()))?;
 
-        let mut rdb_context = RdbContext::new(conn);
+        let mut session = TransactionSession {
+            context: RdbContext::new(conn),
+            restored: false,
+        };
 
-        L::begin(rdb_context.conn())
+        let context = &mut session.context;
+
+        let original_isolation =
+            diesel::select(current_setting("default_transaction_isolation"))
+                .get_result::<String>(context.conn())
+                .await
+                .map_err(|error| NuclError::Backend(diesel(error)))?;
+
+        diesel::select(set_config(
+            "default_transaction_isolation",
+            L::ISOLATION,
+            false,
+        ))
+        .get_result::<String>(context.conn())
+        .await
+        .map_err(|error| NuclError::Backend(diesel(error)))?;
+
+        AnsiTransactionManager::begin_transaction(context.conn())
             .await
             .map_err(|error| NuclError::Backend(diesel(error)))?;
 
-        match f(&mut rdb_context).await {
+        let result = match f(context).await {
             //
             Ok(value) => {
                 //
-                AnsiTransactionManager::commit_transaction(rdb_context.conn())
+                AnsiTransactionManager::commit_transaction(context.conn())
                     .await
                     .map_err(|error| NuclError::Backend(diesel(error)))?;
 
@@ -168,16 +189,35 @@ where
 
             Err(error) => {
                 //
-                AnsiTransactionManager::rollback_transaction(
-                    rdb_context.conn(),
-                )
-                .await
-                .map_err(|rollback_error| {
-                    NuclError::Backend(diesel(rollback_error))
-                })?;
+                AnsiTransactionManager::rollback_transaction(context.conn())
+                    .await
+                    .map_err(|rollback_error| {
+                        NuclError::Backend(diesel(rollback_error))
+                    })?;
 
                 Err(NuclError::Step(error))
             }
+        };
+
+        let restoration = diesel::select(set_config(
+            "default_transaction_isolation",
+            original_isolation,
+            false,
+        ))
+        .get_result::<String>(context.conn())
+        .await;
+
+        // A cleanup failure must not turn a committed business result into an
+        // apparent transaction failure. The armed guard discards this session.
+        if let Err(error) = restoration {
+            //
+            let _ = diesel(error);
+
+            return result;
         }
+
+        session.restored = true;
+
+        result
     }
 }

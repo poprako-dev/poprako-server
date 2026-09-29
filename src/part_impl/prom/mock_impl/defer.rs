@@ -1,14 +1,26 @@
 use poprako_orchestra::{OperStep as _, Step};
+use poprako_orchestra_extra::prom::Prom;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use crate::part::nucl::ReptRead;
-use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::task::Task;
 use crate::part_impl::prom::mock_impl::json::serialize_payload_err;
 use crate::part_impl::prom::mock_impl::{Mock, MockPromRecord};
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, accept};
+
+impl Prom<MockContext, String, TaskPayload> for Mock {
+    // Defines the adapter error exposed by this producer.
+    type Error = BaseError;
+
+    // Single-task persistence has no output.
+    type IndivOutput = ();
+
+    // Batch persistence has no output.
+    type BatchOutput = ();
+}
 
 /// Defers one record in the coordinated mock state.
 impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {

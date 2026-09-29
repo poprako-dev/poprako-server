@@ -11,7 +11,9 @@
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 pub mod tests;
 
+use diesel::dsl::{exists, not};
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel::{NullableExpressionMethods as _, define_sql_function};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Oper, Step};
 use time::OffsetDateTime;
@@ -162,7 +164,12 @@ impl<'a> PurgeDead<'a> {
     }
 }
 
-// Claims and reads each attempt in one statement, without a stale poll result.
+define_sql_function! {
+    /// Generates an independent credential for each claimed row.
+    fn gen_random_uuid() -> diesel::sql_types::Uuid;
+}
+
+// Claims each attempt in one typed statement within a serializable transaction.
 #[instrument(level = "info", skip_all)]
 async fn claim_pending(
     conn: &mut RdbConn,
@@ -171,36 +178,70 @@ async fn claim_pending(
     //
     let limit = i64::try_from(limit).unwrap_or(i64::MAX);
 
-    let rows = diesel::sql_query(
-        "WITH candidates AS (
-            SELECT DISTINCT ON (pending.f_topic) pending.f_id
-            FROM t_local_message AS pending
-            WHERE pending.f_status = 'local_message_status:pending'
-              AND pending.f_visible_at <= $1
-              AND NOT EXISTS (
-                  SELECT 1 FROM t_local_message AS processing
-                  WHERE processing.f_topic = pending.f_topic
-                    AND processing.f_status = 'local_message_status:processing'
-              )
-            ORDER BY pending.f_topic, pending.f_created_at, pending.f_id
-        ), locked AS (
-            SELECT message.f_id FROM t_local_message AS message
-            JOIN candidates ON candidates.f_id = message.f_id
-            ORDER BY message.f_visible_at, message.f_created_at, message.f_id
-            LIMIT $2
-            FOR UPDATE OF message SKIP LOCKED
+    let now = OffsetDateTime::now_utc();
+
+    let (pending, processing, locked) = diesel::alias!(
+        t_local_message as pending,
+        t_local_message as processing,
+        t_local_message as locked,
+    );
+
+    let active_topic = processing
+        .filter(
+            processing
+                .field(t_local_message::f_topic)
+                .eq(pending.field(t_local_message::f_topic)),
         )
-        UPDATE t_local_message AS message
-        SET f_status = 'local_message_status:processing',
-            f_claim_token = gen_random_uuid(),
-            f_updated_at = $1
-        FROM locked
-        WHERE message.f_id = locked.f_id
-        RETURNING message.f_id, message.f_topic, message.f_payload,
-                  message.f_retried_count, message.f_claim_token, message.f_created_at",
+        .filter(
+            processing
+                .field(t_local_message::f_status)
+                .eq(LocalMessageStatus::Processing.as_str()),
+        );
+
+    let first_per_topic = pending
+        .filter(
+            pending
+                .field(t_local_message::f_status)
+                .eq(LocalMessageStatus::Pending.as_str()),
+        )
+        .filter(pending.field(t_local_message::f_visible_at).le(now))
+        .filter(not(exists(active_topic)))
+        .distinct_on(pending.field(t_local_message::f_topic))
+        .order_by((
+            pending.field(t_local_message::f_topic),
+            pending.field(t_local_message::f_created_at),
+            pending.field(t_local_message::f_id),
+        ))
+        .select(pending.field(t_local_message::f_id));
+
+    let claim_ids = locked
+        .filter(locked.field(t_local_message::f_id).eq_any(first_per_topic))
+        .order_by((
+            locked.field(t_local_message::f_visible_at),
+            locked.field(t_local_message::f_created_at),
+            locked.field(t_local_message::f_id),
+        ))
+        .limit(limit)
+        .select(locked.field(t_local_message::f_id))
+        .for_update()
+        .skip_locked();
+
+    let rows = diesel::update(
+        t_local_message::table.filter(t_local_message::f_id.eq_any(claim_ids)),
     )
-    .bind::<diesel::sql_types::Timestamptz, _>(OffsetDateTime::now_utc())
-    .bind::<diesel::sql_types::BigInt, _>(limit)
+    .set((
+        t_local_message::f_status.eq(LocalMessageStatus::Processing.as_str()),
+        t_local_message::f_claim_token.eq(gen_random_uuid().nullable()),
+        t_local_message::f_updated_at.eq(now),
+    ))
+    .returning((
+        t_local_message::f_id,
+        t_local_message::f_topic,
+        t_local_message::f_payload,
+        t_local_message::f_retried_count,
+        t_local_message::f_claim_token.assume_not_null(),
+        t_local_message::f_created_at,
+    ))
     .load::<LocalMessageRow>(conn)
     .await
     .map_err(diesel)?;

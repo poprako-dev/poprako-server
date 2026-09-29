@@ -22,15 +22,16 @@ mod tests;
 
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Step};
+use poprako_orchestra_extra::prom::Prom;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
 use crate::part::nucl::ReptRead;
-use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::task::Task;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
@@ -47,6 +48,20 @@ impl RdbProm {
     pub const fn new() -> Self {
         Self
     }
+}
+
+impl<L> Prom<RdbContext<L>, String, TaskPayload> for RdbProm
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Defines the adapter error exposed by this producer.
+    type Error = BaseError;
+
+    // Single-task persistence has no output.
+    type IndivOutput = ();
+
+    // Batch persistence has no output.
+    type BatchOutput = ();
 }
 
 impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm

@@ -2,6 +2,8 @@
 
 use super::*;
 
+use diesel::expression::AsExpression;
+use diesel::sql_types::Text;
 use tokio::sync::oneshot;
 
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
@@ -72,14 +74,24 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
     {
         let mut conn = shared.get().await.unwrap();
 
-        diesel::sql_query(
-            "INSERT INTO t_page_raw_ident (f_page_id, f_raw_ident) \
-             SELECT f_id, 'source.png' FROM t_page WHERE f_id LIKE $1",
-        )
-        .bind::<diesel::sql_types::Text, _>(format!("{PREFIX}%"))
-        .execute(&mut conn)
-        .await
-        .unwrap();
+        diesel::insert_into(t_page_raw_ident::table)
+            .values(
+                t_page::table
+                    .filter(t_page::f_id.like(format!("{PREFIX}%")))
+                    .select((
+                        t_page::f_id,
+                        <&str as AsExpression<Text>>::as_expression(
+                            "source.png",
+                        ),
+                    )),
+            )
+            .into_columns((
+                t_page_raw_ident::f_page_id,
+                t_page_raw_ident::f_raw_ident,
+            ))
+            .execute(&mut conn)
+            .await
+            .unwrap();
     }
 
     mark_and_sweep_workset(shared, &workset_id).await;
