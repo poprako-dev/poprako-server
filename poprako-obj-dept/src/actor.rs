@@ -301,7 +301,7 @@ impl<P, H> ObjDeptActor<P, H> {
 
     /// Starts the claim and maintenance loops under one supervisor.
     #[must_use]
-    pub fn run_detach<F>(self) -> ObjDeptActorDesc
+    pub fn run_detached<F>(self) -> ObjDeptActorDesc
     where
         P: ObjDeptProm + Clone + Send + Sync + 'static,
         H: Fn(ObjDeptPromTask) -> F + Send + Sync + 'static,

@@ -530,7 +530,6 @@ where
 
 // Counts visible Units by completion state.
 fn count_unit_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
-    //
     UnitCountMetrics {
         total: unit_infos.len(),
         translated: unit_infos

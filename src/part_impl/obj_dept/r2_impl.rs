@@ -43,7 +43,6 @@ impl R2ObjDeptPool {
     /// Creates an object pool from an already configured S3-compatible client.
     #[must_use]
     pub const fn new(client: Client, bucket: String, domain: String) -> Self {
-        //
         Self {
             client,
             bucket,
@@ -171,11 +170,8 @@ impl ObjDeptPool for R2ObjDeptPool {
             OffsetDateTime::from(signed_at + PUT_SIGNED_EXPIRATION);
 
         let (content_length, presigning_config) = (
-            i64::try_from(byte_len).map_err(|_| {
-                //
-                ObjDeptError::Invalid {
-                    message: "object byte length exceeds i64".into(),
-                }
+            i64::try_from(byte_len).map_err(|_| ObjDeptError::Invalid {
+                message: "object byte length exceeds i64".into(),
             })?,
             PresigningConfig::builder()
                 .expires_in(PUT_SIGNED_EXPIRATION)

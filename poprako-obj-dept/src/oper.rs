@@ -29,7 +29,6 @@ where
     /// Creates a metadata lookup for the supplied business-object identifiers.
     #[must_use]
     pub const fn new(ids: &'a [&'a str]) -> Self {
-        //
         Self {
             ids,
             _m: PhantomData,
@@ -63,7 +62,6 @@ where
         metas: &'a HashMap<String, ObjMeta>,
         spec: ObjUrlSpec,
     ) -> Self {
-        //
         Self {
             metas,
             spec,
@@ -93,7 +91,6 @@ where
     /// Creates an allocation request for one business object.
     #[must_use]
     pub const fn new(spec: &'a ObjSlotSpec<'a, K>) -> Self {
-        //
         Self {
             spec,
             _m: PhantomData,
@@ -122,7 +119,6 @@ where
     /// Creates a bulk reservation for the supplied business objects.
     #[must_use]
     pub const fn new(specs: &'a [ObjSlotSpec<'a, K>]) -> Self {
-        //
         Self {
             specs,
             _m: PhantomData,
@@ -151,7 +147,6 @@ where
     /// Creates an upload declaration for one exact object generation.
     #[must_use]
     pub const fn new(key: &'a ObjGen) -> Self {
-        //
         Self {
             key,
             _m: PhantomData,
@@ -180,7 +175,6 @@ where
     /// Creates a request to clear current files for active business entities.
     #[must_use]
     pub const fn new(ids: &'a [String]) -> Self {
-        //
         Self {
             ids,
             _m: PhantomData,
@@ -211,7 +205,6 @@ where
     /// Creates a request to delete objects for ended business entities.
     #[must_use]
     pub const fn new(ids: &'a [String]) -> Self {
-        //
         Self {
             ids,
             _m: PhantomData,

@@ -1,4 +1,4 @@
-//! Application configuration loaded from a TOML file at startup.
+//! Application configuration and runtime policies.
 
 /// Chapter artwork upload configuration.
 pub mod artwork;
@@ -6,6 +6,8 @@ pub mod artwork;
 pub mod http;
 /// Image upload configuration.
 pub mod image;
+/// Background task scheduling and shutdown policies.
+pub mod sched;
 
 #[cfg(test)]
 mod tests;

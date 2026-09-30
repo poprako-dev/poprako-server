@@ -27,7 +27,6 @@ impl ExportTermbaseVal {
         termbase_info: TermbaseInfo,
         term_infos: Vec<TermInfo>,
     ) -> Self {
-        //
         Self {
             name: termbase_info.name,
             description: termbase_info.description,

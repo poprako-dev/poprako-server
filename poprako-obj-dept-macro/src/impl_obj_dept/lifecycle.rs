@@ -346,7 +346,6 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     let pool_slot = pool_slots
                         .remove(key.id.as_str())
                         .ok_or_else(|| {
-                            //
                             ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                                 message: "generated object slot is missing".into(),
                             }

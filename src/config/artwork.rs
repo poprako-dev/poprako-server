@@ -30,7 +30,6 @@ impl ArtworkConfig {
 impl Default for ArtworkConfig {
     // Uses the safe default for direct chapter artwork uploads.
     fn default() -> Self {
-        //
         Self {
             chapter_artwork_limit: 512,
         }

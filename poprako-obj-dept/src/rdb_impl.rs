@@ -50,12 +50,10 @@ where
     K: KeyMap<Img = String>,
 {
     //
-    let ver = u32::try_from(row.ver).map_err(|_| {
-        //
-        ObjDeptError::Unrecoverable {
+    let ver =
+        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
             message: "object ver is outside u32".into(),
-        }
-    })?;
+        })?;
 
     match (row.key, row.f_is_uploaded, row.hash, row.ext) {
         //
@@ -108,11 +106,8 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
                 }
             }
 
-            u32::try_from(row.ver).map_err(|_| {
-                //
-                ObjDeptError::Unrecoverable {
-                    message: "object ver is outside u32".into(),
-                }
+            u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
+                message: "object ver is outside u32".into(),
             })?
         }
 
@@ -147,7 +142,6 @@ where
         (Some(key), Some(_), Some(_), Some(ext)) => {
             //
             let ver = u32::try_from(row.ver).map_err(|_| {
-                //
                 ObjDeptError::Unrecoverable {
                     message: "object ver is outside u32".into(),
                 }

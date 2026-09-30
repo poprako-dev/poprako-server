@@ -270,7 +270,6 @@ pub struct UnitCoordInstr {
 impl From<UnitCoordInstr> for UnitCoord {
     // Convert API coordinate value into domain coordinate.
     fn from(value: UnitCoordInstr) -> Self {
-        //
         Self {
             x_coord: value.x_coord,
             y_coord: value.y_coord,

@@ -6,7 +6,6 @@ use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
 
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
-    //
     UserEntry {
         id: format!("{}user-{}", prefix, name),
         nickname: format!("{}user-{}", prefix, name),
@@ -16,7 +15,6 @@ pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
 }
 
 pub fn team_entry(prefix: &str) -> TeamEntry {
-    //
     TeamEntry {
         id: format!("{}team", prefix),
         name: format!("{}team", prefix),
@@ -25,7 +23,6 @@ pub fn team_entry(prefix: &str) -> TeamEntry {
 }
 
 pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
-    //
     WorksetEntry {
         id: format!("{}workset", prefix),
         team_id: team_entry.id.clone(),
@@ -40,7 +37,6 @@ pub fn comic_entry(
     workset_entry: &WorksetEntry,
     creator_form: &UserEntry,
 ) -> ComicEntry<'static> {
-    //
     ComicEntry {
         id: format!("{}comic", prefix),
         workset_id: workset_entry.id.clone().into(),
@@ -57,7 +53,6 @@ pub fn chapter_entry(
     comic_entry: &ComicEntry<'_>,
     creator_form: &UserEntry,
 ) -> ChapterEntry<'static> {
-    //
     ChapterEntry {
         id: format!("{}chapter", prefix),
         comic_id: comic_entry.id.clone().into(),
@@ -69,7 +64,6 @@ pub fn chapter_entry(
 }
 
 pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry<'_>) -> PageEntry {
-    //
     PageEntry {
         id: format!("{}page", prefix),
         chapter_id: chapter_entry.id.clone(),

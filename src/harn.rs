@@ -17,7 +17,6 @@ pub struct Harn<N, R, O, P, A, D> {
 impl<N, R, O, P, A, D> Clone for Harn<N, R, O, P, A, D> {
     // Clones the shared harness handle.
     fn clone(&self) -> Self {
-        //
         Self {
             inner: Arc::clone(&self.inner),
         }
@@ -48,7 +47,6 @@ impl<N, R, O, P, A, D> Harn<N, R, O, P, A, D> {
         config: AppConfig,
         (nucl, repo, obj_dept, prom, auth, develop): (N, R, O, P, A, D),
     ) -> Self {
-        //
         Self {
             inner: Arc::new(HarnInner {
                 config,

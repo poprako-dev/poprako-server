@@ -143,7 +143,6 @@ where
             .filter_map(|page_info| {
                 //
                 raw_ident_by_page_id.get(&page_info.id).map(|raw_ident| {
-                    //
                     ChapterPageRawIdentVal {
                         page_id: page_info.id.clone(),
                         raw_ident: raw_ident.clone(),
@@ -246,7 +245,6 @@ fn make_unit_export(
     index: usize,
     unit_info: &UnitInfo,
 ) -> UnitTranslationPortView {
-    //
     // Convert one unit into export view fields used by downstream translators.
     UnitTranslationPortView {
         unit_id: unit_info.id.clone(),

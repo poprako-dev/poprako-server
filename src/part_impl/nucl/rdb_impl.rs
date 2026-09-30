@@ -106,7 +106,6 @@ impl<L> RdbNucl<L> {
     /// Builds a new `RdbNucl` from an [`RdbCore`] connection pool.
     #[must_use]
     pub const fn new(core: RdbCore) -> Self {
-        //
         Self {
             core,
             level: PhantomData,

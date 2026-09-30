@@ -160,7 +160,7 @@ async fn develop_dispatches_user_signup() {
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
     let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detach();
+        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
@@ -206,7 +206,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
     let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detach();
+        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
 
     Event::ChapterWorkflowCompleted {
         payload: ChapterWorkflowCompletedEvent {
@@ -251,7 +251,7 @@ async fn develop_dispatches_chapter_published() {
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
     let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detach();
+        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
 
     Event::ChapterPublished {
         payload: ChapterPublishedEvent {
@@ -277,7 +277,7 @@ async fn develop_dispatches_chapter_published() {
 async fn cancel_is_idempotent() {
     let (_develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
-    let actor = EffectActor::new(Mock::new(), effect_recv).run_detach();
+    let actor = EffectActor::new(Mock::new(), effect_recv).run_detached();
 
     actor.cancel();
 
@@ -295,7 +295,7 @@ async fn clone_drop_preserves_consumer() {
 
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
-    let actor = EffectActor::new(mock.clone(), effect_recv).run_detach();
+    let actor = EffectActor::new(mock.clone(), effect_recv).run_detached();
 
     drop(develop.clone());
 
@@ -341,7 +341,7 @@ async fn construction_defers_processing() {
 
     assert!(mock.snapshot().system_mails.is_empty());
 
-    let actor = actor.run_detach();
+    let actor = actor.run_detached();
 
     actor.cancel();
 
@@ -355,7 +355,7 @@ async fn construction_defers_processing() {
 async fn descriptor_drop_stops_consumer() {
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
-    let actor = EffectActor::new(Mock::new(), effect_recv).run_detach();
+    let actor = EffectActor::new(Mock::new(), effect_recv).run_detached();
 
     drop(actor);
 
@@ -376,7 +376,7 @@ async fn join_reports_supervisor_failure() {
 
     let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
 
-    let actor = EffectActor::new(mock.clone(), effect_recv).run_detach();
+    let actor = EffectActor::new(mock.clone(), effect_recv).run_detached();
 
     let _ = std::panic::catch_unwind(|| {
         let _guard = mock.state.lock().unwrap();

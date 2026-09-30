@@ -76,7 +76,6 @@ pub struct EffectActor<R> {
 impl<R> EffectActor<R> {
     /// Constructs a consumer with its injected repository and unique receiver.
     pub fn new(repo: R, effect_recv: EffectRecv) -> Self {
-        //
         Self {
             repo,
             recv: effect_recv.into_recv(),
@@ -86,7 +85,7 @@ impl<R> EffectActor<R> {
 
     /// Starts consumption and returns its unique runtime owner.
     #[must_use]
-    pub fn run_detach<C>(self) -> EffectActorDesc
+    pub fn run_detached<C>(self) -> EffectActorDesc
     where
         C: Context + Send + 'static,
         R: AssignmentRepo<C>

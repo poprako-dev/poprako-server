@@ -58,7 +58,6 @@ use crate::shared::RdbContext;
 
 // Standardize chain-corruption failures for unit graph validation.
 fn corrupt_unit_chain_err() -> BaseError {
-    //
     BaseError::Unrecoverable {
         message: "persisted Unit chain is corrupt".to_string(),
     }

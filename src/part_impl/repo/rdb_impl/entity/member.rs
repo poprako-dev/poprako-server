@@ -88,7 +88,6 @@ pub struct MemberAspectRow<'a> {
 
 impl<'a> MemberAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_user_nickname: None,
             f_user_last_active_at: None,

@@ -286,7 +286,6 @@ impl<'a> From<&'a ChapterWorkflowRecordEntry<'_>>
     for ChapterWorkflowRecordEntryRow<'a>
 {
     fn from(entry: &'a ChapterWorkflowRecordEntry<'_>) -> Self {
-        //
         Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,

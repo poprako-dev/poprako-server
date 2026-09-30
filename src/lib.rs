@@ -93,7 +93,11 @@ pub use crate::api::http::state::AppHarn;
 pub use crate::config::AppConfig;
 pub use crate::config::http::HttpConfig;
 pub use crate::config::image::ImageConfig;
-pub use crate::extra::sched::{Sched, SchedDesc};
+pub use crate::config::sched::{SchedConfig, SchedTaskConfig};
+pub use crate::extra::sched::{
+    Sched, SchedDesc, SchedNext, SchedTask, SchedTaskRunner,
+};
+pub use crate::extra::subtree_delete::SubtreeDeleteTask;
 pub use crate::harn::Harn;
 pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};
@@ -111,4 +115,5 @@ pub use crate::part_impl::prom::rdb_impl::actor::base::{
 };
 pub use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 pub use crate::part_impl::repo::HybRepo;
+pub use crate::result::{BaseError, BaseRest};
 pub use crate::shared::RdbContext;

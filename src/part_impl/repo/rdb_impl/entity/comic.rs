@@ -145,7 +145,6 @@ pub struct ComicAspectRow<'a> {
 
 impl<'a> ComicAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_title: None,
             f_author: None,

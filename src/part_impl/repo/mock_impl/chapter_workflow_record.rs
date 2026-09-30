@@ -87,7 +87,6 @@ impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
             .state
             .chapter_workflow_records
             .extend(oper.entries.iter().map(|entry| {
-                //
                 ChapterWorkflowRecordInfo {
                     id: entry.id.clone(),
                     chapter_id: entry.chapter_id.to_string(),
@@ -121,7 +120,6 @@ impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
         state
             .chapter_workflow_records
             .extend(oper.entries.iter().map(|entry| {
-                //
                 ChapterWorkflowRecordInfo {
                     id: entry.id.clone(),
                     chapter_id: entry.chapter_id.to_string(),

@@ -326,7 +326,6 @@ fn export_input() -> LabelPlusExportInput {
 
 // Builds a deterministic user profile used in generated archive fixtures.
 fn user_info(archived_at: OffsetDateTime) -> UserInfo {
-    //
     UserInfo {
         id: "user-1".into(),
         qid: "benchmark-qid".into(),
@@ -346,7 +345,6 @@ fn unit_info(
     unit_index: u16,
     archived_at: OffsetDateTime,
 ) -> UnitInfo {
-    //
     UnitInfo {
         id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
         page_id: page_id.into(),
@@ -381,7 +379,6 @@ fn comic_archive_snapshot(
     archived_at: OffsetDateTime,
     chapter_snapshots: Vec<ComicArchiveChapterSnapshot>,
 ) -> ComicArchiveSnapshot {
-    //
     ComicArchiveSnapshot {
         comic_info: ComicInfo {
             id: "comic-1".into(),

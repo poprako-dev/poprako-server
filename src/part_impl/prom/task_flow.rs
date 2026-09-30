@@ -40,7 +40,6 @@ impl TaskFlow {
             Self::Wait { err_message }
                 if now >= requested_at.saturating_add(WAIT_TIMEOUT) =>
             {
-                //
                 Self::Dead {
                     err_message: format!(
                         "waiting deadline exceeded: {}",

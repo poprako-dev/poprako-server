@@ -23,7 +23,6 @@ pub struct CommentInfoRow {
 
 impl From<CommentInfoRow> for CommentInfo {
     fn from(row: CommentInfoRow) -> Self {
-        //
         Self {
             id: row.f_id,
             team_id: row.f_team_id,
@@ -51,7 +50,6 @@ pub struct CommentEntryRow<'a> {
 
 impl<'a> From<&'a CommentEntry> for CommentEntryRow<'a> {
     fn from(entry: &'a CommentEntry) -> Self {
-        //
         Self {
             f_id: &entry.id,
             f_team_id: &entry.team_id,

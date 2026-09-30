@@ -76,7 +76,6 @@ impl HttpError {
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
     pub fn unprocessable(message: &str) -> Self {
-        //
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: nonzero_code(7),
@@ -86,7 +85,6 @@ impl HttpError {
 
     /// `500 Internal Server Error` concealing unrecoverable details.
     pub fn internal() -> Self {
-        //
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: nonzero_code(1),
@@ -96,7 +94,6 @@ impl HttpError {
 
     /// 503 Service Unavailable with a generic localized message.
     pub fn unavailable() -> Self {
-        //
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),
@@ -177,7 +174,6 @@ pub struct HttpBody<T> {
 impl<T> HttpBody<T> {
     /// Creates a valued success body with the given status.
     pub fn new(status: StatusCode, data: T) -> Self {
-        //
         Self {
             status,
             headers: HeaderMap::new(),
@@ -238,7 +234,6 @@ pub struct NoContent {
 impl NoContent {
     /// Creates an empty `204 No Content` response with no extra headers.
     pub fn new() -> Self {
-        //
         Self {
             headers: HeaderMap::new(),
         }

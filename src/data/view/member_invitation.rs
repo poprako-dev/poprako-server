@@ -49,7 +49,6 @@ impl MemberInvitationInfoView {
         model: MemberInvitationInfo,
         invitor: Option<UserInfoView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             team_id: model.team_id,

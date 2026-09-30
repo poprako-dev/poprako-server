@@ -59,7 +59,6 @@ pub struct ChapterUnitEditScopeRow {
 
 impl From<ChapterUnitEditScopeRow> for ChapterUnitEditScope {
     fn from(row: ChapterUnitEditScopeRow) -> Self {
-        //
         Self {
             id: row.f_id,
             comic_id: row.f_comic_id,
@@ -174,7 +173,6 @@ pub struct ChapterAspectRow<'a> {
 
 impl<'a> ChapterAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_is_pinned: None,
             f_subtitle: None,

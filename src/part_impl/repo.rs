@@ -29,7 +29,6 @@ impl HybRepo {
     /// Builds a new hybrid repository from an [`RdbCore`] connection pool.
     #[must_use]
     pub fn new(core: RdbCore) -> Self {
-        //
         Self {
             rdb_core: core,
             active_ddls: Arc::default(),

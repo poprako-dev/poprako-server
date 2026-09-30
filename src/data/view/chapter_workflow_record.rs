@@ -40,7 +40,6 @@ pub struct ChapterWorkflowRecordInfoView {
 impl From<ChapterWorkflowRecordInfo> for ChapterWorkflowRecordInfoView {
     // Converts a read projection at the presentation boundary.
     fn from(model: ChapterWorkflowRecordInfo) -> Self {
-        //
         Self {
             id: model.id,
             chapter_id: model.chapter_id,

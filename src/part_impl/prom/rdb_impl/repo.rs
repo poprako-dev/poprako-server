@@ -86,7 +86,6 @@ pub struct FailMessage<'a> {
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
     pub const fn new(id: &'a str, claim_token: Uuid, err_msg: &'a str) -> Self {
-        //
         Self {
             id,
             claim_token,
@@ -124,7 +123,6 @@ impl<'a> RetryMessage<'a> {
         visible_at: &'a OffsetDateTime,
         retry_delta: i64,
     ) -> Self {
-        //
         Self {
             id,
             claim_token,

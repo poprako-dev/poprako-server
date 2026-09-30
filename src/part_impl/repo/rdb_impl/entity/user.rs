@@ -71,7 +71,6 @@ pub struct UserAspectRow<'a> {
 
 impl<'a> UserAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_nickname: None,
             f_qid: None,
@@ -124,7 +123,6 @@ impl TryFrom<UserInfoRow> for UserInfo {
 
 impl From<UserCredsRow> for UserCredential {
     fn from(v: UserCredsRow) -> Self {
-        //
         Self {
             user_id: v.f_id,
             password_hash: v.f_password_hash,

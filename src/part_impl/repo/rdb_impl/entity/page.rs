@@ -166,7 +166,6 @@ pub struct PageAspectRow {
 
 impl PageAspectRow {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_index: None,
             f_total_unit_count: None,
@@ -223,7 +222,6 @@ pub struct PageRawIdentInfoRow {
 impl From<PageRawIdentInfoRow> for PageRawIdentInfo {
     // Converts the stored filename association into a domain projection.
     fn from(row: PageRawIdentInfoRow) -> Self {
-        //
         Self {
             page_id: row.f_page_id,
             raw_ident: row.f_raw_ident,

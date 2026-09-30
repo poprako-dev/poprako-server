@@ -39,7 +39,6 @@ impl<'a> ChapterWorkflowRecordEntry<'a> {
     where
         C: Into<Cow<'a, str>>,
     {
-        //
         Self {
             id: next_snowflake_id(),
             chapter_id: chapter_id.into(),

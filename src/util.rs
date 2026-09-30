@@ -131,7 +131,7 @@ where
 
             /// Explicit assign — replace with the given value.
             Assign {
-                // Replacement value from the tagged input.
+                /// Replacement value from the tagged input.
                 value: T,
             },
 

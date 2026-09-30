@@ -3,10 +3,8 @@ use uuid::Uuid;
 use super::*;
 
 use crate::part::nucl::{ReptRead, Serial};
-
 use crate::part_impl::prom::rdb_impl::actor::base::RdbPromActor;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
-
 use crate::shared::test_rdb::start;
 
 #[tokio::test]
@@ -61,6 +59,7 @@ async fn writer_and_consumer_lifecycles_are_independent(
     use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
     use crate::part_impl::repo::HybRepo;
     use crate::part_impl::repo::mock_impl::Mock;
+    use crate::{Sched, SchedConfig, SubtreeDeleteTask};
     use diesel::{
         ExpressionMethods as _, QueryDsl as _, TextExpressionMethods as _,
     };
@@ -145,7 +144,7 @@ async fn writer_and_consumer_lifecycles_are_independent(
 
     assert_eq!(status, "local_message_status:pending");
 
-    let actor = actor.run_detach();
+    let actor = actor.run_detached();
 
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
@@ -174,12 +173,13 @@ async fn writer_and_consumer_lifecycles_are_independent(
         .unwrap()
         .unwrap();
 
-    let scheduler =
-        crate::extra::sched::Sched::new(nucl, repo, dept).run_detach();
+    let task = Box::new(SubtreeDeleteTask::new(nucl, repo, dept));
 
-    scheduler.cancel();
+    let sched = Sched::new(vec![task], SchedConfig::default()).run_detached();
 
-    tokio::time::timeout(std::time::Duration::from_secs(10), scheduler.join())
+    sched.cancel();
+
+    tokio::time::timeout(std::time::Duration::from_secs(10), sched.join())
         .await
         .unwrap()
         .unwrap();

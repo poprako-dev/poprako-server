@@ -225,7 +225,6 @@ impl<N, R, V, D> RdbPromActor<N, R, V, D> {
         (prom_nucl, prom_repo): (RdbNucl<Serial>, RdbPromRepo),
         (nucl, repo, obj_dept_view, develop): (N, R, V, D),
     ) -> Self {
-        //
         Self {
             prom_nucl,
             prom_repo,
@@ -300,7 +299,6 @@ where
         let expected_topic = task.topic().as_str();
 
         if topic != expected_topic {
-            //
             return TaskFlow::Dead {
                 err_message: format!(
                     "prom topic {} does not match payload topic {}",
@@ -331,7 +329,7 @@ where
 {
     /// Starts the consumer and transfers shutdown ownership to its descriptor.
     #[must_use]
-    pub fn run_detach(self) -> RdbPromActorDesc
+    pub fn run_detached(self) -> RdbPromActorDesc
     where
         R: 'static,
         V: 'static,

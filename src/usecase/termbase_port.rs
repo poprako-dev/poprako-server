@@ -377,7 +377,6 @@ where
         UpdateTermbaseTermCount {
             id: &termbase_info.id,
             delta: i32::try_from(created_term_count).map_err(|_| {
-                //
                 BaseError::Unrecoverable {
                     message: "created term count exceeds signed delta range"
                         .into(),

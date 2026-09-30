@@ -83,13 +83,10 @@ impl From<ObjDeptError> for BaseError {
         //
         match source {
             //
-            ObjDeptError::Invalid { message } => {
-                //
-                Self::Expected {
-                    variant: ExpectedVariant::Args,
-                    message,
-                }
-            }
+            ObjDeptError::Invalid { message } => Self::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            },
 
             ObjDeptError::Conflict { message }
             | ObjDeptError::Retryable { message } => {

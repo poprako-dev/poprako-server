@@ -249,12 +249,10 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
         headers: obj_slot.headers,
     });
 
-    let index = u32::try_from(alloc.index).map_err(|_| {
-        //
-        BaseError::Unrecoverable {
+    let index =
+        u32::try_from(alloc.index).map_err(|_| BaseError::Unrecoverable {
             message: "page index is out of range".into(),
-        }
-    })?;
+        })?;
 
     accept(AllocatedPageVal {
         page_id: alloc.page_id,

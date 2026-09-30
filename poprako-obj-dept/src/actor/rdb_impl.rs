@@ -55,12 +55,10 @@ pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
         return Ok(ObjKeyState::Missing);
     };
 
-    let watermark = u32::try_from(row.ver).map_err(|_| {
-        //
-        ObjDeptError::Unrecoverable {
+    let watermark =
+        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
             message: "object ver is outside u32".into(),
-        }
-    })?;
+        })?;
 
     match ver.cmp(&watermark) {
         //
