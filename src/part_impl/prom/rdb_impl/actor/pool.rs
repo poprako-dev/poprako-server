@@ -1,4 +1,4 @@
-//! Fixed-size worker pool for persisted prom tasks.
+//! Independent serial workers and polling loops for persisted prom topics.
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
@@ -9,7 +9,7 @@ use std::time::Duration as StdDuration;
 
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::{Duration, OffsetDateTime};
-use tokio::sync::{Notify, OwnedSemaphorePermit};
+use tokio::sync::Notify;
 use tokio::task::JoinSet;
 use tokio::time::{Instant, sleep, timeout};
 use tracing::instrument;
@@ -19,6 +19,7 @@ use poprako_obj_dept::ObjDeptView;
 
 use crate::part::effect::Develop;
 use crate::part::obj_dept::PageImage;
+use crate::part::prom::topic::Topic;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -37,8 +38,8 @@ use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-// Constant definition for `WORKER_COUNT`.
-const WORKER_COUNT: usize = 4;
+// Each fixed topic owns an independent serial worker and polling loop.
+const TOPICS: [Topic; 2] = [Topic::Chapter, Topic::Invitation];
 
 // Constant definition for `POLL_INTERVAL`.
 const POLL_INTERVAL: StdDuration = StdDuration::from_mins(1);
@@ -63,6 +64,16 @@ const EXECUTION_TIMEOUT: StdDuration = StdDuration::from_mins(14);
 
 // Bounds graceful shutdown across the entire pool.
 const SHUTDOWN_GRACE: StdDuration = StdDuration::from_secs(30);
+
+// One topic's reserved execution slot and completion signal.
+struct TopicWorker {
+    // Queue whose messages are assigned to this worker.
+    topic: Topic,
+    // Reserved execution capacity and the worker's sending queue.
+    slot: WorkerSlot<LocalMessageRow>,
+    // Wakes only this topic's polling loop after an attempt finishes.
+    completed: Arc<Notify>,
+}
 
 /// Enforces the retry limit for a task flow.
 ///
@@ -101,15 +112,25 @@ where
     #[instrument(level = "info", skip_all)]
     pub async fn run(self) {
         //
-        let (actor, completed) = (Arc::new(self), Arc::new(Notify::new()));
+        let actor = Arc::new(self);
 
-        let (worker_sends, worker_handles) = actor.spawn_workers(&completed);
+        let (worker_sends, worker_handles) = actor.spawn_workers();
+
+        let supervisors =
+            futures_util::future::join_all(worker_sends.iter().map(|worker| {
+                //
+                actor.run_supervisor(
+                    worker.topic,
+                    &worker.slot,
+                    worker.completed.as_ref(),
+                )
+            }));
 
         tokio::select! {
             //
             () = actor.token().cancelled() => {}
 
-            () = actor.run_supervisor(&worker_sends, completed.as_ref()) => {}
+            _ = supervisors => {}
         }
 
         drop(worker_sends);
@@ -118,17 +139,16 @@ where
     }
 
     // Internal implementation of `spawn_workers`.
-    fn spawn_workers(
-        self: &Arc<Self>,
-        completed: &Arc<Notify>,
-    ) -> (Vec<WorkerSlot<LocalMessageRow>>, JoinSet<()>) {
+    fn spawn_workers(self: &Arc<Self>) -> (Vec<TopicWorker>, JoinSet<()>) {
         //
         let (mut worker_sends, mut worker_handles) =
-            (Vec::with_capacity(WORKER_COUNT), JoinSet::new());
+            (Vec::with_capacity(TOPICS.len()), JoinSet::new());
 
-        for _ in 0..WORKER_COUNT {
+        for topic in TOPICS {
             //
             let (worker_send, worker_recv) = WorkerSlot::channel();
+
+            let completed = Arc::new(Notify::new());
 
             let actor = self.clone();
 
@@ -143,10 +163,110 @@ where
                 },
             ));
 
-            worker_sends.push(worker_send);
+            let topic_worker = TopicWorker {
+                topic,
+                slot: worker_send,
+                completed,
+            };
+
+            worker_sends.push(topic_worker);
         }
 
         (worker_sends, worker_handles)
+    }
+
+    // Internal implementation of `run_supervisor`.
+    async fn run_supervisor(
+        &self,
+        topic: Topic,
+        worker: &WorkerSlot<LocalMessageRow>,
+        completed: &Notify,
+    ) {
+        //
+        let (mut next_stuck_reset_at, mut next_dead_purge_at) =
+            (OffsetDateTime::now_utc(), OffsetDateTime::now_utc());
+
+        loop {
+            //
+            if self.token().is_cancelled() {
+                break;
+            }
+
+            let maintenance_and_poll = async {
+                //
+                let now = OffsetDateTime::now_utc();
+
+                if now >= next_stuck_reset_at {
+                    //
+                    self.log_reset_stuck(topic).await;
+
+                    next_stuck_reset_at =
+                        schedule_at(now, STUCK_RESET_INTERVAL);
+                }
+
+                if now >= next_dead_purge_at {
+                    //
+                    self.log_purge_dead(topic).await;
+
+                    next_dead_purge_at = schedule_at(now, DEAD_PURGE_INTERVAL);
+                }
+
+                let Some(permit) = worker.acquire() else {
+                    return false;
+                };
+
+                let deadline = Instant::now() + EXECUTION_TIMEOUT;
+
+                match self.poll(topic).await {
+                    //
+                    Ok(Some(local_message)) => {
+                        //
+                        if worker.dispatch(local_message, deadline, permit) {
+                            return true;
+                        }
+
+                        tracing::error!("prom reserved worker channel closed");
+
+                        false
+                    }
+
+                    Ok(None) => false,
+
+                    Err(error) => {
+                        //
+                        tracing::error!(err = ?error, "prom claim failed");
+
+                        false
+                    }
+                }
+            };
+
+            let dispatched = timeout(POLL_INTERVAL, maintenance_and_poll)
+                .await
+                .unwrap_or_else(|_| {
+                    //
+                    tracing::warn!(
+                        "prom queue maintenance or polling timed out"
+                    );
+
+                    false
+                });
+
+            if dispatched {
+                continue;
+            }
+
+            tokio::select! {
+                //
+                biased;
+
+                () = self.token().cancelled() => break,
+
+                () = completed.notified() => {}
+
+                () = sleep(POLL_INTERVAL) => {}
+            }
+        }
     }
 
     // Internal implementation of `process_row`.
@@ -205,6 +325,61 @@ where
                 }
             }
         }
+    }
+
+    // Internal implementation of `log_reset_stuck`.
+    async fn log_reset_stuck(&self, topic: Topic) {
+        //
+        if let Err(error) = self.reset_stuck(topic).await {
+            //
+            tracing::error!(
+                err = ?error,
+                "[RdbPromActor::run] reset stuck failed",
+            );
+        }
+    }
+
+    // Internal implementation of `log_purge_dead`.
+    async fn log_purge_dead(&self, topic: Topic) {
+        //
+        match self.purge_dead(topic).await {
+            //
+            Ok(purged_count) => {
+                //
+                if purged_count > 0 {
+                    //
+                    tracing::info!(
+                        purged_count,
+                        "[RdbPromActor::run] purged expired dead messages",
+                    );
+                }
+            }
+
+            Err(error) => {
+                //
+                tracing::error!(
+                    err = ?error,
+                    "[RdbPromActor::run] purge dead failed",
+                );
+            }
+        }
+    }
+
+    // Internal implementation of `poll`.
+    #[instrument(level = "info", skip_all, fields(topic = topic.as_str()))]
+    async fn poll(&self, topic: Topic) -> BaseRest<Option<LocalMessageRow>> {
+        //
+        let row = self
+            .prom_nucl()
+            .coord(async |context| {
+                //
+                ClaimPending::new(topic.as_str())
+                    .step_on(self.prom_repo(), context)
+                    .await
+            })
+            .await?;
+
+        Ok(row)
     }
 
     // Internal implementation of `complete`.
@@ -293,8 +468,8 @@ where
     }
 
     // Internal implementation of `reset_stuck`.
-    #[instrument(level = "info", skip_all)]
-    async fn reset_stuck(&self) -> BaseRest<()> {
+    #[instrument(level = "info", skip_all, fields(topic = topic.as_str()))]
+    async fn reset_stuck(&self, topic: Topic) -> BaseRest<()> {
         //
         let before = OffsetDateTime::now_utc()
             .checked_sub(PROCESSING_TIMEOUT)
@@ -307,7 +482,7 @@ where
         self.prom_nucl()
             .coord(async |context| {
                 //
-                ResetStuck::new(&before)
+                ResetStuck::new(topic.as_str(), &before)
                     .step_on(self.prom_repo(), context)
                     .await
             })
@@ -317,8 +492,8 @@ where
     }
 
     // Internal implementation of `purge_dead`.
-    #[instrument(level = "info", skip_all)]
-    async fn purge_dead(&self) -> BaseRest<usize> {
+    #[instrument(level = "info", skip_all, fields(topic = topic.as_str()))]
+    async fn purge_dead(&self, topic: Topic) -> BaseRest<usize> {
         //
         let dead_before = OffsetDateTime::now_utc()
             .checked_sub(DEAD_RETENTION)
@@ -332,185 +507,13 @@ where
             .prom_nucl()
             .coord(async |context| {
                 //
-                PurgeDead::new(&dead_before)
+                PurgeDead::new(topic.as_str(), &dead_before)
                     .step_on(self.prom_repo(), context)
                     .await
             })
             .await?;
 
         Ok(purged_count)
-    }
-
-    // Internal implementation of `log_reset_stuck`.
-    async fn log_reset_stuck(&self) {
-        //
-        if let Err(error) = self.reset_stuck().await {
-            //
-            tracing::error!(
-                err = ?error,
-                "[RdbPromActor::run] reset stuck failed",
-            );
-        }
-    }
-
-    // Internal implementation of `log_purge_dead`.
-    async fn log_purge_dead(&self) {
-        //
-        match self.purge_dead().await {
-            //
-            Ok(purged_count) => {
-                //
-                if purged_count > 0 {
-                    //
-                    tracing::info!(
-                        purged_count,
-                        "[RdbPromActor::run] purged expired dead messages",
-                    );
-                }
-            }
-
-            Err(error) => {
-                //
-                tracing::error!(
-                    err = ?error,
-                    "[RdbPromActor::run] purge dead failed",
-                );
-            }
-        }
-    }
-
-    // Internal implementation of `poll`.
-    #[instrument(level = "info", skip_all)]
-    async fn poll(&self, limit: usize) -> BaseRest<Vec<LocalMessageRow>> {
-        //
-        let rows = self
-            .prom_nucl()
-            .coord(async |context| {
-                //
-                ClaimPending::new(limit)
-                    .step_on(self.prom_repo(), context)
-                    .await
-            })
-            .await?;
-
-        Ok(rows)
-    }
-
-    // Assigns claimed tasks only to workers reserved before the claim.
-    fn dispatch_local_messages(
-        reservations: Vec<(&WorkerSlot<LocalMessageRow>, OwnedSemaphorePermit)>,
-        rows: Vec<LocalMessageRow>,
-        deadline: Instant,
-    ) -> bool {
-        //
-        let mut dispatched = false;
-
-        for ((worker, permit), row) in reservations.into_iter().zip(rows) {
-            //
-            if worker.dispatch(row, deadline, permit) {
-                //
-                dispatched = true;
-
-                continue;
-            }
-
-            tracing::error!("prom reserved worker channel closed");
-        }
-
-        dispatched
-    }
-
-    // Internal implementation of `run_supervisor`.
-    async fn run_supervisor(
-        &self,
-        worker_sends: &[WorkerSlot<LocalMessageRow>],
-        completed: &Notify,
-    ) {
-        //
-        let (mut next_stuck_reset_at, mut next_dead_purge_at) =
-            (OffsetDateTime::now_utc(), OffsetDateTime::now_utc());
-
-        loop {
-            //
-            if self.token().is_cancelled() {
-                break;
-            }
-
-            let maintenance_and_poll = async {
-                //
-                let now = OffsetDateTime::now_utc();
-
-                if now >= next_stuck_reset_at {
-                    //
-                    self.log_reset_stuck().await;
-
-                    next_stuck_reset_at =
-                        schedule_at(now, STUCK_RESET_INTERVAL);
-                }
-
-                if now >= next_dead_purge_at {
-                    //
-                    self.log_purge_dead().await;
-
-                    next_dead_purge_at = schedule_at(now, DEAD_PURGE_INTERVAL);
-                }
-
-                let reservations = worker_sends
-                    .iter()
-                    .filter_map(|worker| {
-                        worker.acquire().map(|permit| (worker, permit))
-                    })
-                    .collect::<Vec<_>>();
-
-                if reservations.is_empty() {
-                    return false;
-                }
-
-                let deadline = Instant::now() + EXECUTION_TIMEOUT;
-
-                match self.poll(reservations.len()).await {
-                    //
-                    Ok(local_messages) => Self::dispatch_local_messages(
-                        reservations,
-                        local_messages,
-                        deadline,
-                    ),
-
-                    Err(error) => {
-                        //
-                        tracing::error!(err = ?error, "prom claim failed");
-
-                        false
-                    }
-                }
-            };
-
-            let dispatched = timeout(POLL_INTERVAL, maintenance_and_poll)
-                .await
-                .unwrap_or_else(|_| {
-                    //
-                    tracing::warn!(
-                        "prom queue maintenance or polling timed out"
-                    );
-
-                    false
-                });
-
-            if dispatched {
-                continue;
-            }
-
-            tokio::select! {
-                //
-                biased;
-
-                () = self.token().cancelled() => break,
-
-                () = completed.notified() => {}
-
-                () = sleep(POLL_INTERVAL) => {}
-            }
-        }
     }
 }
 

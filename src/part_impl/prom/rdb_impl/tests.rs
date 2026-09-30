@@ -198,6 +198,8 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     use poprako_orchestra::{Nucl as _, OperStep as _};
     use time::Duration;
 
+    let topic = "rdb-test-prom-atomic-topic";
+
     let prefix = "rdb-test-prom-atomic-";
 
     test_shared::reset(&shared, prefix).await;
@@ -209,7 +211,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     let entries = ["rdb-test-prom-atomic-first", "rdb-test-prom-atomic-next"]
         .map(|id| LocalMessageEntryRow {
             f_id: id,
-            f_topic: "rdb-test-prom-atomic-topic",
+            f_topic: topic,
             f_status: LocalMessageStatus::Pending,
             f_claim_token: None,
             f_payload: serde_json::json!({}),
@@ -227,28 +229,27 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     let (nucl, repo) =
         (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new());
 
-    let mut rows = nucl
+    let first = nucl
         .coord(async |context| {
-            let rows = ClaimPending::new(4).step_on(&repo, context).await?;
+            let rows = ClaimPending::new(topic).step_on(&repo, context).await?;
 
             let competing = tokio::time::timeout(
                 std::time::Duration::from_secs(5),
                 nucl.coord(async |context| {
-                    ClaimPending::new(4).step_on(&repo, context).await
+                    ClaimPending::new(topic).step_on(&repo, context).await
                 }),
             )
             .await
             .unwrap()
             .unwrap();
 
-            assert!(competing.is_empty());
+            assert!(competing.is_none());
 
             Ok::<_, BaseError>(rows)
         })
         .await
+        .unwrap()
         .unwrap();
-
-    let first = rows.pop().unwrap();
 
     assert_eq!(first.f_id, "rdb-test-prom-atomic-first");
 
@@ -266,11 +267,10 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
     let next = nucl
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap()
-        .pop()
         .unwrap();
 
     assert_eq!(next.f_id, "rdb-test-prom-atomic-next");
@@ -285,12 +285,12 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
     let rows = nucl
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert!(rows.is_empty());
+    assert!(rows.is_none());
 
     diesel::update(
         t_local_message::table.filter(t_local_message::f_id.eq(&first.f_id)),
@@ -306,11 +306,10 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     for _ in 0..4 {
         let attempt = nucl
             .coord(async |context| {
-                ClaimPending::new(4).step_on(&repo, context).await
+                ClaimPending::new(topic).step_on(&repo, context).await
             })
             .await
             .unwrap()
-            .pop()
             .unwrap();
 
         assert!(tokens.insert(attempt.f_claim_token));
@@ -336,11 +335,10 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     for expected_retries in 2..=4 {
         let attempt = nucl
             .coord(async |context| {
-                ClaimPending::new(4).step_on(&repo, context).await
+                ClaimPending::new(topic).step_on(&repo, context).await
             })
             .await
             .unwrap()
-            .pop()
             .unwrap();
 
         let cutoff = OffsetDateTime::now_utc() - Duration::minutes(15);
@@ -355,7 +353,9 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
         .unwrap();
 
         nucl.coord(async |context| {
-            ResetStuck::new(&cutoff).step_on(&repo, context).await
+            ResetStuck::new(topic, &cutoff)
+                .step_on(&repo, context)
+                .await
         })
         .await
         .unwrap();
@@ -404,6 +404,8 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     use poprako_orchestra::{Nucl as _, OperStep as _};
     use time::Duration;
 
+    let topic = "rdb-test-prom-snapshot-topic";
+
     let prefix = "rdb-test-prom-snapshot-";
 
     test_shared::reset(&shared, prefix).await;
@@ -412,7 +414,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
     let mut entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-snapshot-next",
-        f_topic: "rdb-test-prom-snapshot-topic",
+        f_topic: topic,
         f_status: LocalMessageStatus::Pending,
         f_claim_token: None,
         f_payload: serde_json::json!({}),
@@ -436,6 +438,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
         .coord(async |context| {
             // Establish the older snapshot before inserting a new oldest task.
             let count = t_local_message::table
+                .filter(t_local_message::f_topic.eq(entry.f_topic))
                 .count()
                 .get_result::<i64>(context.conn())
                 .await
@@ -455,14 +458,14 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
             let rows = nucl
                 .coord(async |context| {
-                    ClaimPending::new(4).step_on(&repo, context).await
+                    ClaimPending::new(topic).step_on(&repo, context).await
                 })
                 .await
                 .unwrap();
 
-            assert_eq!(rows[0].f_id, entry.f_id);
+            assert_eq!(rows.unwrap().f_id, entry.f_id);
 
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await;
 
@@ -494,12 +497,12 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
     let rows = nucl
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert_eq!(rows[0].f_id, "rdb-test-prom-snapshot-next");
+    assert_eq!(rows.unwrap().f_id, "rdb-test-prom-snapshot-next");
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }
@@ -515,6 +518,8 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
     use poprako_orchestra::{Nucl as _, OperStep as _};
     use time::Duration;
 
+    let topic = "rdb-test-prom-stale-topic";
+
     let prefix = "rdb-test-prom-stale-";
 
     test_shared::reset(&shared, prefix).await;
@@ -523,7 +528,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
     let entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-stale-attempt",
-        f_topic: "rdb-test-prom-stale-topic",
+        f_topic: topic,
         f_status: LocalMessageStatus::Pending,
         f_claim_token: None,
         f_payload: serde_json::json!({}),
@@ -553,11 +558,10 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
             let attempt = nucl
                 .coord(async |context| {
-                    ClaimPending::new(4).step_on(&repo, context).await
+                    ClaimPending::new(topic).step_on(&repo, context).await
                 })
                 .await
                 .unwrap()
-                .pop()
                 .unwrap();
 
             let later = now + Duration::minutes(5);
@@ -576,7 +580,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
             .await
             .unwrap();
 
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await;
 
@@ -584,12 +588,12 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
     let rows = nucl
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert!(rows.is_empty());
+    assert!(rows.is_none());
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }

@@ -166,12 +166,12 @@ async fn write_chapter_task(
 }
 
 // Claims committed attempts using the production queue repository.
-async fn claim_tasks(
+async fn claim_task(
     nucl: &RdbNucl<Serial>,
-    limit: usize,
-) -> Vec<LocalMessageRow> {
+    topic: &str,
+) -> Option<LocalMessageRow> {
     nucl.coord(async |context| {
-        ClaimPending::new(limit)
+        ClaimPending::new(topic)
             .step_on(&RdbPromRepo::new(), context)
             .await
     })
@@ -265,47 +265,37 @@ async fn fixed_topics_control_concurrency(core: &RdbCore) {
         .unwrap();
     }
 
-    assert!(claim_tasks(&nucl, 0).await.is_empty());
+    let first = claim_task(&nucl, "chapter").await.unwrap();
 
-    let first = claim_tasks(&nucl, 1).await;
+    assert_eq!(first.f_topic, "chapter");
 
-    assert_eq!(first.len(), 1);
+    let second = claim_task(&nucl, "invitation").await.unwrap();
 
-    assert_eq!(first[0].f_topic, "chapter");
+    assert_eq!(second.f_id, "category-invitation-0");
 
-    let second = claim_tasks(&nucl, 4).await;
+    assert!(claim_task(&nucl, "chapter").await.is_none());
 
-    assert_eq!(second.len(), 1);
+    assert!(claim_task(&nucl, "invitation").await.is_none());
 
-    assert_eq!(second[0].f_topic, "invitation");
+    complete_task(&nucl, &first).await;
 
-    assert_eq!(second[0].f_id, "category-invitation-0");
+    let next = claim_task(&nucl, "chapter").await.unwrap();
 
-    assert!(claim_tasks(&nucl, 4).await.is_empty());
+    assert_eq!(next.f_id, "category-task-1");
 
-    complete_task(&nucl, &first[0]).await;
+    complete_task(&nucl, &next).await;
 
-    let next = claim_tasks(&nucl, 4).await;
+    assert!(claim_task(&nucl, "invitation").await.is_none());
 
-    assert_eq!(next.len(), 1);
+    complete_task(&nucl, &second).await;
 
-    assert_eq!(next[0].f_id, "category-task-1");
+    let next = claim_task(&nucl, "invitation").await.unwrap();
 
-    complete_task(&nucl, &next[0]).await;
+    assert_eq!(next.f_id, "category-invitation-1");
 
-    assert!(claim_tasks(&nucl, 4).await.is_empty());
+    assert_eq!(next.f_topic, "invitation");
 
-    complete_task(&nucl, &second[0]).await;
-
-    let next = claim_tasks(&nucl, 4).await;
-
-    assert_eq!(next.len(), 1);
-
-    assert_eq!(next[0].f_id, "category-invitation-1");
-
-    assert_eq!(next[0].f_topic, "invitation");
-
-    complete_task(&nucl, &next[0]).await;
+    complete_task(&nucl, &next).await;
 }
 
 // same_topic_requests_remain_independent(Defer/RetryMessage/ResetStuck)(positive): later tasks never replace or complete an earlier attempt.
@@ -319,17 +309,18 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
 
         write_chapter_task(&nucl, &first_id, action, "first", 0).await;
 
-        let first = claim_tasks(&nucl, 4).await.remove(0);
+        let first = claim_task(&nucl, "chapter").await.unwrap();
 
         write_chapter_task(&nucl, &second_id, action, "second", 0).await;
 
         let second = persisted_task(core, &second_id).await;
 
-        assert!(claim_tasks(&nucl, 4).await.is_empty());
+        assert!(claim_task(&nucl, "chapter").await.is_none());
 
         nucl.coord(async |context| match action {
             "timeout" => {
                 ResetStuck::new(
+                    "chapter",
                     &(OffsetDateTime::now_utc() + Duration::seconds(1)),
                 )
                 .step_on(&RdbPromRepo::new(), context)
@@ -359,11 +350,9 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
 
         assert_eq!(persisted_task(core, &second_id).await, second);
 
-        let attempts = claim_tasks(&nucl, 4).await;
+        let attempt = claim_task(&nucl, "chapter").await.unwrap();
 
-        assert_eq!(attempts.len(), 1);
-
-        assert_eq!(attempts[0].f_id, first_id);
+        assert_eq!(attempt.f_id, first_id);
 
         complete_task(&nucl, &first).await;
 
@@ -372,15 +361,13 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
             "local_message_status:processing"
         );
 
-        complete_task(&nucl, &attempts[0]).await;
+        complete_task(&nucl, &attempt).await;
 
-        let attempts = claim_tasks(&nucl, 4).await;
+        let attempt = claim_task(&nucl, "chapter").await.unwrap();
 
-        assert_eq!(attempts.len(), 1);
+        assert_eq!(attempt.f_id, second_id);
 
-        assert_eq!(attempts[0].f_id, second_id);
-
-        complete_task(&nucl, &attempts[0]).await;
+        complete_task(&nucl, &attempt).await;
     }
 }
 
@@ -417,7 +404,7 @@ async fn same_topic_batch_is_transactional(core: &RdbCore) {
 
     assert!(rolled_back.is_err());
 
-    assert!(claim_tasks(&nucl, 4).await.is_empty());
+    assert!(claim_task(&nucl, "chapter").await.is_none());
 
     nucl.coord(async |context| {
         DeferBatch::new(&tasks)
@@ -428,15 +415,13 @@ async fn same_topic_batch_is_transactional(core: &RdbCore) {
     .unwrap();
 
     for id in ids {
-        let rows = claim_tasks(&nucl, 4).await;
+        let row = claim_task(&nucl, "chapter").await.unwrap();
 
-        assert_eq!(rows.len(), 1);
+        assert_eq!(row.f_id, id);
 
-        assert_eq!(rows[0].f_id, id);
+        assert!(claim_task(&nucl, "chapter").await.is_none());
 
-        assert!(claim_tasks(&nucl, 4).await.is_empty());
-
-        complete_task(&nucl, &rows[0]).await;
+        complete_task(&nucl, &row).await;
     }
 }
 

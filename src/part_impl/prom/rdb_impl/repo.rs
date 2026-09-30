@@ -13,7 +13,9 @@ pub mod tests;
 
 use diesel::dsl::{exists, not};
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-use diesel::{NullableExpressionMethods as _, define_sql_function};
+use diesel::{
+    NullableExpressionMethods as _, OptionalExtension as _, define_sql_function,
+};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Oper, Step};
 use time::OffsetDateTime;
@@ -31,19 +33,19 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-/// Atomically claims at most the available execution capacity, one per topic.
+/// Atomically claims the oldest visible pending message in one topic.
 /// Serializable transactions prevent competing claims for the same topic.
 #[derive(Oper)]
-#[oper(output = Vec<LocalMessageRow>)]
-pub struct ClaimPending {
-    /// Maximum number of attempts the consumer can start immediately.
-    limit: usize,
+#[oper(output = Option<LocalMessageRow>)]
+pub struct ClaimPending<'a> {
+    /// Queue whose messages this consumer may read and claim.
+    topic: &'a str,
 }
 
-impl ClaimPending {
-    /// Reserves no more work than the consumer can execute.
-    pub const fn new(limit: usize) -> Self {
-        Self { limit }
+impl<'a> ClaimPending<'a> {
+    /// Reserves one attempt exclusively from the requested topic.
+    pub const fn new(topic: &'a str) -> Self {
+        Self { topic }
     }
 }
 
@@ -138,14 +140,16 @@ impl<'a> RetryMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct ResetStuck<'a> {
+    /// Queue whose expired attempts may be recovered.
+    topic: &'a str,
     /// Cutoff timestamp; any record stuck in Processing before this is reset.
     before: &'a OffsetDateTime,
 }
 
 impl<'a> ResetStuck<'a> {
     /// Builds an operation that resets messages stuck before the cutoff.
-    pub const fn new(before: &'a OffsetDateTime) -> Self {
-        Self { before }
+    pub const fn new(topic: &'a str, before: &'a OffsetDateTime) -> Self {
+        Self { topic, before }
     }
 }
 
@@ -153,14 +157,16 @@ impl<'a> ResetStuck<'a> {
 #[derive(Oper)]
 #[oper(output = usize)]
 pub struct PurgeDead<'a> {
+    /// Queue whose dead messages may be purged.
+    topic: &'a str,
     /// Cutoff timestamp for dead records to purge.
     dead_before: &'a OffsetDateTime,
 }
 
 impl<'a> PurgeDead<'a> {
     /// Builds a dead-message purge cutoff.
-    pub const fn new(dead_before: &'a OffsetDateTime) -> Self {
-        Self { dead_before }
+    pub const fn new(topic: &'a str, dead_before: &'a OffsetDateTime) -> Self {
+        Self { topic, dead_before }
     }
 }
 
@@ -173,11 +179,9 @@ define_sql_function! {
 #[instrument(level = "info", skip_all)]
 async fn claim_pending(
     conn: &mut RdbConn,
-    limit: usize,
-) -> BaseRest<Vec<LocalMessageRow>> {
+    topic: &str,
+) -> BaseRest<Option<LocalMessageRow>> {
     //
-    let limit = i64::try_from(limit).unwrap_or(i64::MAX);
-
     let now = OffsetDateTime::now_utc();
 
     let (pending, processing, locked) = diesel::alias!(
@@ -187,18 +191,15 @@ async fn claim_pending(
     );
 
     let active_topic = processing
-        .filter(
-            processing
-                .field(t_local_message::f_topic)
-                .eq(pending.field(t_local_message::f_topic)),
-        )
+        .filter(processing.field(t_local_message::f_topic).eq(topic))
         .filter(
             processing
                 .field(t_local_message::f_status)
                 .eq(LocalMessageStatus::Processing.as_str()),
         );
 
-    let first_per_topic = pending
+    let first_pending = pending
+        .filter(pending.field(t_local_message::f_topic).eq(topic))
         .filter(
             pending
                 .field(t_local_message::f_status)
@@ -206,28 +207,24 @@ async fn claim_pending(
         )
         .filter(pending.field(t_local_message::f_visible_at).le(now))
         .filter(not(exists(active_topic)))
-        .distinct_on(pending.field(t_local_message::f_topic))
         .order_by((
-            pending.field(t_local_message::f_topic),
             pending.field(t_local_message::f_created_at),
             pending.field(t_local_message::f_id),
         ))
+        .limit(1)
         .select(pending.field(t_local_message::f_id));
 
     let claim_ids = locked
-        .filter(locked.field(t_local_message::f_id).eq_any(first_per_topic))
-        .order_by((
-            locked.field(t_local_message::f_visible_at),
-            locked.field(t_local_message::f_created_at),
-            locked.field(t_local_message::f_id),
-        ))
-        .limit(limit)
+        .filter(locked.field(t_local_message::f_topic).eq(topic))
+        .filter(locked.field(t_local_message::f_id).eq_any(first_pending))
         .select(locked.field(t_local_message::f_id))
         .for_update()
         .skip_locked();
 
-    let rows = diesel::update(
-        t_local_message::table.filter(t_local_message::f_id.eq_any(claim_ids)),
+    let row = diesel::update(
+        t_local_message::table
+            .filter(t_local_message::f_topic.eq(topic))
+            .filter(t_local_message::f_id.eq_any(claim_ids)),
     )
     .set((
         t_local_message::f_status.eq(LocalMessageStatus::Processing.as_str()),
@@ -242,11 +239,12 @@ async fn claim_pending(
         t_local_message::f_claim_token.assume_not_null(),
         t_local_message::f_created_at,
     ))
-    .load::<LocalMessageRow>(conn)
+    .get_result::<LocalMessageRow>(conn)
     .await
+    .optional()
     .map_err(diesel)?;
 
-    accept(rows)
+    accept(row)
 }
 
 // Implements complete message.
@@ -340,11 +338,13 @@ async fn retry_message(
 #[instrument(level = "info", skip_all)]
 async fn reset_stuck(
     conn: &mut RdbConn,
+    topic: &str,
     before: &OffsetDateTime,
 ) -> BaseRest<()> {
     //
     diesel::update(
         t_local_message::table
+            .filter(t_local_message::f_topic.eq(topic))
             .filter(
                 t_local_message::f_status
                     .eq(LocalMessageStatus::Processing.as_str()),
@@ -364,6 +364,7 @@ async fn reset_stuck(
 
     diesel::update(
         t_local_message::table
+            .filter(t_local_message::f_topic.eq(topic))
             .filter(
                 t_local_message::f_status
                     .eq(LocalMessageStatus::Processing.as_str()),
@@ -390,11 +391,13 @@ async fn reset_stuck(
 #[instrument(level = "info", skip_all)]
 async fn purge_dead(
     conn: &mut RdbConn,
+    topic: &str,
     dead_before: &OffsetDateTime,
 ) -> BaseRest<usize> {
     //
     let purged_count = diesel::delete(
         t_local_message::table
+            .filter(t_local_message::f_topic.eq(topic))
             .filter(
                 t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
             )
@@ -424,7 +427,7 @@ impl RdbPromRepo {
     }
 }
 
-impl<L> Step<ClaimPending, RdbContext<L>> for RdbPromRepo
+impl<'a, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<Serial>,
 {
@@ -439,9 +442,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &ClaimPending,
-    ) -> BaseRest<Vec<LocalMessageRow>> {
-        claim_pending(context.conn(), oper.limit).await
+        oper: &ClaimPending<'a>,
+    ) -> BaseRest<Option<LocalMessageRow>> {
+        claim_pending(context.conn(), oper.topic).await
     }
 }
 
@@ -527,7 +530,7 @@ where
         context: &mut RdbContext<L>,
         oper: &ResetStuck<'a>,
     ) -> BaseRest<()> {
-        reset_stuck(context.conn(), oper.before).await
+        reset_stuck(context.conn(), oper.topic, oper.before).await
     }
 }
 
@@ -548,6 +551,6 @@ where
         context: &mut RdbContext<L>,
         oper: &PurgeDead<'a>,
     ) -> BaseRest<usize> {
-        purge_dead(context.conn(), oper.dead_before).await
+        purge_dead(context.conn(), oper.topic, oper.dead_before).await
     }
 }
