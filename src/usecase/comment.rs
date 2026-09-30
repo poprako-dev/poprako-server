@@ -52,10 +52,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-member-required"),
+        ));
     };
 
     comment_perm_complex::ensure_user_can_list_infos(&member_info)?;
@@ -91,10 +91,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-member-required"),
+        ));
     };
 
     comment_perm_complex::ensure_user_can_create(&member_info)?;

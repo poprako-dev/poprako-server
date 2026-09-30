@@ -312,10 +312,10 @@ where
 {
     if token.user_id != id {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-forbidden"),
+        ));
     }
 
     // SAFETY: This is an optimistic exact-generation transition. It does not
@@ -331,8 +331,11 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    marked.then_some(()).ok_or_else(|| BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-stale-avatar-upload"),
+    marked.then_some(()).ok_or_else(|| {
+        //
+        BaseError::expected(
+            ExpectedVariant::Args,
+            trl("error-stale-avatar-upload"),
+        )
     })
 }

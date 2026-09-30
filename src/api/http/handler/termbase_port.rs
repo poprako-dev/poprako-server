@@ -4,9 +4,8 @@
 // Tests for native terminology-base query and wire contracts.
 mod tests;
 
-use axum::Json;
 use axum::body::{Body, Bytes};
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, State};
 use axum::http::StatusCode;
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::response::Response;
@@ -15,6 +14,8 @@ use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
+
+use crate::api::http::handler::extract::{Json, Path, Query};
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;

@@ -23,6 +23,10 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTextTransform, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
+
+#[cfg(feature = "swagger")]
+use crate::util::patch_input::PatchInput;
+
 use crate::value::unit::{MAX_UNIT_TRANSFORM_COUNT, UnitTextPart};
 
 /// Input parameters for listing visible Units under one Page.
@@ -219,7 +223,7 @@ pub enum UnitEditInstr {
         #[serde(default)]
         #[cfg_attr(
             feature = "swagger",
-            schema(value_type = Option<String>)
+            schema(value_type = Option<PatchInput<String>>)
         )]
         next_id: Patch<String>,
 
@@ -237,14 +241,14 @@ pub enum UnitEditInstr {
         #[serde(default)]
         #[cfg_attr(
             feature = "swagger",
-            schema(value_type = Option<UnitTranslationInstr>)
+            schema(value_type = Option<PatchInput<UnitTranslationInstr>>)
         )]
         translation: Patch<UnitTranslationInstr>,
         /// Three-state revision patch.
         #[serde(default)]
         #[cfg_attr(
             feature = "swagger",
-            schema(value_type = Option<UnitRevisionInstr>)
+            schema(value_type = Option<PatchInput<UnitRevisionInstr>>)
         )]
         revision: Patch<UnitRevisionInstr>,
     },

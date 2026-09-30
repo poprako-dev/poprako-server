@@ -1,10 +1,10 @@
 //! Workset handlers: create, list, read, update, and delete.
 
-use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
+use crate::api::http::handler::extract::{Json, Path, Query};
 use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };

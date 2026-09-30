@@ -53,10 +53,7 @@ pub fn check_join_role(
         //
         let err_message = trl("error-chapter-role-not-assignable");
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(BaseError::expected(ExpectedVariant::Args, err_message));
     }
 
     if !member_info.roles.contains_mask(roles) {

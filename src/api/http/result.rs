@@ -76,6 +76,14 @@ impl HttpError {
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
     pub fn unprocessable(message: &str) -> Self {
+        //
+        tracing::warn!(
+            status = 422,
+            err_variant = "PathBodyMismatch",
+            err_message = message,
+            "HTTP argument error",
+        );
+
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: nonzero_code(7),

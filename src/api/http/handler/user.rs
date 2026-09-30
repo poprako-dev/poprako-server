@@ -1,10 +1,10 @@
 //! User handlers: profile read/update, deletion, and avatar upload flow.
 
-use axum::Json;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
+use crate::api::http::handler::extract::{Json, Path};
 use crate::api::http::handler::util::{
     ensure_current_user, ensure_path_matches_body_id,
 };

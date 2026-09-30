@@ -167,11 +167,29 @@ where
 /// Maps and traces a Diesel adapter failure.
 pub fn diesel_err(source: DieselError) -> ObjDeptError {
     //
-    tracing::error!(
-        operation = "access_obj_dept_rdb",
-        sdk_err = ?source,
-        "Diesel SDK error",
-    );
+    match &source {
+        //
+        DieselError::DatabaseError(
+            DatabaseErrorKind::SerializationFailure,
+            _,
+        ) => {
+            //
+            tracing::warn!(
+                operation = "access_obj_dept_rdb",
+                sdk_err = ?source,
+                "retryable Diesel SDK error",
+            );
+        }
+
+        _ => {
+            //
+            tracing::error!(
+                operation = "access_obj_dept_rdb",
+                sdk_err = ?source,
+                "Diesel SDK error",
+            );
+        }
+    }
 
     match source {
         //
@@ -194,13 +212,15 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
     //
     match source {
         //
-        RdbError::PoolBuild { source } => ObjDeptError::Retryable {
-            message: format!("failed to build RDB pool: {}", source),
-        },
+        RdbError::PoolBuild { source } => ObjDeptError::retryable(format!(
+            "failed to build RDB pool: {}",
+            source
+        )),
 
-        RdbError::PoolGet { message } => ObjDeptError::Retryable {
-            message: format!("failed to acquire RDB connection: {}", message),
-        },
+        RdbError::PoolGet { message } => ObjDeptError::retryable(format!(
+            "failed to acquire RDB connection: {}",
+            message
+        )),
 
         RdbError::PoolWaitTimeout => ObjDeptError::Unavailable {
             message: "timed out waiting for an RDB connection".into(),

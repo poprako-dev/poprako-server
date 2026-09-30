@@ -1,6 +1,5 @@
 //! Authentication handlers: register, login, and logout.
 
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use cookie::time::Duration;
@@ -8,6 +7,7 @@ use cookie::{Cookie, SameSite};
 use tracing::instrument;
 
 use crate::api::http::auth::AUTH_COOKIE_NAME;
+use crate::api::http::handler::extract::Json;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;

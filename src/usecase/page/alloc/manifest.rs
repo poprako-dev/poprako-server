@@ -336,10 +336,10 @@ fn ensure_retained_obj(
     //
     let Some(obj_meta) = obj_meta else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: format!("page {} requires a new upload", page_info.id),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Args,
+            format!("page {} requires a new upload", page_info.id),
+        ));
     };
 
     let same_hash = obj_meta.hash.as_slice() == page_spec.image_hash.as_bytes();
@@ -348,10 +348,10 @@ fn ensure_retained_obj(
         //
         (true, true) => accept(()),
 
-        _ => Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: format!("page {} requires a new upload", page_info.id),
-        }),
+        _ => Err(BaseError::expected(
+            ExpectedVariant::Args,
+            format!("page {} requires a new upload", page_info.id),
+        )),
     }
 }
 

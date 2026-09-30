@@ -43,9 +43,9 @@ pub fn ensure_url_spec(spec: ObjUrlSpec) -> ObjDeptRest<()> {
     //
     if spec.is_empty() {
         //
-        return Err(ObjDeptError::Invalid {
-            message: "at least one object URL must be selected".into(),
-        });
+        return Err(ObjDeptError::invalid(
+            "at least one object URL must be selected".into(),
+        ));
     }
 
     Ok(())

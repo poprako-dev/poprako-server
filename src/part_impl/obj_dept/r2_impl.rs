@@ -139,7 +139,7 @@ impl ObjDeptPoolView for R2ObjDeptPool {
 
             Err(err) => {
                 //
-                tracing::error!(
+                tracing::warn!(
                     operation = "object_exists",
                     sdk_err = ?err,
                     "R2 SDK request error",
@@ -170,8 +170,8 @@ impl ObjDeptPool for R2ObjDeptPool {
             OffsetDateTime::from(signed_at + PUT_SIGNED_EXPIRATION);
 
         let (content_length, presigning_config) = (
-            i64::try_from(byte_len).map_err(|_| ObjDeptError::Invalid {
-                message: "object byte length exceeds i64".into(),
+            i64::try_from(byte_len).map_err(|_| {
+                ObjDeptError::invalid("object byte length exceeds i64".into())
             })?,
             PresigningConfig::builder()
                 .expires_in(PUT_SIGNED_EXPIRATION)
@@ -202,7 +202,7 @@ impl ObjDeptPool for R2ObjDeptPool {
             .await
             .map_err(|err| {
                 //
-                tracing::error!(
+                tracing::warn!(
                     operation = "gen_obj_slot",
                     sdk_err = ?err,
                     "R2 SDK presigning error",
@@ -252,7 +252,7 @@ impl ObjDeptPool for R2ObjDeptPool {
             .map(|_| ())
             .map_err(|err| {
                 //
-                tracing::error!(
+                tracing::warn!(
                     operation = "delete_object",
                     sdk_err = ?err,
                     "R2 SDK request error",

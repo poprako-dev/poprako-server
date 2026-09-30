@@ -234,7 +234,5 @@ for_each_obj!(implement_mock_obj_dept_from_manifest);
 
 // Builds a stable invalid-key error at the concrete mapping boundary.
 fn invalid_key(kind: &str) -> ObjDeptError {
-    ObjDeptError::Invalid {
-        message: format!("invalid {} physical key", kind),
-    }
+    ObjDeptError::invalid(format!("invalid {} physical key", kind))
 }

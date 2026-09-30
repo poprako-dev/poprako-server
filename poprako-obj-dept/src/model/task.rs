@@ -51,9 +51,7 @@ pub fn validate_task(task: &ObjDeptPromTask) -> ObjDeptRest<()> {
         //
         (true, true, true) => Ok(()),
 
-        _ => Err(ObjDeptError::Invalid {
-            message: "invalid object task envelope".into(),
-        }),
+        _ => Err(ObjDeptError::invalid("invalid object task envelope".into())),
     }
 }
 
@@ -93,9 +91,9 @@ impl ObjDeptPromTask {
         //
         let Ok(ver) = u32::try_from(self.ver) else {
             //
-            return Err(ObjDeptError::Invalid {
-                message: "object task ver is outside u32".into(),
-            });
+            return Err(ObjDeptError::invalid(
+                "object task ver is outside u32".into(),
+            ));
         };
 
         Ok(ObjKey {

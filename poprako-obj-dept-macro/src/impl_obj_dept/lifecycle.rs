@@ -158,9 +158,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 }) {
                     //
                     return Err(
-                        ::poprako_obj_dept::rest::ObjDeptError::Invalid {
-                            message: "duplicate object slot id".into(),
-                        },
+                        ::poprako_obj_dept::rest::ObjDeptError::invalid("duplicate object slot id".into()),
                     );
                 }
 

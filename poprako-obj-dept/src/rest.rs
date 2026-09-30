@@ -4,6 +4,21 @@ use std::fmt::{Display, Formatter, Result as FmtRest};
 /// Rest returned by `ObjDept` operations.
 pub type ObjDeptRest<T> = std::result::Result<T, ObjDeptError>;
 
+// Record safe diagnostics without introducing delivery-layer dependencies.
+#[track_caller]
+fn record_client_error(variant: &str, message: &str) {
+    //
+    let origin = std::panic::Location::caller();
+
+    tracing::warn!(
+        err_variant = variant,
+        err_message = message,
+        source_file = origin.file(),
+        source_line = origin.line(),
+        "object operation rejected",
+    );
+}
+
 /// Failure returned by an `ObjDept` operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ObjDeptError {
@@ -36,6 +51,38 @@ pub enum ObjDeptError {
         /// Safe diagnostic for the unrecoverable failure.
         message: String,
     },
+}
+
+impl ObjDeptError {
+    /// Records and constructs an invalid instruction at its source.
+    #[must_use]
+    #[track_caller]
+    pub fn invalid(message: String) -> Self {
+        //
+        record_client_error("Invalid", &message);
+
+        Self::Invalid { message }
+    }
+
+    /// Records and constructs a conflicting operation at its source.
+    #[must_use]
+    #[track_caller]
+    pub fn conflict(message: String) -> Self {
+        //
+        record_client_error("Conflict", &message);
+
+        Self::Conflict { message }
+    }
+
+    /// Records a retryable failure that has not already been traced by its adapter.
+    #[must_use]
+    #[track_caller]
+    pub fn retryable(message: String) -> Self {
+        //
+        record_client_error("Retryable", &message);
+
+        Self::Retryable { message }
+    }
 }
 
 impl Display for ObjDeptError {

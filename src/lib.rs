@@ -94,9 +94,8 @@ pub use crate::config::AppConfig;
 pub use crate::config::http::HttpConfig;
 pub use crate::config::image::ImageConfig;
 pub use crate::config::sched::{SchedConfig, SchedTaskConfig};
-pub use crate::extra::sched::{
-    Sched, SchedDesc, SchedNext, SchedTask, SchedTaskRunner,
-};
+pub use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
+pub use crate::extra::sched::{Sched, SchedDesc};
 pub use crate::extra::subtree_delete::SubtreeDeleteTask;
 pub use crate::harn::Harn;
 pub use crate::log::init_log;

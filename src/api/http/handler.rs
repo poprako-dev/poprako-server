@@ -16,6 +16,8 @@ pub mod chapter_port;
 pub mod comic;
 /// Comment request handlers.
 pub mod comment;
+/// Request extractors with source-level rejection diagnostics.
+pub mod extract;
 /// Health check request handlers.
 pub mod health;
 /// Member request handlers.

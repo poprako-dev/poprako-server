@@ -180,9 +180,7 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::Retryable {
-                        message: "object delete timed out".into(),
-                    }
+                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
                 })??;
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
@@ -207,9 +205,7 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::Retryable {
-                        message: "object check timed out".into(),
-                    }
+                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object check timed out".into())
                 })??;
                 let mut conn = core
                     .get()
@@ -276,9 +272,7 @@ macro_rules! handle_obj_dept_task {
                         )
                         .await
                         .map_err(|_| {
-                            ::poprako_obj_dept::rest::ObjDeptError::Retryable {
-                                message: "object delete timed out".into(),
-                            }
+                            ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
                         })??;
                     }
                     (0, Some(state))
@@ -325,9 +319,7 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::Retryable {
-                        message: "object delete timed out".into(),
-                    }
+                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
                 })??;
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)

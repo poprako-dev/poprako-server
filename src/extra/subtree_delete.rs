@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 use poprako_obj_dept::ObjDept;
 
 use crate::config::sched::SchedTaskConfig;
-use crate::extra::sched::{SchedNext, SchedTask, SchedTaskRunner};
+use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
 use crate::part::obj_dept::{
     ChapterArtwork, ComicCover, PageImage, TeamAvatar,
 };

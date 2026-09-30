@@ -17,7 +17,11 @@ pub async fn rate_limit(request: Request, next: Next) -> Response {
     //
     if limiter().check().is_err() {
         //
-        tracing::warn!(uri = %request.uri(), "rate limit exceeded");
+        tracing::warn!(
+            status = 429,
+            uri = request.uri().path(),
+            "rate limit exceeded"
+        );
 
         return StatusCode::TOO_MANY_REQUESTS.into_response();
     }

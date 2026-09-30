@@ -35,10 +35,13 @@ fields are rejected.
     {
       "edit": "patch",
       "id": "unit-a",
-      "next_id": null,
+      "next_id": { "type": "clear" },
       "revision": {
-        "is_proofread": true,
-        "proofread_text": "proofread"
+        "type": "assign",
+        "value": {
+          "is_proofread": true,
+          "proofread_text": "proofread"
+        }
       }
     },
     {
@@ -76,8 +79,8 @@ authenticated token and are not accepted from the client.
 
 ## Ordering and visibility
 
-`next_id` identifies the Unit before which the edited Unit is placed. A null
-successor places it at the tail. Patch first removes the target from the
+`next_id` identifies the Unit before which the edited Unit is placed. A Create with a null
+successor or a Patch with `{ "type": "clear" }` places it at the tail. Patch first removes the target from the
 complete linked list, then inserts it at the requested position. Patching a
 hidden Unit restores it; deleting an unknown Unit or using an invalid anchor
 returns 422.

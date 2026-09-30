@@ -11,12 +11,11 @@ use async_trait::async_trait;
 use tokio::time::{Instant, advance};
 use tokio_util::sync::CancellationToken;
 
+use crate::config::sched::SchedTaskConfig;
 use crate::result::{BaseError, BaseRest};
 
-use super::{
-    Sched, SchedConfig, SchedDesc, SchedNext, SchedTask, SchedTaskConfig,
-    SchedTaskRunner,
-};
+use super::task::{SchedNext, SchedTask, SchedTaskRunner};
+use super::{Sched, SchedConfig, SchedDesc};
 
 #[derive(Clone, Copy)]
 enum Action {

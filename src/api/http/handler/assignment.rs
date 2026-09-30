@@ -1,11 +1,10 @@
 //! Assignment handlers: list, join, role update, and deletion.
 
-use axum::Json;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, State};
 use axum::http::StatusCode;
-use axum_extra::extract::Query;
 use tracing::instrument;
 
+use crate::api::http::handler::extract::{Json, MultiQuery as Query, Path};
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]

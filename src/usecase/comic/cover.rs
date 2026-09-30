@@ -55,8 +55,11 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    marked.then_some(()).ok_or_else(|| BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-stale-cover-upload"),
+    marked.then_some(()).ok_or_else(|| {
+        //
+        BaseError::expected(
+            ExpectedVariant::Args,
+            trl("error-stale-cover-upload"),
+        )
     })
 }
