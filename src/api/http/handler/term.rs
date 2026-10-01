@@ -1,6 +1,6 @@
 //! Terminology-entry handlers.
 
-use axum::extract::{Extension, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -8,7 +8,6 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
-use crate::api::http::handler::extract::{Json, Path, Query};
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]

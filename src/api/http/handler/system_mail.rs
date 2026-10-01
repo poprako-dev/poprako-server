@@ -1,10 +1,8 @@
 //! System mail handlers: list and mark-read.
 
-use axum::extract::{Extension, State};
+use axum::extract::{Extension, Json, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
-
-use crate::api::http::handler::extract::{Json, Query};
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;

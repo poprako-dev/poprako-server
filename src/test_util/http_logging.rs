@@ -10,9 +10,16 @@ use tower::ServiceExt as _;
 use tracing::instrument::WithSubscriber as _;
 
 use crate::api::http::middleware::trace;
+use crate::log::{RequestLogFormat, request_log_filter};
 
 #[derive(Clone, Default)]
-struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+pub struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+
+impl LogBuffer {
+    pub fn contents(&self) -> String {
+        String::from_utf8(self.0.lock().unwrap().clone()).unwrap()
+    }
+}
 
 impl Write for LogBuffer {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
@@ -37,9 +44,9 @@ pub async fn capture_request(
     let writer = buffer.clone();
 
     let subscriber = tracing_subscriber::fmt()
-        .with_env_filter("info")
+        .with_env_filter(request_log_filter(Some("info")))
         .with_ansi(false)
-        .without_time()
+        .event_format(RequestLogFormat::new(()))
         .with_writer(move || writer.clone())
         .finish();
 
@@ -61,7 +68,7 @@ pub async fn capture_request(
     .with_subscriber(subscriber)
     .await;
 
-    let logs = String::from_utf8(buffer.0.lock().unwrap().clone()).unwrap();
+    let logs = buffer.contents();
 
     (status, body, logs)
 }

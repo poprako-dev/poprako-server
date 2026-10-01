@@ -1,14 +1,12 @@
 //! Assignment invitation handlers: create, list, delete, and join.
 
-use axum::extract::{Extension, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
-
-use crate::api::http::handler::extract::{Json, Path, Query};
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;

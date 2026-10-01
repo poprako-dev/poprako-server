@@ -1,14 +1,13 @@
 //! Comment handlers: create and list.
 
-use axum::extract::{Extension, State};
+use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
-
-use crate::api::http::handler::extract::{Json, MultiQuery as Query, Path};
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
