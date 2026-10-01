@@ -50,12 +50,10 @@ where
     K: KeyMap<Img = String>,
 {
     //
-    let ver = u32::try_from(row.ver).map_err(|_| {
-        //
-        ObjDeptError::Unrecoverable {
+    let ver =
+        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
             message: "object ver is outside u32".into(),
-        }
-    })?;
+        })?;
 
     match (row.key, row.f_is_uploaded, row.hash, row.ext) {
         //
@@ -108,11 +106,8 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
                 }
             }
 
-            u32::try_from(row.ver).map_err(|_| {
-                //
-                ObjDeptError::Unrecoverable {
-                    message: "object ver is outside u32".into(),
-                }
+            u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
+                message: "object ver is outside u32".into(),
             })?
         }
 
@@ -147,7 +142,6 @@ where
         (Some(key), Some(_), Some(_), Some(ext)) => {
             //
             let ver = u32::try_from(row.ver).map_err(|_| {
-                //
                 ObjDeptError::Unrecoverable {
                     message: "object ver is outside u32".into(),
                 }
@@ -173,11 +167,29 @@ where
 /// Maps and traces a Diesel adapter failure.
 pub fn diesel_err(source: DieselError) -> ObjDeptError {
     //
-    tracing::error!(
-        operation = "access_obj_dept_rdb",
-        sdk_err = ?source,
-        "Diesel SDK error",
-    );
+    match &source {
+        //
+        DieselError::DatabaseError(
+            DatabaseErrorKind::SerializationFailure,
+            _,
+        ) => {
+            //
+            tracing::warn!(
+                operation = "access_obj_dept_rdb",
+                sdk_err = ?source,
+                "retryable Diesel SDK error",
+            );
+        }
+
+        _ => {
+            //
+            tracing::error!(
+                operation = "access_obj_dept_rdb",
+                sdk_err = ?source,
+                "Diesel SDK error",
+            );
+        }
+    }
 
     match source {
         //
@@ -194,7 +206,7 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
     }
 }
 
-/// Maps and traces an RDB pool failure.
+/// Maps an RDB pool failure already traced by its production adapter.
 #[must_use]
 pub fn rdb_err(source: RdbError) -> ObjDeptError {
     //

@@ -212,10 +212,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     PENDING | PROCESSING => {}
 
                     OPERATOR => {
-                        //
-                        return Err(ObjDeptError::Conflict {
-                            message: "object task requires operator repair".into(),
-                        });
+                        return Err(ObjDeptError::conflict("object task requires operator repair".into()));
                     }
 
                     _ => {

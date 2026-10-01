@@ -1,7 +1,6 @@
 //! Unit handlers: list and save page unit sequences.
 
-use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;

@@ -1,4 +1,6 @@
 //! Long-lived production background jobs.
 
-/// Relational garbage-collection scheduler.
+/// Generic recurring-task scheduler.
 pub mod sched;
+/// Relational hierarchy sweep task injected into the scheduler.
+pub mod subtree_delete;

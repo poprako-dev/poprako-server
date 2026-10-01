@@ -36,7 +36,6 @@ pub struct PageUnitDiffStatsVal {
 impl From<PageUnitDiffStats> for PageUnitDiffStatsVal {
     // Converts the read projection into the serialized response value.
     fn from(model: PageUnitDiffStats) -> Self {
-        //
         Self {
             page_id: model.page_id,
             index: model.index,
@@ -91,7 +90,6 @@ pub struct PageUnitFlaggedStatsVal {
 impl From<PageUnitFlaggedStats> for PageUnitFlaggedStatsVal {
     // Converts the persisted aggregate into its response value.
     fn from(model: PageUnitFlaggedStats) -> Self {
-        //
         Self {
             page_id: model.page_id,
             index: model.index,

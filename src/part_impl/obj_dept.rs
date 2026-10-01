@@ -98,7 +98,6 @@ impl_image_key_map!(
 );
 
 rdb_obj_dept_prom! {
-    //
     RdbObjDeptProm {
         table: t_obj_prom_task,
     }
@@ -150,7 +149,6 @@ where
 {
     /// Returns a read-only projection sharing the injected storage dependencies.
     pub fn view(&self) -> NormObjDeptView<P> {
-        //
         NormObjDeptView {
             core: self.core.clone(),
             pool: self.pool.clone(),
@@ -186,7 +184,6 @@ where
 {
     // Clones the shared object department handle.
     fn clone(&self) -> Self {
-        //
         Self {
             core: self.core.clone(),
             pool: self.pool.clone(),
@@ -237,8 +234,5 @@ for_each_obj!(implement_mock_obj_dept_from_manifest);
 
 // Builds a stable invalid-key error at the concrete mapping boundary.
 fn invalid_key(kind: &str) -> ObjDeptError {
-    //
-    ObjDeptError::Invalid {
-        message: format!("invalid {} physical key", kind),
-    }
+    ObjDeptError::invalid(format!("invalid {} physical key", kind))
 }

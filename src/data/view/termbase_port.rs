@@ -22,7 +22,6 @@ pub struct TermbaseTermView {
 impl From<TermInfo> for TermbaseTermView {
     // Convert persisted term information into portable response content.
     fn from(term_info: TermInfo) -> Self {
-        //
         Self {
             source: term_info.source,
             targets: term_info.targets,

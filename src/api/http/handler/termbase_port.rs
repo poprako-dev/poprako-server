@@ -4,9 +4,8 @@
 // Tests for native terminology-base query and wire contracts.
 mod tests;
 
-use axum::Json;
 use axum::body::{Body, Bytes};
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::response::Response;

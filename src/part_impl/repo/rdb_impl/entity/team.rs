@@ -55,7 +55,6 @@ pub struct TeamAspectRow<'a> {
 
 impl<'a> TeamAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_name: None,
             f_description: None,

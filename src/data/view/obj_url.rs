@@ -12,13 +12,13 @@ use serde::{Serialize, Serializer};
 enum ObjUrlText {
     /// Text with one consumer.
     Owned {
-        // Buffer moved from the generated URL.
+        /// Buffer moved from the generated URL.
         text: String,
     },
 
     /// Text shared by repeated consumers.
     Shared {
-        // Reference-counted owner of the original buffer.
+        /// Reference-counted owner of the original buffer.
         text: Arc<String>,
     },
 }
@@ -32,7 +32,6 @@ pub struct ObjUrlView {
 impl From<String> for ObjUrlView {
     // Moves a single-consumer buffer.
     fn from(text: String) -> Self {
-        //
         Self {
             text: ObjUrlText::Owned { text },
         }
@@ -42,7 +41,6 @@ impl From<String> for ObjUrlView {
 impl From<Arc<String>> for ObjUrlView {
     // Moves a shared buffer handle.
     fn from(text: Arc<String>) -> Self {
-        //
         Self {
             text: ObjUrlText::Shared { text },
         }

@@ -3,6 +3,9 @@
 //! This module currently hosts common value-object helpers that are used by
 //! many layers (model conversion, storage identifiers, and partial updates).
 
+/// Tagged request representation for partial updates.
+pub mod patch_input;
+
 #[cfg(test)]
 mod tests;
 
@@ -10,6 +13,8 @@ use std::env::var;
 use std::sync::OnceLock;
 
 use serde::{Deserialize, Deserializer};
+
+use crate::util::patch_input::PatchInput;
 
 /// Trims leading and trailing Unicode whitespace without allocating a second String.
 pub fn trim_owned(mut value: String) -> String {
@@ -122,30 +127,13 @@ where
     where
         D: Deserializer<'de>,
     {
-        // Discriminant-only tagged representation for Patch deserialization.
-        #[derive(Deserialize)]
-        #[serde(tag = "type", rename_all = "snake_case")]
-        enum PatchVal<T> {
-            /// Explicit clear — discard the current value.
-            Clear,
-
-            /// Explicit assign — replace with the given value.
-            Assign {
-                // Replacement value from the tagged input.
-                value: T,
-            },
-
-            /// Explicit skip or absent — leave the current value unchanged.
-            Skip,
-        }
-
-        match Option::<PatchVal<T>>::deserialize(deserializer)? {
+        match Option::<PatchInput<T>>::deserialize(deserializer)? {
             //
-            Some(PatchVal::Clear) => Ok(Self::Clear),
+            Some(PatchInput::Clear) => Ok(Self::Clear),
 
-            Some(PatchVal::Assign { value }) => Ok(Self::Assign { value }),
+            Some(PatchInput::Assign { value }) => Ok(Self::Assign { value }),
 
-            Some(PatchVal::Skip) | None => Ok(Self::Skip),
+            Some(PatchInput::Skip) | None => Ok(Self::Skip),
         }
     }
 }

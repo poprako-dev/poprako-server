@@ -49,8 +49,8 @@ impl KeyMap for ChapterArtwork {
 
         parsed
             .filter(|(key, ver)| Self::forward(key, *ver) == *value)
-            .ok_or_else(|| ObjDeptError::Invalid {
-                message: "invalid chapter artwork key".into(),
+            .ok_or_else(|| {
+                ObjDeptError::invalid("invalid chapter artwork key".into())
             })
     }
 

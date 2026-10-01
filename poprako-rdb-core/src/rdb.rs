@@ -201,7 +201,6 @@ pub struct RdbContext<L> {
 impl<L> RdbContext<L> {
     /// Builds a context from one acquired connection.
     pub const fn new(conn: RdbPooledConn) -> Self {
-        //
         Self {
             conn,
             level: PhantomData,

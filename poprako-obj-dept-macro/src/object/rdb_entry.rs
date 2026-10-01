@@ -75,7 +75,6 @@ pub fn expand(table: &Path) -> TokenStream {
         impl From<ObjStateRow> for ::poprako_obj_dept::rdb_impl::ObjRdbRow {
             //
             fn from(row: ObjStateRow) -> Self {
-                //
                 Self {
                     ver: row.ver,
                     key: row.key,
@@ -113,7 +112,6 @@ pub fn expand(table: &Path) -> TokenStream {
         impl From<ObjStateEntryRow> for ObjRdbEntry {
             //
             fn from(row: ObjStateEntryRow) -> Self {
-                //
                 Self {
                     id: row.id,
                     row: ::poprako_obj_dept::rdb_impl::ObjRdbRow {

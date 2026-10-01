@@ -51,7 +51,6 @@ impl<'a> ChapterCreation<'a> {
         subtitle: Option<String>,
         preset_assignment_roles: Option<RoleMask>,
     ) -> Self {
-        //
         Self {
             comic_info,
             prev_pinned_chapter,

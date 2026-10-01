@@ -158,9 +158,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 }) {
                     //
                     return Err(
-                        ::poprako_obj_dept::rest::ObjDeptError::Invalid {
-                            message: "duplicate object slot id".into(),
-                        },
+                        ::poprako_obj_dept::rest::ObjDeptError::invalid("duplicate object slot id".into()),
                     );
                 }
 
@@ -346,7 +344,6 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     let pool_slot = pool_slots
                         .remove(key.id.as_str())
                         .ok_or_else(|| {
-                            //
                             ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                                 message: "generated object slot is missing".into(),
                             }

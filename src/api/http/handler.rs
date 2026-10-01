@@ -1,5 +1,9 @@
 //! HTTP request handlers grouped by resource.
 
+#[cfg(test)]
+// Native request extractor regression coverage.
+mod extract;
+
 /// Announcement request handlers.
 pub mod announcement;
 /// Assignment request handlers.

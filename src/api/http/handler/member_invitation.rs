@@ -1,7 +1,6 @@
 //! Member invitation handlers: create, list, role update, and deletion.
 
-use axum::Json;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
 use serde::Deserialize;

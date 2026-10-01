@@ -1,8 +1,11 @@
 // dead_message_purge_preserves_pending_records(PurgeDead)(positive): expired dead records are purged while pending and recent dead records remain.
-// claim_pending_selects_one_visible_message_per_idle_topic(ClaimPending)(positive): polling is fair across topics and skips topics with processing work.
+// claim_pending_selects_one_visible_message_per_idle_topic(ClaimPending)(positive): each claim reads its requested topic and skips processing work in that topic.
 // retry_message_allows_later_topic_message_to_advance(RetryMessage)(positive): delayed retries are equivalent to re-enqueueing behind visible work.
 // wait_message_preserves_retry_budget(RetryMessage)(positive): waiting for external state returns the task to Pending without incrementing its retry counter.
 // stale_attempt_finalization_preserves_recreated_task(CompleteMessage/RetryMessage/FailMessage)(negative): an expired worker claim_token cannot finalize a newer processing attempt or overwrite Dead.
+
+// Verifies topic isolation for claiming, recovery, and retention.
+mod topic_isolation;
 
 use super::*;
 
@@ -29,8 +32,7 @@ const LEASE_PREFIX: &str = "rdb-test-prom-claim_token-";
 // Constant definition for `WAIT_PREFIX`.
 const WAIT_PREFIX: &str = "rdb-test-prom-wait-";
 
-/// Verifies claiming is fair across topics and skips topics with processing
-/// work.
+/// Verifies each topic claims its own oldest visible message independently.
 pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
     shared: RdbCore,
 ) {
@@ -84,24 +86,42 @@ pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
 
     let repo = RdbPromRepo::new();
 
-    let mut rows = RdbNucl::<Serial>::new(shared.clone())
+    let nucl = RdbNucl::<Serial>::new(shared.clone());
+
+    let image = nucl
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new("rdb-test-prom-poll-image")
+                .step_on(&repo, context)
+                .await
+        })
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(image.f_id, "rdb-test-prom-poll-image-first");
+
+    let invitation = nucl
+        .coord(async |context| {
+            ClaimPending::new("rdb-test-prom-poll-invitation")
+                .step_on(&repo, context)
+                .await
+        })
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(invitation.f_id, "rdb-test-prom-poll-invitation");
+
+    let chapter = nucl
+        .coord(async |context| {
+            ClaimPending::new("rdb-test-prom-poll-chapter")
+                .step_on(&repo, context)
+                .await
         })
         .await
         .unwrap();
 
-    rows.retain(|row| row.f_id.starts_with(POLL_PREFIX));
-
-    rows.sort_by(|left, right| left.f_id.cmp(&right.f_id));
-
-    assert_eq!(
-        rows.into_iter().map(|row| row.f_id).collect::<Vec<_>>(),
-        vec![
-            "rdb-test-prom-poll-image-first".to_string(),
-            "rdb-test-prom-poll-invitation".to_string(),
-        ]
-    );
+    assert!(chapter.is_none());
 
     test_shared::cleanup(&shared, POLL_PREFIX)
         .await
@@ -170,21 +190,17 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     .ok()
     .unwrap();
 
-    let rows = RdbNucl::<Serial>::new(shared.clone())
+    let row = RdbNucl::<Serial>::new(shared.clone())
         .coord(async |context| {
-            ClaimPending::new(4).step_on(&repo, context).await
+            ClaimPending::new("rdb-test-prom-poll-retry-image")
+                .step_on(&repo, context)
+                .await
         })
         .await
+        .unwrap()
         .unwrap();
 
-    let rows = rows
-        .into_iter()
-        .filter(|row| row.f_id.starts_with(POLL_PREFIX))
-        .collect::<Vec<_>>();
-
-    assert_eq!(rows.len(), 1);
-
-    assert_eq!(rows[0].f_id, "rdb-test-prom-poll-image-next");
+    assert_eq!(row.f_id, "rdb-test-prom-poll-image-next");
 
     test_shared::cleanup(&shared, POLL_PREFIX)
         .await
@@ -303,10 +319,9 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
         .unwrap();
 
     let old = repo
-        .step(&mut context, &ClaimPending::new(1))
+        .step(&mut context, &ClaimPending::new(entry.f_topic))
         .await
         .unwrap()
-        .pop()
         .unwrap();
 
     repo.step(
@@ -333,10 +348,9 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
         .unwrap();
 
     let current = repo
-        .step(&mut context, &ClaimPending::new(1))
+        .step(&mut context, &ClaimPending::new(entry.f_topic))
         .await
         .unwrap()
-        .pop()
         .unwrap();
 
     assert_ne!(old.f_claim_token, current.f_claim_token);
@@ -387,7 +401,10 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
 
     repo.step(
         &mut context,
-        &ResetStuck::new(&(OffsetDateTime::now_utc() + Duration::seconds(1))),
+        &ResetStuck::new(
+            entry.f_topic,
+            &(OffsetDateTime::now_utc() + Duration::seconds(1)),
+        ),
     )
     .await
     .unwrap();
@@ -400,10 +417,9 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
     .unwrap();
 
     let reclaimed = repo
-        .step(&mut context, &ClaimPending::new(1))
+        .step(&mut context, &ClaimPending::new(entry.f_topic))
         .await
         .unwrap()
-        .pop()
         .unwrap();
 
     assert_ne!(current.f_claim_token, reclaimed.f_claim_token);
@@ -498,7 +514,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
         RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
     let purged_count = repo
-        .step(&mut context, &PurgeDead::new(&dead_before))
+        .step(&mut context, &PurgeDead::new("image", &dead_before))
         .await
         .ok()
         .unwrap();

@@ -1,5 +1,7 @@
 // export_translation(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
+mod visibility;
+
 use super::*;
 
 use time::OffsetDateTime;

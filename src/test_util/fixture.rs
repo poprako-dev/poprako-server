@@ -39,7 +39,6 @@ pub fn credential(user_id: &str, password: &str) -> UserCredential {
 
 /// Builds a [`UserCredential`] that will never match any real password.
 pub fn invalid_credential(user_id: &str) -> UserCredential {
-    //
     UserCredential {
         user_id: user_id.into(),
         password_hash: "invalid-password-hash".into(),

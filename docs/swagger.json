@@ -10680,6 +10680,197 @@
           }
         }
       },
+      "PatchInput_String": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Explicitly discard the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "clear"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Replace the stored value.",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "assign"
+                ]
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Preserve the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "skip"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
+      },
+      "PatchInput_UnitRevisionInstr": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Explicitly discard the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "clear"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Replace the stored value.",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "assign"
+                ]
+              },
+              "value": {
+                "type": "object",
+                "description": "Revision assignment accepted from the client.",
+                "required": [
+                  "is_proofread"
+                ],
+                "properties": {
+                  "is_proofread": {
+                    "type": "boolean",
+                    "description": "Replacement approval state."
+                  },
+                  "proofread_text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Replacement proofread text."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Preserve the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "skip"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
+      },
+      "PatchInput_UnitTranslationInstr": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Explicitly discard the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "clear"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Replace the stored value.",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "assign"
+                ]
+              },
+              "value": {
+                "type": "object",
+                "description": "Translation assignment accepted from the client.",
+                "required": [
+                  "translated_text"
+                ],
+                "properties": {
+                  "translated_text": {
+                    "type": "string",
+                    "description": "Replacement translated text."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Preserve the stored value.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "skip"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
+      },
       "RegisterAuthInstr": {
         "type": "object",
         "description": "Input parameters for user registration.",
@@ -11142,11 +11333,15 @@
                 "description": "Optional review flag replacement; null leaves it unchanged."
               },
               "next_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Three-state linked-list successor patch."
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PatchInput_String",
+                    "description": "Three-state linked-list successor patch."
+                  }
+                ]
               },
               "revision": {
                 "oneOf": [
@@ -11154,7 +11349,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitRevisionInstr",
+                    "$ref": "#/components/schemas/PatchInput_UnitRevisionInstr",
                     "description": "Three-state revision patch."
                   }
                 ]
@@ -11165,7 +11360,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitTranslationInstr",
+                    "$ref": "#/components/schemas/PatchInput_UnitTranslationInstr",
                     "description": "Three-state translation patch."
                   }
                 ]

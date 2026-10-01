@@ -49,7 +49,6 @@ impl AssignmentInfoView {
         user: Option<UserInfoView>,
         chapter: Option<ChapterInfoView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             chapter_id: model.chapter_id,

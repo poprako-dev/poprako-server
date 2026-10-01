@@ -38,6 +38,13 @@ pub async fn check_health(
 ) -> Result<Json<MetricTotal>, StatusCode> {
     //
     if !is_loopback(addr) {
+        //
+        tracing::warn!(
+            status = 404,
+            err_variant = "HealthLoopbackRequired",
+            "health endpoint requires a loopback caller",
+        );
+
         return Err(StatusCode::NOT_FOUND);
     }
 
@@ -68,6 +75,13 @@ pub async fn detailed_metrics(
 ) -> Result<Response, StatusCode> {
     //
     if !is_loopback(addr) {
+        //
+        tracing::warn!(
+            status = 404,
+            err_variant = "MetricsLoopbackRequired",
+            "metrics endpoint requires a loopback caller",
+        );
+
         return Err(StatusCode::NOT_FOUND);
     }
 

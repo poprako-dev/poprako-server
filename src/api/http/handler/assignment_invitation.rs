@@ -1,7 +1,6 @@
 //! Assignment invitation handlers: create, list, delete, and join.
 
-use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;

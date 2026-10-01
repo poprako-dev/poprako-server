@@ -144,10 +144,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-admin-required"),
+        ));
     };
 
     team_perm_complex::ensure_user_can_update_info(&member_info)?;
@@ -214,10 +214,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-admin-required"),
+        ));
     };
 
     team_perm_complex::ensure_user_can_alloc_avatar(&member_info)?;
@@ -277,10 +277,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-admin-required"),
+        ));
     };
 
     team_perm_complex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
@@ -298,8 +298,11 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    marked.then_some(()).ok_or_else(|| BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-stale-avatar-upload"),
+    marked.then_some(()).ok_or_else(|| {
+        //
+        BaseError::expected(
+            ExpectedVariant::Args,
+            trl("error-stale-avatar-upload"),
+        )
     })
 }

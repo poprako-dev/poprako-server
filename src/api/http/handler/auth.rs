@@ -1,7 +1,6 @@
 //! Authentication handlers: register, login, and logout.
 
-use axum::Json;
-use axum::extract::State;
+use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use cookie::time::Duration;
 use cookie::{Cookie, SameSite};

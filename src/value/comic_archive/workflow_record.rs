@@ -147,7 +147,6 @@ impl<'a> From<&'a ChapterWorkflowRecordPayload>
             }
 
             ChapterWorkflowRecordPayload::ArtworkExported { artwork_ver } => {
-                //
                 Self::ArtworkExported {
                     artwork_ver: *artwork_ver,
                 }

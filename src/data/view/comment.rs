@@ -36,7 +36,6 @@ impl CommentInfoView {
     /// Convert a persisted comment row into API output with optional author include.
     /// Converts a comment model into a presentation value.
     pub fn from_model(model: CommentInfo, user: Option<UserInfoView>) -> Self {
-        //
         Self {
             id: model.id,
             team_id: model.team_id,

@@ -37,7 +37,6 @@ impl ListPageUnitInfosVal {
         unit_infos: Vec<UnitInfo>,
         count_metrics: UnitCountMetrics,
     ) -> Self {
-        //
         Self {
             unit_infos: unit_infos
                 .into_iter()
@@ -74,7 +73,6 @@ pub struct SavePageUnitEditsVal {
 impl From<Vec<UnitSaveCreatedUnitId>> for SavePageUnitEditsVal {
     // Convert shared identities into the transport response shape.
     fn from(ids: Vec<UnitSaveCreatedUnitId>) -> Self {
-        //
         Self {
             created_unit_ids: ids
                 .into_iter()

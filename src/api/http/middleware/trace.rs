@@ -73,7 +73,7 @@ fn make_request_span(request: &Request) -> Span {
         "request",
         request_id = %request_id,
         method = %request.method(),
-        uri = %request.uri(),
+        uri = request.uri().path(),
         http_ver = ?request.version(),
         user_agent = %user_agent,
         remote_addr = %remote_addr,

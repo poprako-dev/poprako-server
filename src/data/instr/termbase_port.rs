@@ -23,7 +23,6 @@ pub struct ImportTermInstr {
 impl From<ImportTermInstr> for TermImport {
     // Convert one import entry into the domain write model.
     fn from(instr: ImportTermInstr) -> Self {
-        //
         Self {
             source: instr.source,
             targets: instr.targets,
@@ -47,7 +46,6 @@ pub struct ImportTermbaseInstr {
 impl From<ImportTermbaseInstr> for TermbaseImport {
     // Convert the complete import document into the domain write model.
     fn from(instr: ImportTermbaseInstr) -> Self {
-        //
         Self {
             name: instr.name,
             description: instr.description,

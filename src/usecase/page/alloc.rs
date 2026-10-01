@@ -249,12 +249,10 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
         headers: obj_slot.headers,
     });
 
-    let index = u32::try_from(alloc.index).map_err(|_| {
-        //
-        BaseError::Unrecoverable {
+    let index =
+        u32::try_from(alloc.index).map_err(|_| BaseError::Unrecoverable {
             message: "page index is out of range".into(),
-        }
-    })?;
+        })?;
 
     accept(AllocatedPageVal {
         page_id: alloc.page_id,
@@ -284,10 +282,10 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-page-alloc-role-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-page-alloc-role-required"),
+        ));
     };
 
     page_perm_complex::ensure_user_can_alloc(&assignment_info)

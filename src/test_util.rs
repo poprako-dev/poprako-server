@@ -3,6 +3,8 @@
 mod logging_tests;
 
 pub mod fixture;
+/// HTTP response and tracing capture for boundary regression tests.
+pub mod http_logging;
 
 use time::OffsetDateTime;
 

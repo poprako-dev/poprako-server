@@ -48,7 +48,6 @@ impl MemberInfoView {
         user: Option<UserInfoView>,
         team: Option<TeamInfoView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             user_id: model.user_id,

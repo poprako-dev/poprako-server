@@ -23,17 +23,17 @@ pub type ObjUrlViews = (Option<ObjUrlView>, Option<ObjUrlView>);
 enum CachedObjUrls {
     /// URL text needed by one consumer.
     Single {
-        // Owned origin and thumbnail text.
+        /// Owned origin and thumbnail text.
         urls: ObjUrlViews,
     },
 
     /// URL text shared until its final consumer.
     Repeated {
-        // Number of consumers still awaiting their handles.
+        /// Number of consumers still awaiting their handles.
         remaining: usize,
-        // Shared origin URL buffer.
+        /// Shared origin URL buffer.
         origin: Option<Arc<String>>,
-        // Shared thumbnail URL buffer.
+        /// Shared thumbnail URL buffer.
         thumbnail: Option<Arc<String>>,
     },
 }

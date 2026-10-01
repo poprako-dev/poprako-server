@@ -10,7 +10,7 @@ use poprako_server::{
     AppConfig, AsyncEffectDevelop, EffectActor, Harn, HybNucl, HybRepo,
     JwtAuth, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore, RdbNucl,
     RdbObjDeptProm, RdbProm, RdbPromActor, RdbPromRepo, ReptRead, Sched,
-    Serial,
+    SchedConfig, Serial, SubtreeDeleteTask,
 };
 
 /// Application entry point.
@@ -103,7 +103,14 @@ async fn main() -> anyhow::Result<()> {
                 .await
             }
         }),
-        Sched::new(rept_read_nucl, repo.clone(), obj_dept.clone()),
+        Sched::new(
+            vec![Box::new(SubtreeDeleteTask::new(
+                rept_read_nucl,
+                repo.clone(),
+                obj_dept.clone(),
+            ))],
+            SchedConfig::default(),
+        ),
     );
 
     let (
@@ -114,10 +121,10 @@ async fn main() -> anyhow::Result<()> {
         sched_desc,
     ) = (
         Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop)),
-        obj_dept_actor.run_detach(),
-        effect_actor.run_detach::<RdbContext<ReptRead>>(),
-        prom_actor.run_detach(),
-        sched.run_detach(),
+        obj_dept_actor.run_detached(),
+        effect_actor.run_detached::<RdbContext<ReptRead>>(),
+        prom_actor.run_detached(),
+        sched.run_detached(),
     );
 
     let serve_rest = poprako_server::serve(harn, http_addr).await;
@@ -155,10 +162,10 @@ async fn main() -> anyhow::Result<()> {
     let mut shutdown_err = None;
 
     for (actor, rest) in [
-        ("scheduler", sched_rest),
+        ("sched", sched_rest),
         ("prom", prom_rest),
         ("effect", effect_rest),
-        ("object_dept", obj_dept_rest),
+        ("obj_dept", obj_dept_rest),
     ] {
         //
         if let Err(err) = rest {

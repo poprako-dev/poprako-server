@@ -285,7 +285,6 @@ fn build_assignment_payload(
 ) -> BaseRest<ArchivedAssignmentPayload<'_>> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
-        //
         BaseError::Unrecoverable {
             message: "[comic_archive_complex::build_assignment_payload] assignment user was not loaded".into(),
         }

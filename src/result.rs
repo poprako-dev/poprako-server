@@ -50,6 +50,27 @@ pub enum BaseError {
     },
 }
 
+impl BaseError {
+    /// Constructs and records an expected error at its unlogged source.
+    /// Already-logged errors must retain their variant when propagated.
+    #[must_use]
+    #[track_caller]
+    pub fn expected(variant: ExpectedVariant, message: String) -> Self {
+        //
+        let origin = std::panic::Location::caller();
+
+        tracing::warn!(
+            err_variant = ?variant,
+            err_message = %message,
+            source_file = origin.file(),
+            source_line = origin.line(),
+            "expected application error",
+        );
+
+        Self::Expected { variant, message }
+    }
+}
+
 /// Alias for [`Result`] used at module boundary layers.
 pub type BaseRest<T> = Result<T, BaseError>;
 
@@ -83,13 +104,10 @@ impl From<ObjDeptError> for BaseError {
         //
         match source {
             //
-            ObjDeptError::Invalid { message } => {
-                //
-                Self::Expected {
-                    variant: ExpectedVariant::Args,
-                    message,
-                }
-            }
+            ObjDeptError::Invalid { message } => Self::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            },
 
             ObjDeptError::Conflict { message }
             | ObjDeptError::Retryable { message } => {

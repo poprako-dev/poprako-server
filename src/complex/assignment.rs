@@ -234,7 +234,6 @@ pub fn merge_roles(
     assignment_info: &AssignmentInfo,
     roles: RoleMask,
 ) -> AssignmentRoleRepl {
-    //
     AssignmentRoleRepl {
         id: assignment_info.id.clone(),
         roles: assignment_info.roles.union(roles),

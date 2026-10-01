@@ -1,7 +1,6 @@
 //! Page handlers: list, delete, batch allocation, and single image upload flow.
 
-use axum::Json;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 

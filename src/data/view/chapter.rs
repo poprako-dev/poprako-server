@@ -76,7 +76,6 @@ impl ChapterInfoView {
         comic: Option<ComicInfoView>,
         creator: Option<UserInfoView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             comic_id: model.comic_id,

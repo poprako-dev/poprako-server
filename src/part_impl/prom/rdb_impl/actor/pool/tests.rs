@@ -1,6 +1,9 @@
 use super::*;
 
-use tokio::sync::{Semaphore, mpsc};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc};
+
+// Independent slots exercised by the worker lifecycle tests.
+const WORKER_COUNT: usize = 4;
 
 // Supplies isolated execution guards to lifecycle tests with queued attempts.
 fn permit() -> OwnedSemaphorePermit {

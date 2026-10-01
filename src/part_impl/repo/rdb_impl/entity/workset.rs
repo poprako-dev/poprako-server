@@ -111,7 +111,6 @@ pub struct WorksetAspectRow<'a> {
 
 impl<'a> WorksetAspectRow<'a> {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_name: None,
             f_description: None,

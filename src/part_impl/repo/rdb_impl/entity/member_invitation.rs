@@ -78,7 +78,6 @@ pub struct MemberInvitationEntryRow<'a> {
 
 impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
     fn from(entry: &'a MemberInvitationEntry) -> Self {
-        //
         Self {
             f_id: &entry.id,
             f_inviter_id: &entry.invitor_id,
@@ -108,7 +107,6 @@ pub struct MemberInvitationAspectRow {
 
 impl MemberInvitationAspectRow {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
-        //
         Self {
             f_pending: None,
             f_role_mask: None,

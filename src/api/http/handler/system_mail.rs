@@ -1,7 +1,6 @@
 //! System mail handlers: list and mark-read.
 
-use axum::Json;
-use axum::extract::{Extension, Query, State};
+use axum::extract::{Extension, Json, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 

@@ -41,7 +41,6 @@ impl AnnouncementInfoView {
         model: AnnouncementInfo,
         user: Option<UserInfoView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             team_id: model.team_id,

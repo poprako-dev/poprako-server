@@ -5,6 +5,16 @@ use super::*;
 use poprako_obj_dept::rest::ObjDeptError;
 use serde_json::json;
 
+use axum::Router;
+use axum::body::Body;
+use axum::http::Request;
+use axum::routing::get;
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
+
+use crate::part::auth::TokenAuth as _;
+use crate::part_impl::auth::jwt_impl::JwtAuth;
+use crate::test_util::http_logging::capture_request;
+
 #[test]
 fn http_body_serializes_success_envelope() {
     //
@@ -64,4 +74,85 @@ fn obj_dept_unavailable_error_maps_to_service_unavailable() {
         http_error.message.as_deref(),
         Some(trl("error-unavailable").as_str()),
     );
+}
+
+#[tokio::test]
+async fn application_client_errors_warn_at_source_without_http_duplicates() {
+    for (variant, status, code) in [
+        (ExpectedVariant::Args, StatusCode::UNPROCESSABLE_ENTITY, 2),
+        (ExpectedVariant::Auth, StatusCode::UNAUTHORIZED, 3),
+        (ExpectedVariant::Perm, StatusCode::FORBIDDEN, 4),
+    ] {
+        let router = Router::new().route(
+            "/error",
+            get(move || async move {
+                Err::<(), _>(HttpError::from(BaseError::expected(
+                    variant,
+                    "source diagnostic".into(),
+                )))
+            }),
+        );
+
+        let request = Request::builder()
+            .uri("/error")
+            .body(Body::empty())
+            .unwrap();
+
+        let (actual, body, logs) = capture_request(router, request).await;
+
+        assert_eq!(actual, status);
+
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&body).unwrap()["code"],
+            code
+        );
+
+        assert!(logs.contains("source diagnostic"), "{logs}");
+
+        assert!(logs.contains("source_file="), "{logs}");
+
+        assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
+    }
+}
+
+#[tokio::test]
+async fn sdk_client_errors_keep_original_diagnostics_at_warning_level() {
+    for (uri, status, reason) in [
+        ("/auth", StatusCode::UNAUTHORIZED, "InvalidToken"),
+        ("/conflict", StatusCode::CONFLICT, "serialization failure"),
+        (
+            "/mismatch",
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "path id does not match body id",
+        ),
+    ] {
+        let router = Router::new()
+            .route("/auth", get(|| async {
+                let auth = JwtAuth::new("test-signing-secret", 1).unwrap();
+
+                let source = auth.verify_token("private-invalid-token").err().unwrap();
+
+                Err::<(), _>(HttpError::from(source))
+            }))
+            .route("/conflict", get(|| async {
+                let source = DieselError::DatabaseError(DatabaseErrorKind::SerializationFailure, Box::new("conflicting write".to_owned()));
+
+                Err::<(), _>(HttpError::from(crate::shared::result::diesel(source)))
+            }))
+            .route("/mismatch", get(|| async {
+                crate::api::http::handler::util::ensure_path_matches_body_id("one", "two")
+            }));
+
+        let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+
+        let (actual, _, logs) = capture_request(router, request).await;
+
+        assert_eq!(actual, status);
+
+        assert!(logs.contains(reason), "{logs}");
+
+        assert!(!logs.contains("private-invalid-token"), "{logs}");
+
+        assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
+    }
 }

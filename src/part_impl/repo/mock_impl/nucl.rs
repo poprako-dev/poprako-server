@@ -13,14 +13,12 @@ pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
         std::cmp::Ordering::Greater => {
             //
             let delta = usize::try_from(delta).map_err(|_| {
-                //
                 BaseError::Unrecoverable {
                     message: "signed delta conversion failed".into(),
                 }
             })?;
 
             *value = value.checked_add(delta).ok_or_else(|| {
-                //
                 BaseError::Unrecoverable {
                     message: "counter overflow".into(),
                 }
@@ -36,14 +34,12 @@ pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
             //
             let delta =
                 usize::try_from(delta.unsigned_abs()).map_err(|_| {
-                    //
                     BaseError::Unrecoverable {
                         message: "signed delta conversion failed".into(),
                     }
                 })?;
 
             *value = value.checked_sub(delta).ok_or_else(|| {
-                //
                 BaseError::Unrecoverable {
                     message: "counter underflow".into(),
                 }

@@ -30,7 +30,6 @@ impl<'a> PendingStageStart<'a> {
         actor_user_id: Option<&'a str>,
         origin: ChapterWorkflowRecordOrigin,
     ) -> Self {
-        //
         Self {
             chapter_id,
             actor_user_id,

@@ -39,7 +39,6 @@ pub struct TermInfoView {
 impl From<TermInfo> for TermInfoView {
     // Convert terminology entry persistence model into response value.
     fn from(model: TermInfo) -> Self {
-        //
         Self {
             id: model.id,
             termbase_id: model.termbase_id,

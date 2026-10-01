@@ -8,7 +8,11 @@
 // Versioned API route builders.
 mod v1;
 
+#[cfg(test)]
+mod tests;
+
 use axum::Router;
+use axum::http::StatusCode;
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::routing::get;
 use tower_http::compression::CompressionLayer;
@@ -47,6 +51,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .merge(v1::v1_comment_router())
         .merge(v1::v1_termbase_router())
         .merge(v1::v1_term_router())
+        .method_not_allowed_fallback(method_not_allowed)
         .layer(from_fn_with_state(harn, authorize));
 
     let router = Router::new()
@@ -55,15 +60,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route(
             "/api/health/detailed-metrics",
             get(health::detailed_metrics),
-        )
-        // .layer(from_fn(log_latency))
-        .layer(from_fn(rate_limit))
-        .layer(propagate_request_id())
-        .layer(trace_request())
-        .layer(set_request_id())
-        .layer(from_fn(record_response_metric))
-        .layer(cors())
-        .layer(CompressionLayer::new());
+        );
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger")]
@@ -80,4 +77,37 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     };
 
     router
+        .fallback(not_found)
+        .method_not_allowed_fallback(method_not_allowed)
+        .layer(from_fn(rate_limit))
+        .layer(propagate_request_id())
+        .layer(trace_request())
+        .layer(set_request_id())
+        .layer(from_fn(record_response_metric))
+        .layer(cors())
+        .layer(CompressionLayer::new())
+}
+
+// Records the source of a method mismatch; Axum retains its Allow header.
+async fn method_not_allowed() -> StatusCode {
+    //
+    tracing::warn!(
+        status = 405,
+        err_variant = "MethodNotAllowed",
+        "HTTP method not allowed"
+    );
+
+    StatusCode::METHOD_NOT_ALLOWED
+}
+
+// Records the source of a missing route before returning Axum's empty 404.
+async fn not_found() -> StatusCode {
+    //
+    tracing::warn!(
+        status = 404,
+        err_variant = "RouteNotFound",
+        "HTTP route not found"
+    );
+
+    StatusCode::NOT_FOUND
 }

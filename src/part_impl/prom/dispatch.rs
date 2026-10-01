@@ -106,7 +106,6 @@ fn chapter_flow(
         | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
         Ok(chapter_stage_usecase::RawProvideAdvance::Pending) => {
-            //
             TaskFlow::Wait {
                 err_message: "page objects are pending".into(),
             }

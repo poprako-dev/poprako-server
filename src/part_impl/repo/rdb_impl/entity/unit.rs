@@ -43,7 +43,6 @@ pub struct UnitInfoRow {
 
 impl From<UnitInfoRow> for UnitInfo {
     fn from(row: UnitInfoRow) -> Self {
-        //
         Self {
             id: row.f_id,
             page_id: row.f_page_id,
@@ -177,7 +176,6 @@ pub struct UnitAspectRow<'a> {
 
 impl<'a> UnitAspectRow<'a> {
     pub fn new() -> Self {
-        //
         Self {
             f_next_id: None,
             f_hidden_at: None,

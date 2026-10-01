@@ -112,7 +112,6 @@ impl TokenAuth for JwtAuth {
         let timestamp = now.unix_timestamp();
 
         let issued_at = usize::try_from(timestamp).map_err(|_| {
-            //
             BaseError::Unrecoverable {
                 message: "JWT issue timestamp is outside the supported range"
                     .to_string(),
@@ -129,7 +128,6 @@ impl TokenAuth for JwtAuth {
 
         let expiration =
             usize::try_from(expiration_timestamp).map_err(|_| {
-                //
                 BaseError::Unrecoverable {
                 message:
                     "JWT expiration timestamp is outside the supported range"

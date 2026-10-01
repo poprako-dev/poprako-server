@@ -56,7 +56,6 @@ impl TeamInfoView {
         avatar_url: Option<ObjUrlView>,
         avatar_thumbnail_url: Option<ObjUrlView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             name: model.name,

@@ -1,7 +1,6 @@
 //! Team handlers: CRUD, avatar upload flow, and deletion.
 
-use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 

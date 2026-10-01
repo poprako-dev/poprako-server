@@ -40,10 +40,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-member-required"),
+        ));
     };
 
     team_perm_complex::ensure_user_can_mark_self_online(&member_info)?;
@@ -82,10 +82,10 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
-        });
+        return Err(BaseError::expected(
+            ExpectedVariant::Perm,
+            trl("error-team-member-required"),
+        ));
     };
 
     team_perm_complex::ensure_user_can_list_online_user_ids(&member_info)?;

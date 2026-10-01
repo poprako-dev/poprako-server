@@ -4,8 +4,7 @@
 // Member handler tests validate request parameter shape and response mapping.
 mod tests;
 
-use axum::Json;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
 use serde::Deserialize;

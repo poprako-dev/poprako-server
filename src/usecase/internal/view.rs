@@ -48,7 +48,6 @@ impl ComicListData {
         pinned_chapters: Option<PinnedChapterSnapshot>,
         assignments: Vec<AssignmentInfo>,
     ) -> Self {
-        //
         Self {
             comics,
             pinned_chapters,

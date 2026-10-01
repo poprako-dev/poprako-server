@@ -143,7 +143,6 @@ where
             .filter_map(|page_info| {
                 //
                 raw_ident_by_page_id.get(&page_info.id).map(|raw_ident| {
-                    //
                     ChapterPageRawIdentVal {
                         page_id: page_info.id.clone(),
                         raw_ident: raw_ident.clone(),
@@ -153,23 +152,19 @@ where
             .collect()
     });
 
-    let mut page_views = Vec::with_capacity(page_infos.len());
-
     let mut units_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
 
     let mut ext_by_page_id = HashMap::<String, String>::new();
-
-    let page_ids = page_infos
-        .iter()
-        .map(|page_info| page_info.id.as_str())
-        .collect::<Vec<_>>();
 
     let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    for unit_info in unit_infos {
+    for unit_info in unit_infos
+        .into_iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+    {
         //
         units_by_page_id
             .entry(unit_info.page_id.clone())
@@ -182,41 +177,41 @@ where
         if let Some(obj_meta) = obj_metas.get(&page_info.id) {
             ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext.clone());
         }
+    }
 
-        let unit_infos =
-            units_by_page_id.remove(&page_info.id).unwrap_or_default();
-
-        let unit_views = unit_infos
+    let poprako = formats.includes_poprako().then(|| {
+        //
+        let page_views = page_infos
             .iter()
-            .filter(|unit_info| unit_info.hidden_at.is_none())
-            .enumerate()
-            .map(|(index, unit_info)| {
-                make_unit_export(page_info, index, unit_info)
+            .map(|page_info| {
+                //
+                let unit_views = units_by_page_id
+                    .get(&page_info.id)
+                    .map_or(&[][..], Vec::as_slice)
+                    .iter()
+                    .enumerate()
+                    .map(|(index, unit_info)| {
+                        make_unit_export(page_info, index, unit_info)
+                    })
+                    .collect();
+
+                PageTranslationPortView {
+                    page_id: page_info.id.clone(),
+                    page_index: page_info.index,
+                    units: unit_views,
+                }
             })
             .collect();
 
-        page_views.push(PageTranslationPortView {
-            page_id: page_info.id.clone(),
-            page_index: page_info.index,
-            units: unit_views,
-        });
-
-        let unit_infos = unit_infos
-            .into_iter()
-            .filter(|unit_info| unit_info.hidden_at.is_none())
-            .collect();
-
-        units_by_page_id.insert(page_info.id.clone(), unit_infos);
-    }
-
-    let poprako = ChapterTranslationPortView {
-        chapter_id: chapter_info.id.clone(),
-        chapter_index: chapter_info.index,
-        chapter_subtitle: non_empty(&chapter_info.subtitle),
-        comic_id: chapter_info.comic_id.clone(),
-        comic_title: comic_info.title,
-        pages: page_views,
-    };
+        ChapterTranslationPortView {
+            chapter_id: chapter_info.id.clone(),
+            chapter_index: chapter_info.index,
+            chapter_subtitle: non_empty(&chapter_info.subtitle),
+            comic_id: chapter_info.comic_id.clone(),
+            comic_title: comic_info.title,
+            pages: page_views,
+        }
+    });
 
     let val = ExportChapterTranslationsVal {
         label_plus: formats.includes_label_plus().then(|| {
@@ -228,7 +223,7 @@ where
                 &raw_ident_by_page_id,
             )
         }),
-        poprako: formats.includes_poprako().then_some(poprako),
+        poprako,
         raw_idents,
     };
 
@@ -250,7 +245,6 @@ fn make_unit_export(
     index: usize,
     unit_info: &UnitInfo,
 ) -> UnitTranslationPortView {
-    //
     // Convert one unit into export view fields used by downstream translators.
     UnitTranslationPortView {
         unit_id: unit_info.id.clone(),

@@ -108,7 +108,7 @@ async fn actor_runs_both_loops_immediately_then_waits_thirty_seconds() {
 
     assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 0);
 
-    let actor = actor.run_detach();
+    let actor = actor.run_detached();
 
     yield_until_idle().await;
 
@@ -153,7 +153,7 @@ async fn maintenance_keeps_its_cadence_while_claimed_work_is_busy() {
         }
     });
 
-    let actor = actor.run_detach();
+    let actor = actor.run_detached();
 
     yield_until_idle().await;
 
@@ -210,7 +210,7 @@ async fn join_reports_supervisor_failure() {
     let actor = ObjDeptActor::new(MockProm::with_task(task()), |_task| async {
         Ok(ObjTaskAction::Complete)
     })
-    .run_detach();
+    .run_detached();
 
     actor.task.abort();
 

@@ -294,3 +294,38 @@ fn flagged_transport_defaults_and_types() {
         );
     }
 }
+
+// unit_patch(negative): legacy bare values must never be advertised as valid patches.
+#[test]
+fn patch_rejects_bare_values_and_preserves_null_or_explicit_skip() {
+    for (field, value) in [
+        ("next_id", json!("unit-2")),
+        ("translation", json!({"translated_text": "text"})),
+        ("revision", json!({"is_proofread": false})),
+    ] {
+        let mut payload = json!({"edit": "patch", "id": "unit-1"});
+
+        payload[field] = value;
+
+        assert!(serde_json::from_value::<UnitEditInstr>(payload).is_err());
+    }
+
+    for value in [json!(null), json!({"type": "skip"})] {
+        let payload = json!({
+            "edit": "patch", "id": "unit-1",
+            "next_id": value, "translation": value, "revision": value,
+        });
+
+        let instr = serde_json::from_value::<UnitEditInstr>(payload).unwrap();
+
+        assert!(matches!(
+            instr,
+            UnitEditInstr::Patch {
+                next_id: Patch::Skip,
+                translation: Patch::Skip,
+                revision: Patch::Skip,
+                ..
+            }
+        ));
+    }
+}

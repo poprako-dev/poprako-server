@@ -302,9 +302,12 @@ where
         let imported_page = imported_pages
             .iter()
             .find(|page| page.page_index == page_scope.index)
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-chapter-import-content"),
+            .ok_or_else(|| {
+                //
+                BaseError::expected(
+                    ExpectedVariant::Args,
+                    trl("error-invalid-chapter-import-content"),
+                )
             })?;
 
         let page_import_outcome = replace_page_units(
@@ -459,7 +462,6 @@ where
 
 // Returns the stored counters for a page whose visible Units are unchanged.
 const fn page_unit_count_metrics(page_info: &PageInfo) -> UnitCountMetrics {
-    //
     UnitCountMetrics {
         total: page_info.total_unit_count,
         translated: page_info.translated_unit_count,

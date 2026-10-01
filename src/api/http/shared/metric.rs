@@ -50,7 +50,6 @@ pub struct MetricTotal {
 impl MetricTotal {
     // Builds an empty aggregation snapshot for accumulation.
     fn new() -> Self {
-        //
         Self {
             total: 0,
             average_latency_ms: 0.0,
@@ -77,7 +76,6 @@ pub struct MetricMinute {
 impl MetricMinute {
     // Builds an empty snapshot when a bucket cannot be resolved.
     const fn empty(minute: u64) -> Self {
-        //
         Self {
             minute,
             total: 0,
@@ -142,7 +140,6 @@ struct MetricWindow {
 impl MetricWindow {
     // Creates an initialized window with zeroed buckets.
     fn new() -> Self {
-        //
         Self {
             buckets: std::array::from_fn(|_| {
                 Mutex::new(MetricBucket::default())

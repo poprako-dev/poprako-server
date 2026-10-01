@@ -6,16 +6,13 @@ mod export;
 #[cfg(test)]
 mod tests;
 
-use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::Response;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
-#[cfg(feature = "swagger")]
-use crate::data::val::chapter_port::ExportChapterTranslationsVal;
 
 use crate::api::http::result::{
     Accept as _, HttpError, HttpNoContent, HttpResult, no_content,
@@ -25,6 +22,10 @@ use crate::data::instr::chapter_port::{
     AllocChapterArtworkInstr, ExportChapterTranslationInstr,
     ImportChapterTranslationInstr, MarkChapterArtworkUploadedInstr,
 };
+
+#[cfg(feature = "swagger")]
+use crate::data::val::chapter_port::ExportChapterTranslationsVal;
+
 use crate::data::val::chapter_port::{
     AllocChapterArtworkVal, ExportChapterArtworkVal,
     ImportChapterTranslationVal,

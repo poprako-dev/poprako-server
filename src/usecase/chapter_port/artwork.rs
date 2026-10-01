@@ -128,7 +128,6 @@ where
 
             let artwork_meta =
                 artwork_metas.get(&chapter_info.id).ok_or_else(|| {
-                    //
                     BaseError::Unrecoverable {
                         message: "allocated artwork metadata is missing".into(),
                     }
@@ -338,7 +337,6 @@ where
         })?;
 
     let hash_bytes = artwork_meta.hash.as_slice().try_into().map_err(|_| {
-        //
         BaseError::Unrecoverable {
             message: "invalid stored artwork SHA-256 length".into(),
         }

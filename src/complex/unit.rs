@@ -269,7 +269,6 @@ fn transform_text(
     for (start, end, target) in matches {
         //
         let unchanged = original.get(cursor..start).ok_or_else(|| {
-            //
             BaseError::Unrecoverable {
                 message: "Unit transform text boundary is invalid".into(),
             }
@@ -296,7 +295,6 @@ fn transform_text(
 
 // Build the client-visible error for an invalid Unit operation.
 const fn invalid_unit_oper(err_message: String) -> BaseError {
-    //
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: err_message,

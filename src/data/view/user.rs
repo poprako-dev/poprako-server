@@ -62,7 +62,6 @@ impl UserInfoView {
         avatar_url: Option<ObjUrlView>,
         avatar_thumbnail_url: Option<ObjUrlView>,
     ) -> Self {
-        //
         Self {
             id: model.id,
             nickname: model.nickname,
