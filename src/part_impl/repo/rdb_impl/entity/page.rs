@@ -165,6 +165,7 @@ pub struct PageAspectRow {
 }
 
 impl PageAspectRow {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_index: None,
@@ -175,6 +176,7 @@ impl PageAspectRow {
         }
     }
 
+    #[must_use]
     pub const fn index(mut self, val: i32) -> Self {
         //
         self.f_index = Some(val);
@@ -182,6 +184,7 @@ impl PageAspectRow {
         self
     }
 
+    #[must_use]
     pub const fn total_unit_count(mut self, val: i32) -> Self {
         //
         self.f_total_unit_count = Some(val);
@@ -189,6 +192,7 @@ impl PageAspectRow {
         self
     }
 
+    #[must_use]
     pub const fn translated_unit_count(mut self, val: i32) -> Self {
         //
         self.f_translated_unit_count = Some(val);
@@ -196,6 +200,7 @@ impl PageAspectRow {
         self
     }
 
+    #[must_use]
     pub const fn proofread_unit_count(mut self, val: i32) -> Self {
         //
         self.f_proofread_unit_count = Some(val);

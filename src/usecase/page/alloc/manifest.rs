@@ -19,7 +19,7 @@ use crate::model::write::page::{
 };
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -296,7 +296,7 @@ where
 
     let advance_id = next_snowflake_id();
 
-    let advance_payload = TaskPayload::Chapter {
+    let advance_payload = PromPayload::Chapter {
         payload: ChapterPayload::TryAdvanceRawProvideStage {
             chapter_id: chapter_info.id.clone(),
             actor_user_id: user_id.to_owned(),
@@ -323,7 +323,7 @@ where
 // Builds an internal error for an incomplete page manifest result.
 fn page_manifest_result_missing() -> BaseError {
     BaseError::Unrecoverable {
-        message: "page manifest result is incomplete".into(),
+        msg: "page manifest result is incomplete".into(),
     }
 }
 

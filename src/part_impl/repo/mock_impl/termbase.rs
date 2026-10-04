@@ -117,7 +117,7 @@ fn list_infos(
                             workset_info.id == comic_info.workset_id
                         })
                         .ok_or_else(|| BaseError::Unrecoverable {
-                            message:
+                            msg:
                                 "[list_infos] comic references missing workset"
                                     .into(),
                         })?;

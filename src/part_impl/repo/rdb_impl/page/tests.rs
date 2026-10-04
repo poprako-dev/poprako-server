@@ -96,7 +96,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
             page_infos.into_iter().next().ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "page creation returned no row".into(),
+                    msg: "page creation returned no row".into(),
                 }
             })
         })
@@ -232,7 +232,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             .await?;
 
             Err::<(), BaseError>(BaseError::Unrecoverable {
-                message: "force page-manifest rollback".into(),
+                msg: "force page-manifest rollback".into(),
             })
         })
         .await;

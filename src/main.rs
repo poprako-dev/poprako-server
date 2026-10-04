@@ -6,11 +6,16 @@ use std::num::NonZeroUsize;
 use anyhow::Context as _;
 
 use poprako_obj_dept::actor::ObjDeptActor;
+use poprako_prom::general::actor::PromActor;
+use poprako_prom::general::handler::Dispatcher;
+use poprako_server::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;
+use poprako_server::part_impl::prom::rdb_impl::repo::RdbPromRepo;
+use poprako_server::part_impl::prom::rdb_impl::writer::RdbProm;
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, EffectActor, Harn, HybNucl, HybRepo,
     JwtAuth, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore, RdbNucl,
-    RdbObjDeptProm, RdbProm, RdbPromActor, RdbPromRepo, ReptRead, Sched,
-    SchedConfig, Serial, SubtreeDeleteTask,
+    RdbObjDeptProm, ReptRead, Sched, SchedConfig, Serial, SubtreeDeleteTask,
+    dispatch_prom,
 };
 
 /// Application entry point.
@@ -78,13 +83,20 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let (prom_actor, effect_actor, obj_dept_actor, sched) = (
-        RdbPromActor::new(
-            (nucl.serial().clone(), prom_repo),
-            (
-                rept_read_nucl.clone(),
-                repo.clone(),
-                obj_dept.view(),
-                develop.clone(),
+        PromActor::new(
+            RdbPromDelivery::new(nucl.serial().clone(), prom_repo),
+            Dispatcher::new(
+                (
+                    rept_read_nucl.clone(),
+                    repo.clone(),
+                    obj_dept.view(),
+                    develop.clone(),
+                ),
+                |(nucl, repo, view, develop), payload| async move {
+                    //
+                    dispatch_prom((&nucl, &repo, &view, &develop), payload)
+                        .await
+                },
             ),
         ),
         EffectActor::new(repo.clone(), effect_recv),
@@ -136,16 +148,16 @@ async fn main() -> anyhow::Result<()> {
         obj_dept_actor_desc.cancel_and_join(),
     );
 
-    let mut shutdown_err = None;
-
-    for (actor, rest) in [
+    let shutdown_rest = [
         ("sched", sched_rest),
         ("prom", prom_rest),
         ("effect", effect_rest),
         ("obj_dept", obj_dept_rest),
-    ] {
+    ]
+    .into_iter()
+    .map(|(actor, rest)| {
         //
-        if let Err(err) = rest {
+        rest.map_err(|err| {
             //
             tracing::error!(
                 actor,
@@ -153,20 +165,11 @@ async fn main() -> anyhow::Result<()> {
                 "background supervisor failed"
             );
 
-            shutdown_err.get_or_insert_with(|| {
-                //
-                anyhow::Error::new(err)
-                    .context(format!("{} supervisor failed", actor))
-            });
-        }
-    }
+            anyhow::Error::new(err)
+                .context(format!("{} supervisor failed", actor))
+        })
+    })
+    .fold(Ok(()), Result::and);
 
-    serve_rest?;
-
-    match shutdown_err {
-        //
-        Some(err) => Err(err),
-
-        None => Ok(()),
-    }
+    serve_rest.and(shutdown_rest)
 }

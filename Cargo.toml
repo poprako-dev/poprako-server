@@ -6,6 +6,7 @@ members = [
     "poprako-obj-dept",
     "poprako-obj-dept-macro",
     "poprako-rdb-core",
+    "poprako-prom",
 ]
 default-members = ["."]
 resolver = "3"
@@ -92,6 +93,8 @@ k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
 poprako-obj-dept = { path = "poprako-obj-dept", features = ["rdb_impl"] }
 poprako-rdb-core = { path = "poprako-rdb-core" }
+poprako-orchestra-extra = { version = "0.3.0", features = ["promise"] }
+poprako-prom = { path = "poprako-prom", features = ["rdb_impl"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json.workspace = true
 sha2 = "0.11"
@@ -109,7 +112,6 @@ utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
 poprako-orchestra = { version = "0.6.0", features = ["macro", "oper_ext"] }
-poprako-orchestra-extra = { version = "0.3.0", features = ["promise"] }
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["async_tokio"] }

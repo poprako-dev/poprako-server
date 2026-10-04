@@ -2848,6 +2848,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-prom"
+version = "0.1.0"
+dependencies = [
+ "diesel",
+ "diesel-async",
+ "futures-util",
+ "poprako-orchestra",
+ "poprako-rdb-core",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "poprako-rdb-core"
 version = "0.1.0"
 dependencies = [
@@ -2891,6 +2909,7 @@ dependencies = [
  "poprako-obj-dept",
  "poprako-orchestra",
  "poprako-orchestra-extra",
+ "poprako-prom",
  "poprako-rdb-core",
  "poprako-util",
  "serde",

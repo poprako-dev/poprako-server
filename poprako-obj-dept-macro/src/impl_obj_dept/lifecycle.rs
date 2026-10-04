@@ -65,7 +65,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "object upload mark changed multiple rows".into(),
+                            msg: "object upload mark changed multiple rows".into(),
                         },
                     ),
                 }
@@ -105,7 +105,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "object upload mark changed multiple rows".into(),
+                            msg: "object upload mark changed multiple rows".into(),
                         },
                     ),
                 }
@@ -176,7 +176,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     //
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "object anchor upsert returned incomplete state"
+                            msg: "object anchor upsert returned incomplete state"
                                 .into(),
                         },
                     );
@@ -322,7 +322,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             .ok_or_else(|| {
                                 //
                                 ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                                    message: "generated object slot is missing".into(),
+                                    msg: "generated object slot is missing".into(),
                                 }
                             })?;
 
@@ -345,7 +345,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                         .remove(key.id.as_str())
                         .ok_or_else(|| {
                             ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                                message: "generated object slot is missing".into(),
+                                msg: "generated object slot is missing".into(),
                             }
                         })?;
 

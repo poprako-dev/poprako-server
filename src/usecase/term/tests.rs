@@ -197,8 +197,8 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
-        } if message.contains("200")
+            msg,
+        } if msg.contains("200")
     ));
 
     let snapshot = mock.snapshot();

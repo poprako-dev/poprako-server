@@ -223,11 +223,11 @@ where
     .await?
     .ok_or_else(|| {
         //
-        let err_message = trl("error-chapter-port-import-perm-required");
+        let err_msg = trl("error-chapter-port-import-perm-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             chapter_id,
             user_id = %token.user_id,
             operation = "import chapter translation",
@@ -236,7 +236,7 @@ where
 
         BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         }
     })?;
 

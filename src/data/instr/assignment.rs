@@ -74,23 +74,23 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             matches!(role, RoleField::ADMIN | RoleField::BOT)
         }) {
             //
-            let message = trl("error-chapter-role-not-assignable");
+            let msg = trl("error-chapter-role-not-assignable");
 
-            tracing::warn!(err_variant = ?ExpectedVariant::Args, err_message = %message, "assignment filter requires a worker role");
+            tracing::warn!(err_variant = ?ExpectedVariant::Args, err_msg = %msg, "assignment filter requires a worker role");
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message,
+                msg,
             });
         }
 
         if chapter_id.is_some() == owner_id.is_some() {
             //
-            let err_message = trl("error-chapter-or-user-required");
+            let err_msg = trl("error-chapter-or-user-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
@@ -99,7 +99,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             });
         }
 
@@ -116,11 +116,11 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
         let Some(owner_id) = owner_id else {
             //
-            let err_message = trl("error-chapter-or-user-required");
+            let err_msg = trl("error-chapter-or-user-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
@@ -129,7 +129,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             });
         };
 

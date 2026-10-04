@@ -45,11 +45,11 @@ pub async fn commit(
 
     if updated_comic_count != 1 {
         //
-        let err_message = trl("error-comic-not-found");
+        let err_msg = trl("error-comic-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             comic_id = %comic_archive_entry.record.source_comic_id,
             operation = "commit comic archive",
             "expected comic archive error",
@@ -57,7 +57,7 @@ pub async fn commit(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 

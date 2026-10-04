@@ -144,6 +144,7 @@ pub struct ComicAspectRow<'a> {
 }
 
 impl<'a> ComicAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_title: None,
@@ -157,6 +158,7 @@ impl<'a> ComicAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn title(mut self, val: &'a str) -> Self {
         //
         self.f_title = Some(val);
@@ -164,6 +166,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn author(mut self, val: &'a str) -> Self {
         //
         self.f_author = Some(val);
@@ -171,6 +174,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn description(mut self, val: Option<&'a str>) -> Self {
         //
         self.f_description = Some(val);
@@ -178,6 +182,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub fn composed_title(mut self, val: String) -> Self {
         //
         self.f_composed_title = Some(val);
@@ -185,6 +190,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn chapter_count(mut self, val: i32) -> Self {
         //
         self.f_chapter_count = Some(val);
@@ -192,6 +198,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn chapter_next_index(mut self, val: i32) -> Self {
         //
         self.f_chapter_next_index = Some(val);
@@ -199,6 +206,7 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_last_active_at = Some(val);

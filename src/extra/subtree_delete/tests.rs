@@ -12,7 +12,7 @@ use super::sweep;
 
 fn failure() -> BaseError {
     BaseError::Unrecoverable {
-        message: "injected sweep failure".into(),
+        msg: "injected sweep failure".into(),
     }
 }
 

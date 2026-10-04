@@ -29,7 +29,7 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -160,11 +160,11 @@ where
 
                 if existing_assignment_info.is_some() {
                     //
-                    let err_message = trl("error-assignment-already-exists");
+                    let err_msg = trl("error-assignment-already-exists");
 
                     tracing::warn!(
                         err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
+                        err_msg = %err_msg,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
@@ -173,7 +173,7 @@ where
                         "expected error: invitee already has a chapter assignment",
                     );
 
-                    return Err(expected(ExpectedVariant::Args, err_message));
+                    return Err(expected(ExpectedVariant::Args, err_msg));
                 }
             }
 
@@ -200,7 +200,7 @@ where
             };
 
             let (purge_payload, purge_task_id) =
-                (TaskPayload::Invitation { payload: invitation_payload }, next_snowflake_id());
+                (PromPayload::Invitation { payload: invitation_payload }, next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,
@@ -303,24 +303,24 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
+        let err_msg = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             chapter_id = %chapter,
             user_id = %user,
             roles = ?roles,
             "expected error: chapter roles are not assignable",
         );
 
-        return Err(expected(ExpectedVariant::Args, err_message));
+        return Err(expected(ExpectedVariant::Args, err_msg));
     }
 
     accept(())
 }
 
 // Builds an expected application error with the supplied classification.
-const fn expected(variant: ExpectedVariant, message: String) -> BaseError {
-    BaseError::Expected { variant, message }
+const fn expected(variant: ExpectedVariant, msg: String) -> BaseError {
+    BaseError::Expected { variant, msg }
 }

@@ -360,11 +360,11 @@ where
 
             let Some(assignment_info) = assignment_info else {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     user_id = %token.user_id,
                     chapter_id = %chapter_id,
                     team_id = %team_id,
@@ -373,7 +373,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             };
 

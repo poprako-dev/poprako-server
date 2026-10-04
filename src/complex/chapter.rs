@@ -73,11 +73,11 @@ pub fn ensure_writable_state(
     //
     if is_published {
         //
-        let err_message = trl("error-chapter-published-frozen");
+        let err_msg = trl("error-chapter-published-frozen");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             chapter_id,
             stage = ?Stage::Publish,
             stage_phase = ?StagePhase::Completed,
@@ -86,7 +86,7 @@ pub fn ensure_writable_state(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 

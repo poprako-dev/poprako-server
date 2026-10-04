@@ -38,24 +38,29 @@ fn http_body_serializes_success_envelope() {
 #[test]
 fn retryable_error_maps_to_conflict() {
     let http_error = HttpError::from(BaseError::Retryable {
-        message: "retry request".to_string(),
+        msg: "retry request".to_string(),
     });
 
     assert_eq!(http_error.status, StatusCode::CONFLICT);
     assert_eq!(http_error.code.get(), 8);
-    assert_eq!(http_error.message.as_deref(), Some("retry request"));
+    assert_eq!(http_error.msg.as_deref(), Some("retry request"));
+
+    assert_eq!(
+        serde_json::to_value(http_error).expect("HTTP error serializes"),
+        json!({"code": 8, "message": "retry request"}),
+    );
 }
 
 #[test]
 fn unavailable_error_maps_to_service_unavailable() {
     let http_error = HttpError::from(BaseError::Unavailable {
-        message: "driver detail".to_string(),
+        msg: "driver detail".to_string(),
     });
 
     assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(http_error.code.get(), 9);
     assert_eq!(
-        http_error.message.as_deref(),
+        http_error.msg.as_deref(),
         Some(trl("error-unavailable").as_str()),
     );
 }
@@ -63,7 +68,7 @@ fn unavailable_error_maps_to_service_unavailable() {
 #[test]
 fn obj_dept_unavailable_error_maps_to_service_unavailable() {
     let base_error = BaseError::from(ObjDeptError::Unavailable {
-        message: "object database capacity unavailable".to_string(),
+        msg: "object database capacity unavailable".to_string(),
     });
 
     let http_error = HttpError::from(base_error);
@@ -71,7 +76,7 @@ fn obj_dept_unavailable_error_maps_to_service_unavailable() {
     assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(http_error.code.get(), 9);
     assert_eq!(
-        http_error.message.as_deref(),
+        http_error.msg.as_deref(),
         Some(trl("error-unavailable").as_str()),
     );
 }

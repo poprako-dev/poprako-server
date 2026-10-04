@@ -45,7 +45,7 @@ pub struct TermRepl {
     pub comment: Option<String>,
 }
 
-/// Persistence changes produced by one terminology-base import.
+/// Delivery changes produced by one terminology-base import.
 pub struct TermUpsertPlan {
     /// New terminology entries to insert.
     pub entries: Vec<TermEntry>,

@@ -98,11 +98,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_message = trl("error-already-team-member");
+                let err_msg = trl("error-already-team-member");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %instr.user_id,
@@ -112,7 +112,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -188,11 +188,11 @@ where
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 //
-                let err_message = trl("error-no-pending-invitation");
+                let err_msg = trl("error-no-pending-invitation");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
                     invitation_invitee_qid = %member_invitation_info.invitee_qid,
@@ -202,7 +202,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -215,11 +215,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_message = trl("error-already-team-member");
+                let err_msg = trl("error-already-team-member");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     user_id = %current_user_id,
                     team_id = %member_invitation_info.team_id,
                     "expected error: user is already a team member",
@@ -227,7 +227,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -361,11 +361,11 @@ where
                 instr.roles,
             ) {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
@@ -377,7 +377,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -452,11 +452,11 @@ where
                 &member_info,
             ) {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
@@ -467,7 +467,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 

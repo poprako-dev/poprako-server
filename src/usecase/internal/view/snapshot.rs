@@ -143,7 +143,7 @@ impl ObjViewSnapshot {
             + Sync,
     {
         //
-        Self::load_parts(
+        Self::load_urls(
             obj_dept,
             &ids.comic_covers,
             ids.team_avatars,
@@ -172,7 +172,7 @@ impl ObjViewSnapshot {
     {
         //
         let (mut snapshot, pages) = futures_util::try_join!(
-            Self::load_parts(
+            Self::load_urls(
                 obj_dept,
                 &ids.comic_covers,
                 ids.team_avatars,
@@ -185,7 +185,7 @@ impl ObjViewSnapshot {
             ),
         )?;
 
-        let (page_ids, positions) = pages.into_parts();
+        let (page_ids, positions) = pages.into_loaded();
 
         let fallback_ids = snapshot
             .comic_covers
@@ -297,7 +297,7 @@ impl ObjViewSnapshot {
     }
 
     // Keeps occurrence order separate from sorted metadata query identifiers.
-    async fn load_parts<C, O>(
+    async fn load_urls<C, O>(
         obj_dept: &O,
         comic_ids: &[&str],
         team_ids: Vec<&str>,

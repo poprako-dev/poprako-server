@@ -28,11 +28,11 @@ use crate::shared::result::diesel;
 /// Build the expected error for a missing team.
 pub fn missing_team(id: &str, operation: &str) -> BaseError {
     //
-    let message = trl("error-team-not-found");
+    let msg = trl("error-team-not-found");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %message,
+        err_msg = %msg,
         team_id = %id,
         operation,
         "expected team error",
@@ -40,7 +40,7 @@ pub fn missing_team(id: &str, operation: &str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message,
+        msg,
     }
 }
 
@@ -92,11 +92,11 @@ pub async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let message = trl("error-team-not-found");
+        let msg = trl("error-team-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             team_id = %id,
             operation = "get team info",
             "expected team error",
@@ -104,7 +104,7 @@ pub async fn get_info_by_id(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -195,11 +195,11 @@ pub async fn get_info_excluded(
 
     let Some(row) = row else {
         //
-        let message = trl("error-team-not-found");
+        let msg = trl("error-team-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             team_id = %id,
             operation = "lock team info",
             "expected team error",
@@ -207,7 +207,7 @@ pub async fn get_info_excluded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -231,11 +231,11 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
     let Some(_) = row else {
         //
-        let message = trl("error-team-not-found");
+        let msg = trl("error-team-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             team_id = %id,
             operation = "lock team row",
             "expected team error",
@@ -243,7 +243,7 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

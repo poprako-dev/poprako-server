@@ -50,23 +50,23 @@ impl KeyMap for PageImage {
     ) -> crate::rest::ObjDeptRest<(Self::Dom, u32)> {
         let filename = value.strip_prefix("page/").ok_or_else(|| {
             ObjDeptError::Invalid {
-                message: "invalid test key".into(),
+                msg: "invalid test key".into(),
             }
         })?;
 
         let stem = filename.strip_suffix(".png").ok_or_else(|| {
             ObjDeptError::Invalid {
-                message: "invalid test key".into(),
+                msg: "invalid test key".into(),
             }
         })?;
 
         let (id, version) =
             stem.rsplit_once('-').ok_or_else(|| ObjDeptError::Invalid {
-                message: "invalid test key".into(),
+                msg: "invalid test key".into(),
             })?;
 
         let version = version.parse().map_err(|_| ObjDeptError::Invalid {
-            message: "invalid test key".into(),
+            msg: "invalid test key".into(),
         })?;
 
         Ok((
@@ -161,7 +161,7 @@ impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
     ) -> Result<Option<ObjSlot>, Self::Error> {
         //
         Err(ObjDeptError::Unrecoverable {
-            message: "compile-only slot".into(),
+            msg: "compile-only slot".into(),
         })
     }
 }

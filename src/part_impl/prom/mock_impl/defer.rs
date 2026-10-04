@@ -5,13 +5,13 @@ use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use crate::part::nucl::ReptRead;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part_impl::prom::mock_impl::json::serialize_payload_err;
 use crate::part_impl::prom::mock_impl::{Mock, MockPromRecord};
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, accept};
 
-impl Prom<MockContext, String, TaskPayload> for Mock {
+impl Prom<MockContext, String, PromPayload> for Mock {
     // Defines the adapter error exposed by this producer.
     type Error = BaseError;
 
@@ -23,7 +23,7 @@ impl Prom<MockContext, String, TaskPayload> for Mock {
 }
 
 /// Defers one record in the coordinated mock state.
-impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
+impl<'a> Step<Defer<'a, String, PromPayload, ()>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -34,7 +34,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &Defer<'a, String, TaskPayload, ()>,
+        oper: &Defer<'a, String, PromPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
         // Internal implementation detail.
@@ -54,7 +54,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     }
 }
 
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, PromPayload, ()>, MockContext>
     for Mock
 {
     // Internal type alias for `Error`.
@@ -67,7 +67,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
+        oper: &DeferBatch<'t, 'a, String, PromPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
         // Internal implementation detail.

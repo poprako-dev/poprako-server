@@ -1,0 +1,28 @@
+[package]
+name = "poprako-prom"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+rdb_impl = ["dep:diesel", "dep:diesel-async", "dep:poprako-rdb-core"]
+
+[dependencies]
+diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time", "uuid"], optional = true }
+diesel-async = { version = "0.9.0", features = ["postgres"], optional = true }
+futures-util = "0.3.32"
+poprako-orchestra = { version = "0.6.0", features = ["macro", "oper_ext"] }
+poprako-rdb-core = { path = "../poprako-rdb-core", optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json.workspace = true
+time.workspace = true
+tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "time"] }
+tokio-util = { version = "0.7.18", features = ["rt"] }
+tracing = "0.1.44"
+uuid.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1.52.1", features = ["test-util"] }

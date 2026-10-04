@@ -12,7 +12,7 @@ pub fn usize_from_i32(value: i32, field: &str) -> BaseRest<usize> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must be non-negative", field),
+            msg: format!("database field {} must be non-negative", field),
         }
     })
 }
@@ -29,7 +29,7 @@ pub fn i32_from_usize(value: usize, field: &str) -> BaseRest<i32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} exceeds INTEGER range", field),
+            msg: format!("database field {} exceeds INTEGER range", field),
         }
     })
 }
@@ -46,7 +46,7 @@ pub fn usize_from_i64(value: i64, field: &str) -> BaseRest<usize> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must be non-negative", field),
+            msg: format!("database field {} must be non-negative", field),
         }
     })
 }
@@ -63,7 +63,7 @@ pub fn u32_from_i64(value: i64, field: &str) -> BaseRest<u32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must fit u32", field),
+            msg: format!("database field {} must fit u32", field),
         }
     })
 }

@@ -112,13 +112,13 @@ pub enum ObjTaskAction {
     /// The obligation remains retryable.
     Retry {
         /// Safe retry diagnostic.
-        message: String,
+        msg: String,
     },
 
     /// Persisted state requires repair.
     Operator {
         /// Safe repair diagnostic.
-        message: String,
+        msg: String,
     },
 }
 

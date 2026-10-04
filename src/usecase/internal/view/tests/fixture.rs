@@ -114,7 +114,7 @@ macro_rules! impl_obj_dept_view {
 
                 if self.fails($list_operation) {
                     return Err(ObjDeptError::Unrecoverable {
-                        message: $list_operation.into(),
+                        msg: $list_operation.into(),
                     });
                 }
 
@@ -158,7 +158,7 @@ macro_rules! impl_obj_dept_view {
 
                 if self.fails($url_operation) {
                     return Err(ObjDeptError::Unrecoverable {
-                        message: $url_operation.into(),
+                        msg: $url_operation.into(),
                     });
                 }
 

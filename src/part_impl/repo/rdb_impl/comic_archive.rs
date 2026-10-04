@@ -59,7 +59,7 @@ use crate::shared::RdbContext;
 // Standardize chain-corruption failures for unit graph validation.
 fn corrupt_unit_chain_err() -> BaseError {
     BaseError::Unrecoverable {
-        message: "persisted Unit chain is corrupt".to_string(),
+        msg: "persisted Unit chain is corrupt".to_string(),
     }
 }
 
@@ -154,11 +154,11 @@ async fn load_archive_root(
 
     let Some(comic_row) = comic_row else {
         //
-        let message = trl("error-comic-not-found");
+        let msg = trl("error-comic-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             comic_id = %source_comic_id,
             operation = "get comic archive snapshot",
             "expected comic archive error",
@@ -166,7 +166,7 @@ async fn load_archive_root(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -183,11 +183,11 @@ async fn load_archive_root(
 
     let Some(workset_row) = workset_row else {
         //
-        let message = trl("error-workset-not-found");
+        let msg = trl("error-workset-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             comic_id = %source_comic_id,
             workset_id = %comic_info.workset_id,
             operation = "get comic archive snapshot",
@@ -196,7 +196,7 @@ async fn load_archive_root(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -366,7 +366,7 @@ struct ArchiveChapterParts {
 // Assemble loaded archive descendants into Chapter snapshots.
 fn assemble_chapter_snapshots(
     source_comic_id: &str,
-    parts: ArchiveChapterParts,
+    coord_fields: ArchiveChapterParts,
 ) -> BaseRest<Vec<ComicArchiveChapterSnapshot>> {
     //
     let ArchiveChapterParts {
@@ -376,7 +376,7 @@ fn assemble_chapter_snapshots(
         users_by_id,
         page_infos,
         unit_infos,
-    } = parts;
+    } = coord_fields;
 
     let mut assignment_infos_by_chapter =
         HashMap::<String, Vec<AssignmentInfo>>::new();
@@ -385,11 +385,11 @@ fn assemble_chapter_snapshots(
         //
         let Some(user_info) = users_by_id.get(&assignment_info.user_id) else {
             //
-            let message = trl("error-user-not-found");
+            let msg = trl("error-user-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
+                err_msg = %msg,
                 comic_id = %source_comic_id,
                 chapter_id = %assignment_info.chapter_id,
                 assignment_id = %assignment_info.id,
@@ -400,7 +400,7 @@ fn assemble_chapter_snapshots(
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message,
+                msg,
             });
         };
 

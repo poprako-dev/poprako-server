@@ -73,19 +73,19 @@ pub fn check_user_is_chapter_translator_or_proofreader(
 }
 
 // Build and log one expected permission error.
-fn reject_perm(message_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject_perm(msg_key: &str, event: &'static str) -> BaseRest<()> {
     //
-    let err_message = trl(message_key);
+    let err_msg = trl(msg_key);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Perm,
-        err_message = %err_message,
+        err_msg = %err_msg,
         event,
         "expected permission error",
     );
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Perm,
-        message: err_message,
+        msg: err_msg,
     })
 }

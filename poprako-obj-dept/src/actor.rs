@@ -28,15 +28,12 @@ fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
     //
     match err {
         //
-        ObjDeptError::Retryable { message }
-        | ObjDeptError::Unavailable { message }
-        | ObjDeptError::Conflict { message } => {
-            ObjTaskAction::Retry { message }
-        }
+        ObjDeptError::Retryable { msg }
+        | ObjDeptError::Unavailable { msg }
+        | ObjDeptError::Conflict { msg } => ObjTaskAction::Retry { msg },
 
-        ObjDeptError::Invalid { message }
-        | ObjDeptError::Unrecoverable { message } => {
-            ObjTaskAction::Operator { message }
+        ObjDeptError::Invalid { msg } | ObjDeptError::Unrecoverable { msg } => {
+            ObjTaskAction::Operator { msg }
         }
     }
 }
@@ -55,12 +52,10 @@ where
         //
         ObjTaskAction::Complete => prom.complete_task(task).await,
 
-        ObjTaskAction::Retry { message } => {
-            prom.retry_task(task, message).await
-        }
+        ObjTaskAction::Retry { msg } => prom.retry_task(task, msg).await,
 
-        ObjTaskAction::Operator { message } => {
-            prom.mark_task_operator(task, message).await
+        ObjTaskAction::Operator { msg } => {
+            prom.mark_task_operator(task, msg).await
         }
     }
 }
@@ -98,11 +93,11 @@ where
         Err(err) => action_from_err(err),
     };
 
-    if let ObjTaskAction::Operator { message } = &action {
+    if let ObjTaskAction::Operator { msg } = &action {
         //
         tracing::error!(
             task_id = task.id,
-            err_message = %message,
+            err_msg = %msg,
             "ObjDept task requires operator repair",
         );
     }

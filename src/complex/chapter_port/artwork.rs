@@ -20,11 +20,11 @@ pub fn valid_extension(ext: &str) -> bool {
 /// Constructs one classified, translated artwork error at its production leaf.
 pub fn artwork_error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
-    let message = trl(key);
+    let msg = trl(key);
 
-    tracing::warn!(err_variant = ?variant, err_message = %message, "chapter artwork rejected");
+    tracing::warn!(err_variant = ?variant, err_msg = %msg, "chapter artwork rejected");
 
-    BaseError::Expected { variant, message }
+    BaseError::Expected { variant, msg }
 }
 
 /// Checks the exact upload size and extension before allocating an object.

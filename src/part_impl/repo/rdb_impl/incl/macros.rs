@@ -186,6 +186,10 @@ macro_rules! preloadable {
             preloadable_variant!($owner; $marker => $query { $($body)* });
         )*
 
+        /// Loads the requested related entities into the supplied owner records.
+        ///
+        /// # Errors
+        /// Returns an error if loading or converting a related record fails.
         #[tracing::instrument(level = "info", skip_all)]
         pub async fn $populate(
             conn: &mut RdbConn,

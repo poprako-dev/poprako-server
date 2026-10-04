@@ -129,11 +129,11 @@ fn page_not_found(
     request_index: usize,
 ) -> BaseError {
     //
-    let err_message = trl("error-page-not-found");
+    let err_msg = trl("error-page-not-found");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         chapter_id,
         page_id,
         request_index,
@@ -142,7 +142,7 @@ fn page_not_found(
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

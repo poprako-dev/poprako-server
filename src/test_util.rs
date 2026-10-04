@@ -48,7 +48,7 @@ pub fn assert_expected_message(
     //
     let BaseError::Expected {
         variant,
-        message: actual,
+        msg: actual,
     } = err_
     else {
         panic!("expected RootError::Expected");
@@ -57,7 +57,7 @@ pub fn assert_expected_message(
     assert_expected_variant(
         BaseError::Expected {
             variant,
-            message: actual.clone(),
+            msg: actual.clone(),
         },
         expected,
     );

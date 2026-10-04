@@ -129,9 +129,9 @@ fn deserialize_rejects_invalid_bits_with_message() {
 
 fn assert_expected_role_error(err: BaseError) {
     //
-    let BaseError::Expected { message, .. } = err else {
+    let BaseError::Expected { msg, .. } = err else {
         panic!("expected role error");
     };
 
-    assert_eq!(message, trl("error-invalid-role"));
+    assert_eq!(msg, trl("error-invalid-role"));
 }

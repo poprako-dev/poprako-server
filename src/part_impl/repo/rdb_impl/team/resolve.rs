@@ -19,7 +19,7 @@ use crate::shared::result::diesel;
 // Build the client-visible error for an unresolvable comic or chapter.
 fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
     //
-    let (message, resource_kind, resource_id) = match oper {
+    let (msg, resource_kind, resource_id) = match oper {
         //
         ResolveTeamId::Comic { id } => {
             (trl("error-comic-not-found"), "comic", *id)
@@ -32,7 +32,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %message,
+        err_msg = %msg,
         resource_kind = %resource_kind,
         resource_id = %resource_id,
         operation = "resolve team id",
@@ -41,7 +41,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message,
+        msg,
     }
 }
 

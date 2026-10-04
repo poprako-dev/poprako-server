@@ -45,17 +45,17 @@ pub fn ensure_snapshot_archivable(
     //
     if comic_archive_snapshot.comic_info.archived_at.is_some() {
         //
-        let message = trl("error-comic-archived");
+        let msg = trl("error-comic-archived");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             "expected comic archive error",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     }
 
@@ -74,17 +74,17 @@ pub fn ensure_snapshot_archivable(
         return accept(());
     }
 
-    let message = trl("error-comic-archive-incomplete");
+    let msg = trl("error-comic-archive-incomplete");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %message,
+        err_msg = %msg,
         "expected comic archive error",
     );
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message,
+        msg,
     })
 }
 
@@ -112,7 +112,7 @@ pub async fn prepare_entry(
         );
 
         BaseError::Unrecoverable {
-                message: format!(
+                msg: format!(
                     "[comic_archive_complex::prepare_entry] blocking task failed: {}",
                     error,
             ),
@@ -142,7 +142,7 @@ fn build_entry(
             );
 
             BaseError::Unrecoverable {
-                    message: format!(
+                    msg: format!(
                         "[comic_archive_complex::build_entry] failed to serialize archive payload: {}",
                         error,
                 ),
@@ -286,7 +286,7 @@ fn build_assignment_payload(
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
         BaseError::Unrecoverable {
-            message: "[comic_archive_complex::build_assignment_payload] assignment user was not loaded".into(),
+            msg: "[comic_archive_complex::build_assignment_payload] assignment user was not loaded".into(),
         }
     })?;
 

@@ -242,7 +242,7 @@ pub fn mark_scope(
         SubtreeDeleteScope::Chapter { .. } => {
             //
             return Err(BaseError::Unrecoverable {
-                message: "direct chapter deletion must not create a tombstone"
+                msg: "direct chapter deletion must not create a tombstone"
                     .into(),
             });
         }
@@ -349,7 +349,7 @@ impl Step<DeleteSubtree<'_>, MockContext> for Mock {
         let SubtreeDeleteScope::Chapter { chapter_id, .. } = oper.scope else {
             //
             return Err(BaseError::Unrecoverable {
-                message: "only a direct chapter may bypass subtree tombstones"
+                msg: "only a direct chapter may bypass subtree tombstones"
                     .into(),
             });
         };

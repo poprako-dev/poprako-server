@@ -28,7 +28,7 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;

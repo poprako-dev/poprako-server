@@ -36,7 +36,7 @@ pub async fn hash_password(password: &str) -> BaseRest<String> {
             );
 
             BaseError::Unrecoverable {
-                message: format!(
+                msg: format!(
                     "[user_complex::hash_password] blocking task failed: {}",
                     error,
                 ),
@@ -94,7 +94,7 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
             );
 
             BaseError::Unrecoverable {
-                message: format!(
+                msg: format!(
                     "[user_complex::hash_password] argon2 hashing failed: {}",
                     error,
                 ),

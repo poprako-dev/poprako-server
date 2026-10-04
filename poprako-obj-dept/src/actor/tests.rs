@@ -86,13 +86,13 @@ impl ObjDeptProm for MockProm {
 #[test]
 fn unavailable_dependency_failure_remains_retryable_for_worker() {
     let action = action_from_err(ObjDeptError::Unavailable {
-        message: "connection capacity unavailable".into(),
+        msg: "connection capacity unavailable".into(),
     });
 
     assert!(matches!(
         action,
-        ObjTaskAction::Retry { message }
-            if message == "connection capacity unavailable"
+        ObjTaskAction::Retry { msg }
+            if msg == "connection capacity unavailable"
     ));
 }
 

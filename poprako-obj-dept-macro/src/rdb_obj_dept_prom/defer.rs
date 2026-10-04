@@ -170,7 +170,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
             if rows.len() != tasks.len() {
                 //
                 return Err(ObjDeptError::Unrecoverable {
-                    message: "object task batch identity is incomplete".into(),
+                    msg: "object task batch identity is incomplete".into(),
                 });
             }
 
@@ -179,7 +179,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 let Some(row) = rows.get(&task.id) else {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        message: "object task batch identity is incomplete".into(),
+                        msg: "object task batch identity is incomplete".into(),
                     });
                 };
 
@@ -203,7 +203,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 if !is_same_identity {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        message: "object task identity conflict".into(),
+                        msg: "object task identity conflict".into(),
                     });
                 }
 
@@ -218,7 +218,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     _ => {
                         //
                         return Err(ObjDeptError::Unrecoverable {
-                            message: "invalid object task status".into(),
+                            msg: "invalid object task status".into(),
                         });
                     }
                 }
@@ -280,7 +280,7 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                             .checked_add(::time::Duration::minutes(1))
                             .ok_or_else(|| {
                                 ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                                    message: "object check visibility overflow".into(),
+                                    msg: "object check visibility overflow".into(),
                                 }
                             })?;
 

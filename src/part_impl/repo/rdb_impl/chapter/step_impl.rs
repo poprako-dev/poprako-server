@@ -39,11 +39,11 @@ use crate::value::chapter::stage::Stage;
 /// Build the expected error for a missing chapter.
 pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
     //
-    let err_message = trl("error-chapter-not-found");
+    let err_msg = trl("error-chapter-not-found");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         chapter_id = %id,
         operation,
         "expected error: chapter not found",
@@ -51,7 +51,7 @@ pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
@@ -73,11 +73,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-chapter-not-found");
+            let err_msg = trl("error-chapter-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = %id,
                 stage = "get_info_by_id",
                 "expected error: chapter not found",
@@ -85,7 +85,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -120,11 +120,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-chapter-not-found");
+            let err_msg = trl("error-chapter-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = %id,
                 stage = "get_info_excluded",
                 "expected error: chapter not found",
@@ -132,7 +132,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -172,11 +172,11 @@ pub async fn get_unit_edit_scope_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-page-not-found");
+            let err_msg = trl("error-page-not-found");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 page_id,
                 operation = "get_unit_edit_scope_excluded",
                 "expected error: page not found",
@@ -184,7 +184,7 @@ pub async fn get_unit_edit_scope_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -447,8 +447,7 @@ pub async fn start_stage(
         Stage::RawProvide | Stage::Review | Stage::Publish => {
             //
             return Err(BaseError::Unrecoverable {
-                message: "only two-step chapter stages can be started"
-                    .to_string(),
+                msg: "only two-step chapter stages can be started".to_string(),
             });
         }
     };

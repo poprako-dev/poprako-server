@@ -87,6 +87,7 @@ pub struct MemberAspectRow<'a> {
 }
 
 impl<'a> MemberAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_user_nickname: None,
@@ -104,6 +105,7 @@ impl<'a> MemberAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn user_nickname(mut self, val: &'a str) -> Self {
         //
         self.f_user_nickname = Some(val);
@@ -111,6 +113,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn user_last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_user_last_active_at = Some(val);
@@ -118,6 +121,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_raw_provider_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -128,6 +132,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_translator_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -138,6 +143,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_proofreader_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -148,6 +154,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_typesetter_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -158,6 +165,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_redrawer_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -168,6 +176,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_reviewer_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -178,6 +187,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_publisher_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -188,6 +198,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_admin_at(
         mut self,
         val: Option<OffsetDateTime>,
@@ -198,6 +209,7 @@ impl<'a> MemberAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn assigned_bot_at(
         mut self,
         val: Option<OffsetDateTime>,

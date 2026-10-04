@@ -120,7 +120,7 @@ fn signed_count(value: usize, field: &str) -> BaseRest<i32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("unit count {} exceeds signed delta range", field),
+            msg: format!("unit count {} exceeds signed delta range", field),
         }
     })
 }

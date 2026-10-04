@@ -49,11 +49,11 @@ pub fn invalid_unit_transform(
     reason: &'static str,
 ) -> BaseError {
     //
-    let err_message = trl("error-invalid-unit-transform");
+    let err_msg = trl("error-invalid-unit-transform");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         chapter_id,
         unit_id,
         reason,
@@ -62,7 +62,7 @@ pub fn invalid_unit_transform(
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

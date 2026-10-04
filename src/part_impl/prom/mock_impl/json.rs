@@ -10,6 +10,6 @@ pub fn serialize_payload_err(err_serde: serde_json::Error) -> BaseError {
     );
 
     BaseError::Unrecoverable {
-        message: format!("failed to serialize prom payload: {}", err_serde),
+        msg: format!("failed to serialize prom payload: {}", err_serde),
     }
 }

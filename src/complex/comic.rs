@@ -84,18 +84,18 @@ pub fn ensure_comic_writable(comic_info: &ComicInfo) -> BaseRest<()> {
         return accept(());
     }
 
-    let err_message = trl("error-comic-archived");
+    let err_msg = trl("error-comic-archived");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         comic_id = %comic_info.id,
         "expected error: archived comic is frozen",
     );
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     })
 }
 

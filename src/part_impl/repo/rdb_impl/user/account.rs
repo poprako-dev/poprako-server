@@ -85,11 +85,11 @@ pub async fn get_credential_by_qid(
 
     let Some(row) = row else {
         //
-        let message = trl("error-user-not-found");
+        let msg = trl("error-user-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             user_qid = %qid,
             operation = "get user credential",
             "expected user error",
@@ -97,7 +97,7 @@ pub async fn get_credential_by_qid(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

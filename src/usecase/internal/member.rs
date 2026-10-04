@@ -246,11 +246,11 @@ impl MemberLoader {
 
             _ => {
                 //
-                let err_message = trl("error-invalid-termbase-scope");
+                let err_msg = trl("error-invalid-termbase-scope");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
@@ -259,7 +259,7 @@ impl MemberLoader {
 
                 Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 })
             }
         }
@@ -298,17 +298,17 @@ impl MemberLoader {
         //
         let Some(member_info) = member_info else {
             //
-            let err_message = trl("error-team-member-required");
+            let err_msg = trl("error-team-member-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Perm,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 "expected error: team membership required",
             );
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: err_message,
+                msg: err_msg,
             });
         };
 

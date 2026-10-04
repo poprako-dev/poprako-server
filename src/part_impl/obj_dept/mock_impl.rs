@@ -62,7 +62,7 @@ pub fn gen_urls(
 fn parse_mock_url(path: &str) -> ObjDeptRest<Url> {
     Url::parse(&format!("https://obj.test/{}", path)).map_err(|source| {
         ObjDeptError::Unrecoverable {
-            message: source.to_string(),
+            msg: source.to_string(),
         }
     })
 }
@@ -97,7 +97,7 @@ where
             let ver = objs.get(id).map_or(Ok(1), |previous| {
                 previous.version.checked_add(1).ok_or_else(|| {
                     ObjDeptError::Unrecoverable {
-                        message: "object ver overflow".into(),
+                        msg: "object ver overflow".into(),
                     }
                 })
             })?;
@@ -137,7 +137,7 @@ where
 
     let url = Url::parse(&format!("https://obj.test/write/{}", key.image))
         .map_err(|source| ObjDeptError::Unrecoverable {
-            message: source.to_string(),
+            msg: source.to_string(),
         })?;
 
     Ok(Some(ObjSlot {
@@ -167,7 +167,7 @@ where
 
     if ids.windows(2).any(|pair| pair[0] == pair[1]) {
         return Err(ObjDeptError::Invalid {
-            message: "duplicate object slot id".into(),
+            msg: "duplicate object slot id".into(),
         });
     }
 
@@ -511,7 +511,7 @@ macro_rules! implement_mock_obj_dept {
                 if context.obj_delete_failure {
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "mock object deletion failed".into(),
+                            msg: "mock object deletion failed".into(),
                         },
                     );
                 }

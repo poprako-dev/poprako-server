@@ -23,7 +23,7 @@ fn receipt_error(error: &serde_json::Error) -> BaseError {
     tracing::error!(sdk_err = ?error, "Unit save receipt serialization failed");
 
     BaseError::Unrecoverable {
-        message: "Invalid Unit save receipt".into(),
+        msg: "Invalid Unit save receipt".into(),
     }
 }
 

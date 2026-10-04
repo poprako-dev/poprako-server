@@ -124,7 +124,7 @@ impl PinnedChapterSnapshot {
     }
 
     /// Moves loaded chapters and their comic positions into response assembly.
-    pub fn into_parts(self) -> (Vec<ChapterInfo>, Vec<Option<usize>>) {
+    pub fn into_loaded(self) -> (Vec<ChapterInfo>, Vec<Option<usize>>) {
         (self.infos, self.positions)
     }
 }
@@ -140,7 +140,7 @@ pub struct ComicPageIds {
 
 impl ComicPageIds {
     /// Moves page identifiers and aligned positions into presentation hydration.
-    pub fn into_parts(self) -> (Vec<String>, Vec<Option<usize>>) {
+    pub fn into_loaded(self) -> (Vec<String>, Vec<Option<usize>>) {
         (self.page_ids, self.positions)
     }
 }

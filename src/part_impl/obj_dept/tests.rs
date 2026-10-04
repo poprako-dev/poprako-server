@@ -436,7 +436,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
             assert!(marked);
 
             Err::<(), _>(BaseError::Unrecoverable {
-                message: "deliberate transaction failure".into(),
+                msg: "deliberate transaction failure".into(),
             })
         })
         .await;

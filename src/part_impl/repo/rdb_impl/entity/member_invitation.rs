@@ -106,6 +106,7 @@ pub struct MemberInvitationAspectRow {
 }
 
 impl MemberInvitationAspectRow {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_pending: None,
@@ -114,6 +115,7 @@ impl MemberInvitationAspectRow {
         }
     }
 
+    #[must_use]
     pub const fn pending(mut self, val: bool) -> Self {
         //
         self.f_pending = Some(val);
@@ -121,6 +123,7 @@ impl MemberInvitationAspectRow {
         self
     }
 
+    #[must_use]
     pub const fn role_mask(mut self, val: i64) -> Self {
         //
         self.f_role_mask = Some(val);

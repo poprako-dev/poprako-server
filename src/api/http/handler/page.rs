@@ -25,7 +25,7 @@ use crate::data::val::page::{
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase::page as page_usecase;

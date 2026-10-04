@@ -103,6 +103,7 @@ pub struct AssignmentEntryRow<'a> {
 }
 
 impl<'a> AssignmentEntryRow<'a> {
+    #[must_use]
     pub fn from_model_entry(
         model_entry: &'a AssignmentEntry<'_>,
         now: OffsetDateTime,
@@ -144,6 +145,7 @@ pub struct AssignmentAspectRow {
 }
 
 impl AssignmentAspectRow {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_assigned_raw_provider_at: None,
@@ -157,6 +159,7 @@ impl AssignmentAspectRow {
         }
     }
 
+    #[must_use]
     pub const fn roles(
         mut self,
         timestamps: &AssignmentRoleTimestamps,
@@ -193,6 +196,7 @@ pub struct AssignmentRoleTimestamps {
 }
 
 impl AssignmentRoleTimestamps {
+    #[must_use]
     pub fn from_mask(roles: RoleMask, now: OffsetDateTime) -> Self {
         //
         let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {

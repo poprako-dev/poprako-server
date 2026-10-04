@@ -21,13 +21,13 @@ pub fn diesel(source: DieselError) -> BaseError {
             information,
         ) => {
             //
-            let message = trl("error-already-exists");
+            let msg = trl("error-already-exists");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %message,
+                err_msg = %msg,
                 database_err = "unique violation",
-                database_message = information.message(),
+                database_msg = information.message(),
                 database_details = ?information.details(),
                 database_hint = ?information.hint(),
                 constraint = ?information.constraint_name(),
@@ -38,7 +38,7 @@ pub fn diesel(source: DieselError) -> BaseError {
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message,
+                msg,
             }
         }
 
@@ -47,11 +47,11 @@ pub fn diesel(source: DieselError) -> BaseError {
             information,
         ) => {
             //
-            let message = trl("error-concurrent-conflict");
+            let msg = trl("error-concurrent-conflict");
 
             tracing::warn!(
                 database_err = "serialization failure",
-                database_message = information.message(),
+                database_msg = information.message(),
                 database_details = ?information.details(),
                 database_hint = ?information.hint(),
                 constraint = ?information.constraint_name(),
@@ -60,23 +60,23 @@ pub fn diesel(source: DieselError) -> BaseError {
                 "retryable error constructed from Diesel database error",
             );
 
-            BaseError::Retryable { message }
+            BaseError::Retryable { msg }
         }
 
         DieselError::NotFound => {
             //
-            let message = trl("error-not-found");
+            let msg = trl("error-not-found");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %message,
+                err_msg = %msg,
                 database_err = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
             );
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message,
+                msg,
             }
         }
 
@@ -89,7 +89,7 @@ pub fn diesel(source: DieselError) -> BaseError {
             );
 
             BaseError::Unrecoverable {
-                message: format!("diesel error: {}", err),
+                msg: format!("diesel error: {}", err),
             }
         }
     }

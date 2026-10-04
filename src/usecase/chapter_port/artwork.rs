@@ -129,7 +129,7 @@ where
             let artwork_meta =
                 artwork_metas.get(&chapter_info.id).ok_or_else(|| {
                     BaseError::Unrecoverable {
-                        message: "allocated artwork metadata is missing".into(),
+                        msg: "allocated artwork metadata is missing".into(),
                     }
                 })?;
 
@@ -333,12 +333,12 @@ where
         .get(&chapter_info.id)
         .and_then(|urls| urls.origin_url.as_ref())
         .ok_or_else(|| BaseError::Unrecoverable {
-            message: "available artwork has no original URL".into(),
+            msg: "available artwork has no original URL".into(),
         })?;
 
     let hash_bytes = artwork_meta.hash.as_slice().try_into().map_err(|_| {
         BaseError::Unrecoverable {
-            message: "invalid stored artwork SHA-256 length".into(),
+            msg: "invalid stored artwork SHA-256 length".into(),
         }
     })?;
 

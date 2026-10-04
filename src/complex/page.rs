@@ -99,20 +99,20 @@ pub mod perm {
     }
 
     // Build and log one expected page-role permission error.
-    fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
+    fn reject_role(msg_key: &str, event: &'static str) -> BaseRest<()> {
         //
-        let err_message = trl(message_key);
+        let err_msg = trl(msg_key);
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             event,
             "expected page permission error",
         );
 
         Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         })
     }
 }
@@ -135,17 +135,17 @@ pub fn ensure_raw_ident(raw_ident: Option<&str>) -> BaseRest<()> {
         })
     {
         //
-        let message = trl("error-invalid-page-raw-ident");
+        let msg = trl("error-invalid-page-raw-ident");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             "invalid original page filename",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     }
 

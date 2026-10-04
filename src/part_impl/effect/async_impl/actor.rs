@@ -21,6 +21,7 @@ pub struct EffectRecv {
 
 impl EffectRecv {
     /// Creates a receiver capability for the event actor.
+    #[must_use]
     pub const fn new(recv: Receiver<Event>) -> Self {
         Self { recv }
     }

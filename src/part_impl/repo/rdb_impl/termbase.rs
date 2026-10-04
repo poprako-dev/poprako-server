@@ -77,11 +77,11 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
 
     let Some(row) = row else {
         //
-        let message = trl("error-termbase-not-found");
+        let msg = trl("error-termbase-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             termbase_id = %id,
             operation = "get termbase info",
             "expected termbase error",
@@ -89,7 +89,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -115,11 +115,11 @@ async fn get_info_excluded(
 
     let Some(row) = row else {
         //
-        let message = trl("error-termbase-not-found");
+        let msg = trl("error-termbase-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             termbase_id = %id,
             operation = "lock termbase info",
             "expected termbase error",
@@ -127,7 +127,7 @@ async fn get_info_excluded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

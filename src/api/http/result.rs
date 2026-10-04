@@ -49,14 +49,14 @@ pub struct HttpError {
     code: NonZeroU16,
 
     /// Human-readable error detail, omitted when absent.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
-    message: Option<String>,
+    msg: Option<String>,
 }
 
 impl HttpError {
     /// Builds an error from an expected application variant and message.
-    pub fn expected(variant: ExpectedVariant, message: &str) -> Self {
+    pub fn expected(variant: ExpectedVariant, msg: &str) -> Self {
         //
         let (status, code) = match variant {
             //
@@ -70,24 +70,24 @@ impl HttpError {
         Self {
             status,
             code: nonzero_code(code),
-            message: Some(message.to_string()),
+            msg: Some(msg.to_string()),
         }
     }
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
-    pub fn unprocessable(message: &str) -> Self {
+    pub fn unprocessable(msg: &str) -> Self {
         //
         tracing::warn!(
             status = 422,
             err_variant = "PathBodyMismatch",
-            err_message = message,
+            err_msg = msg,
             "HTTP argument error",
         );
 
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: nonzero_code(7),
-            message: Some(message.to_string()),
+            msg: Some(msg.to_string()),
         }
     }
 
@@ -96,7 +96,7 @@ impl HttpError {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: nonzero_code(1),
-            message: Some(trl("error-internal")),
+            msg: Some(trl("error-internal")),
         }
     }
 
@@ -105,7 +105,7 @@ impl HttpError {
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),
-            message: Some(trl("error-unavailable")),
+            msg: Some(trl("error-unavailable")),
         }
     }
 }
@@ -118,7 +118,7 @@ impl std::fmt::Display for HttpError {
             f,
             "HttpError(code={}, message={})",
             self.code,
-            self.message.as_deref().unwrap_or("(no message)"),
+            self.msg.as_deref().unwrap_or("(no message)"),
         )
     }
 }
@@ -129,14 +129,14 @@ impl From<BaseError> for HttpError {
         //
         match source {
             //
-            BaseError::Expected { variant, message } => {
-                Self::expected(variant, &message)
+            BaseError::Expected { variant, msg } => {
+                Self::expected(variant, &msg)
             }
 
-            BaseError::Retryable { message } => Self {
+            BaseError::Retryable { msg } => Self {
                 status: StatusCode::CONFLICT,
                 code: nonzero_code(8),
-                message: Some(message),
+                msg: Some(msg),
             },
 
             BaseError::Unavailable { .. } => Self::unavailable(),

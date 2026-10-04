@@ -18,7 +18,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -168,7 +168,7 @@ async fn create_admin_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation {
+        PromPayload::Invitation {
             payload: InvitationPayload::PurgeExpiredMemberInvitation {
                 invitation_id: created.id,
             },

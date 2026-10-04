@@ -146,7 +146,7 @@ impl ObjDeptPoolView for R2ObjDeptPool {
                 );
 
                 Err(ObjDeptError::Retryable {
-                    message: "failed to check physical object".into(),
+                    msg: "failed to check physical object".into(),
                 })
             }
         }
@@ -185,8 +185,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                     );
 
                     ObjDeptError::Unrecoverable {
-                        message: "failed to build object presigning config"
-                            .into(),
+                        msg: "failed to build object presigning config".into(),
                     }
                 })?,
         );
@@ -209,7 +208,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 );
 
                 ObjDeptError::Retryable {
-                    message: "failed to generate object upload URL".into(),
+                    msg: "failed to generate object upload URL".into(),
                 }
             })?;
 
@@ -222,7 +221,7 @@ impl ObjDeptPool for R2ObjDeptPool {
             );
 
             ObjDeptError::Unrecoverable {
-                message: "failed to parse generated object upload URL".into(),
+                msg: "failed to parse generated object upload URL".into(),
             }
         })?;
 
@@ -259,7 +258,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 );
 
                 ObjDeptError::Retryable {
-                    message: "failed to delete physical object".into(),
+                    msg: "failed to delete physical object".into(),
                 }
             })
     }
@@ -277,7 +276,7 @@ fn parse_public_url(url_string: &str) -> ObjDeptRest<Url> {
         );
 
         ObjDeptError::Unrecoverable {
-            message: "failed to parse physical object URL".into(),
+            msg: "failed to parse physical object URL".into(),
         }
     })
 }
@@ -288,7 +287,7 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     if domain.is_empty() {
         //
         return Err(ObjDeptError::Unrecoverable {
-            message: "object public domain is not configured".into(),
+            msg: "object public domain is not configured".into(),
         });
     }
 

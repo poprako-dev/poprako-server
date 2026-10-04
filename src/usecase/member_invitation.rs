@@ -33,7 +33,7 @@ use crate::model::write::member_invitation::{
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::UserAvatar;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
@@ -102,11 +102,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_message = trl("error-team-admin-required");
+        let err_msg = trl("error-team-admin-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             team_id = %instr.team_id,
             user_id = %token.user_id,
             "expected error: invitation creator membership missing",
@@ -114,7 +114,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 
@@ -146,11 +146,11 @@ where
 
                 if invitee_member_info.is_some() {
                     //
-                    let err_message = trl("error-already-team-member");
+                    let err_msg = trl("error-already-team-member");
 
                     tracing::warn!(
                         err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
+                        err_msg = %err_msg,
                         team_id = %instr.team_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
@@ -160,7 +160,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: err_message,
+                        msg: err_msg,
                     });
                 }
             }
@@ -191,7 +191,7 @@ where
                 };
 
             let (purge_payload, purge_task_id) = (
-                TaskPayload::Invitation {
+                PromPayload::Invitation {
                     payload: invitation_payload,
                 },
                 next_snowflake_id(),
@@ -236,11 +236,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_message = trl("error-team-member-required");
+        let err_msg = trl("error-team-member-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             team_id = %instr.team_id,
             user_id = %token.user_id,
             "expected error: invitation list membership missing",
@@ -248,7 +248,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 

@@ -246,11 +246,11 @@ where
 
     let Some(current_assignment_info) = current_assignment_info else {
         //
-        let err_message = trl("error-team-admin-required");
+        let err_msg = trl("error-team-admin-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %token.user_id,
             chapter_id = %instr.chapter_id,
             "expected error: chapter assignment required",
@@ -258,7 +258,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 

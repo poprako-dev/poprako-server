@@ -8,9 +8,10 @@ mod tests;
 
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::TaskPayload;
+use poprako_prom::general::dispatch_flow::DispatchFlow;
+
+use crate::part::prom::payload::PromPayload;
 use crate::part_impl::prom::dispatch;
-use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, BaseRest, accept};
@@ -36,7 +37,7 @@ impl MockPromRecord {
     }
 
     /// Decodes the stored payload for assertions and processing.
-    pub fn payload(&self) -> TaskPayload {
+    pub fn payload(&self) -> PromPayload {
         serde_json::from_str(&self.payload_json)
             .expect("stored prom payload should deserialize successfully")
     }
@@ -55,13 +56,11 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
         .limit_wait(record.created_at, OffsetDateTime::now_utc());
 
         match flow {
-            TaskFlow::Complete | TaskFlow::Wait { .. } => {}
+            DispatchFlow::Complete | DispatchFlow::Wait { .. } => {}
 
-            TaskFlow::Retry { err_message }
-            | TaskFlow::Dead { err_message } => {
-                return Err(BaseError::Unrecoverable {
-                    message: err_message,
-                });
+            DispatchFlow::Retry { err_msg }
+            | DispatchFlow::Dead { err_msg } => {
+                return Err(BaseError::Unrecoverable { msg: err_msg });
             }
         }
     }

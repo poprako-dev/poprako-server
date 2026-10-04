@@ -102,8 +102,7 @@ where
                     _ => {
                         //
                         return Err(BaseError::Unrecoverable {
-                            message: "validated termbase scope is invalid"
-                                .into(),
+                            msg: "validated termbase scope is invalid".into(),
                         });
                     }
                 };
@@ -117,12 +116,12 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_message =
+                let err_msg =
                     trl("error-team-translator-or-proofreader-required");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %team_id,
                     user_id = %token.user_id,
                     "expected error: termbase creator membership missing",
@@ -130,7 +129,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             };
 
@@ -195,11 +194,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_message = trl("error-team-member-required");
+        let err_msg = trl("error-team-member-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             team_id = %instr.team_id,
             user_id = %token.user_id,
             "expected error: termbase list membership missing",
@@ -207,7 +206,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 

@@ -77,8 +77,8 @@ async fn one_hundred_and_first_match_returns_args_message() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
-        } if message == expected_message
+            msg,
+        } if msg == expected_message
     ));
 }
 
@@ -111,8 +111,8 @@ async fn excess_in_first_batch_does_not_read_later_page_batch() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
-        } if message == expected_message
+            msg,
+        } if msg == expected_message
     ));
 }
 

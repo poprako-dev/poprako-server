@@ -172,6 +172,7 @@ pub struct ChapterAspectRow<'a> {
 }
 
 impl<'a> ChapterAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_is_pinned: None,
@@ -193,6 +194,7 @@ impl<'a> ChapterAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn pinned(mut self, val: bool) -> Self {
         //
         self.f_is_pinned = Some(val);
@@ -200,6 +202,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn subtitle(mut self, val: &'a str) -> Self {
         //
         self.f_subtitle = Some(val);
@@ -207,6 +210,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub fn stages(
         mut self,
         val: StageMask,
@@ -234,6 +238,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn page_count(mut self, val: i32) -> Self {
         //
         self.f_page_count = Some(val);
@@ -241,6 +246,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn total_unit_count(mut self, val: i32) -> Self {
         //
         self.f_total_unit_count = Some(val);
@@ -248,6 +254,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn translated_unit_count(mut self, val: i32) -> Self {
         //
         self.f_translated_unit_count = Some(val);
@@ -255,6 +262,7 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn proofread_unit_count(mut self, val: i32) -> Self {
         //
         self.f_proofread_unit_count = Some(val);

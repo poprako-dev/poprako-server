@@ -26,7 +26,7 @@ use crate::data::val::member_invitation::CreateMemberInvitationVal;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase::member_invitation as member_invitation_usecase;

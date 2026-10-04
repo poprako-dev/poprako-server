@@ -10,40 +10,43 @@ use crate::model::read::proj::page::PageInfo;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
-use crate::part_impl::prom::task_flow::{TaskFlow, WAIT_TIMEOUT};
 use crate::result::BaseError;
 use crate::usecase::chapter::stage::{
     RawProvideAdvance, try_advance_raw_provide,
 };
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
+use poprako_prom::general::dispatch_flow::{DispatchFlow, WAIT_TIMEOUT};
 
-// wait_deadline_preserves_success(TaskFlow)(negative): only unresolved waiting expires.
+// wait_deadline_preserves_success(DispatchFlow)(negative): only unresolved waiting expires.
 #[test]
 fn wait_deadline_preserves_success() {
     let now = OffsetDateTime::now_utc();
 
     let requested_at = now - WAIT_TIMEOUT;
 
-    let wait = || TaskFlow::Wait {
-        err_message: "pending upload".into(),
+    let wait = || DispatchFlow::Wait {
+        err_msg: "pending upload".into(),
     };
 
     assert!(matches!(
         wait().limit_wait(requested_at, now),
-        TaskFlow::Dead { .. }
+        DispatchFlow::Dead { .. }
     ));
 
-    assert!(matches!(wait().limit_wait(now, now), TaskFlow::Wait { .. }));
+    assert!(matches!(
+        wait().limit_wait(now, now),
+        DispatchFlow::Wait { .. }
+    ));
 
     assert!(matches!(
-        TaskFlow::Complete.limit_wait(requested_at, now),
-        TaskFlow::Complete
+        DispatchFlow::Complete.limit_wait(requested_at, now),
+        DispatchFlow::Complete
     ));
 
     assert!(matches!(
         wait().limit_wait(requested_at, now - time::Duration::seconds(1)),
-        TaskFlow::Wait { .. }
+        DispatchFlow::Wait { .. }
     ));
 }
 
@@ -55,7 +58,7 @@ async fn repeated_chapter_requests_remain_independent() {
     for actor_id in ["first", "latest"] {
         let id = actor_id.to_owned();
 
-        let payload = TaskPayload::Chapter {
+        let payload = PromPayload::Chapter {
             payload: ChapterPayload::TryAdvanceRawProvideStage {
                 chapter_id: "shared-chapter".into(),
                 actor_user_id: id.clone(),
@@ -82,7 +85,7 @@ async fn repeated_chapter_requests_remain_independent() {
     for (record, expected) in
         snapshot.prom_records.iter().zip(["first", "latest"])
     {
-        assert!(matches!(record.payload(), TaskPayload::Chapter {
+        assert!(matches!(record.payload(), PromPayload::Chapter {
             payload: ChapterPayload::TryAdvanceRawProvideStage { actor_user_id, .. }
         } if actor_user_id == expected));
 
@@ -99,7 +102,7 @@ async fn defer_records_non_object_payload() {
     mock.coord(async move |context| {
         let id = String::from("prom-invitation-1");
 
-        let payload = TaskPayload::Invitation {
+        let payload = PromPayload::Invitation {
             payload: InvitationPayload::PurgeExpiredMemberInvitation {
                 invitation_id: String::from("invitation-1"),
             },
@@ -171,7 +174,7 @@ async fn chapter_task_waits_for_every_page_image() {
         //
         let id = String::from("prom-chapter-1");
 
-        let payload = TaskPayload::Chapter {
+        let payload = PromPayload::Chapter {
             payload: ChapterPayload::TryAdvanceRawProvideStage {
                 chapter_id: "chapter-1".into(),
                 actor_user_id: "user-1".into(),

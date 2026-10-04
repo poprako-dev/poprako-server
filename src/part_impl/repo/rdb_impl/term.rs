@@ -377,11 +377,11 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
     let Some(_) = row else {
         //
-        let message = trl("error-term-not-found");
+        let msg = trl("error-term-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             term_id = %id,
             operation = "lock term row",
             "expected term error",
@@ -389,7 +389,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -447,11 +447,11 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 
     let Some(row) = row else {
         //
-        let message = trl("error-term-not-found");
+        let msg = trl("error-term-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             term_id = %id,
             operation = "get term info",
             "expected term error",
@@ -459,7 +459,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

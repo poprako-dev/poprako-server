@@ -21,14 +21,14 @@ const PREFIX: &str = "rdb-test-team-domain-";
 
 const RESOLVE_PREFIX: &str = "rdb-test-team-resolve-";
 
-fn assert_expected(error: BaseError, message_key: &str) {
-    let BaseError::Expected { variant, message } = error else {
+fn assert_expected(error: BaseError, msg_key: &str) {
+    let BaseError::Expected { variant, msg } = error else {
         panic!("expected client-visible resource error");
     };
 
     assert!(matches!(variant, ExpectedVariant::Args));
 
-    assert_eq!(message, trl(message_key));
+    assert_eq!(msg, trl(msg_key));
 }
 
 /// Verifies team roundtrip via testcontainers.

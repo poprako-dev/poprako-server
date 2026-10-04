@@ -4,11 +4,11 @@ use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
+use poprako_prom::general::rdb_impl::LocalTaskStatus;
+
 use crate::part::nucl::Serial;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::{
-    LocalMessageEntryRow, LocalMessageStatus,
-};
+use crate::part_impl::prom::rdb_impl::entity::LocalTaskEntryRow;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, PurgeDead, RdbPromRepo, ResetStuck,
 };
@@ -29,6 +29,7 @@ diesel::table! {
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
 async fn claim_reads_are_bounded() {
+    //
     let test_rdb = start().await;
 
     let core = test_rdb.core();
@@ -38,19 +39,21 @@ async fn claim_reads_are_bounded() {
     let now = OffsetDateTime::now_utc();
 
     let ids = (0..8192)
-        .map(|index| format!("prom-cost-{index:05}"))
+        .map(|index| format!("prom-cost-{:05}", index))
         .collect::<Vec<_>>();
 
     let entries = ids
         .iter()
         .enumerate()
-        .map(|(index, id)| LocalMessageEntryRow {
+        .map(|(index, id)| LocalTaskEntryRow {
             f_id: id,
             f_topic: match index {
+                //
                 0 => "chapter",
+
                 _ => "invitation",
             },
-            f_status: LocalMessageStatus::Pending,
+            f_status: LocalTaskStatus::Pending,
             f_claim_token: None,
             f_payload: serde_json::json!({}),
             f_visible_at: now - Duration::minutes(1),
@@ -73,6 +76,7 @@ async fn claim_reads_are_bounded() {
 
     let reads = nucl
         .coord(async |context| {
+            //
             let before = pg_stat_xact_user_tables::table
                 .filter(pg_stat_xact_user_tables::relname.eq("t_local_message"))
                 .select(
@@ -88,9 +92,9 @@ async fn claim_reads_are_bounded() {
                 .await?
                 .unwrap();
 
-            assert_eq!(row.f_topic, "chapter");
+            assert_eq!(row.topic(), "chapter");
 
-            assert_eq!(row.f_id, "prom-cost-00000");
+            assert_eq!(row.id(), "prom-cost-00000");
 
             let after = pg_stat_xact_user_tables::table
                 .filter(pg_stat_xact_user_tables::relname.eq("t_local_message"))
@@ -116,9 +120,7 @@ async fn claim_reads_are_bounded() {
 
     let pending_invitations = t_local_message::table
         .filter(t_local_message::f_topic.eq("invitation"))
-        .filter(
-            t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-        )
+        .filter(t_local_message::f_status.eq(LocalTaskStatus::Pending.as_str()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -140,6 +142,7 @@ async fn claim_reads_are_bounded() {
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
 async fn maintenance_preserves_other_topics() {
+    //
     let test_rdb = start().await;
 
     let core = test_rdb.core();
@@ -149,24 +152,20 @@ async fn maintenance_preserves_other_topics() {
     let now = OffsetDateTime::now_utc();
 
     let entries = [
-        (
-            "chapter-processing",
-            "chapter",
-            LocalMessageStatus::Processing,
-        ),
+        ("chapter-processing", "chapter", LocalTaskStatus::Processing),
         (
             "invitation-processing",
             "invitation",
-            LocalMessageStatus::Processing,
+            LocalTaskStatus::Processing,
         ),
-        ("chapter-dead", "chapter", LocalMessageStatus::Dead),
-        ("invitation-dead", "invitation", LocalMessageStatus::Dead),
+        ("chapter-dead", "chapter", LocalTaskStatus::Dead),
+        ("invitation-dead", "invitation", LocalTaskStatus::Dead),
     ]
-    .map(|(id, topic, status)| LocalMessageEntryRow {
+    .map(|(id, topic, status)| LocalTaskEntryRow {
         f_id: id,
         f_topic: topic,
         f_status: status,
-        f_claim_token: matches!(status, LocalMessageStatus::Processing)
+        f_claim_token: matches!(status, LocalTaskStatus::Processing)
             .then_some(Uuid::from_u128(1)),
         f_payload: serde_json::json!({}),
         f_visible_at: now - Duration::days(31),
@@ -188,6 +187,7 @@ async fn maintenance_preserves_other_topics() {
 
     let purged = nucl
         .coord(async |context| {
+            //
             ResetStuck::new("chapter", &cutoff)
                 .step_on(&repo, context)
                 .await?;
@@ -212,10 +212,7 @@ async fn maintenance_preserves_other_topics() {
         .await
         .unwrap();
 
-    assert_eq!(
-        chapter,
-        (LocalMessageStatus::Pending.as_str().into(), None, 1)
-    );
+    assert_eq!(chapter, (LocalTaskStatus::Pending.as_str().into(), None, 1));
 
     let invitations = t_local_message::table
         .filter(t_local_message::f_topic.eq("invitation"))
@@ -235,13 +232,13 @@ async fn maintenance_preserves_other_topics() {
         vec![
             (
                 "invitation-dead".into(),
-                LocalMessageStatus::Dead.as_str().into(),
+                LocalTaskStatus::Dead.as_str().into(),
                 None,
                 0
             ),
             (
                 "invitation-processing".into(),
-                LocalMessageStatus::Processing.as_str().into(),
+                LocalTaskStatus::Processing.as_str().into(),
                 Some(Uuid::from_u128(1)),
                 0
             ),

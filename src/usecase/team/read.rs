@@ -68,11 +68,11 @@ where
         && affected_user_id != token.user_id
     {
         //
-        let err_message = trl("error-forbidden");
+        let err_msg = trl("error-forbidden");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %token.user_id,
             affected_user_id = %affected_user_id,
             "expected error: team listing ownership required",
@@ -80,7 +80,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
