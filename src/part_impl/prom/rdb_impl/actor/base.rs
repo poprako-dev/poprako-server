@@ -190,6 +190,19 @@ impl RdbPromActorDesc {
     pub async fn join(mut self) -> Result<(), tokio::task::JoinError> {
         (&mut self.task).await
     }
+
+    /// Requests cancellation and waits for the supervisor's bounded shutdown.
+    ///
+    /// # Errors
+    /// Returns the supervisor task's join error.
+    pub async fn cancel_and_join(
+        mut self,
+    ) -> Result<(), tokio::task::JoinError> {
+        //
+        self.token.cancel();
+
+        (&mut self.task).await
+    }
 }
 
 impl Drop for RdbPromActorDesc {

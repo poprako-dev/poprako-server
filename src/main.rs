@@ -129,34 +129,11 @@ async fn main() -> anyhow::Result<()> {
 
     let serve_rest = poprako_server::serve(harn, http_addr).await;
 
-    let (sched_rest, prom_rest) = tokio::join!(
-        async {
-            //
-            sched_desc.cancel();
-
-            sched_desc.join().await
-        },
-        async {
-            //
-            prom_actor_desc.cancel();
-
-            prom_actor_desc.join().await
-        },
-    );
-
-    let (effect_rest, obj_dept_rest) = tokio::join!(
-        async {
-            //
-            effect_actor_desc.cancel();
-
-            effect_actor_desc.join().await
-        },
-        async {
-            //
-            obj_dept_actor_desc.cancel();
-
-            obj_dept_actor_desc.join().await
-        },
+    let (sched_rest, prom_rest, effect_rest, obj_dept_rest) = tokio::join!(
+        sched_desc.cancel_and_join(),
+        prom_actor_desc.cancel_and_join(),
+        effect_actor_desc.cancel_and_join(),
+        obj_dept_actor_desc.cancel_and_join(),
     );
 
     let mut shutdown_err = None;
@@ -170,7 +147,11 @@ async fn main() -> anyhow::Result<()> {
         //
         if let Err(err) = rest {
             //
-            tracing::error!(actor, err = ?err, "background supervisor failed");
+            tracing::error!(
+                actor,
+                err = ?err,
+                "background supervisor failed"
+            );
 
             shutdown_err.get_or_insert_with(|| {
                 //
