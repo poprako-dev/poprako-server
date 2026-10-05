@@ -139,11 +139,11 @@ fn validate_with_options(
         return accept(());
     }
 
-    let err_message = trl("error-pinned-chapter-with-required");
+    let err_msg = trl("error-pinned-chapter-with-required");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         workset_id = %instr.workset_id,
         user_id = %user_id,
         with_pinned_chapter,
@@ -153,6 +153,6 @@ fn validate_with_options(
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     })
 }

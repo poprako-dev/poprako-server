@@ -126,7 +126,7 @@ async fn update_roles_self_role_reduction_updates_assignment() {
     .unwrap();
 
     assert_eq!(
-        mock.snapshot().assignments[0].roles,
+        mock.snapshot().assignments.first().unwrap().roles,
         role(RoleField::TRANSLATOR)
     );
 }
@@ -157,7 +157,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -188,7 +188,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -219,7 +219,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -242,7 +242,7 @@ async fn update_roles_admin_role_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -269,7 +269,7 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -303,7 +303,7 @@ async fn update_roles_team_admin_can_reduce_own_worker_roles() {
     .unwrap();
 
     assert_eq!(
-        mock.snapshot().assignments[0].roles,
+        mock.snapshot().assignments.first().unwrap().roles,
         role(RoleField::TRANSLATOR)
     );
 }
@@ -357,13 +357,16 @@ async fn update_roles_team_admin_can_join_and_leave_review() {
 
         assert_eq!(snapshot.assignments.len(), 1);
 
-        assert_eq!(snapshot.assignments[0].id, joined.id);
+        assert_eq!(snapshot.assignments.first().unwrap().id, joined.id);
 
-        assert_eq!(snapshot.assignments[0].roles, remaining_roles);
+        assert_eq!(
+            snapshot.assignments.first().unwrap().roles,
+            remaining_roles
+        );
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 2);
 
-        let workflow_record = &snapshot.chapter_workflow_records[1];
+        let workflow_record = snapshot.chapter_workflow_records.get(1).unwrap();
 
         assert_eq!(workflow_record.chapter_id, "chapter-1");
 
@@ -412,11 +415,11 @@ async fn update_roles_team_admin_cannot_add_unsupported_worker_roles() {
     .await
     .unwrap_err();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.assignments[0].roles, original_roles);
+    assert_eq!(snapshot.assignments.first().unwrap().roles, original_roles);
 
     assert!(snapshot.chapter_workflow_records.is_empty());
 }
@@ -453,11 +456,14 @@ async fn update_roles_existing_assignment_cannot_gain_admin() {
         .await
         .unwrap_err();
 
-        assert_expected_variant(err, ExpectedVariant::Args);
+        assert_expected_variant(&err, ExpectedVariant::Args);
 
         let snapshot = mock.snapshot();
 
-        assert_eq!(snapshot.assignments[0].roles, role(RoleField::REVIEWER));
+        assert_eq!(
+            snapshot.assignments.first().unwrap().roles,
+            role(RoleField::REVIEWER)
+        );
 
         assert!(snapshot.chapter_workflow_records.is_empty());
     }

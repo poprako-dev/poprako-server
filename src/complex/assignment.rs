@@ -172,22 +172,22 @@ pub mod perm {
     // Build and log one expected assignment permission error.
     fn reject(
         variant: ExpectedVariant,
-        message_key: &str,
+        msg_key: &str,
         event: &'static str,
     ) -> BaseRest<()> {
         //
-        let err_message = trl(message_key);
+        let err_msg = trl(msg_key);
 
         tracing::warn!(
             err_variant = ?variant,
-            err_message = %err_message,
+            err_msg = %err_msg,
             event,
             "expected assignment permission error",
         );
 
         Err(BaseError::Expected {
             variant,
-            message: err_message,
+            msg: err_msg,
         })
     }
 

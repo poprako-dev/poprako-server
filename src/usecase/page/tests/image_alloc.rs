@@ -34,7 +34,7 @@ async fn raw_ident_replacements_apply_to_deduplicated_images_without_tasks() {
 
     seed_alloc_scope(&mock);
 
-    seed_page_obj(&mock, "page-1", 4, true, 0, ImageExt::Png);
+    seed_page_obj(&mock, "page-1", 4, true, (0, ImageExt::Png));
 
     for (replacement, expected) in [
         (Some("原稿 01.JPG".into()), Some("原稿 01.JPG")),
@@ -67,7 +67,16 @@ async fn raw_ident_replacements_apply_to_deduplicated_images_without_tasks() {
                 .map(|info| info.raw_ident.as_str()),
             expected
         );
-        assert_eq!(snapshot.objs["page_image"]["page-1"].version, 4);
+        assert_eq!(
+            snapshot
+                .objs
+                .get("page_image")
+                .unwrap()
+                .get("page-1")
+                .unwrap()
+                .version,
+            4
+        );
         assert!(snapshot.obj_tasks.is_empty());
         assert!(snapshot.prom_records.is_empty());
     }
@@ -112,14 +121,26 @@ async fn rejected_raw_ident_allocation_preserves_existing_name() {
         .err()
         .unwrap();
 
-        assert_expected_variant(error, variant);
+        assert_expected_variant(&error, variant);
 
         let after = mock.snapshot();
 
         assert_eq!(after.page_raw_idents, before.page_raw_idents);
         assert_eq!(
-            after.objs["page_image"]["page-1"].version,
-            before.objs["page_image"]["page-1"].version
+            after
+                .objs
+                .get("page_image")
+                .unwrap()
+                .get("page-1")
+                .unwrap()
+                .version,
+            before
+                .objs
+                .get("page_image")
+                .unwrap()
+                .get("page-1")
+                .unwrap()
+                .version
         );
     }
 }
@@ -148,12 +169,20 @@ async fn first_image_allocation_creates_generation_and_check_task() {
     );
 
     let snapshot = mock.snapshot();
-    let record = &snapshot.objs["page_image"]["page-1"];
+    let record = snapshot
+        .objs
+        .get("page_image")
+        .unwrap()
+        .get("page-1")
+        .unwrap();
 
     assert_eq!(record.version, 1);
     assert!(!record.meta.as_ref().unwrap().is_avail);
     assert_eq!(snapshot.obj_tasks.len(), 1);
-    assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
+    assert!(matches!(
+        snapshot.obj_tasks.first().unwrap().1,
+        ObjTask::Check { .. }
+    ));
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
@@ -163,7 +192,7 @@ async fn replacement_allocation_deletes_old_generation_and_checks_new_one() {
 
     seed_alloc_scope(&mock);
 
-    let old_key = seed_page_obj(&mock, "page-1", 4, true, 0, ImageExt::Png);
+    let old_key = seed_page_obj(&mock, "page-1", 4, true, (0, ImageExt::Png));
 
     let allocated = alloc_image(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
@@ -178,7 +207,16 @@ async fn replacement_allocation_deletes_old_generation_and_checks_new_one() {
     let snapshot = mock.snapshot();
 
     assert_eq!(slot.image_ver, 5);
-    assert_eq!(snapshot.objs["page_image"]["page-1"].version, 5);
+    assert_eq!(
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .version,
+        5
+    );
     assert_eq!(snapshot.obj_tasks.len(), 2);
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(task, ObjTask::Delete { key } if key == &old_key)
@@ -195,7 +233,7 @@ async fn matching_available_image_returns_no_slot_without_version_bump() {
     seed_alloc_scope(&mock);
 
     let existing_key =
-        seed_page_obj(&mock, "page-1", 4, true, 0, ImageExt::Png);
+        seed_page_obj(&mock, "page-1", 4, true, (0, ImageExt::Png));
 
     let allocated = alloc_image(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
@@ -209,9 +247,23 @@ async fn matching_available_image_returns_no_slot_without_version_bump() {
     let snapshot = mock.snapshot();
 
     assert!(allocated.slot.is_none());
-    assert_eq!(snapshot.objs["page_image"]["page-1"].version, 4);
     assert_eq!(
-        snapshot.objs["page_image"]["page-1"]
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .version,
+        4
+    );
+    assert_eq!(
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -229,7 +281,7 @@ async fn matching_pending_image_resigns_current_generation() {
     seed_alloc_scope(&mock);
 
     let existing_key =
-        seed_page_obj(&mock, "page-1", 4, false, 0, ImageExt::Png);
+        seed_page_obj(&mock, "page-1", 4, false, (0, ImageExt::Png));
 
     let allocated = alloc_image(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
@@ -245,10 +297,19 @@ async fn matching_pending_image_resigns_current_generation() {
 
     assert_eq!(slot.image_ver, 4);
     assert!(slot.put_url.ends_with(&existing_key.image));
-    assert_eq!(snapshot.objs["page_image"]["page-1"].version, 4);
+    assert_eq!(
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .version,
+        4
+    );
     assert_eq!(snapshot.obj_tasks.len(), 1);
     assert!(matches!(
-        &snapshot.obj_tasks[0].1,
+        &snapshot.obj_tasks.first().unwrap().1,
         ObjTask::Check { key } if key == &existing_key
     ));
 }
@@ -259,7 +320,7 @@ async fn matching_hash_with_different_extension_allocates_new_generation() {
 
     seed_alloc_scope(&mock);
 
-    let old_key = seed_page_obj(&mock, "page-1", 4, true, 0, ImageExt::Png);
+    let old_key = seed_page_obj(&mock, "page-1", 4, true, (0, ImageExt::Png));
 
     let allocated = alloc_image(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
@@ -272,8 +333,15 @@ async fn matching_hash_with_different_extension_allocates_new_generation() {
 
     let slot = allocated.slot.unwrap();
     let snapshot = mock.snapshot();
-    let current_meta =
-        snapshot.objs["page_image"]["page-1"].meta.as_ref().unwrap();
+    let current_meta = snapshot
+        .objs
+        .get("page_image")
+        .unwrap()
+        .get("page-1")
+        .unwrap()
+        .meta
+        .as_ref()
+        .unwrap();
 
     assert_eq!(slot.image_ver, 5);
     assert_eq!(current_meta.ext, "webp");
@@ -298,7 +366,7 @@ async fn missing_page_rejects_image_allocation_without_side_effects() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(snapshot.objs.is_empty());
     assert!(snapshot.obj_tasks.is_empty());
     assert!(snapshot.prom_records.is_empty());

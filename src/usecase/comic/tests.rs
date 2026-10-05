@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 mod cover;
 mod fixture;
 mod incl;
@@ -52,6 +57,10 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     mock.seed_workset(workset("workset-1", "team-1"));
 
@@ -123,54 +132,65 @@ async fn create_allocates_index_and_updates_count() {
 
     assert!(created.is_ok());
 
-    let created = created.ok().unwrap();
+    let created = created.unwrap();
 
     let snapshot = mock.snapshot();
 
     // Comic
-    assert_eq!(created.id, snapshot.comics[0].id);
+    assert_eq!(created.id, snapshot.comics.first().unwrap().id);
 
-    assert_eq!(snapshot.comics[0].index, 0);
+    assert_eq!(snapshot.comics.first().unwrap().index, 0);
 
-    assert_eq!(snapshot.comics[0].creator_id, "user-1");
+    assert_eq!(snapshot.comics.first().unwrap().creator_id, "user-1");
 
     assert_eq!(snapshot.comics.len(), 1);
 
     // Workset
-    assert_eq!(snapshot.worksets[0].comic_count, 1);
+    assert_eq!(snapshot.worksets.first().unwrap().comic_count, 1);
 
     // First chapter
     assert_eq!(snapshot.chapters.len(), 1);
 
-    assert_eq!(snapshot.chapters[0].id, created.chapter_id);
+    assert_eq!(snapshot.chapters.first().unwrap().id, created.chapter_id);
 
-    assert_eq!(snapshot.chapters[0].comic_id, created.id);
+    assert_eq!(snapshot.chapters.first().unwrap().comic_id, created.id);
 
-    assert!(snapshot.chapters[0].is_pinned);
+    assert!(snapshot.chapters.first().unwrap().is_pinned);
 
-    assert_eq!(snapshot.chapters[0].index, 0);
+    assert_eq!(snapshot.chapters.first().unwrap().index, 0);
 
     // Denormalised chapter counters
-    assert_eq!(snapshot.comics[0].chapter_count, 1);
+    assert_eq!(snapshot.comics.first().unwrap().chapter_count, 1);
 
     // last_active_at should be set (not epoch)
-    assert!(snapshot.comics[0].last_active_at.unix_timestamp() > 0);
+    assert!(
+        snapshot
+            .comics
+            .first()
+            .unwrap()
+            .last_active_at
+            .unix_timestamp()
+            > 0
+    );
 
     // Creator worker assignment
     assert_eq!(snapshot.assignments.len(), 1);
 
-    assert_eq!(snapshot.assignments[0].chapter_id, created.chapter_id);
+    assert_eq!(
+        snapshot.assignments.first().unwrap().chapter_id,
+        created.chapter_id
+    );
 
-    assert_eq!(snapshot.assignments[0].user_id, "user-1");
+    assert_eq!(snapshot.assignments.first().unwrap().user_id, "user-1");
 
     assert_eq!(
-        snapshot.assignments[0].roles,
+        snapshot.assignments.first().unwrap().roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
 
     assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
-    let record = &snapshot.chapter_workflow_records[0];
+    let record = snapshot.chapter_workflow_records.first().unwrap();
 
     assert_eq!(record.chapter_id, created.chapter_id);
 
@@ -191,7 +211,7 @@ async fn create_rolls_back_missing_workset() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(snapshot.comics.is_empty());
 }
@@ -207,7 +227,12 @@ async fn mark_cover_uploaded_marks_current_generation_idempotently() {
     mark_comic_cover(&mock, 3).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["comic_cover"]["comic-1"]
+        mock.snapshot()
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -223,10 +248,16 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
     let err = mark_comic_cover(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(
-        !mock.snapshot().objs["comic_cover"]["comic-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -249,7 +280,7 @@ async fn get_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -272,7 +303,7 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
     mock.seed_chapter(chapter(
         "chapter-1",
         "comic-1",
-        StageMask::try_from(0u32).ok().unwrap(),
+        StageMask::try_from(0u32).unwrap(),
     ));
 
     let list = list_infos(
@@ -293,25 +324,28 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
     assert!(list.is_ok());
 
-    let list = list.ok().unwrap();
+    let list = list.unwrap();
 
     assert_eq!(list.comics.len(), 2);
 
-    assert_eq!(list.comics[0].id, "comic-1");
+    assert_eq!(list.comics.first().unwrap().id, "comic-1");
 
-    assert_eq!(list.comics[1].id, "comic-2");
+    assert_eq!(list.comics.get(1).unwrap().id, "comic-2");
 
     assert_eq!(list.pinned_chapters.len(), list.comics.len());
 
-    assert_eq!(list.pinned_chapters[0].as_ref().unwrap().id, "chapter-1");
+    assert_eq!(
+        list.pinned_chapters.first().unwrap().as_ref().unwrap().id,
+        "chapter-1"
+    );
 
-    assert!(list.pinned_chapters[1].is_none());
+    assert!(list.pinned_chapters.get(1).unwrap().is_none());
 
     assert_eq!(list.pinned_chapter_assignments.len(), list.comics.len());
 
-    assert!(list.pinned_chapter_assignments[0].is_empty());
+    assert!(list.pinned_chapter_assignments.first().unwrap().is_empty());
 
-    assert!(list.pinned_chapter_assignments[1].is_empty());
+    assert!(list.pinned_chapter_assignments.get(1).unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -341,7 +375,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
 
     assert!(list.is_ok());
 
-    assert!(list.ok().unwrap().comics.is_empty());
+    assert!(list.unwrap().comics.is_empty());
 }
 
 #[tokio::test]
@@ -358,10 +392,8 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
     mock.seed_comic(comic("comic-pending", "workset-1", 1));
 
     let completed_translate_mask = StageMask::try_from(0u32)
-        .ok()
         .unwrap()
         .try_set_phase(Stage::Translate, StagePhase::Completed)
-        .ok()
         .unwrap();
 
     mock.seed_chapter(chapter(
@@ -373,14 +405,12 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
     mock.seed_chapter(chapter(
         "chapter-pending",
         "comic-pending",
-        StageMask::try_from(0u32).ok().unwrap(),
+        StageMask::try_from(0u32).unwrap(),
     ));
 
     let filter_mask = StageMask::try_filter_from(0u32)
-        .ok()
         .unwrap()
         .try_set_phase(Stage::Translate, StagePhase::Completed)
-        .ok()
         .unwrap();
 
     let list = list_infos(
@@ -401,11 +431,11 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
 
     assert!(list.is_ok());
 
-    let list = list.ok().unwrap();
+    let list = list.unwrap();
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics[0].id, "comic-active");
+    assert_eq!(list.comics.first().unwrap().id, "comic-active");
 }
 
 #[tokio::test]
@@ -435,7 +465,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -485,11 +515,11 @@ async fn list_infos_applies_pagination() {
 
     assert!(list.is_ok());
 
-    let list = list.ok().unwrap();
+    let list = list.unwrap();
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics[0].id, "comic-1");
+    assert_eq!(list.comics.first().unwrap().id, "comic-1");
 }
 
 #[tokio::test]
@@ -514,16 +544,18 @@ async fn update_info_updates_comic() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.comics[0].title, "updated");
+    assert_eq!(snapshot.comics.first().unwrap().title, "updated");
 
-    assert_eq!(snapshot.comics[0].author, "updated-author");
+    assert_eq!(snapshot.comics.first().unwrap().author, "updated-author");
 
-    assert_eq!(snapshot.comics[0].description, Some("updated-desc".into()));
+    assert_eq!(
+        snapshot.comics.first().unwrap().description,
+        Some("updated-desc".into())
+    );
 }
 
 #[tokio::test]
@@ -545,5 +577,5 @@ async fn update_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }

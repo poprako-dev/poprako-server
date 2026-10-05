@@ -51,9 +51,9 @@ pub fn check_join_role(
     //
     if roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
+        let err_msg = trl("error-chapter-role-not-assignable");
 
-        return Err(BaseError::expected(ExpectedVariant::Args, err_message));
+        return Err(BaseError::expected(ExpectedVariant::Args, err_msg));
     }
 
     if !member_info.roles.contains_mask(roles) {
@@ -102,19 +102,19 @@ const fn required_roles_for_transition(
 }
 
 // Build and log one expected chapter-role permission error.
-fn reject(message_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject(msg_key: &str, event: &'static str) -> BaseRest<()> {
     //
-    let err_message = trl(message_key);
+    let err_msg = trl(msg_key);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Perm,
-        err_message = %err_message,
+        err_msg = %err_msg,
         event,
         "expected chapter role error",
     );
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Perm,
-        message: err_message,
+        msg: err_msg,
     })
 }

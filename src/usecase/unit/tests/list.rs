@@ -29,7 +29,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
         })
         .map(|unit_info| unit_info.id.clone())
         .ok_or_else(|| BaseError::Unrecoverable {
-            message: "test fixture Unit is missing".into(),
+            msg: "test fixture Unit is missing".into(),
         })?;
 
     save_edits(

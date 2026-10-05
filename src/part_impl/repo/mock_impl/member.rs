@@ -288,7 +288,7 @@ fn list_member_infos(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, member_infos.len());
 
-        member_infos[offset..end].to_vec()
+        (*member_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 

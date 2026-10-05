@@ -1,3 +1,8 @@
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Mock deferred-task recording and on-demand processing.
 
 mod defer;
@@ -8,9 +13,10 @@ mod tests;
 
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::TaskPayload;
+use poprako_prom::general::dispatch_flow::DispatchFlow;
+
+use crate::part::prom::payload::PromPayload;
 use crate::part_impl::prom::dispatch;
-use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, BaseRest, accept};
@@ -26,23 +32,30 @@ pub struct MockPromRecord {
 
 impl MockPromRecord {
     /// Returns the durable message identifier.
+    #[must_use]
     pub fn id(&self) -> &str {
         &self.id
     }
 
     /// Returns the first processing time.
+    #[must_use]
     pub fn visible_at(&self) -> OffsetDateTime {
         self.visible_at
     }
 
     /// Decodes the stored payload for assertions and processing.
-    pub fn payload(&self) -> TaskPayload {
+    /// # Panics
+    /// Panics if the recorded payload is invalid JSON or has an invalid shape.
+    #[must_use]
+    pub fn payload(&self) -> PromPayload {
         serde_json::from_str(&self.payload_json)
             .expect("stored prom payload should deserialize successfully")
     }
 }
 
 /// Processes every recorded non-object deferred action.
+/// # Errors
+/// Returns an unrecoverable error when dispatch requests retry or dead-letter handling.
 pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
     let snapshot = mock.snapshot();
 
@@ -55,13 +68,11 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
         .limit_wait(record.created_at, OffsetDateTime::now_utc());
 
         match flow {
-            TaskFlow::Complete | TaskFlow::Wait { .. } => {}
+            DispatchFlow::Complete | DispatchFlow::Wait { .. } => {}
 
-            TaskFlow::Retry { err_message }
-            | TaskFlow::Dead { err_message } => {
-                return Err(BaseError::Unrecoverable {
-                    message: err_message,
-                });
+            DispatchFlow::Retry { err_msg }
+            | DispatchFlow::Dead { err_msg } => {
+                return Err(BaseError::Unrecoverable { msg: err_msg });
             }
         }
     }

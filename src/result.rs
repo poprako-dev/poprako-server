@@ -3,7 +3,9 @@
 use std::result::Result;
 
 use poprako_obj_dept::rest::ObjDeptError;
+use poprako_prom::general::rdb_impl::PromError;
 use poprako_rdb_core::RdbError;
+use poprako_util::i18n::trl;
 
 /// Categorizes an expected application error by its origin domain.
 #[derive(Clone, Copy, Debug)]
@@ -28,25 +30,25 @@ pub enum BaseError {
         /// Classification of the expected error variant.
         variant: ExpectedVariant,
         /// Human-readable detail about the error condition.
-        message: String,
+        msg: String,
     },
 
     /// A transient concurrency conflict that the caller may retry.
     Retryable {
         /// Human-readable detail describing the retryable condition.
-        message: String,
+        msg: String,
     },
 
     /// A temporarily unavailable dependency that the caller may try again.
     Unavailable {
         /// Generic availability detail retained for non-HTTP callers.
-        message: String,
+        msg: String,
     },
 
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
         /// Description of the system failure.
-        message: String,
+        msg: String,
     },
 }
 
@@ -55,19 +57,19 @@ impl BaseError {
     /// Already-logged errors must retain their variant when propagated.
     #[must_use]
     #[track_caller]
-    pub fn expected(variant: ExpectedVariant, message: String) -> Self {
+    pub fn expected(variant: ExpectedVariant, msg: String) -> Self {
         //
         let origin = std::panic::Location::caller();
 
         tracing::warn!(
             err_variant = ?variant,
-            err_message = %message,
+            err_msg = %msg,
             source_file = origin.file(),
             source_line = origin.line(),
             "expected application error",
         );
 
-        Self::Expected { variant, message }
+        Self::Expected { variant, msg }
     }
 }
 
@@ -75,6 +77,10 @@ impl BaseError {
 pub type BaseRest<T> = Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Application success constructors preserve the shared BaseRest contract"
+)]
 pub const fn accept<T>(v: T) -> BaseRest<T> {
     Ok(v)
 }
@@ -86,13 +92,12 @@ impl From<RdbError> for BaseError {
         match source {
             //
             RdbError::PoolWaitTimeout => Self::Unavailable {
-                message:
-                    "database connection capacity is temporarily unavailable"
-                        .into(),
+                msg: "database connection capacity is temporarily unavailable"
+                    .into(),
             },
 
             source => Self::Unrecoverable {
-                message: source.to_string(),
+                msg: source.to_string(),
             },
         }
     }
@@ -104,23 +109,42 @@ impl From<ObjDeptError> for BaseError {
         //
         match source {
             //
-            ObjDeptError::Invalid { message } => Self::Expected {
+            ObjDeptError::Invalid { msg } => Self::Expected {
                 variant: ExpectedVariant::Args,
-                message,
+                msg,
             },
 
-            ObjDeptError::Conflict { message }
-            | ObjDeptError::Retryable { message } => {
-                Self::Retryable { message }
-            }
+            ObjDeptError::Conflict { msg }
+            | ObjDeptError::Retryable { msg } => Self::Retryable { msg },
 
-            ObjDeptError::Unavailable { message } => {
-                Self::Unavailable { message }
-            }
+            ObjDeptError::Unavailable { msg } => Self::Unavailable { msg },
 
-            ObjDeptError::Unrecoverable { message } => {
-                Self::Unrecoverable { message }
-            }
+            ObjDeptError::Unrecoverable { msg } => Self::Unrecoverable { msg },
+        }
+    }
+}
+
+impl From<PromError> for BaseError {
+    // Preserve the classification recorded at the neutral Prom adapter leaf.
+    fn from(source: PromError) -> Self {
+        //
+        match source {
+            //
+            PromError::AlreadyExists => Self::Expected {
+                variant: ExpectedVariant::Args,
+                msg: trl("error-already-exists"),
+            },
+
+            PromError::ConcurrentConflict => Self::Retryable {
+                msg: trl("error-concurrent-conflict"),
+            },
+
+            PromError::NotFound => Self::Expected {
+                variant: ExpectedVariant::Args,
+                msg: trl("error-not-found"),
+            },
+
+            PromError::Unrecoverable { msg } => Self::Unrecoverable { msg },
         }
     }
 }

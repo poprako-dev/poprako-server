@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 // import_query(ImportTermbaseQuery)(positive): force_merge defaults to false.
@@ -37,5 +42,5 @@ fn native_export_wire_deserializes_as_import_instr() {
 
     assert_eq!(instr.name, "Glossary");
 
-    assert_eq!(instr.terms[0].source, "Source");
+    assert_eq!(instr.terms.first().unwrap().source, "Source");
 }

@@ -66,6 +66,10 @@ pub async fn find_info_by_user_id_and_team_id(
 
 /// Query a paginated, filtered list of member infos.
 #[instrument(level = "info", skip_all)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
@@ -194,11 +198,11 @@ pub async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let message = trl("error-member-not-found");
+        let msg = trl("error-member-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             member_id = %id,
             operation = "get member info",
             "expected member error",
@@ -206,7 +210,7 @@ pub async fn get_info_by_id(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

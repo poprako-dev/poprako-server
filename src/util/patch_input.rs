@@ -1,6 +1,12 @@
 //! Patch input shared by runtime deserialization and schema generation.
 // Utoipa generic derive emits this lint in generated impls.
-#![cfg_attr(feature = "swagger", allow(clippy::option_if_let_else))]
+#![cfg_attr(
+    feature = "swagger",
+    allow(
+        clippy::option_if_let_else,
+        reason = "Generic serialization and schema derives emit this lint on non-Option fields"
+    )
+)]
 
 use serde::Deserialize;
 

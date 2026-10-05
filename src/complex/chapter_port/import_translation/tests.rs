@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use crate::complex::chapter_port::import_translation as chapter_translation_import_complex;
 // Integration fixture for real LabelPlus import parsing.
 // parse_poprako(parse_poprako)(positive): preserves zero-based PopRaKo indexes.
@@ -21,31 +26,26 @@ fn parse_label_plus_parses_real_material() {
         LABEL_PLUS_MATERIAL,
     );
 
-    let pages = match pages {
-        //
-        Ok(pages) => pages,
-
-        Err(_) => panic!("expected LabelPlus material parse success"),
-    };
+    let pages = pages.unwrap();
 
     assert_eq!(pages.len(), 9);
 
-    assert_eq!(pages[0].units.len(), 10);
+    assert_eq!(pages.first().unwrap().units.len(), 10);
 
-    assert_eq!(pages[8].units.len(), 9);
+    assert_eq!(pages.get(8).unwrap().units.len(), 9);
 
-    assert_eq!(pages[0].units[0].index, 0);
+    assert_eq!(pages.first().unwrap().units.first().unwrap().index, 0);
 
-    assert!(!pages[0].units[0].is_flagged);
+    assert!(!pages.first().unwrap().units.first().unwrap().is_flagged);
 
     assert!(matches!(
-        &pages[0].units[0].source,
+        &pages.first().unwrap().units.first().unwrap().source,
         UnitTranslationImportSource::LabelPlus { text }
             if text.as_deref() == Some("喂 游斗哥")
     ));
 
     assert!(matches!(
-        &pages[8].units[8].source,
+        &pages.get(8).unwrap().units.get(8).unwrap().source,
         UnitTranslationImportSource::LabelPlus { text }
             if text.as_deref() == Some("哥哥对次女可爱的\n小心思毫无察觉")
     ));
@@ -86,19 +86,14 @@ fn parse_poprako_preserves_zero_based_indexes() {
         }"#,
     );
 
-    let pages = match pages {
-        //
-        Ok(pages) => pages,
+    let pages = pages.unwrap();
 
-        Err(_) => panic!("expected PopRaKo parse success"),
-    };
+    assert_eq!(pages.first().unwrap().units.first().unwrap().index, 7);
 
-    assert_eq!(pages[0].units[0].index, 7);
-
-    assert!(!pages[0].units[0].is_flagged);
+    assert!(!pages.first().unwrap().units.first().unwrap().is_flagged);
 
     assert!(matches!(
-        &pages[0].units[0].source,
+        &pages.first().unwrap().units.first().unwrap().source,
         UnitTranslationImportSource::PopRaKo {
             translated_text: Some(text),
             proofread_text: None,
@@ -116,7 +111,7 @@ fn build_unit_create_produces_a_complete_create() {
     .unwrap();
 
     let edit = chapter_translation_import_complex::build_unit_create(
-        &pages[0].units[0],
+        pages.first().unwrap().units.first().unwrap(),
         "unit-new".to_string(),
         "proofreader-1",
         false,
@@ -155,7 +150,7 @@ fn parse_label_plus_accepts_bom_crlf_and_structure_trailing_whitespace() {
 
     assert_eq!(pages.len(), 1);
     assert!(matches!(
-        &pages[0].units[0].source,
+        &pages.first().unwrap().units.first().unwrap().source,
         UnitTranslationImportSource::LabelPlus { text }
             if text.as_deref() == Some(" translated  ")
     ));
@@ -251,12 +246,12 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
     let pages =
         chapter_translation_import_complex::parse_poprako(&content).unwrap();
 
-    assert_eq!(pages[0].page_index, 0);
-    assert_eq!(pages[0].units[0].index, 0);
-    assert_eq!(pages[0].units[1].index, 1);
-    assert_eq!(pages[1].page_index, 1);
+    assert_eq!(pages.first().unwrap().page_index, 0);
+    assert_eq!(pages.first().unwrap().units.first().unwrap().index, 0);
+    assert_eq!(pages.first().unwrap().units.get(1).unwrap().index, 1);
+    assert_eq!(pages.get(1).unwrap().page_index, 1);
     assert!(matches!(
-        &pages[1].units[0].source,
+        &pages.get(1).unwrap().units.first().unwrap().source,
         UnitTranslationImportSource::PopRaKo {
             translated_text: Some(text),
             ..

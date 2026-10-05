@@ -30,17 +30,17 @@ pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
 
     if phrase.is_empty() {
         //
-        let err_message = trl("error-unit-search-phrase-required");
+        let err_msg = trl("error-unit-search-phrase-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             "expected error: unit search phrase required",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
@@ -169,18 +169,18 @@ pub fn normalize_edits(
             ("max_count".into(), MAX_UNIT_EDIT_COUNT.into()),
         ]);
 
-        let err_message = trl_kv("error-invalid-unit-edit-count", &args);
+        let err_msg = trl_kv("error-invalid-unit-edit-count", &args);
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             edit_count = edits.len(),
             max_edit_count = MAX_UNIT_EDIT_COUNT,
             base_id_count = base_ids.len(),
             "expected error: unit edit count is invalid",
         );
 
-        return Err(invalid_unit_oper(err_message));
+        return Err(invalid_unit_oper(err_msg));
     }
 
     let (delete_edits, non_delete_edits) = edits
@@ -270,7 +270,7 @@ fn transform_text(
         //
         let unchanged = original.get(cursor..start).ok_or_else(|| {
             BaseError::Unrecoverable {
-                message: "Unit transform text boundary is invalid".into(),
+                msg: "Unit transform text boundary is invalid".into(),
             }
         })?;
 
@@ -285,7 +285,7 @@ fn transform_text(
         original
             .get(cursor..)
             .ok_or_else(|| BaseError::Unrecoverable {
-                message: "Unit transform final text boundary is invalid".into(),
+                msg: "Unit transform final text boundary is invalid".into(),
             })?;
 
     transformed.push_str(unchanged);
@@ -294,10 +294,10 @@ fn transform_text(
 }
 
 // Build the client-visible error for an invalid Unit operation.
-const fn invalid_unit_oper(err_message: String) -> BaseError {
+const fn invalid_unit_oper(err_msg: String) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
@@ -402,11 +402,11 @@ fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
     if create_count != created_ids.len()
         || created_ids.iter().any(|id| base_ids.contains(id))
     {
-        let err_message = trl("error-invalid-unit-oper");
+        let err_msg = trl("error-invalid-unit-oper");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             edit_count = edits.len(),
             base_id_count = base_ids.len(),
             create_count,
@@ -414,7 +414,7 @@ fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
             "expected error: unit create edits are inconsistent",
         );
 
-        return Err(invalid_unit_oper(err_message));
+        return Err(invalid_unit_oper(err_msg));
     }
 
     edits.iter().try_for_each(|edit| {
@@ -425,11 +425,11 @@ fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
 // Build the client-visible error for an invalid Unit transform.
 fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
     //
-    let err_message = trl("error-invalid-unit-transform");
+    let err_msg = trl("error-invalid-unit-transform");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         unit_id,
         reason,
         "expected error: invalid unit transform",
@@ -437,7 +437,7 @@ fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
@@ -507,17 +507,17 @@ fn validate_edit(
 
     if let Some((id, operation)) = invalid_target {
         //
-        let err_message = trl("error-invalid-unit-oper");
+        let err_msg = trl("error-invalid-unit-oper");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             unit_id = %id,
             operation,
             "expected error: unit edit target is invalid",
         );
 
-        return Err(invalid_unit_oper(err_message));
+        return Err(invalid_unit_oper(err_msg));
     }
 
     let Some((id, next_id)) = (match edit {
@@ -544,17 +544,17 @@ fn validate_edit(
         || deleted_ids.contains(next_id.as_str())
     {
         //
-        let err_message = trl("error-invalid-unit-oper");
+        let err_msg = trl("error-invalid-unit-oper");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             unit_id = %id,
             next_unit_id = %next_id,
             "expected error: unit next pointer is invalid",
         );
 
-        return Err(invalid_unit_oper(err_message));
+        return Err(invalid_unit_oper(err_msg));
     }
 
     accept(())

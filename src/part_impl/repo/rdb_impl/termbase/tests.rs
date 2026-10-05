@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // termbase_unique_and_query_roundtrip(CreateTermbase, ListTermbaseInfos, UpdateTermbaseTermCount)(positive): termbase storage preserves normalized uniqueness while supporting escaped fuzzy search and atomic counts.
 
 use super::*;
@@ -16,50 +21,21 @@ use crate::part::repo::oper::termbase::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
-async fn create_termbase(
+// Verify comic listings include team and owning-comic bases while excluding siblings.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+async fn verify_comic_termbase_scope(
     repo: &HybRepo,
-    nucl: &RdbNucl,
+    nucl: &RdbNucl<ReptRead>,
+    comic_fixture: &ComicFixture,
     termbase_entry: &TermbaseEntry,
-) -> TermbaseInfo {
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateTermbase {
-                entry: termbase_entry,
-            },
-        )
-        .await
-    })
-    .await
-    .ok()
-    .unwrap()
-}
-
-/// Verifies termbase unique and query roundtrip.
-pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
-    //
-    let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
-
-    let repo = HybRepo::new(shared.clone());
-
-    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
-
-    let termbase_entry = TermbaseEntry {
-        id: format!("{}main", PREFIX),
-        team_id: Some(comic_fixture.team_entry.id.clone()),
-        comic_id: None,
-        name: "100%_Glossary".into(),
-        description: Some("not searchable".into()),
-        creator_id: comic_fixture.creator_form.id.clone(),
-    };
-
-    let created = create_termbase(&repo, &nucl, &termbase_entry).await;
-
-    assert_eq!(created.term_count, 0);
-
+) {
     let comic_termbase_entry = TermbaseEntry {
         id: format!("{}comic-base", PREFIX),
         team_id: None,
@@ -69,7 +45,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
-    create_termbase(&repo, &nucl, &comic_termbase_entry).await;
+    create_termbase(repo, nucl, &comic_termbase_entry).await;
 
     let mut sibling_comic_entry = test_shared::form::comic_entry(
         &format!("{}sibling-", PREFIX),
@@ -89,7 +65,6 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         .await
     })
     .await
-    .ok()
     .unwrap();
 
     let sibling_termbase_entry = TermbaseEntry {
@@ -101,7 +76,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
-    create_termbase(&repo, &nucl, &sibling_termbase_entry).await;
+    create_termbase(repo, nucl, &sibling_termbase_entry).await;
 
     let comic_list_spec = TermbaseListSpec::Comic {
         comic_id: comic_fixture.comic_entry.id.clone(),
@@ -115,7 +90,6 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
             spec: &comic_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_termbases.len(), 2);
@@ -137,6 +111,56 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
             .iter()
             .all(|termbase_info| termbase_info.id != sibling_termbase_entry.id)
     );
+}
+
+async fn create_termbase(
+    repo: &HybRepo,
+    nucl: &RdbNucl,
+    termbase_entry: &TermbaseEntry,
+) -> TermbaseInfo {
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreateTermbase {
+                entry: termbase_entry,
+            },
+        )
+        .await
+    })
+    .await
+    .unwrap()
+}
+
+/// Verifies termbase unique and query roundtrip.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
+    //
+    let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let termbase_entry = TermbaseEntry {
+        id: format!("{}main", PREFIX),
+        team_id: Some(comic_fixture.team_entry.id.clone()),
+        comic_id: None,
+        name: "100%_Glossary".into(),
+        description: Some("not searchable".into()),
+        creator_id: comic_fixture.creator_form.id.clone(),
+    };
+
+    let created = create_termbase(&repo, &nucl, &termbase_entry).await;
+
+    assert_eq!(created.term_count, 0);
+
+    verify_comic_termbase_scope(&repo, &nucl, &comic_fixture, &termbase_entry)
+        .await;
 
     let list_spec = TermbaseListSpec::Team {
         team_id: comic_fixture.team_entry.id.clone(),
@@ -148,7 +172,6 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     let listed = repo
         .run(&ListTermbaseInfos { spec: &list_spec })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(listed.len(), 1);
@@ -164,7 +187,6 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         .await
     })
     .await
-    .ok()
     .unwrap();
 
     let counted = repo
@@ -172,7 +194,6 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
             id: &termbase_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(counted.term_count, 1);
@@ -197,10 +218,9 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     assert!(duplicate_result.is_err());
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

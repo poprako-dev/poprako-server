@@ -36,6 +36,10 @@ use crate::result::{BaseRest, accept};
 ///
 /// [`ListSystemMailInfosInstr`]: ListSystemMailInfosInstr
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
@@ -81,6 +85,10 @@ where
 ///
 /// * `R: SystemMailRepo` — System mail storage.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,

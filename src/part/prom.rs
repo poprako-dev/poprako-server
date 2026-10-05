@@ -6,9 +6,9 @@ pub mod payload;
 pub mod topic;
 
 use poprako_orchestra::Context;
-use poprako_orchestra_extra::prom::Prom as ExtraProm;
+use poprako_orchestra_extra::prom::Prom as GeneralProm;
 
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::result::BaseError;
 
 /// Prom operations within a caller-coordinated transaction.
@@ -28,7 +28,7 @@ use crate::result::BaseError;
 /// Each task is retained independently, including tasks sharing a topic.
 /// Batch order is not guaranteed.
 pub trait Prom<C>:
-    ExtraProm<C, String, TaskPayload, Error = BaseError>
+    GeneralProm<C, String, PromPayload, Error = BaseError>
 where
     C: Context,
 {
@@ -37,6 +37,6 @@ where
 impl<C, P> Prom<C> for P
 where
     C: Context,
-    P: ExtraProm<C, String, TaskPayload, Error = BaseError> + ?Sized,
+    P: GeneralProm<C, String, PromPayload, Error = BaseError> + ?Sized,
 {
 }

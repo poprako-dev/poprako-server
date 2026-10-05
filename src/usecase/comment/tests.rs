@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // list_infos(list_infos)(positive): team member should list team comments.
 // list_infos(list_infos)(positive): user include should be populated only when requested.
 // list_infos(list_infos)(negative): non-member should be rejected from team comments.
@@ -135,11 +140,11 @@ async fn list_infos_team_member_lists_team_comments() {
 
     assert!(comment_info_vals.is_ok());
 
-    let comment_info_vals = comment_info_vals.ok().unwrap();
+    let comment_info_vals = comment_info_vals.unwrap();
 
     assert_eq!(comment_info_vals.len(), 1);
 
-    assert_eq!(comment_info_vals[0].id, "comment-1");
+    assert_eq!(comment_info_vals.first().unwrap().id, "comment-1");
 }
 
 #[tokio::test]
@@ -164,7 +169,7 @@ async fn list_infos_user_include_follows_request() {
 
     assert!(without_user.is_ok());
 
-    assert!(without_user.ok().unwrap()[0].user.is_none());
+    assert!(without_user.unwrap().first().unwrap().user.is_none());
 
     let with_user = list_infos(
         (&mock, &mock),
@@ -175,9 +180,12 @@ async fn list_infos_user_include_follows_request() {
 
     assert!(with_user.is_ok());
 
-    let with_user = with_user.ok().unwrap();
+    let with_user = with_user.unwrap();
 
-    assert_eq!(with_user[0].user.as_ref().unwrap().id, "author-user");
+    assert_eq!(
+        with_user.first().unwrap().user.as_ref().unwrap().id,
+        "author-user"
+    );
 }
 
 #[tokio::test]
@@ -196,7 +204,7 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -209,18 +217,17 @@ async fn create_team_member_creates_comment() {
     let created_comment =
         create(&mock, token("viewer-user"), create_instr("team-1"))
             .await
-            .ok()
             .unwrap();
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comments.len(), 1);
 
-    assert_eq!(snapshot.comments[0].id, created_comment.id);
+    assert_eq!(snapshot.comments.first().unwrap().id, created_comment.id);
 
-    assert_eq!(snapshot.comments[0].team_id, "team-1");
+    assert_eq!(snapshot.comments.first().unwrap().team_id, "team-1");
 
-    assert_eq!(snapshot.comments[0].user_id, "viewer-user");
+    assert_eq!(snapshot.comments.first().unwrap().user_id, "viewer-user");
 }
 
 #[tokio::test]
@@ -233,7 +240,7 @@ async fn create_non_member_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().comments.is_empty());
 }

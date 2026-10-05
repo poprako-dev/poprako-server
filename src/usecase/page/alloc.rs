@@ -31,7 +31,7 @@ use crate::model::write::page::{PageImageSpec, PageRawIdentsRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -197,7 +197,7 @@ where
                 //
                 let advance_id = next_snowflake_id();
 
-                let advance_payload = TaskPayload::Chapter {
+                let advance_payload = PromPayload::Chapter {
                     payload: ChapterPayload::TryAdvanceRawProvideStage {
                         chapter_id: page_info.chapter_id.clone(),
                         actor_user_id: token.user_id.clone(),
@@ -251,7 +251,7 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
 
     let index =
         u32::try_from(alloc.index).map_err(|_| BaseError::Unrecoverable {
-            message: "page index is out of range".into(),
+            msg: "page index is out of range".into(),
         })?;
 
     accept(AllocatedPageVal {
@@ -264,6 +264,10 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
 }
 
 // Validates the caller and current chapter state.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn ensure_alloc_perm<C, R>(
     repo: &R,
     token: &UserToken,

@@ -27,11 +27,11 @@ pub fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
     let project = serde_json::from_str::<ChapterTranslationPortView>(content)
         .map_err(|error| {
         //
-        let err_message = trl("error-invalid-chapter-import-content");
+        let err_msg = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             input_length = content.len(),
             parse_err = ?error,
             operation = "parse_poprako",
@@ -40,7 +40,7 @@ pub fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
 
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         }
     })?;
 
@@ -88,11 +88,11 @@ pub fn validate_page_count(
     //
     if imported_page_count != existing_page_count {
         //
-        let err_message = trl("error-chapter-import-page-count-mismatch");
+        let err_msg = trl("error-chapter-import-page-count-mismatch");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             imported_page_count = imported_page_count,
             existing_page_count = existing_page_count,
             "expected error: chapter import page count mismatch",
@@ -100,7 +100,7 @@ pub fn validate_page_count(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
@@ -272,11 +272,11 @@ fn invalid_import_limit(key: &str, limit: usize, condition: &str) -> BaseError {
     //
     let args = HashMap::from([("limit".into(), limit.into())]);
 
-    let err_message = trl_kv(key, &args);
+    let err_msg = trl_kv(key, &args);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         limit,
         condition,
         "expected error: chapter import limit exceeded",
@@ -284,25 +284,25 @@ fn invalid_import_limit(key: &str, limit: usize, condition: &str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
 // Construct the stable invalid-content error for PopRaKo input.
 fn invalid_poprako_content(condition: &str) -> BaseError {
     //
-    let err_message = trl("error-invalid-chapter-import-content");
+    let err_msg = trl("error-invalid-chapter-import-content");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         condition,
         "expected error: chapter import content is invalid",
     );
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

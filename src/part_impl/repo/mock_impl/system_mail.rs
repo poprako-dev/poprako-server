@@ -135,7 +135,7 @@ fn mark_system_mails_read(
             //
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: trl("error-forbidden"),
+                msg: trl("error-forbidden"),
             });
         }
     }

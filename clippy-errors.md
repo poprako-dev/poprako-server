@@ -1,49 +1,61 @@
-# Clippy 错误清单
+# Strict workspace lint policy
 
-## 当前状态
+The root `Cargo.toml` defines Rust and Clippy policy for all seven workspace
+packages. Each package exclusively inherits it with `[lints] workspace = true`.
 
-本文件由当前代码重新检查后整理，检查命令与 CI 最终 Clippy 步骤一致：
+Previously, crate roots declared `style`, `pedantic`, and `nursery` as `warn`,
+allowed three individual rules globally, and the server disabled entire lint
+groups under `cfg(test)`. Crate-local attributes also did not cover independent
+binary, integration-test, or benchmark crate roots. `-D warnings` promoted active
+warnings during CI, but it did not enable disabled rules or undo explicit allows.
+
+Rust warnings are now denied and unsafe code is forbidden. Clippy `all`,
+`pedantic`, and `nursery` are denied, together with the selected restriction
+rules in the manifest. Group priority is `-1` so individual policy entries have
+explicit precedence. The complete `restriction` and `cargo` groups are not
+enabled: they include opinionated or mutually incompatible requirements and
+third-party dependency constraints unrelated to this project's source policy.
+
+Necessary exceptions name individual rules and include English reasons:
+
+- Test fixture and assertion modules may allow `unwrap_used` and `expect_used`.
+  Explicit failure or panic-injection scenarios use function-scoped expectations.
+- Locally awaited generic interfaces retain their existing Send/Sync contracts.
+- Explicit formatting arguments follow the repository's formatting rules.
+- Success constructors retain their shared Result contracts and type inference.
+- Diesel changesets and generated serialization/schema implementations retain
+  their typed nullable-field and derive semantics.
+- The Swagger exporter may write its generated document to standard output.
+
+No crate-wide or test-mode Clippy group exemptions remain. Function-scoped
+`expect` attributes also fail CI when their exception becomes unnecessary.
+
+## Validation
+
+Canonical local commands remain:
 
 ```sh
-cargo clippy --workspace \
-  --features rdb,prom_impl,repo_impl,swagger \
-  --lib --bins -- -D warnings
+just fmt-check
+just check
+just clippy
 ```
 
-| 检查项 | 状态 |
-| --- | --- |
-| `cargo fmt --all --check` | 通过 |
-| `cargo check --all-features` | 通过 |
-| `cargo test -p poprako-server` | 最近一次通过（404/404） |
-| `sh linters-extra/run-check.sh` | 本次未验证：沙箱无法访问 `.uv-cache` |
-| CI 最终 Clippy | 失败：Cargo 汇总 18 个错误 |
+Clippy checks every workspace package, target, and feature:
 
-Clippy 输出中可逐项定位的主诊断为 18 条；Cargo 最后的汇总也显示为 18 个错误。表中数量用于定位规则分布。
+```sh
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+```
 
-## 规则分布
+`sh scripts/ci-lint-policy.sh` checks actual Cargo workspace membership,
+inheritance, required lint levels, group priorities, and global policy weakening.
+Seven regression tests cover missing inheritance, member overrides, rule
+downgrades, missing rules, priorities, and new global exemptions.
 
-| 规则 | 数量 | 代表位置 | 说明 | 建议处理 |
-| --- | ---: | --- | --- | --- |
-| `struct-field-names` | 2 | `src/model/read/proj/unit.rs:68` | 非 RDB model 的字段统一带有相同后缀 | 业务 model 仍需单独判断，不能因为 RDB entity 的命名约束而全局放宽 |
-| `too-many-lines` | 18 | `src/part_impl/repo/rdb_impl/comic_archive.rs:142` | 函数超过 100 行 | 按职责拆分；仅在确有必要时按模块拆分，不用随意加 lint 豁免 |
+`sh scripts/ci-local.sh` runs the full checked-in CI chain: Rust checks and tests,
+repository lint, deployment-script checks, OpenAPI comparison, TypeScript checks,
+disposable database migration apply/revert-all/apply, and dependency audit.
+Production image builds depend on all four GitHub Actions validation jobs.
 
-## 处理边界
-
-- `struct-field-names` 和 `option-option` 已在需要的 RDB entity 模块局部允许：`src/part_impl/repo/rdb_impl/entity.rs` 同时允许两项，`src/part_impl/prom/rdb_impl/entity.rs` 允许 `struct-field-names`。这是数据库字段映射边界的局部例外，不是全局关闭规则。
-- `ref-option-ref` 仅在 `src/part_impl/repo/rdb_impl/entity/{comic,page,unit,workset}.rs` 文件范围内允许。12 条诊断均来自 Diesel `AsChangeset` 派生代码；相关嵌套 `Option` 用于区分未更新、清空和设置，不能拍平。
-- 允许后，RDB entity 中的 `struct-field-names` 和 `option-option` 诊断已从 Clippy 输出中消失；剩余 `struct-field-names` 是 `src/model/read/proj/unit.rs` 的 2 项，`option-option` 和 `ref-option-ref` 已无剩余项。
-- `future-not-send` 已在根 `Cargo.toml` 的 workspace Clippy 配置中设为 `allow`，因此当前清单不再统计这 15 项。
-- `unnecessary-wraps` 已在根 `Cargo.toml` 的 workspace Clippy 配置中设为 `allow`；HTTP 成功边界需要保留 `Result` 包装，因此不改动实现。
-- RDB entity 中的整数转换错误属于持久化数据无效，应使用 `try_from` 和 `?` 传播为 `BaseError`；不能先使用 `as` 丢失符号或范围信息。
-- `cast-possible-truncation` 在 worker 哈希映射处已改为 `BaseRest<usize>`，通过受检转换和 `?` 传播内部边界错误。
-- `UnitCountMetrics::calc_delta` 的 6 个 `expect-used` 已改为 `BaseRest<UnitCountDelta>`，通过受检转换和 `?` 传播内部不变量错误。
-- `needless-pass-by-value` 的 14 项和 `trivially-copy-pass-by-ref` 的 13 项已全部修复；前者改为借用或 `&str`，后者将 `Copy` 值对象的方法接收者改为按值传递。
-- `match-same-arms`、`missing-errors-doc`、`option-if-let-else` 已全部消除。
-- 这些结果来自 `--lib --bins`，不会把 test/benchmark 目标作为 Clippy lint 目标；它们仍由 `cargo check --workspace --all-targets --all-features` 编译检查。
-- 不修改 `linters` submodule，也不把新规则写进 submodule。`replacement` 词的禁止规则应放在 submodule 外的配置中；本文件只记录 Clippy 结果。
-- RDB entity/schema 是有符号数据库适配边界；除该边界外，业务层按项目约定优先使用 `usize` 或 `u32`，不添加无意义的中间变量或类型转换。
-- 第一批直接修复项（包括 5 个 `needless-borrow`、2 个 `or-fun-call`、2 个 `useless-conversion`、1 个 `single-match-else`、1 个 `too-long-first-doc-paragraph`、1 个 `missing-const-for-fn`、1 个 `items-after-statements` 和 1 个 `assigning-clones`）已全部归零。
-
-## 验证记录
-
-最后一次检查中，格式化、全特性编译、rust-style-lint 和 linters-extra 通过；生产目标 Clippy 仍失败，当前错误汇总为 18，剩余全部为 `too-many-lines`。待清单归零后再以 `sh scripts/ci-check.sh` 验证 CI 全部通过。
+Verified on 2026-10-05 with the pinned Rust 1.95.0 toolchain: all three canonical
+Rust checks and the full `ci-local.sh` chain passed on the final source. Repository
+linters and generated schema/OpenAPI files were not modified.

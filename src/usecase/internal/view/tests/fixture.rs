@@ -114,7 +114,7 @@ macro_rules! impl_obj_dept_view {
 
                 if self.fails($list_operation) {
                     return Err(ObjDeptError::Unrecoverable {
-                        message: $list_operation.into(),
+                        msg: $list_operation.into(),
                     });
                 }
 
@@ -158,7 +158,7 @@ macro_rules! impl_obj_dept_view {
 
                 if self.fails($url_operation) {
                     return Err(ObjDeptError::Unrecoverable {
-                        message: $url_operation.into(),
+                        msg: $url_operation.into(),
                     });
                 }
 
@@ -284,10 +284,11 @@ impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
 
         let page_info = fallback_page_info();
 
-        match oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
-            true => accept(vec![page_info]),
-            false => accept(Vec::new()),
+        if !oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
+            return accept(Vec::new());
         }
+
+        accept(vec![page_info])
     }
 }
 

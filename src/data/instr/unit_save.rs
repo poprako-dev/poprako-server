@@ -24,7 +24,7 @@ pub fn prepare_save(
         tracing::error!(sdk_err = ?error, "Unit save serialization failed");
 
         BaseError::Unrecoverable {
-            message: "Unit save serialization failed".into(),
+            msg: "Unit save serialization failed".into(),
         }
     })?;
 

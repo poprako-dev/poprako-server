@@ -86,10 +86,10 @@ async fn update_roles_last_admin_role_is_retained() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(
-        mock.snapshot().members[0].roles,
+        mock.snapshot().members.first().unwrap().roles,
         RoleMask::from(RoleField::ADMIN)
     );
 }
@@ -132,7 +132,7 @@ async fn update_roles_non_admin_is_rejected() {
         .find(|m| m.id == "member-target")
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
 }
@@ -153,7 +153,7 @@ async fn update_roles_missing_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -229,7 +229,7 @@ async fn delete_last_admin_member_is_retained() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(
         mock.snapshot()
@@ -266,7 +266,7 @@ async fn delete_non_admin_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(
         mock.snapshot()
@@ -289,7 +289,7 @@ async fn delete_missing_member_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().members.len(), 1);
 }

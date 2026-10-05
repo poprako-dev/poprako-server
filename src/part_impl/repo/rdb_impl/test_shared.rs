@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 mod cleanup;
 
 pub mod form;
@@ -73,6 +78,8 @@ pub struct PageFixture {
     pub page_entry: PageEntry,
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn reset(shared: &RdbCore, prefix: &str) {
     //
     cleanup(shared, prefix).await.unwrap();
@@ -80,6 +87,8 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
     let repo = HybRepo::new(shared.clone());
@@ -109,6 +118,8 @@ pub async fn seed_user(shared: &RdbCore, prefix: &str) -> UserFixture {
     UserFixture { user_entry }
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn seed_user_and_team(shared: &RdbCore, prefix: &str) -> TeamFixture {
     //
     reset(shared, prefix).await;
@@ -132,6 +143,8 @@ pub async fn seed_user_and_team(shared: &RdbCore, prefix: &str) -> TeamFixture {
     }
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     //
     let team_fixture = seed_user_and_team(shared, prefix).await;
@@ -164,6 +177,8 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     }
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
     //
     reset(shared, prefix).await;
@@ -219,6 +234,8 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
     }
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     //
     let comic_fixture = seed_comic(shared, prefix).await;
@@ -258,6 +275,8 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     }
 }
 
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     //
     let chapter_fixture = seed_chapter(shared, prefix).await;

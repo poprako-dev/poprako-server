@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Captures real HTTP responses and correlated logs with the production filter.
 
 use std::io::Write;

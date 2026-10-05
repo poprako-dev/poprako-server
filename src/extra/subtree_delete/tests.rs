@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Hierarchy sweep policy tests independent of scheduling mechanics.
 
 use std::collections::VecDeque;
@@ -12,7 +17,7 @@ use super::sweep;
 
 fn failure() -> BaseError {
     BaseError::Unrecoverable {
-        message: "injected sweep failure".into(),
+        msg: "injected sweep failure".into(),
     }
 }
 

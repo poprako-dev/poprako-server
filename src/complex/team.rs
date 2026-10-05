@@ -66,11 +66,11 @@ pub mod perm {
         //
         if !user_info.is_sadmin {
             //
-            let err_message = trl("error-sadmin-required");
+            let err_msg = trl("error-sadmin-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Perm,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 user_id = %user_info.id,
                 is_sadmin = user_info.is_sadmin,
                 "expected error: super-admin perm required",
@@ -78,7 +78,7 @@ pub mod perm {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: err_message,
+                msg: err_msg,
             });
         }
 

@@ -317,6 +317,223 @@ contexts = [
     "macro_field",
 ]
 
+# Actor message abstractions must use role-specific names. These restrictions
+# apply to type and field names as well as bindings and functions.
+# Compound names use prefix checks because the checker splits them into words.
+[[forbidden-identifiers.prefixes]]
+prefix = "FnHandler"
+code = "FBD023"
+message = "'{name}' uses the forbidden FnHandler name; use Dispatcher"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.prefixes]]
+prefix = "fn_handler"
+code = "FBD023"
+message = "'{name}' uses the forbidden FnHandler name; use Dispatcher"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.prefixes]]
+prefix = "FN_HANDLER"
+code = "FBD023"
+message = "'{name}' uses the forbidden FnHandler name; use Dispatcher"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.prefixes]]
+prefix = "fnhandler"
+code = "FBD023"
+message = "'{name}' uses the forbidden FnHandler name; use Dispatcher"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.prefixes]]
+prefix = "into_fn_handler"
+code = "FBD023"
+message = "'{name}' uses the forbidden FnHandler name; use Dispatcher::new"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "queue"
+code = "FBD024"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "store"
+code = "FBD025"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "consumer"
+code = "FBD027"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "driver"
+code = "FBD028"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "persistence"
+code = "FBD029"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "parts"
+code = "FBD030"
+replacement = "deps"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "backend"
+code = "FBD031"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "message"
+code = "FBD032"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [

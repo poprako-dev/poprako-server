@@ -1,6 +1,15 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::UserInfoView;
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn user_info_view_omits_absent_avatar_urls() {
     let user_info_view = UserInfoView {
         id: "user-1".into(),

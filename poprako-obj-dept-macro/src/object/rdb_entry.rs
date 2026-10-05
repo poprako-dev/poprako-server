@@ -508,7 +508,7 @@ pub fn expand(table: &Path) -> TokenStream {
             .map_err(::poprako_obj_dept::rdb_impl::diesel_err)
         }
 
-        #[allow(dead_code)]
+        #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
         fn assert_full_schema(row: FullRow) {
             drop(row);
         }

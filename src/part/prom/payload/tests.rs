@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 // task_payload_serde(current_json)(positive): domain and operation tags round trip with required ownership.
@@ -6,7 +11,7 @@ fn round_trips_current_contract() {
     //
     let cases = [
         (
-            TaskPayload::Chapter {
+            PromPayload::Chapter {
                 payload: ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: "chapter-1".into(),
                     actor_user_id: "user-1".into(),
@@ -19,7 +24,7 @@ fn round_trips_current_contract() {
             }),
         ),
         (
-            TaskPayload::Invitation {
+            PromPayload::Invitation {
                 payload: InvitationPayload::PurgeExpiredMemberInvitation {
                     invitation_id: "invitation-1".into(),
                 },
@@ -31,7 +36,7 @@ fn round_trips_current_contract() {
             }),
         ),
         (
-            TaskPayload::Invitation {
+            PromPayload::Invitation {
                 payload: InvitationPayload::PurgeExpiredAssignmentInvitation {
                     invitation_id: "invitation-1".into(),
                 },
@@ -50,7 +55,7 @@ fn round_trips_current_contract() {
         assert_eq!(encoded, expected);
 
         assert_eq!(
-            serde_json::from_value::<TaskPayload>(encoded).unwrap(),
+            serde_json::from_value::<PromPayload>(encoded).unwrap(),
             task
         );
     }
@@ -80,6 +85,6 @@ fn rejects_obsolete_or_incomplete_payloads() {
     ];
 
     for payload in invalid {
-        assert!(serde_json::from_value::<TaskPayload>(payload).is_err());
+        assert!(serde_json::from_value::<PromPayload>(payload).is_err());
     }
 }

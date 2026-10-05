@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // team_roundtrip_uses_testcontainer(ListTeamInfos, UpdateTeam, GetTeamInfo)(positive): team repo persists, lists, and updates a team in an isolated PostgreSQL container.
 // resolve_team_id_uses_testcontainer(ResolveTeamId)(positive/negative): comic and chapter ownership resolves in and out of transactions while missing roots retain resource-specific errors.
 
@@ -21,18 +26,23 @@ const PREFIX: &str = "rdb-test-team-domain-";
 
 const RESOLVE_PREFIX: &str = "rdb-test-team-resolve-";
 
-fn assert_expected(error: BaseError, message_key: &str) {
-    let BaseError::Expected { variant, message } = error else {
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
+fn assert_expected(error: BaseError, msg_key: &str) {
+    let BaseError::Expected { variant, msg } = error else {
         panic!("expected client-visible resource error");
     };
 
     assert!(matches!(variant, ExpectedVariant::Args));
 
-    assert_eq!(message, trl(message_key));
+    assert_eq!(msg, trl(msg_key));
 }
 
 /// Verifies team roundtrip via testcontainers.
-/// Verifies team roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -52,7 +62,6 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &team_info_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert!(
@@ -67,30 +76,27 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
         description: "updated".into(),
     };
 
-    repo.run(&UpdateTeam { repl: &team_repl })
-        .await
-        .ok()
-        .unwrap();
+    repo.run(&UpdateTeam { repl: &team_repl }).await.unwrap();
 
     let team_info = repo
         .run(&GetTeamInfo {
             id: &team_fixture.team_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(team_info.name, "RDB Team Updated");
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 
 /// Verifies comic and chapter ownership projection in both repository modes.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, RESOLVE_PREFIX).await;
@@ -105,7 +111,6 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
             id: &chapter_fixture.comic_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_team_id, chapter_fixture.team_entry.id);
@@ -115,7 +120,6 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
             id: &chapter_fixture.chapter_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(chapter_team_id, chapter_fixture.team_entry.id);
@@ -185,16 +189,11 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
-    test_shared::cleanup(&shared, RESOLVE_PREFIX)
-        .await
-        .ok()
-        .unwrap();
+    test_shared::cleanup(&shared, RESOLVE_PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, RESOLVE_PREFIX)
         .await
-        .ok()
         .unwrap();
 }

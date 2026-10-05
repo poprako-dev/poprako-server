@@ -168,6 +168,10 @@ fn marker_module(marker: &Ident) -> Ident {
 }
 
 // Validates one distinct object-manifest value.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn validate_value(
     values: &mut HashSet<String>,
     value: String,
@@ -241,6 +245,10 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
 }
 
 // Parses a named field in an object manifest declaration.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn parse_field(input: ParseStream<'_>, expected: &str) -> Result<()> {
     //
     let field = input.parse::<Ident>()?;

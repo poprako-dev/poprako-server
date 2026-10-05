@@ -13,6 +13,10 @@ use crate::test_util::http_logging::LogBuffer;
 struct Unformattable;
 
 impl Debug for Unformattable {
+    #[expect(
+        clippy::panic,
+        reason = "This fault-injection fixture deliberately panics to verify recovery and isolation"
+    )]
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         panic!("private field must never be formatted")
     }
@@ -111,13 +115,13 @@ fn explicit_rejection_filter_override_disables_native_events() {
 fn previously_logged_pool_errors_keep_classification_without_conversion_logs() {
     let logs = capture(Some("trace"), || {
         let source = RdbError::PoolGet {
-            message: "connection creation failed".into(),
+            msg: "connection creation failed".into(),
         };
 
         let error = rdb_err(source);
 
         assert_eq!(error, ObjDeptError::Retryable {
-            message: "failed to acquire RDB connection: connection creation failed".into(),
+            msg: "failed to acquire RDB connection: connection creation failed".into(),
         });
 
         let error = rdb_err(RdbError::PoolBuild {
@@ -127,7 +131,7 @@ fn previously_logged_pool_errors_keep_classification_without_conversion_logs() {
         assert_eq!(
             error,
             ObjDeptError::Retryable {
-                message: format!(
+                msg: format!(
                     "failed to build RDB pool: {}",
                     BuildError::NoRuntimeSpecified
                 ),

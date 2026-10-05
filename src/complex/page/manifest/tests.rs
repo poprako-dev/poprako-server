@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 use crate::complex::page::manifest as page_manifest_complex;
 
@@ -45,8 +50,8 @@ fn explicit_identity_is_reserved_before_automatic_matching() {
     let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
         .unwrap();
 
-    assert_eq!(plan.matches[0].existing_index, Some(0));
-    assert_eq!(plan.matches[1].existing_index, Some(1));
+    assert_eq!(plan.matches.first().unwrap().existing_index, Some(0));
+    assert_eq!(plan.matches.get(1).unwrap().existing_index, Some(1));
 }
 
 #[test]
@@ -66,9 +71,9 @@ fn automatic_matching_uses_units_availability_index_and_id_priority() {
     let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
         .unwrap();
 
-    assert_eq!(plan.matches[0].existing_index, Some(3));
-    assert_eq!(plan.matches[1].existing_index, Some(2));
-    assert_eq!(plan.matches[2].existing_index, Some(1));
+    assert_eq!(plan.matches.first().unwrap().existing_index, Some(3));
+    assert_eq!(plan.matches.get(1).unwrap().existing_index, Some(2));
+    assert_eq!(plan.matches.get(2).unwrap().existing_index, Some(1));
     assert_eq!(plan.deleted_existing_indexes, vec![0]);
 }
 
@@ -80,7 +85,7 @@ fn explicit_identity_can_replace_the_image_hash() {
     let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
         .unwrap();
 
-    assert_eq!(plan.matches[0].existing_index, Some(0));
+    assert_eq!(plan.matches.first().unwrap().existing_index, Some(0));
     assert!(plan.deleted_existing_indexes.is_empty());
 }
 
@@ -92,6 +97,6 @@ fn same_hash_with_different_extension_is_a_distinct_identity() {
     let plan = page_manifest_complex::build("chapter-1", &candidates, &inputs)
         .unwrap();
 
-    assert!(plan.matches[0].existing_index.is_none());
+    assert!(plan.matches.first().unwrap().existing_index.is_none());
     assert_eq!(plan.deleted_existing_indexes, vec![0]);
 }

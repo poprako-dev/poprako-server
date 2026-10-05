@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // unit_save_receipts_are_atomic(UnitSaveRepo)(positive): concurrent replays commit one Unit and one receipt.
 // unit_save_receipts_are_atomic(UnitSaveRepo)(negative): rollback leaves neither edits nor receipt.
 use crate::data::instr::unit::{
@@ -106,8 +111,13 @@ async fn unit_save_receipts_are_atomic() {
 
     for successful in [first, simultaneous].into_iter().flatten() {
         assert_eq!(
-            successful.created_unit_ids[0].unit_id,
-            replay.created_unit_ids[0].unit_id
+            successful
+                .created_unit_ids
+                .as_slice()
+                .first()
+                .unwrap()
+                .unit_id,
+            replay.created_unit_ids.as_slice().first().unwrap().unit_id
         );
     }
 

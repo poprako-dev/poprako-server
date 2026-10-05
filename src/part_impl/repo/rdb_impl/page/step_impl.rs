@@ -74,11 +74,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-page-not-found");
+            let err_msg = trl("error-page-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 page_id = %id,
                 stage = "get_info_by_id",
                 "expected error: page not found",
@@ -86,7 +86,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -170,11 +170,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-page-not-found");
+            let err_msg = trl("error-page-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 page_id = %id,
                 stage = "get_info_excluded",
                 "expected error: page not found",
@@ -182,7 +182,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -365,8 +365,7 @@ pub async fn apply_manifest(
     if rows.len() != model_entries.len() {
         //
         return Err(BaseError::Unrecoverable {
-            message: "page manifest upsert returned an unexpected row count"
-                .into(),
+            msg: "page manifest upsert returned an unexpected row count".into(),
         });
     }
 
@@ -521,11 +520,11 @@ pub async fn list_unit_flagged_stats(
 // Builds the expected error used when a Page scope cannot be found.
 fn missing_page(id: &str, operation: &str) -> BaseError {
     //
-    let err_message = trl("error-page-not-found");
+    let err_msg = trl("error-page-not-found");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         page_id = %id,
         operation,
         "expected error: page not found",
@@ -533,7 +532,7 @@ fn missing_page(id: &str, operation: &str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
@@ -555,9 +554,8 @@ fn ensure_chapter_page_count<T>(
         );
 
         return Err(BaseError::Unrecoverable {
-            message:
-                "persisted Chapter Page count exceeds the business maximum"
-                    .into(),
+            msg: "persisted Chapter Page count exceeds the business maximum"
+                .into(),
         });
     }
 

@@ -66,7 +66,7 @@ fn list_infos(
     if offset >= infos.len() {
         Vec::new()
     } else {
-        infos[offset..end].to_vec()
+        (*infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
@@ -322,6 +322,10 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
             .assignment_invitations
             .retain(|info| info.id != oper.id || !info.is_pending);
 
-        accept(())
+        let rest = accept(());
+
+        drop(state);
+
+        rest
     }
 }

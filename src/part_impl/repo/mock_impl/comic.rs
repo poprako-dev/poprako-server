@@ -145,13 +145,12 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
         return true;
     }
 
-    match fuzzy_title.trim().parse() {
-        //
-        Ok(index) => user_index_to_stored_index(index)
-            .is_some_and(|index| comic_info.index == index),
-
-        Err(_) => false,
-    }
+    fuzzy_title
+        .trim()
+        .parse()
+        .ok()
+        .and_then(user_index_to_stored_index)
+        .is_some_and(|index| comic_info.index == index)
 }
 
 // Check whether a comic matches list scope constraints.
@@ -161,9 +160,9 @@ fn comic_matches_stages(
     stages: Option<StageMask>,
 ) -> bool {
     //
-    match stages {
+    stages.is_none_or(|stage_mask| {
         //
-        Some(stage_mask) => state
+        state
             .chapters
             .iter()
             .find(|chapter_info| {
@@ -171,10 +170,8 @@ fn comic_matches_stages(
             })
             .is_some_and(|chapter_info| {
                 chapter_info.stages.matches_filter(stage_mask)
-            }),
-
-        None => true,
-    }
+            })
+    })
 }
 
 // Check whether a comic matches its requested lifecycle status.
@@ -257,6 +254,6 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
         //
         let end = std::cmp::min(offset + limit, comic_infos.len());
 
-        comic_infos[offset..end].to_vec()
+        (*comic_infos.get(offset..end).unwrap()).to_vec()
     }
 }

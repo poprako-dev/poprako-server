@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use serde_json::json;
@@ -5,6 +10,10 @@ use serde_json::json;
 use crate::model::write::unit::UnitEdit;
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn patch_fields_distinguish_missing_null_and_value() {
     //
     let edits = serde_json::from_value::<Vec<UnitEditInstr>>(json!([
@@ -37,7 +46,7 @@ fn patch_fields_distinguish_missing_null_and_value() {
         translation,
         revision,
         ..
-    } = &edits[0]
+    } = edits.first().unwrap()
     else {
         panic!("patch must become Save");
     };
@@ -53,7 +62,7 @@ fn patch_fields_distinguish_missing_null_and_value() {
         translation,
         revision,
         ..
-    } = &edits[1]
+    } = edits.get(1).unwrap()
     else {
         panic!("patch must become Save");
     };
@@ -69,7 +78,7 @@ fn patch_fields_distinguish_missing_null_and_value() {
         translation,
         revision,
         ..
-    } = &edits[2]
+    } = edits.get(2).unwrap()
     else {
         panic!("patch must become Save");
     };
@@ -93,6 +102,10 @@ fn patch_fields_distinguish_missing_null_and_value() {
 }
 
 #[test]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn create_requires_structure_and_resolves_local_references() {
     //
     let missing_coord = serde_json::from_value::<Vec<UnitEditInstr>>(json!([
@@ -138,7 +151,7 @@ fn create_requires_structure_and_resolves_local_references() {
     .unwrap();
 
     assert!(matches!(
-        &edits[0],
+        edits.first().unwrap(),
         UnitEdit::Create {
             id,
             next_id: Some(anchor),
@@ -147,7 +160,7 @@ fn create_requires_structure_and_resolves_local_references() {
     ));
 
     assert!(matches!(
-        &edits[2],
+        edits.get(2).unwrap(),
         UnitEdit::Save { id, .. } if id == "server-1"
     ));
 }
@@ -193,7 +206,16 @@ fn transform_conversion_accepts_literal_pairs() {
 
     assert_eq!(transforms.len(), 1);
 
-    assert_eq!(transforms[0].transforms[1].target, "");
+    assert_eq!(
+        transforms
+            .first()
+            .unwrap()
+            .transforms
+            .get(1)
+            .unwrap()
+            .target,
+        ""
+    );
 }
 
 #[test]
@@ -265,7 +287,10 @@ fn flagged_transport_defaults_and_types() {
     for value in [json!(false), json!(true)] {
         let mut payload = create.clone();
 
-        payload["is_flagged"] = value.clone();
+        payload
+            .as_object_mut()
+            .unwrap()
+            .insert("is_flagged".into(), value.clone());
 
         let instr = serde_json::from_value::<UnitEditInstr>(payload).unwrap();
 
@@ -305,7 +330,7 @@ fn patch_rejects_bare_values_and_preserves_null_or_explicit_skip() {
     ] {
         let mut payload = json!({"edit": "patch", "id": "unit-1"});
 
-        payload[field] = value;
+        payload.as_object_mut().unwrap().insert(field.into(), value);
 
         assert!(serde_json::from_value::<UnitEditInstr>(payload).is_err());
     }

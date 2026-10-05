@@ -21,6 +21,7 @@ pub struct EffectRecv {
 
 impl EffectRecv {
     /// Creates a receiver capability for the event actor.
+    #[must_use]
     pub const fn new(recv: Receiver<Event>) -> Self {
         Self { recv }
     }
@@ -51,6 +52,19 @@ impl EffectActorDesc {
     /// # Errors
     /// Returns the supervisor task's join error.
     pub async fn join(mut self) -> Result<(), tokio::task::JoinError> {
+        (&mut self.task).await
+    }
+
+    /// Requests cancellation and waits for shutdown to complete.
+    ///
+    /// # Errors
+    /// Returns the supervisor task's join error.
+    pub async fn cancel_and_join(
+        mut self,
+    ) -> Result<(), tokio::task::JoinError> {
+        //
+        self.token.cancel();
+
         (&mut self.task).await
     }
 }

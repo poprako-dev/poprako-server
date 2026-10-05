@@ -318,7 +318,7 @@ impl<'a> Step<ApplyPageManifest<'a>, MockContext> for Mock {
             //
             let is_unique = seen_ids.insert(entry.id.as_str());
 
-            if let false = is_unique {
+            if !is_unique {
                 //
                 return Err(unrecoverable(
                     "page manifest contains a duplicate page id",
@@ -331,35 +331,29 @@ impl<'a> Step<ApplyPageManifest<'a>, MockContext> for Mock {
                 .iter_mut()
                 .find(|page_info| page_info.id == entry.id);
 
-            let page_info = match existing_page_info {
+            let Some(page_info) = existing_page_info else {
                 //
-                Some(page_info) => {
-                    //
-                    if let false = page_info.chapter_id == entry.chapter_id {
-                        //
-                        return Err(unrecoverable(
-                            "page manifest cannot move a page between chapters",
-                        ));
-                    }
+                let page_info = page_from_manifest_entry(entry);
 
-                    page_info.index = entry.index;
+                context.state.pages.push(page_info.clone());
 
-                    page_info.updated_at = now();
+                page_infos.push(page_info);
 
-                    page_info.clone()
-                }
-
-                None => {
-                    //
-                    let page_info = page_from_manifest_entry(entry);
-
-                    context.state.pages.push(page_info.clone());
-
-                    page_info
-                }
+                continue;
             };
 
-            page_infos.push(page_info);
+            if page_info.chapter_id != entry.chapter_id {
+                //
+                return Err(unrecoverable(
+                    "page manifest cannot move a page between chapters",
+                ));
+            }
+
+            page_info.index = entry.index;
+
+            page_info.updated_at = now();
+
+            page_infos.push(page_info.clone());
         }
 
         accept(page_infos)

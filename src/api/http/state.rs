@@ -11,7 +11,7 @@ use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
 use crate::part_impl::obj_dept::NormObjDept;
-use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::HybRepo;
 
 /// Production harness type backing the HTTP server state.

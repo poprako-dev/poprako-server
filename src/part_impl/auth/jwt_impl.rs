@@ -43,7 +43,7 @@ impl JwtAuth {
         if expiration_hours <= 0 {
             //
             return Err(BaseError::Unrecoverable {
-                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
+                msg: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
                     .to_string(),
             });
         }
@@ -52,7 +52,7 @@ impl JwtAuth {
         else {
             //
             return Err(BaseError::Unrecoverable {
-                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS is too large"
+                msg: "[JwtAuth::new] JWT_EXPIRATION_HOURS is too large"
                     .to_string(),
             });
         };
@@ -76,6 +76,10 @@ impl JwtAuth {
     ///
     /// Returns an error when required environment variables are missing or
     /// malformed.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -91,11 +95,11 @@ impl JwtAuth {
 
         Self::new(&secret, expiration_hours).map_err(|err| match err {
             //
-            BaseError::Expected { message, .. }
-            | BaseError::Retryable { message }
-            | BaseError::Unavailable { message }
-            | BaseError::Unrecoverable { message } => {
-                anyhow::anyhow!("{message}")
+            BaseError::Expected { msg, .. }
+            | BaseError::Retryable { msg }
+            | BaseError::Unavailable { msg }
+            | BaseError::Unrecoverable { msg } => {
+                anyhow::anyhow!("{}", msg)
             }
         })
     }
@@ -104,6 +108,10 @@ impl JwtAuth {
 impl TokenAuth for JwtAuth {
     // Signs a user token by encoding JWT claims with configured expiration.
     #[instrument(level = "info", skip_all)]
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.
@@ -113,7 +121,7 @@ impl TokenAuth for JwtAuth {
 
         let issued_at = usize::try_from(timestamp).map_err(|_| {
             BaseError::Unrecoverable {
-                message: "JWT issue timestamp is outside the supported range"
+                msg: "JWT issue timestamp is outside the supported range"
                     .to_string(),
             }
         })?;
@@ -121,15 +129,14 @@ impl TokenAuth for JwtAuth {
         let expiration_timestamp = timestamp
             .checked_add(self.expiration_seconds)
             .ok_or_else(|| BaseError::Unrecoverable {
-                message:
-                    "JWT expiration timestamp is outside the supported range"
-                        .to_string(),
+                msg: "JWT expiration timestamp is outside the supported range"
+                    .to_string(),
             })?;
 
         let expiration =
             usize::try_from(expiration_timestamp).map_err(|_| {
                 BaseError::Unrecoverable {
-                message:
+                msg:
                     "JWT expiration timestamp is outside the supported range"
                         .to_string(),
             }
@@ -156,7 +163,7 @@ impl TokenAuth for JwtAuth {
                 );
 
                 BaseError::Unrecoverable {
-                    message: format!(
+                    msg: format!(
                         "[JwtAuth::sign_token] error when encoding: {}",
                         err,
                     ),
@@ -177,11 +184,11 @@ impl TokenAuth for JwtAuth {
         )
         .map_err(|err| {
             //
-            let err_message = trl("error-unauthorized");
+            let err_msg = trl("error-unauthorized");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Auth,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 operation = "verify_token",
                 sdk_err = ?err,
                 "JWT SDK error converted to expected authentication error",
@@ -189,7 +196,7 @@ impl TokenAuth for JwtAuth {
 
             BaseError::Expected {
                 variant: ExpectedVariant::Auth,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 

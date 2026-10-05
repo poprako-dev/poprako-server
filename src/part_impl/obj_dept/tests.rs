@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
+use std::collections::BTreeMap;
+
 use uuid::Uuid;
 
 use diesel::prelude::{
@@ -14,15 +21,104 @@ use super::rdb_obj_dept_prom_rdb_impl::{
 use crate::part::nucl::ReptRead;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::obj_dept::RdbObjDeptProm;
-use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
+use crate::part_impl::repo::rdb_impl::schema::{
+    t_chapter_artwork, t_obj_prom_task,
+};
 use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::slot::ObjDeptPoolSlot;
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
+use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
 use poprako_obj_dept::prom::ObjDeptPromDefer as _;
+use poprako_obj_dept::rest::ObjDeptRest;
 use poprako_orchestra::Nucl as _;
+
+use crate::part::obj_dept::ChapterArtwork;
+use crate::result::{BaseError, accept};
+use crate::value::artwork::ChapterArtworkKey;
+use poprako_obj_dept::key::ObjGen;
+use poprako_obj_dept::model::slot::ObjSlotSpec;
+use poprako_obj_dept::oper::{
+    ClearObjs, GenObjSlot, ListObjMetas, MarkObjUploaded,
+};
+use poprako_orchestra::{OperRun as _, OperStep as _};
+
+use crate::part_impl::obj_dept::NormObjDept;
+
+type ArtworkDept = NormObjDept<ArtworkTestPool, RdbObjDeptProm>;
 
 const PREFIX: &str = "rdb-test-obj-claim-";
 const PENDING: &str = "obj_prom_status:pending";
 const OPERATOR: &str = "obj_prom_status:operator";
 
+// Confirm the current generation, clear it transactionally, and reject another confirmation.
+async fn verify_artwork_clear(
+    nucl: &RdbNucl<ReptRead>,
+    dept: &ArtworkDept,
+    current_generation: ObjGen,
+    chapter_id: &str,
+) {
+    nucl.coord(async |context| {
+        let marked =
+            MarkObjUploaded::<ChapterArtwork>::new(&current_generation)
+                .step_on(dept, context)
+                .await
+                .map_err(BaseError::from)?;
+
+        assert!(marked);
+
+        ClearObjs::<ChapterArtwork>::new(&[chapter_id.to_owned()])
+            .step_on(dept, context)
+            .await
+            .map_err(BaseError::from)?;
+
+        let marked_after_clear =
+            MarkObjUploaded::<ChapterArtwork>::new(&current_generation)
+                .step_on(dept, context)
+                .await
+                .map_err(BaseError::from)?;
+
+        assert!(!marked_after_clear);
+
+        accept(())
+    })
+    .await
+    .unwrap();
+}
+
+// Verify rolling back confirmation leaves the allocated artwork unavailable.
+async fn verify_artwork_rollback(
+    nucl: &RdbNucl<ReptRead>,
+    dept: &ArtworkDept,
+    generation: &ObjGen,
+    chapter_id: &str,
+) {
+    let rollback = nucl
+        .coord(async |context| {
+            let marked = MarkObjUploaded::<ChapterArtwork>::new(generation)
+                .step_on(dept, context)
+                .await
+                .map_err(BaseError::from)?;
+
+            assert!(marked);
+
+            Err::<(), _>(BaseError::Unrecoverable {
+                msg: "deliberate transaction failure".into(),
+            })
+        })
+        .await;
+
+    assert!(rollback.is_err());
+
+    let metas = ListObjMetas::<ChapterArtwork>::new(&[chapter_id])
+        .run_on(dept)
+        .await
+        .unwrap();
+
+    assert!(!metas.get(chapter_id).unwrap().is_avail);
+}
+
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn concurrent_claim_is_unique_ordered_and_fenced(shared: RdbCore) {
     cleanup(&shared).await;
 
@@ -41,16 +137,9 @@ pub async fn concurrent_claim_is_unique_ordered_and_fenced(shared: RdbCore) {
     let first_task = first_claim.await.unwrap().unwrap();
     let second_task = second_claim.await.unwrap().unwrap();
 
-    let claimed_tasks = [first_task, second_task]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
+    assert_ne!(first_task.is_some(), second_task.is_some());
 
-    assert_eq!(claimed_tasks.len(), 1);
-
-    let Some(claimed_task) = claimed_tasks.as_slice().first() else {
-        panic!("one task must be claimed");
-    };
+    let claimed_task = first_task.or(second_task).unwrap();
 
     assert!(claimed_task.id.ends_with("oldest"));
     assert!(!claimed_task.claim_token.is_nil());
@@ -69,6 +158,10 @@ pub async fn concurrent_claim_is_unique_ordered_and_fenced(shared: RdbCore) {
     repeated_defer_locks_completion(&shared).await;
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn insert_task(
     shared: &RdbCore,
     suffix: &str,
@@ -98,6 +191,10 @@ async fn insert_task(
         .unwrap();
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn cleanup(shared: &RdbCore) {
     let mut conn = shared.get().await.unwrap();
 
@@ -119,7 +216,43 @@ async fn cleanup(shared: &RdbCore) {
     assert_eq!(remaining, 0);
 }
 
+// Verify the current attempt remains processing, then make it eligible for recovery.
+async fn expire_current_attempt(shared: &RdbCore, id: &str, claim_token: Uuid) {
+    let mut conn = shared.get().await.unwrap();
+
+    let stored = t_obj_prom_task::table
+        .filter(t_obj_prom_task::f_id.eq(&id))
+        .select((
+            t_obj_prom_task::f_status,
+            t_obj_prom_task::f_claim_token,
+            t_obj_prom_task::f_error,
+        ))
+        .first::<(String, Option<Uuid>, Option<String>)>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        stored,
+        ("obj_prom_status:processing".into(), Some(claim_token), None)
+    );
+
+    diesel::update(
+        t_obj_prom_task::table.filter(t_obj_prom_task::f_id.eq(&id)),
+    )
+    .set(
+        t_obj_prom_task::f_updated_at
+            .eq(OffsetDateTime::now_utc() - Duration::minutes(4)),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+}
+
 // completed_tasks_can_be_recreated(ObjDeptProm)(negative): stale execution credentials cannot mutate a recreated task or a reclaimed attempt.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     let prom = RdbObjDeptProm::new(shared.clone());
 
@@ -173,38 +306,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
 
     assert_eq!(mark_task_operator(shared, &old, "stale").await.unwrap(), 0);
 
-    let mut conn = shared.get().await.unwrap();
-
-    let stored = t_obj_prom_task::table
-        .filter(t_obj_prom_task::f_id.eq(&current.id))
-        .select((
-            t_obj_prom_task::f_status,
-            t_obj_prom_task::f_claim_token,
-            t_obj_prom_task::f_error,
-        ))
-        .first::<(String, Option<Uuid>, Option<String>)>(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(
-        stored,
-        (
-            "obj_prom_status:processing".into(),
-            Some(current.claim_token),
-            None
-        )
-    );
-
-    diesel::update(
-        t_obj_prom_task::table.filter(t_obj_prom_task::f_id.eq(&current.id)),
-    )
-    .set(
-        t_obj_prom_task::f_updated_at
-            .eq(OffsetDateTime::now_utc() - Duration::minutes(4)),
-    )
-    .execute(&mut conn)
-    .await
-    .unwrap();
+    expire_current_attempt(shared, &current.id, current.claim_token).await;
 
     assert_eq!(reset_tasks(shared).await.unwrap(), 1);
 
@@ -222,6 +324,8 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     );
 
     assert_eq!(complete_task(shared, &reclaimed).await.unwrap(), 1);
+
+    let mut conn = shared.get().await.unwrap();
 
     assert_eq!(
         t_obj_prom_task::table
@@ -273,6 +377,10 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
 }
 
 // repeated_defer_locks_completion(ObjDeptPromDefer)(positive): conflicting defer retains the task until identity validation and the caller transaction finish.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn repeated_defer_locks_completion(shared: &RdbCore) {
     let prom = RdbObjDeptProm::new(shared.clone());
 
@@ -333,64 +441,47 @@ async fn repeated_defer_locks_completion(shared: &RdbCore) {
 #[derive(Clone)]
 pub struct ArtworkTestPool;
 
-impl poprako_obj_dept::pool::ObjDeptPoolView for ArtworkTestPool {
+impl ObjDeptPoolView for ArtworkTestPool {
     async fn gen_urls(
         &self,
         _key: &str,
-        _spec: poprako_obj_dept::model::url::ObjUrlSpec,
-    ) -> poprako_obj_dept::rest::ObjDeptRest<
-        poprako_obj_dept::model::url::ObjUrls,
-    > {
-        Ok(poprako_obj_dept::model::url::ObjUrls {
+        _spec: ObjUrlSpec,
+    ) -> ObjDeptRest<ObjUrls> {
+        Ok(ObjUrls {
             origin_url: None,
             optimized_url: None,
             thumbnail_url: None,
         })
     }
 
-    async fn has(
-        &self,
-        _key: &str,
-    ) -> poprako_obj_dept::rest::ObjDeptRest<bool> {
+    async fn has(&self, _key: &str) -> ObjDeptRest<bool> {
         Ok(true)
     }
 }
 
-impl poprako_obj_dept::pool::ObjDeptPool for ArtworkTestPool {
+impl ObjDeptPool for ArtworkTestPool {
     async fn gen_slot(
         &self,
         key: &str,
         _content_type: &str,
         _byte_len: u64,
-    ) -> poprako_obj_dept::rest::ObjDeptRest<
-        poprako_obj_dept::model::slot::ObjDeptPoolSlot,
-    > {
-        Ok(poprako_obj_dept::model::slot::ObjDeptPoolSlot {
+    ) -> ObjDeptRest<ObjDeptPoolSlot> {
+        Ok(ObjDeptPoolSlot {
             url: url::Url::parse(&format!("https://obj.test/{key}")).unwrap(),
-            headers: Default::default(),
+            headers: BTreeMap::default(),
             expires_at: OffsetDateTime::now_utc() + Duration::minutes(10),
         })
     }
 
-    async fn del(&self, _key: &str) -> poprako_obj_dept::rest::ObjDeptRest<()> {
+    async fn del(&self, _key: &str) -> ObjDeptRest<()> {
         Ok(())
     }
 }
 
 // artwork_transactional_mark(MarkObjUploaded)(negative): rollback preserves unavailable state and concurrent replacement cannot inherit an old confirmation.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn artwork_transactional_mark(shared: RdbCore) {
-    use crate::part::nucl::ReptRead;
-    use crate::part::obj_dept::ChapterArtwork;
-    use crate::part_impl::nucl::rdb_impl::RdbNucl;
-    use crate::result::{BaseError, accept};
-    use crate::value::artwork::ChapterArtworkKey;
-    use poprako_obj_dept::key::ObjGen;
-    use poprako_obj_dept::model::slot::ObjSlotSpec;
-    use poprako_obj_dept::oper::{
-        ClearObjs, GenObjSlot, ListObjMetas, MarkObjUploaded,
-    };
-    use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
-
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let dept = super::NormObjDept::new(
@@ -426,29 +517,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
         ver: slot.key.ver,
     };
 
-    let rollback = nucl
-        .coord(async |context| {
-            let marked = MarkObjUploaded::<ChapterArtwork>::new(&generation)
-                .step_on(&dept, context)
-                .await
-                .map_err(BaseError::from)?;
-
-            assert!(marked);
-
-            Err::<(), _>(BaseError::Unrecoverable {
-                message: "deliberate transaction failure".into(),
-            })
-        })
-        .await;
-
-    assert!(rollback.is_err());
-
-    let metas = ListObjMetas::<ChapterArtwork>::new(&[chapter_id])
-        .run_on(&dept)
-        .await
-        .unwrap();
-
-    assert!(!metas[chapter_id].is_avail);
+    verify_artwork_rollback(&nucl, &dept, &generation, chapter_id).await;
 
     let replacement_spec = ObjSlotSpec {
         hash: &[2; 32],
@@ -491,7 +560,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
         .await
         .unwrap();
 
-    assert!(!metas[chapter_id].is_avail);
+    assert!(!metas.get(chapter_id).unwrap().is_avail);
 
     let stale = nucl
         .coord(async |context| {
@@ -509,32 +578,8 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
         ver: replacement.key.ver,
     };
 
-    nucl.coord(async |context| {
-        let marked =
-            MarkObjUploaded::<ChapterArtwork>::new(&current_generation)
-                .step_on(&dept, context)
-                .await
-                .map_err(BaseError::from)?;
+    verify_artwork_clear(&nucl, &dept, current_generation, chapter_id).await;
 
-        assert!(marked);
-
-        ClearObjs::<ChapterArtwork>::new(&[chapter_id.to_owned()])
-            .step_on(&dept, context)
-            .await
-            .map_err(BaseError::from)?;
-
-        let marked_after_clear =
-            MarkObjUploaded::<ChapterArtwork>::new(&current_generation)
-                .step_on(&dept, context)
-                .await
-                .map_err(BaseError::from)?;
-
-        assert!(!marked_after_clear);
-
-        accept(())
-    })
-    .await
-    .unwrap();
     let mut conn = shared.get().await.unwrap();
 
     diesel::delete(
@@ -543,8 +588,6 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
     .execute(&mut conn)
     .await
     .unwrap();
-
-    use crate::part_impl::repo::rdb_impl::schema::t_chapter_artwork;
 
     diesel::delete(
         t_chapter_artwork::table.filter(t_chapter_artwork::f_id.eq(chapter_id)),

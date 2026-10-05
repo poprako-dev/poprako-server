@@ -257,6 +257,10 @@ where
 
 /// Optimistically marks the requested current avatar generation as uploaded.
 #[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn mark_avatar_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

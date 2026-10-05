@@ -1,3 +1,8 @@
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use diesel::{Connection as _, PgConnection};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness as _};
 use testcontainers_modules::postgres::Postgres;
@@ -30,6 +35,10 @@ fn run_migrations(database_url: &str) {
         .expect("test PostgreSQL migrations should succeed");
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn start() -> TestRdb {
     //
     let container = Postgres::default()

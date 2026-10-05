@@ -145,11 +145,11 @@ async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let message = trl("error-assignment-not-found");
+        let msg = trl("error-assignment-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             assignment_id = %id,
             operation = "get assignment info",
             "expected assignment error",
@@ -157,7 +157,7 @@ async fn get_info_by_id(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -236,11 +236,11 @@ async fn put_roles(
 
     let Some(row) = row else {
         //
-        let message = trl("error-assignment-not-found");
+        let msg = trl("error-assignment-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             assignment_id = %update.id,
             operation = "update assignment roles",
             "expected assignment error",
@@ -248,7 +248,7 @@ async fn put_roles(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

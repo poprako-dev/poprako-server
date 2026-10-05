@@ -33,7 +33,7 @@ pub struct ListPageUnitInfosVal {
 
 impl ListPageUnitInfosVal {
     /// Converts ordered persisted Units and counters into the response payload.
-    pub fn from_parts(
+    pub fn from_models(
         unit_infos: Vec<UnitInfo>,
         count_metrics: UnitCountMetrics,
     ) -> Self {

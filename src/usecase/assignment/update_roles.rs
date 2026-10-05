@@ -106,6 +106,10 @@ where
 }
 
 // Persist an existing assignment role change and its workflow record.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn update_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -152,6 +156,10 @@ where
 }
 
 // Create an assignment and record its creation in the chapter workflow.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn create_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -246,11 +254,11 @@ where
 
     let Some(current_assignment_info) = current_assignment_info else {
         //
-        let err_message = trl("error-team-admin-required");
+        let err_msg = trl("error-team-admin-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %token.user_id,
             chapter_id = %instr.chapter_id,
             "expected error: chapter assignment required",
@@ -258,7 +266,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 

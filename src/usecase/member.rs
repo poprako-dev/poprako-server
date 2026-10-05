@@ -47,6 +47,10 @@ use crate::usecase::member::view::{member_info_view, member_info_views};
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -98,11 +102,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_message = trl("error-already-team-member");
+                let err_msg = trl("error-already-team-member");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %instr.user_id,
@@ -112,7 +116,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -145,6 +149,10 @@ where
         actor_user_id = %token.user_id,
         code = "[REDACTED]",
     )
+)]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
 )]
 pub async fn join_team<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
@@ -188,11 +196,11 @@ where
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 //
-                let err_message = trl("error-no-pending-invitation");
+                let err_msg = trl("error-no-pending-invitation");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
                     invitation_invitee_qid = %member_invitation_info.invitee_qid,
@@ -202,7 +210,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -215,11 +223,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_message = trl("error-already-team-member");
+                let err_msg = trl("error-already-team-member");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     user_id = %current_user_id,
                     team_id = %member_invitation_info.team_id,
                     "expected error: user is already a team member",
@@ -227,7 +235,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -309,6 +317,10 @@ where
 ///
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -361,11 +373,11 @@ where
                 instr.roles,
             ) {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
@@ -377,7 +389,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -403,6 +415,10 @@ where
 ///
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -452,11 +468,11 @@ where
                 &member_info,
             ) {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
@@ -467,7 +483,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 

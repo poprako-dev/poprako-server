@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Team administration without chapter assignments.
 
 use super::*;
@@ -34,17 +39,23 @@ async fn create_only_assigns_explicit_worker_presets() {
         assert_eq!(snapshot.assignments.len(), usize::from(preset.is_some()));
 
         if let Some(roles) = preset {
-            assert_eq!(snapshot.assignments[0].roles, roles);
+            assert_eq!(snapshot.assignments.first().unwrap().roles, roles);
 
-            assert_eq!(snapshot.assignments[0].chapter_id, created.id);
+            assert_eq!(
+                snapshot.assignments.first().unwrap().chapter_id,
+                created.id
+            );
 
-            assert_eq!(snapshot.assignments[0].user_id, "user-1");
+            assert_eq!(snapshot.assignments.first().unwrap().user_id, "user-1");
         }
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
         assert_eq!(
-            snapshot.chapter_workflow_records[0]
+            snapshot
+                .chapter_workflow_records
+                .first()
+                .unwrap()
                 .actor_user_id
                 .as_deref(),
             Some("user-1")
@@ -88,9 +99,9 @@ async fn team_admin_manages_without_assignment() {
 
     assert!(snapshot.assignments.is_empty());
 
-    assert_eq!(snapshot.chapters[0].subtitle, "updated");
+    assert_eq!(snapshot.chapters.first().unwrap().subtitle, "updated");
 
-    assert!(snapshot.chapters[0].is_pinned);
+    assert!(snapshot.chapters.first().unwrap().is_pinned);
 
     mock.state.lock().unwrap().members.clear();
 
@@ -112,9 +123,12 @@ async fn team_admin_manages_without_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
-    assert_eq!(mock.snapshot().chapters[0].subtitle, "updated");
+    assert_eq!(
+        mock.snapshot().chapters.first().unwrap().subtitle,
+        "updated"
+    );
 }
 
 // administration(mark_pinned)(negative): another team's admin cannot manage this chapter.
@@ -137,9 +151,9 @@ async fn cross_team_admin_cannot_manage_chapter() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
-    assert!(!mock.snapshot().chapters[0].is_pinned);
+    assert!(!mock.snapshot().chapters.first().unwrap().is_pinned);
 }
 
 // creation(create)(negative): chapter presets cannot contain a team management role.
@@ -162,7 +176,7 @@ async fn create_rejects_admin_preset() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().chapters.is_empty());
 }

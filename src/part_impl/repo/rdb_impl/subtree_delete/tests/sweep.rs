@@ -185,6 +185,10 @@ async fn explicit_comic_claim_does_not_short_circuit_on_chapter(
     test_shared::cleanup(shared, PREFIX).await.unwrap();
 }
 
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     test_shared::reset(shared, PREFIX).await;
 
@@ -279,6 +283,10 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     test_shared::cleanup(shared, PREFIX).await.unwrap();
 }
 
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 async fn workset_claim_is_bounded(shared: &RdbCore) {
     test_shared::reset(shared, PREFIX).await;
 
@@ -342,7 +350,10 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
     };
 
     assert_eq!(ids.len(), 64);
-    assert!(ids.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(
+        ids.windows(2)
+            .all(|pair| (*pair.first().unwrap()) < (*pair.get(1).unwrap()))
+    );
 
     assert_eq!(
         claim_and_sweep(shared, SubtreeSweepLevel::Workset).await,

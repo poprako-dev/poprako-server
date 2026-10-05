@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // list_infos(list_infos)(positive): reviewer should list chapter invitations.
 // list_infos(list_infos)(negative): non-reviewer should be rejected.
 // create(create)(positive): reviewer should create a pending assignment invitation.
@@ -28,7 +33,7 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -146,7 +151,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "creator-user".into(),
         creator: None,
         created_at: time,
@@ -155,6 +160,10 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
 }
 
 // Build a member fixture with deterministic role assignment.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     // Build a team member fixture with a stable role assignment.
     MemberInfo {
@@ -170,6 +179,10 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
 }
 
 // Build an assignment fixture for role-merge/duplication assertions.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -303,7 +316,7 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
 
     assert_eq!(val.len(), 1);
 
-    assert_eq!(val[0].id, "invitation-1");
+    assert_eq!(val.first().unwrap().id, "invitation-1");
 }
 
 #[tokio::test]
@@ -335,7 +348,7 @@ async fn create_existing_assignment_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().assignment_invitations.is_empty());
 
@@ -383,7 +396,7 @@ async fn delete_non_reviewer_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }
@@ -416,13 +429,19 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
 
     assert_eq!(snapshot.assignments.len(), 1);
 
-    assert_eq!(snapshot.assignments[0].chapter_id, "chapter-1");
+    assert_eq!(
+        snapshot.assignments.first().unwrap().chapter_id,
+        "chapter-1"
+    );
 
-    assert_eq!(snapshot.assignments[0].user_id, "target-user");
+    assert_eq!(snapshot.assignments.first().unwrap().user_id, "target-user");
 
-    assert_eq!(snapshot.assignments[0].roles, role(RoleField::TRANSLATOR));
+    assert_eq!(
+        snapshot.assignments.first().unwrap().roles,
+        role(RoleField::TRANSLATOR)
+    );
 
-    assert!(!snapshot.assignment_invitations[0].is_pending);
+    assert!(!snapshot.assignment_invitations.first().unwrap().is_pending);
 }
 
 #[tokio::test]
@@ -463,10 +482,13 @@ async fn join_existing_assignment_merges_roles() {
     assert_eq!(snapshot.assignments.len(), 1);
 
     assert!(
-        snapshot.assignments[0]
+        snapshot
+            .assignments
+            .first()
+            .unwrap()
             .roles
             .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
 
-    assert!(!snapshot.assignment_invitations[0].is_pending);
+    assert!(!snapshot.assignment_invitations.first().unwrap().is_pending);
 }

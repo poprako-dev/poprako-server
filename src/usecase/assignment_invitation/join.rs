@@ -187,11 +187,11 @@ fn ensure_invitation_matches(
     //
     if assignment_invitation_info.invitee_qid != current_user_info.qid {
         //
-        let err_message = trl("error-no-pending-invitation");
+        let err_msg = trl("error-no-pending-invitation");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %current_user_info.id,
             invitee_qid = %current_user_info.qid,
             invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
@@ -199,7 +199,7 @@ fn ensure_invitation_matches(
             "expected error: assignment invitation does not belong to current user",
         );
 
-        return Err(expected(ExpectedVariant::Args, err_message));
+        return Err(expected(ExpectedVariant::Args, err_msg));
     }
 
     validate_roles(
@@ -219,11 +219,11 @@ fn ensure_member_roles(
     //
     let Some(member_info) = member_info else {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
+        let err_msg = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             chapter_id = %assignment_invitation_info.chapter_id,
             user_id = %current_user_id,
             team_id = %team_id,
@@ -231,7 +231,7 @@ fn ensure_member_roles(
             "expected error: invited chapter roles are not assignable",
         );
 
-        return Err(expected(ExpectedVariant::Perm, err_message));
+        return Err(expected(ExpectedVariant::Perm, err_msg));
     };
 
     if member_info
@@ -241,11 +241,11 @@ fn ensure_member_roles(
         return accept(());
     }
 
-    let err_message = trl("error-chapter-role-not-assignable");
+    let err_msg = trl("error-chapter-role-not-assignable");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Perm,
-        err_message = %err_message,
+        err_msg = %err_msg,
         chapter_id = %assignment_invitation_info.chapter_id,
         user_id = %current_user_id,
         team_id = %team_id,
@@ -254,10 +254,14 @@ fn ensure_member_roles(
         "expected error: invited chapter roles are not assignable",
     );
 
-    Err(expected(ExpectedVariant::Perm, err_message))
+    Err(expected(ExpectedVariant::Perm, err_msg))
 }
 
 // Creates a new assignment or merges the invitation roles into an existing one.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn upsert_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -302,8 +306,8 @@ where
 }
 
 // Builds an expected application error with the supplied classification.
-const fn expected(variant: ExpectedVariant, message: String) -> BaseError {
-    BaseError::Expected { variant, message }
+const fn expected(variant: ExpectedVariant, msg: String) -> BaseError {
+    BaseError::Expected { variant, msg }
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
@@ -311,24 +315,28 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
+        let err_msg = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             chapter_id = %chapter,
             user_id = %user,
             roles = ?roles,
             "expected error: chapter roles are not assignable",
         );
 
-        return Err(expected(ExpectedVariant::Args, err_message));
+        return Err(expected(ExpectedVariant::Args, err_msg));
     }
 
     accept(())
 }
 
 // Merges invited roles into an existing assignment and records any change.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn merge_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,

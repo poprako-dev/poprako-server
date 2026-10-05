@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::ListLimit;
 
 #[test]
@@ -40,9 +45,9 @@ fn openapi_schema_uses_compile_time_maximum() {
 
     let schema = serde_json::to_value(ListLimit::<37>::schema()).unwrap();
 
-    assert_eq!(schema["minimum"], 1);
+    assert_eq!((*schema.get("minimum").unwrap()), 1);
 
-    assert_eq!(schema["maximum"], 37);
+    assert_eq!((*schema.get("maximum").unwrap()), 37);
 
     assert_eq!(ListLimit::<37>::name(), "ListLimit37");
 }

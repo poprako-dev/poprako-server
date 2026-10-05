@@ -29,7 +29,7 @@ async fn join_creates_assignment() {
 
     assert!(joined.is_ok());
 
-    let joined = joined.ok().unwrap();
+    let joined = joined.unwrap();
 
     assert_eq!(joined.chapter_id, "chapter-1");
 
@@ -69,7 +69,10 @@ async fn join_unions_existing_assignment_roles() {
     let snapshot = mock.snapshot();
 
     assert!(
-        snapshot.assignments[0]
+        snapshot
+            .assignments
+            .first()
+            .unwrap()
             .roles
             .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
@@ -96,7 +99,7 @@ async fn join_rejects_role_outside_member_mask() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -111,7 +114,10 @@ async fn join_rejects_published_chapter() {
     {
         let mut state = mock.state.lock().unwrap();
 
-        state.chapters[0].stages = state.chapters[0]
+        state.chapters.get_mut(0).unwrap().stages = state
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .try_set_phase(Stage::Publish, StagePhase::Completed)
             .unwrap();

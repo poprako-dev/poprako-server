@@ -18,7 +18,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -77,7 +77,7 @@ async fn create_preserves_first_chapter_title_and_history() {
 
         assert_eq!(snapshot.chapters.len(), 1);
 
-        let chapter_info = &snapshot.chapters[0];
+        let chapter_info = snapshot.chapters.first().unwrap();
 
         assert_eq!(chapter_info.id, created.chapter_id);
 
@@ -94,13 +94,13 @@ async fn create_preserves_first_chapter_title_and_history() {
             None => assert_eq!(chapter_info.subtitle, "第1话"),
         }
 
-        assert_eq!(snapshot.comics[0].chapter_count, 1);
+        assert_eq!(snapshot.comics.first().unwrap().chapter_count, 1);
 
         assert!(snapshot.assignments.is_empty());
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
-        let record = &snapshot.chapter_workflow_records[0];
+        let record = snapshot.chapter_workflow_records.first().unwrap();
 
         assert_eq!(record.chapter_id, created.chapter_id);
 
@@ -140,7 +140,7 @@ async fn create_rejects_non_admin_and_management_presets() {
             .err()
             .unwrap();
 
-        assert_expected_variant(err, expected);
+        assert_expected_variant(&err, expected);
 
         let snapshot = mock.snapshot();
 
@@ -152,6 +152,6 @@ async fn create_rejects_non_admin_and_management_presets() {
 
         assert!(snapshot.chapter_workflow_records.is_empty());
 
-        assert_eq!(snapshot.worksets[0].comic_count, 0);
+        assert_eq!(snapshot.worksets.first().unwrap().comic_count, 0);
     }
 }

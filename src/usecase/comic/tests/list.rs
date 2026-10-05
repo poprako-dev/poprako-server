@@ -7,6 +7,54 @@ use super::*;
 use crate::test_util::now;
 use crate::value::comic::ComicStatus;
 
+// Seed distinct assignees on two pinned chapters for inclusion checks.
+fn pinned_assignment_scope() -> Mock {
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    mock.seed_user(
+        user("user-1", "user-1", "User One"),
+        invalid_credential("user-1"),
+    );
+
+    mock.seed_user(
+        user("user-2", "user-2", "User Two"),
+        invalid_credential("user-2"),
+    );
+
+    mock.seed_user(
+        user("user-3", "user-3", "User Three"),
+        invalid_credential("user-3"),
+    );
+
+    mock.seed_comic(comic("comic-2", "workset-1", 2));
+
+    mock.seed_comic(comic("comic-1", "workset-1", 1));
+
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).unwrap(),
+    ));
+
+    mock.seed_chapter(chapter(
+        "chapter-2",
+        "comic-2",
+        StageMask::try_from(0u32).unwrap(),
+    ));
+
+    mock.seed_assignment(assignment("assignment-1", "chapter-1", "user-1"));
+
+    mock.seed_assignment(assignment("assignment-2", "chapter-1", "user-2"));
+
+    mock.seed_assignment(assignment("assignment-3", "chapter-2", "user-3"));
+
+    mock
+}
+
 #[tokio::test]
 async fn list_infos_filters_by_lifecycle_status() {
     //
@@ -43,7 +91,7 @@ async fn list_infos_filters_by_lifecycle_status() {
 
     assert_eq!(active_list.comics.len(), 1);
 
-    assert_eq!(active_list.comics[0].id, "comic-active");
+    assert_eq!(active_list.comics.first().unwrap().id, "comic-active");
 
     let archived_list = list_infos(
         (&mock, &mock),
@@ -64,54 +112,13 @@ async fn list_infos_filters_by_lifecycle_status() {
 
     assert_eq!(archived_list.comics.len(), 1);
 
-    assert_eq!(archived_list.comics[0].id, "comic-archived");
+    assert_eq!(archived_list.comics.first().unwrap().id, "comic-archived");
 }
 
 #[tokio::test]
 async fn list_infos_includes_users_in_pinned_chapter_assignments() {
     //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset("workset-1", "team-1"));
-
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    mock.seed_user(
-        user("user-1", "user-1", "User One"),
-        invalid_credential("user-1"),
-    );
-
-    mock.seed_user(
-        user("user-2", "user-2", "User Two"),
-        invalid_credential("user-2"),
-    );
-
-    mock.seed_user(
-        user("user-3", "user-3", "User Three"),
-        invalid_credential("user-3"),
-    );
-
-    mock.seed_comic(comic("comic-2", "workset-1", 2));
-
-    mock.seed_comic(comic("comic-1", "workset-1", 1));
-
-    mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_chapter(chapter(
-        "chapter-2",
-        "comic-2",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_assignment(assignment("assignment-1", "chapter-1", "user-1"));
-
-    mock.seed_assignment(assignment("assignment-2", "chapter-1", "user-2"));
-
-    mock.seed_assignment(assignment("assignment-3", "chapter-2", "user-3"));
+    let mock = pinned_assignment_scope();
 
     let list = list_infos(
         (&mock, &mock),
@@ -131,20 +138,26 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(list.pinned_chapter_assignments.len(), list.comics.len());
 
-    assert_eq!(list.pinned_chapter_assignments[0].len(), 2);
+    assert_eq!(list.pinned_chapter_assignments.first().unwrap().len(), 2);
 
     assert_eq!(
-        list.pinned_chapter_assignments[0][0].chapter_id,
+        list.pinned_chapter_assignments
+            .first()
+            .unwrap()
+            .first()
+            .unwrap()
+            .chapter_id,
         "chapter-1"
     );
 
     assert_eq!(
-        list.pinned_chapter_assignments[0]
+        list.pinned_chapter_assignments
+            .first()
+            .unwrap()
             .iter()
             .find(|assignment_view| assignment_view.user_id == "user-1")
             .unwrap()
@@ -156,12 +169,19 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
     );
 
     assert_eq!(
-        list.pinned_chapter_assignments[0][1].chapter_id,
+        list.pinned_chapter_assignments
+            .first()
+            .unwrap()
+            .get(1)
+            .unwrap()
+            .chapter_id,
         "chapter-1"
     );
 
     assert_eq!(
-        list.pinned_chapter_assignments[0]
+        list.pinned_chapter_assignments
+            .first()
+            .unwrap()
             .iter()
             .find(|assignment_view| assignment_view.user_id == "user-2")
             .unwrap()
@@ -172,15 +192,24 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
         "User Two"
     );
 
-    assert_eq!(list.pinned_chapter_assignments[1].len(), 1);
+    assert_eq!(list.pinned_chapter_assignments.get(1).unwrap().len(), 1);
 
     assert_eq!(
-        list.pinned_chapter_assignments[1][0].chapter_id,
+        list.pinned_chapter_assignments
+            .get(1)
+            .unwrap()
+            .first()
+            .unwrap()
+            .chapter_id,
         "chapter-2"
     );
 
     assert_eq!(
-        list.pinned_chapter_assignments[1][0]
+        list.pinned_chapter_assignments
+            .get(1)
+            .unwrap()
+            .first()
+            .unwrap()
             .user
             .as_ref()
             .unwrap()
@@ -212,7 +241,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -257,12 +286,11 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics[0].id, "comic-beta");
+    assert_eq!(list.comics.first().unwrap().id, "comic-beta");
 
     let list = list_infos(
         (&mock, &mock),
@@ -279,12 +307,11 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics[0].id, "comic-gamma");
+    assert_eq!(list.comics.first().unwrap().id, "comic-gamma");
 
     let list = list_infos(
         (&mock, &mock),
@@ -301,10 +328,9 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics[0].id, "comic-alpha");
+    assert_eq!(list.comics.first().unwrap().id, "comic-alpha");
 }

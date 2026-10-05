@@ -252,11 +252,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_message = trl("error-team-translator-or-proofreader-required");
+        let err_msg = trl("error-team-translator-or-proofreader-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             team_id = %team_id,
             user_id = %token.user_id,
             "expected error: termbase importer membership missing",
@@ -264,7 +264,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     };
 
@@ -378,8 +378,7 @@ where
             id: &termbase_info.id,
             delta: i32::try_from(created_term_count).map_err(|_| {
                 BaseError::Unrecoverable {
-                    message: "created term count exceeds signed delta range"
-                        .into(),
+                    msg: "created term count exceeds signed delta range".into(),
                 }
             })?,
         }
@@ -398,18 +397,18 @@ where
 // Construct a stable expected error when a target scope already owns the imported name.
 fn already_exists_err(name: &str) -> BaseError {
     //
-    let err_message = trl("error-already-exists");
+    let err_msg = trl("error-already-exists");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         termbase_name = %name,
         "expected error: imported termbase already exists",
     );
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

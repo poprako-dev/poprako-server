@@ -141,7 +141,7 @@ fn list_infos(
                 // Internal implementation detail.
                 let end = std::cmp::min(offset + limit, assignment_infos.len());
 
-                assignment_infos[offset..end].to_vec()
+                (*assignment_infos.get(offset..end).unwrap()).to_vec()
             }
         }
 
@@ -348,7 +348,11 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
             ),
         };
 
-        accept(assignment_info)
+        let rest = accept(assignment_info);
+
+        drop(state);
+
+        rest
     }
 }
 
@@ -370,7 +374,11 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
 
         let assignment_infos = list_infos(&state, oper);
 
-        accept(assignment_infos)
+        let rest = accept(assignment_infos);
+
+        drop(state);
+
+        rest
     }
 }
 

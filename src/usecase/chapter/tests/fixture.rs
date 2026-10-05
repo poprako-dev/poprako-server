@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use time::OffsetDateTime;
@@ -55,6 +60,10 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn chapter(
     id: &str,
     comic_id: &str,
@@ -75,7 +84,7 @@ pub fn chapter(
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "user-1".into(),
         creator: None,
         created_at: time,
@@ -83,6 +92,10 @@ pub fn chapter(
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
@@ -96,6 +109,10 @@ pub fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn assignment(
     chapter_id: &str,
     user_id: &str,

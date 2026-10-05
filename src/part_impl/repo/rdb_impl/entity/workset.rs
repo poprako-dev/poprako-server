@@ -1,4 +1,7 @@
-#![allow(clippy::ref_option_ref)]
+#![allow(
+    clippy::ref_option_ref,
+    reason = "Diesel AsChangeset derives borrow nullable fields without changing their three-state update semantics"
+)]
 
 //! Diesel entity types for the `t_workset` table.
 //!
@@ -110,6 +113,7 @@ pub struct WorksetAspectRow<'a> {
 }
 
 impl<'a> WorksetAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_name: None,
@@ -120,6 +124,7 @@ impl<'a> WorksetAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn name(mut self, val: &'a str) -> Self {
         //
         self.f_name = Some(val);
@@ -127,6 +132,7 @@ impl<'a> WorksetAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn description(mut self, val: Option<&'a str>) -> Self {
         //
         self.f_description = Some(val);
@@ -134,6 +140,7 @@ impl<'a> WorksetAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn comic_count(mut self, val: i32) -> Self {
         //
         self.f_comic_count = Some(val);
@@ -141,6 +148,7 @@ impl<'a> WorksetAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn comic_next_index(mut self, val: i32) -> Self {
         //
         self.f_comic_next_index = Some(val);

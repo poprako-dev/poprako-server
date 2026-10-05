@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use serde_json::json;
@@ -7,10 +12,10 @@ use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 
-// workflow_record_view_preserves_each_typed_event(ChapterWorkflowRecordInfoView)(positive): every domain payload becomes a structured client event without storage JSON or rendered text.
-#[test]
-fn workflow_record_view_preserves_each_typed_event() {
-    let cases = vec![
+// Typed event fixtures and their expected client serialization.
+fn chapter_event_cases()
+-> Vec<(ChapterWorkflowRecordPayload, serde_json::Value)> {
+    vec![
         (
             ChapterWorkflowRecordPayload::ChapterCreated,
             json!({ "kind": "chapter_created" }),
@@ -36,6 +41,13 @@ fn workflow_record_view_preserves_each_typed_event() {
             ChapterWorkflowRecordPayload::ChapterUnpinned,
             json!({ "kind": "chapter_unpinned" }),
         ),
+    ]
+}
+
+// Typed event fixtures and their expected client serialization.
+fn assignment_event_cases()
+-> Vec<(ChapterWorkflowRecordPayload, serde_json::Value)> {
+    vec![
         (
             ChapterWorkflowRecordPayload::AssignmentCreated {
                 subject_user_id: "subject-user".into(),
@@ -77,6 +89,13 @@ fn workflow_record_view_preserves_each_typed_event() {
                 },
             }),
         ),
+    ]
+}
+
+// Typed event fixtures and their expected client serialization.
+fn delivery_event_cases()
+-> Vec<(ChapterWorkflowRecordPayload, serde_json::Value)> {
+    vec![
         (
             ChapterWorkflowRecordPayload::TranslationImported {
                 format: TranslationFormat::PopRaKo,
@@ -132,7 +151,16 @@ fn workflow_record_view_preserves_each_typed_event() {
                 },
             }),
         ),
-    ];
+    ]
+}
+
+// workflow_record_view_preserves_each_typed_event(ChapterWorkflowRecordInfoView)(positive): every domain payload becomes a structured client event without storage JSON or rendered text.
+#[test]
+fn workflow_record_view_preserves_each_typed_event() {
+    let cases = chapter_event_cases()
+        .into_iter()
+        .chain(assignment_event_cases())
+        .chain(delivery_event_cases());
 
     for (payload, expected_event) in cases {
         let workflow_record_info = ChapterWorkflowRecordInfo {
@@ -149,7 +177,7 @@ fn workflow_record_view_preserves_each_typed_event() {
 
         let serialized = serde_json::to_value(&workflow_record_view).unwrap();
 
-        assert_eq!(serialized["event"], expected_event);
+        assert_eq!((*serialized.get("event").unwrap()), expected_event);
 
         assert!(serialized.get("kind").is_none());
 

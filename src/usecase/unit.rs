@@ -160,7 +160,7 @@ where
         })
         .await?;
 
-    accept(ListPageUnitInfosVal::from_parts(unit_infos, count_metrics))
+    accept(ListPageUnitInfosVal::from_models(unit_infos, count_metrics))
 }
 
 #[instrument(
@@ -225,12 +225,12 @@ where
                     MAX_UNIT_SEARCH_MATCH_COUNT.into(),
                 )]);
 
-                let err_message =
+                let err_msg =
                     trl_kv("error-unit-search-too-many-matches", &args);
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     match_count = search_ids.len(),
                     match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
                     "expected error: too many Unit search matches",
@@ -238,7 +238,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
 
@@ -325,8 +325,7 @@ where
             if page_scope.chapter_id != chapter_scope.id {
                 //
                 return Err(BaseError::Unrecoverable {
-                    message: "locked Page does not belong to locked Chapter"
-                        .into(),
+                    msg: "locked Page does not belong to locked Chapter".into(),
                 });
             }
 
@@ -410,17 +409,15 @@ where
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
-fn unit_list_invariant(page_id: &str, message: &'static str) -> BaseError {
+fn unit_list_invariant(page_id: &str, msg: &'static str) -> BaseError {
     //
     tracing::error!(
         page_id,
-        err_message = message,
+        err_msg = msg,
         "unrecoverable error: invalid persisted Page Unit state",
     );
 
-    BaseError::Unrecoverable {
-        message: message.into(),
-    }
+    BaseError::Unrecoverable { msg: msg.into() }
 }
 
 // Loads and verifies every visible Unit in linked-list order.

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // create(create)(positive): team admin should create a pending member invitation.
 // create(create)(negative): non-admin should be rejected.
 // list_infos(list_infos)(positive): team member should list team invitations.
@@ -18,7 +23,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -156,29 +161,38 @@ async fn create_admin_creates_pending_invitation() {
 
     assert_eq!(snapshot.member_invitations.len(), 1);
 
-    assert_eq!(snapshot.member_invitations[0].id, created.id);
+    assert_eq!(snapshot.member_invitations.first().unwrap().id, created.id);
 
-    assert_eq!(snapshot.member_invitations[0].invitor_id, "admin-user");
+    assert_eq!(
+        snapshot.member_invitations.first().unwrap().invitor_id,
+        "admin-user"
+    );
 
-    assert_eq!(snapshot.member_invitations[0].invitee_qid, "qid-2");
+    assert_eq!(
+        snapshot.member_invitations.first().unwrap().invitee_qid,
+        "qid-2"
+    );
 
-    assert!(snapshot.member_invitations[0].is_pending);
+    assert!(snapshot.member_invitations.first().unwrap().is_pending);
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
     assert_eq!(
-        snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation {
+        snapshot.prom_records.first().unwrap().payload(),
+        PromPayload::Invitation {
             payload: InvitationPayload::PurgeExpiredMemberInvitation {
                 invitation_id: created.id,
             },
         }
     );
 
-    assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
+    assert!(
+        snapshot.prom_records.first().unwrap().visible_at()
+            >= before + EXPIRY_DELAY
+    );
 
     assert!(
-        snapshot.prom_records[0].visible_at()
+        snapshot.prom_records.first().unwrap().visible_at()
             <= test_util::now() + EXPIRY_DELAY
     );
 }
@@ -204,7 +218,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().member_invitations.is_empty());
 
@@ -232,7 +246,7 @@ async fn list_infos_member_lists_invitations() {
 
     assert_eq!(listed.len(), 1);
 
-    assert_eq!(listed[0].id, "inv-1");
+    assert_eq!(listed.first().unwrap().id, "inv-1");
 }
 
 #[tokio::test]
@@ -268,7 +282,7 @@ async fn list_infos_non_member_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -290,7 +304,7 @@ async fn update_roles_admin_updates_role_mask() {
         .unwrap();
 
     assert_eq!(
-        mock.snapshot().member_invitations[0].roles,
+        mock.snapshot().member_invitations.first().unwrap().roles,
         RoleMask::from(RoleField::REVIEWER)
     );
 }
@@ -315,7 +329,7 @@ async fn update_roles_non_admin_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -358,7 +372,7 @@ async fn delete_non_admin_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().member_invitations.len(), 1);
 }

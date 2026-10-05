@@ -45,7 +45,7 @@ async fn list_infos_team_member_lists_chapter_assignments() {
 
     assert!(assignment_info_vals.is_ok());
 
-    let assignment_info_vals = assignment_info_vals.ok().unwrap();
+    let assignment_info_vals = assignment_info_vals.unwrap();
 
     assert_eq!(assignment_info_vals.len(), 2);
 }
@@ -76,10 +76,14 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
     let assignment_info_vals =
         list_infos((&mock, &mock), token("member-user"), list_data)
             .await
-            .ok()
             .unwrap();
 
-    let chapter_info_val = assignment_info_vals[0].chapter.as_ref().unwrap();
+    let chapter_info_val = assignment_info_vals
+        .first()
+        .unwrap()
+        .chapter
+        .as_ref()
+        .unwrap();
 
     let comic_info_val = chapter_info_val.comic.as_ref().unwrap();
 
@@ -118,7 +122,7 @@ async fn list_infos_assignment_fallback_lists_chapter_assignments() {
 
     assert!(assignment_info_vals.is_ok());
 
-    assert_eq!(assignment_info_vals.ok().unwrap().len(), 1);
+    assert_eq!(assignment_info_vals.unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -149,11 +153,11 @@ async fn list_infos_owner_lists_own_assignments() {
 
     assert!(assignment_info_vals.is_ok());
 
-    let assignment_info_vals = assignment_info_vals.ok().unwrap();
+    let assignment_info_vals = assignment_info_vals.unwrap();
 
     assert_eq!(assignment_info_vals.len(), 1);
 
-    assert_eq!(assignment_info_vals[0].user_id, "owner-user");
+    assert_eq!(assignment_info_vals.first().unwrap().user_id, "owner-user");
 }
 
 #[tokio::test]
@@ -180,7 +184,7 @@ async fn list_infos_super_admin_lists_other_user_assignments() {
 
     assert!(assignment_info_vals.is_ok());
 
-    assert_eq!(assignment_info_vals.ok().unwrap().len(), 1);
+    assert_eq!(assignment_info_vals.unwrap().len(), 1);
 }
 
 #[tokio::test]
@@ -201,7 +205,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -222,7 +226,7 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -248,7 +252,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 // list_infos(list_infos)(negative): chapter assignments cannot be filtered by team-only roles.
@@ -266,6 +270,6 @@ async fn list_infos_rejects_admin_and_bot_filters() {
             .err()
             .unwrap();
 
-        assert_expected_variant(err, ExpectedVariant::Args);
+        assert_expected_variant(&err, ExpectedVariant::Args);
     }
 }

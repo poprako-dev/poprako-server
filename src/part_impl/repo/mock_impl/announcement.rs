@@ -79,7 +79,7 @@ fn list_announcements(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, announcement_infos.len());
 
-        announcement_infos[offset..end].to_vec()
+        (*announcement_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // system_mail_roundtrip_uses_testcontainer(SystemMailRepo)(positive): system mail repo sends, lists, and marks mail read in an isolated PostgreSQL container.
 
 use super::*;
@@ -15,7 +20,12 @@ use crate::part_impl::repo::rdb_impl::test_shared;
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 
 /// Verifies system mail roundtrip via testcontainers.
-/// Verifies system mail roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -43,7 +53,6 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         entries: &system_mail_entries,
     })
     .await
-    .ok()
     .unwrap();
 
     let unread_system_mail_list_spec = SystemMailListSpec {
@@ -58,7 +67,6 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &unread_system_mail_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(system_mail_infos.len(), 2);
@@ -73,7 +81,6 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         user_id: &user_fixture.user_entry.id,
     })
     .await
-    .ok()
     .unwrap();
 
     let read_system_mail_list_spec = SystemMailListSpec {
@@ -88,15 +95,13 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &read_system_mail_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(read_system_mail_infos.len(), 2);
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

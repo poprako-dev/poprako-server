@@ -70,6 +70,7 @@ pub struct UserAspectRow<'a> {
 }
 
 impl<'a> UserAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_nickname: None,
@@ -79,6 +80,7 @@ impl<'a> UserAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn nickname(mut self, val: &'a str) -> Self {
         //
         self.f_nickname = Some(val);
@@ -86,6 +88,7 @@ impl<'a> UserAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn qid(mut self, val: &'a str) -> Self {
         //
         self.f_qid = Some(val);
@@ -93,6 +96,7 @@ impl<'a> UserAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_last_active_at = Some(val);

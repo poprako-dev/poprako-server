@@ -47,9 +47,9 @@ async fn exactly_one_hundred_matches_succeed() {
 
     assert_eq!(found_infos.len(), 100);
 
-    assert_eq!(found_infos[0].id, "page-1-unit-000");
+    assert_eq!(found_infos.first().unwrap().id, "page-1-unit-000");
 
-    assert_eq!(found_infos[99].id, "page-1-unit-099");
+    assert_eq!(found_infos.get(99).unwrap().id, "page-1-unit-099");
 }
 
 #[tokio::test]
@@ -77,8 +77,8 @@ async fn one_hundred_and_first_match_returns_args_message() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
-        } if message == expected_message
+            msg,
+        } if msg == expected_message
     ));
 }
 
@@ -111,8 +111,8 @@ async fn excess_in_first_batch_does_not_read_later_page_batch() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
-        } if message == expected_message
+            msg,
+        } if msg == expected_message
     ));
 }
 
@@ -165,7 +165,7 @@ async fn search_is_literal_case_sensitive_and_field_specific() {
     .await
     .unwrap();
 
-    assert_eq!(proofread_infos[0].id, "unit-a");
+    assert_eq!(proofread_infos.first().unwrap().id, "unit-a");
 }
 
 #[tokio::test]
@@ -251,6 +251,10 @@ fn search_scope(page_count: usize) -> Mock {
 }
 
 // Seed one valid matching linked Unit chain in storage order.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn seed_matching_chain(mock: &Mock, page_id: &str, unit_count: usize) {
     //
     for unit_index in 0..unit_count {

@@ -116,7 +116,10 @@ impl<'a> UnitEditSequencePlan<'a> {
 
         validate_visible_count(visible_count)?;
 
-        let (_ordered_ids, next_ids) = sequence.finish()?;
+        let (ordered_ids, next_ids) = sequence.finish()?;
+
+        #[cfg(not(test))]
+        let _ = ordered_ids;
 
         let mut changed_successors = Vec::new();
 
@@ -140,7 +143,7 @@ impl<'a> UnitEditSequencePlan<'a> {
 
         accept(Self {
             #[cfg(test)]
-            ordered_ids: _ordered_ids,
+            ordered_ids,
             next_ids,
             changed_successors,
             #[cfg(test)]
@@ -457,11 +460,11 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
         return accept(());
     }
 
-    let err_message = trl("error-invalid-unit-oper");
+    let err_msg = trl("error-invalid-unit-oper");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         visible_count,
         max_visible_count = MAX_PAGE_UNIT_COUNT,
         operation = "reorder",
@@ -470,18 +473,16 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
 
     Err(BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     })
 }
 
 // Build an unrecoverable error for a corrupt internal sequence.
-fn invalid_sequence(message: &'static str) -> BaseError {
+fn invalid_sequence(msg: &'static str) -> BaseError {
     //
-    tracing::error!(message, "unrecoverable error: invalid Unit sequence");
+    tracing::error!(msg, "unrecoverable error: invalid Unit sequence");
 
-    BaseError::Unrecoverable {
-        message: message.into(),
-    }
+    BaseError::Unrecoverable { msg: msg.into() }
 }
 
 // Build the client-visible error for an invalid edit sequence.
@@ -491,11 +492,11 @@ fn invalid_edit_sequence(
     operation: &'static str,
 ) -> BaseError {
     //
-    let err_message = trl("error-invalid-unit-oper");
+    let err_msg = trl("error-invalid-unit-oper");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         unit_id,
         next_unit_id,
         operation,
@@ -504,6 +505,6 @@ fn invalid_edit_sequence(
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }

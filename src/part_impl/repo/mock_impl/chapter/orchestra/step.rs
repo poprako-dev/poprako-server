@@ -50,18 +50,30 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             return accept(false);
         };
 
-        if !context.state.chapters[chapter_index]
+        if !context
+            .state
+            .chapters
+            .get(chapter_index)
+            .unwrap()
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
             return accept(false);
         }
 
-        if context.state.chapters[chapter_index].page_count <= 0 {
+        if context
+            .state
+            .chapters
+            .get(chapter_index)
+            .unwrap()
+            .page_count
+            == 0
+        {
             return accept(false);
         }
 
-        let chapter_info = &mut context.state.chapters[chapter_index];
+        let chapter_info =
+            &mut (*context.state.chapters.get_mut(chapter_index).unwrap());
 
         chapter_info.stages = chapter_info
             .stages

@@ -256,7 +256,7 @@ where
 
     let (pinned_infos, positions) = pinned_chapters.map_or_else(
         || (Vec::new(), vec![None; comic_count]),
-        PinnedChapterSnapshot::into_parts,
+        PinnedChapterSnapshot::into_loaded,
     );
 
     // Consume URL occurrences in the same order used during discovery.

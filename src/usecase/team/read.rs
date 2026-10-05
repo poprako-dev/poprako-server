@@ -29,6 +29,10 @@ use crate::usecase::team::view::{team_info_view, team_info_views};
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `O` — Resolves the avatar signed URL through `ObjDept`.
 #[instrument(level = "info", skip(repo, obj_dept))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     id: String,
@@ -68,11 +72,11 @@ where
         && affected_user_id != token.user_id
     {
         //
-        let err_message = trl("error-forbidden");
+        let err_msg = trl("error-forbidden");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %token.user_id,
             affected_user_id = %affected_user_id,
             "expected error: team listing ownership required",
@@ -80,7 +84,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     }
 

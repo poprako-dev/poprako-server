@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // create(create)(positive): proofreader creates and normalizes a team termbase.
 // create(create)(positive): translator creates a team termbase.
 // create(create)(negative): admin without a translation role cannot create a termbase.
@@ -29,6 +34,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
     // Build a team member fixture with role perms.
     MemberInfo {
@@ -153,11 +162,11 @@ async fn create_normalizes_and_persists_for_proofreader() {
 
     assert_eq!(snapshot.termbases.len(), 1);
 
-    assert_eq!(snapshot.termbases[0].id, val.id);
+    assert_eq!(snapshot.termbases.first().unwrap().id, val.id);
 
-    assert_eq!(snapshot.termbases[0].name, "Glossary");
+    assert_eq!(snapshot.termbases.first().unwrap().name, "Glossary");
 
-    assert!(snapshot.termbases[0].description.is_none());
+    assert!(snapshot.termbases.first().unwrap().description.is_none());
 }
 
 #[tokio::test]
@@ -177,7 +186,7 @@ async fn create_persists_for_translator() {
         .await
         .unwrap();
 
-    assert_eq!(mock.snapshot().termbases[0].id, val.id);
+    assert_eq!(mock.snapshot().termbases.first().unwrap().id, val.id);
 }
 
 #[tokio::test]
@@ -222,7 +231,7 @@ async fn create_rejects_invalid_scope() {
         .await
         .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().termbases.is_empty());
 }
@@ -320,7 +329,7 @@ async fn list_comic_infos_rejects_non_member() {
         .await
         .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]

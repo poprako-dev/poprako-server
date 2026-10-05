@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
@@ -24,7 +29,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().chapters.is_empty());
 
@@ -44,8 +49,13 @@ async fn create_completes_chapter_obligations() {
 
             mock.seed_chapter(chapter("chapter-2", "comic-1", 1, false));
 
-            mock.state.lock().unwrap().comics[0].last_active_at =
-                time::OffsetDateTime::UNIX_EPOCH;
+            mock.state
+                .lock()
+                .unwrap()
+                .comics
+                .get_mut(0)
+                .unwrap()
+                .last_active_at = time::OffsetDateTime::UNIX_EPOCH;
 
             let created = create(
                 (&mock, &mock),
@@ -91,10 +101,10 @@ async fn create_completes_chapter_obligations() {
                 1
             );
 
-            assert_eq!(snapshot.comics[0].chapter_count, 3);
+            assert_eq!(snapshot.comics.first().unwrap().chapter_count, 3);
 
             assert!(
-                snapshot.comics[0].last_active_at
+                snapshot.comics.first().unwrap().last_active_at
                     > time::OffsetDateTime::UNIX_EPOCH
             );
 
@@ -108,20 +118,21 @@ async fn create_completes_chapter_obligations() {
             for record in &snapshot.chapter_workflow_records {
                 assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
 
-                match record.chapter_id == created.id {
-                    true => assert!(matches!(
+                if record.chapter_id == created.id {
+                    assert!(matches!(
                         record.payload,
                         ChapterWorkflowRecordPayload::ChapterCreated
-                    )),
-                    false => {
-                        assert_eq!(record.chapter_id, "chapter-1");
+                    ));
 
-                        assert!(matches!(
-                            record.payload,
-                            ChapterWorkflowRecordPayload::ChapterUnpinned
-                        ));
-                    }
+                    continue;
                 }
+
+                assert_eq!(record.chapter_id, "chapter-1");
+
+                assert!(matches!(
+                    record.payload,
+                    ChapterWorkflowRecordPayload::ChapterUnpinned
+                ));
             }
         }
     }
@@ -147,7 +158,7 @@ async fn create_rejects_non_admin() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -157,5 +168,5 @@ async fn create_rejects_non_admin() {
 
     assert!(snapshot.chapter_workflow_records.is_empty());
 
-    assert_eq!(snapshot.comics[0].chapter_count, 2);
+    assert_eq!(snapshot.comics.first().unwrap().chapter_count, 2);
 }

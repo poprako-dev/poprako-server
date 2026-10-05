@@ -45,11 +45,11 @@ where
 {
     if token.user_id != id {
         //
-        let err_message = trl("error-forbidden");
+        let err_msg = trl("error-forbidden");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
+            err_msg = %err_msg,
             user_id = %token.user_id,
             affected_user_id = %id,
             "expected error: user deletion ownership required",
@@ -57,7 +57,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
@@ -88,11 +88,11 @@ where
                 member_info,
             ) {
                 //
-                let err_message = trl("error-forbidden");
+                let err_msg = trl("error-forbidden");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     team_id = %member_info.team_id,
                     user_id = %id,
                     member_id = %member_info.id,
@@ -102,7 +102,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
         }

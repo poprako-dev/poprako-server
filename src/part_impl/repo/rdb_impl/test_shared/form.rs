@@ -5,6 +5,11 @@ use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
         id: format!("{}user-{}", prefix, name),
@@ -14,6 +19,11 @@ pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn team_entry(prefix: &str) -> TeamEntry {
     TeamEntry {
         id: format!("{}team", prefix),
@@ -22,6 +32,11 @@ pub fn team_entry(prefix: &str) -> TeamEntry {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
     WorksetEntry {
         id: format!("{}workset", prefix),
@@ -32,6 +47,11 @@ pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn comic_entry(
     prefix: &str,
     workset_entry: &WorksetEntry,
@@ -48,6 +68,11 @@ pub fn comic_entry(
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn chapter_entry(
     prefix: &str,
     comic_entry: &ComicEntry<'_>,
@@ -63,6 +88,11 @@ pub fn chapter_entry(
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+#[must_use]
 pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry<'_>) -> PageEntry {
     PageEntry {
         id: format!("{}page", prefix),

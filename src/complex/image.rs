@@ -104,11 +104,11 @@ pub fn invalid_byte_length_rejection(
         ("max_mib".into(), max_mib.into()),
     ]);
 
-    let err_message = trl_kv("error-invalid-image-byte-length", &args);
+    let err_msg = trl_kv("error-invalid-image-byte-length", &args);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         byte_length,
         max_length = max_mib.saturating_mul(BYTES_PER_MIB),
         image_kind = ?kind,
@@ -117,7 +117,7 @@ pub fn invalid_byte_length_rejection(
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

@@ -47,11 +47,11 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
 
     let Some(row) = row else {
         //
-        let err_message = trl("error-announcement-not-found");
+        let err_msg = trl("error-announcement-not-found");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             announcement_id = %id,
             operation = "get announcement info",
             "expected error: announcement not found",
@@ -59,7 +59,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     };
 

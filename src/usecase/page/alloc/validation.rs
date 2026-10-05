@@ -51,11 +51,11 @@ pub fn validate_page_specs(
 
         if !explicit_page_ids.insert(page_id) {
             //
-            let err_message = trl("error-duplicate-page-id");
+            let err_msg = trl("error-duplicate-page-id");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = %chapter_id,
                 user_id = %user_id,
                 page_id = %page_id,
@@ -64,7 +64,7 @@ pub fn validate_page_specs(
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             });
         }
     }
@@ -78,18 +78,18 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
     if !(MIN_CHAPTER_PAGE_COUNT..=MAX_CHAPTER_PAGE_COUNT).contains(&page_count)
     {
         //
-        let err_message = invalid_page_count_message();
+        let err_msg = invalid_page_count_msg();
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             page_count,
             "expected error: invalid page count",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
@@ -97,7 +97,7 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
 }
 
 // Builds the translated page-count validation message.
-fn invalid_page_count_message() -> String {
+fn invalid_page_count_msg() -> String {
     //
     let args = HashMap::from([
         ("min_count".into(), MIN_CHAPTER_PAGE_COUNT.into()),

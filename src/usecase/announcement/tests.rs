@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // list_infos(list_infos)(positive): team member should list team announcements.
 // list_infos(list_infos)(positive): user include should be populated only when requested.
 // list_infos(list_infos)(negative): non-member should be rejected from team announcements.
@@ -165,7 +170,7 @@ async fn list_infos_team_member_lists_team_announcements() {
 
     assert_eq!(announcement_info_vals.len(), 1);
 
-    assert_eq!(announcement_info_vals[0].id, "announcement-1");
+    assert_eq!(announcement_info_vals.first().unwrap().id, "announcement-1");
 }
 
 #[tokio::test]
@@ -199,7 +204,7 @@ async fn list_infos_user_include_follows_request() {
     .await
     .unwrap();
 
-    assert!(without_user[0].user.is_none());
+    assert!(without_user.first().unwrap().user.is_none());
 
     let with_user = list_infos(
         (&mock, &mock),
@@ -209,7 +214,10 @@ async fn list_infos_user_include_follows_request() {
     .await
     .unwrap();
 
-    assert_eq!(with_user[0].user.as_ref().unwrap().id, "author-user");
+    assert_eq!(
+        with_user.first().unwrap().user.as_ref().unwrap().id,
+        "author-user"
+    );
 }
 
 #[tokio::test]
@@ -233,7 +241,7 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -257,11 +265,17 @@ async fn create_team_admin_creates_announcement() {
 
     assert_eq!(snapshot.announcements.len(), 1);
 
-    assert_eq!(snapshot.announcements[0].id, created_announcement.id);
+    assert_eq!(
+        snapshot.announcements.first().unwrap().id,
+        created_announcement.id
+    );
 
-    assert_eq!(snapshot.announcements[0].team_id, "team-1");
+    assert_eq!(snapshot.announcements.first().unwrap().team_id, "team-1");
 
-    assert_eq!(snapshot.announcements[0].user_id, "admin-user");
+    assert_eq!(
+        snapshot.announcements.first().unwrap().user_id,
+        "admin-user"
+    );
 }
 
 #[tokio::test]
@@ -281,7 +295,7 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().announcements.is_empty());
 }
@@ -296,7 +310,7 @@ async fn create_non_member_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().announcements.is_empty());
 }
@@ -326,11 +340,20 @@ async fn update_info_team_admin_replaces_announcement_content() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.announcements[0].title, "updated title");
+    assert_eq!(
+        snapshot.announcements.first().unwrap().title,
+        "updated title"
+    );
 
-    assert_eq!(snapshot.announcements[0].content, "updated content");
+    assert_eq!(
+        snapshot.announcements.first().unwrap().content,
+        "updated content"
+    );
 
-    assert_eq!(snapshot.announcements[0].user_id, "author-user");
+    assert_eq!(
+        snapshot.announcements.first().unwrap().user_id,
+        "author-user"
+    );
 }
 
 #[tokio::test]
@@ -361,9 +384,12 @@ async fn update_info_non_admin_member_is_rejected_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
-    assert_eq!(mock.snapshot().announcements[0].title, "title");
+    assert_eq!(
+        mock.snapshot().announcements.first().unwrap().title,
+        "title"
+    );
 }
 
 #[tokio::test]
@@ -383,7 +409,7 @@ async fn update_info_missing_announcement_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().announcements.is_empty());
 }
@@ -438,7 +464,7 @@ async fn delete_non_admin_member_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().announcements.len(), 1);
 }
@@ -460,7 +486,7 @@ async fn delete_missing_announcement_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().announcements.is_empty());
 }

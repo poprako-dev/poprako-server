@@ -21,6 +21,10 @@ pub fn gen_id() -> String {
 ///
 /// Returns an unrecoverable error when the blocking task cannot complete
 /// or Argon2id fails to produce a password hash.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn hash_password(password: &str) -> BaseRest<String> {
     //
     let password = password.to_owned();
@@ -36,7 +40,7 @@ pub async fn hash_password(password: &str) -> BaseRest<String> {
             );
 
             BaseError::Unrecoverable {
-                message: format!(
+                msg: format!(
                     "[user_complex::hash_password] blocking task failed: {}",
                     error,
                 ),
@@ -72,12 +76,18 @@ pub async fn verify_password(password: &str, password_hash: &str) -> bool {
 }
 
 /// Hashes a plaintext password using the sync runtime (test-only helper).
+/// # Errors
+/// Returns an unrecoverable error if Argon2 cannot hash the password.
 #[cfg(test)]
 pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
     hash_password_sync(password)
 }
 
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn hash_password_sync(password: &str) -> BaseRest<String> {
     //
     let salt = SaltString::generate(OsRng);
@@ -94,7 +104,7 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
             );
 
             BaseError::Unrecoverable {
-                message: format!(
+                msg: format!(
                     "[user_complex::hash_password] argon2 hashing failed: {}",
                     error,
                 ),

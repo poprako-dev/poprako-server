@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Artwork upload lifecycle, authorization, and transaction tests.
 
 use super::*;
@@ -83,7 +88,7 @@ fn chapter(id: &str) -> ChapterInfo {
         translated_unit_count: 2,
         proofread_unit_count: 1,
 
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
 
         creator_id: "user-1".into(),
 
@@ -95,6 +100,10 @@ fn chapter(id: &str) -> ChapterInfo {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -211,11 +220,16 @@ async fn artwork_completes_once_from_pending_and_active() {
     for phase in [StagePhase::Pending, StagePhase::Active] {
         let mock = seed(RoleField::TYPESETTER);
 
-        mock.state.lock().unwrap().chapters[0].stages =
-            StageMask::try_from(0u32)
-                .unwrap()
-                .try_set_phase(Stage::TypesetRedraw, phase)
-                .unwrap();
+        mock.state
+            .lock()
+            .unwrap()
+            .chapters
+            .get_mut(0)
+            .unwrap()
+            .stages = StageMask::try_from(0u32)
+            .unwrap()
+            .try_set_phase(Stage::TypesetRedraw, phase)
+            .unwrap();
 
         let allocation = allocate(&mock, 1).await.unwrap();
 
@@ -230,14 +244,19 @@ async fn artwork_completes_once_from_pending_and_active() {
         let snapshot = mock.snapshot();
 
         assert_eq!(
-            snapshot.chapters[0].stages.get_phase(Stage::TypesetRedraw),
+            snapshot
+                .chapters
+                .first()
+                .unwrap()
+                .stages
+                .get_phase(Stage::TypesetRedraw),
             StagePhase::Completed
         );
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
         assert!(
-            matches!(snapshot.chapter_workflow_records[0].payload, ChapterWorkflowRecordPayload::StageTransitioned { origin: ChapterWorkflowRecordOrigin::ArtworkUpload, previous_phase, next_phase: StagePhase::Completed, .. } if previous_phase == phase)
+            matches!(snapshot.chapter_workflow_records.first().unwrap().payload, ChapterWorkflowRecordPayload::StageTransitioned { origin: ChapterWorkflowRecordOrigin::ArtworkUpload, previous_phase, next_phase: StagePhase::Completed, .. } if previous_phase == phase)
         );
 
         assert_eq!(mock.event_count(), 1);
@@ -257,7 +276,7 @@ async fn artwork_completes_once_from_pending_and_active() {
         assert_eq!(snapshot.chapter_workflow_records.len(), 2);
 
         assert!(matches!(
-            snapshot.chapter_workflow_records[1].payload,
+            snapshot.chapter_workflow_records.get(1).unwrap().payload,
             ChapterWorkflowRecordPayload::ArtworkExported {
                 artwork_ver,
             } if artwork_ver == allocation.artwork_ver
@@ -289,7 +308,10 @@ async fn artwork_replacement_rejects_stale_confirmation() {
     assert!(export(&mock, "user-1").await.is_err());
 
     assert_eq!(
-        mock.snapshot().chapters[0]
+        mock.snapshot()
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .get_phase(Stage::TypesetRedraw),
         StagePhase::Completed
@@ -324,7 +346,10 @@ async fn artwork_replacement_rejects_stale_confirmation() {
     assert!(export(&mock, "user-1").await.is_err());
 
     assert_eq!(
-        mock.snapshot().chapters[0]
+        mock.snapshot()
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .get_phase(Stage::TypesetRedraw),
         StagePhase::Completed
@@ -378,7 +403,12 @@ async fn artwork_completion_rolls_back_when_comic_touch_fails() {
     let snapshot = mock.snapshot();
 
     assert!(
-        !snapshot.objs["chapter_artwork"]["chapter-1"]
+        !snapshot
+            .objs
+            .get("chapter_artwork")
+            .unwrap()
+            .get("chapter-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -386,7 +416,12 @@ async fn artwork_completion_rolls_back_when_comic_touch_fails() {
     );
 
     assert_eq!(
-        snapshot.chapters[0].stages.get_phase(Stage::TypesetRedraw),
+        snapshot
+            .chapters
+            .first()
+            .unwrap()
+            .stages
+            .get_phase(Stage::TypesetRedraw),
         StagePhase::Pending
     );
 
@@ -442,7 +477,13 @@ async fn artwork_allocation_enforces_limits_and_frozen_state() {
     .await
     .unwrap();
 
-    mock.state.lock().unwrap().chapters[0].stages = StageMask::try_from(0u32)
+    mock.state
+        .lock()
+        .unwrap()
+        .chapters
+        .get_mut(0)
+        .unwrap()
+        .stages = StageMask::try_from(0u32)
         .unwrap()
         .try_set_phase(Stage::Publish, StagePhase::Completed)
         .unwrap();

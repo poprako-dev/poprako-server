@@ -85,5 +85,5 @@ async fn get_info_denies_member_of_another_team() {
             .err()
             .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }

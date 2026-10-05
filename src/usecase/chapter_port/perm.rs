@@ -77,11 +77,11 @@ where
 
         (None, None) => {
             //
-            let err_message = trl("error-chapter-port-export-perm-required");
+            let err_msg = trl("error-chapter-port-export-perm-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Perm,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id = %chapter_id,
                 user_id = %token.user_id,
                 operation = "export",
@@ -90,7 +90,7 @@ where
 
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: err_message,
+                msg: err_msg,
             })
         }
     }

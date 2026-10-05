@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while the archived comic marker remains and active descendants are removed without changing workset counts.
 
 use super::*;
@@ -23,13 +28,196 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_page_raw_ident, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
+// Verify archive metadata, retained comic and counters, removed descendants, and cleanup.
+async fn verify_archive_storage(
+    shared: &RdbCore,
+    page_fixture: &PageFixture,
+    comic_archive_entry: &ComicArchiveEntry,
+    workflow_record_entry: &ChapterWorkflowRecordEntry<'_>,
+    (archive_workset_id, workset_comic_count_before): (&str, i32),
+) {
+    let source_comic_id =
+        page_fixture.chapter_entry.comic_id.clone().into_owned();
+
+    let archiver_id =
+        page_fixture.chapter_entry.creator_id.clone().into_owned();
+
+    let mut conn = shared.get().await.unwrap();
+
+    let (
+        archive_team_id,
+        archive_source_comic_id,
+        comic_archived_payload,
+        comic_archiver_id,
+        comic_created_at,
+    ) = t_comic_archive::table
+        .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
+        .select((
+            t_comic_archive::f_team_id,
+            t_comic_archive::f_source_comic_id,
+            t_comic_archive::f_archived_payload,
+            t_comic_archive::f_archiver_id,
+            t_comic_archive::f_created_at,
+        ))
+        .first::<(String, String, String, String, OffsetDateTime)>(&mut conn)
+        .await
+        .unwrap();
+
+    let workset_comic_count_after = t_workset::table
+        .filter(t_workset::f_id.eq(&archive_workset_id))
+        .select(t_workset::f_comic_count)
+        .first::<i32>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(archive_team_id, page_fixture.team_entry.id);
+
+    assert_eq!(archive_source_comic_id, source_comic_id.as_str());
+
+    assert_eq!(comic_archiver_id, archiver_id);
+
+    assert_eq!(comic_created_at, comic_archive_entry.record.created_at);
+
+    verify_archived_payload(
+        &comic_archived_payload,
+        page_fixture,
+        workflow_record_entry,
+    );
+
+    assert_eq!(
+        t_comic::table
+            .filter(t_comic::f_id.eq(&source_comic_id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await
+            .unwrap(),
+        1
+    );
+
+    assert_eq!(
+        t_chapter::table
+            .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await
+            .unwrap(),
+        0
+    );
+
+    assert_eq!(
+        t_page::table
+            .filter(t_page::f_id.eq(&page_fixture.page_entry.id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await
+            .unwrap(),
+        0
+    );
+
+    assert_eq!(workset_comic_count_after, workset_comic_count_before);
+
+    assert_eq!(
+        t_page_raw_ident::table
+            .filter(t_page_raw_ident::f_page_id.eq(&page_fixture.page_entry.id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await
+            .unwrap(),
+        0
+    );
+
+    diesel::delete(
+        t_comic_archive::table
+            .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id)),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+}
+
+// Verify the stored archive JSON contains chapter history and original page identity.
+fn verify_archived_payload(
+    comic_archived_payload: &str,
+    page_fixture: &PageFixture,
+    workflow_record_entry: &ChapterWorkflowRecordEntry<'_>,
+) {
+    let source_comic_id = page_fixture.chapter_entry.comic_id.as_ref();
+
+    let archived_comic_payload: serde_json::Value =
+        serde_json::from_str(comic_archived_payload).unwrap();
+
+    let archived_chapter = archived_comic_payload
+        .get("chapters")
+        .unwrap()
+        .get(0)
+        .unwrap();
+
+    let archived_page = archived_chapter.get("pages").unwrap().get(0).unwrap();
+
+    let archived_workflow_record = archived_chapter
+        .get("workflow_records")
+        .unwrap()
+        .get(0)
+        .unwrap();
+
+    assert_eq!(
+        (*archived_comic_payload.get("source_comic_id").unwrap()),
+        source_comic_id
+    );
+
+    assert_eq!(
+        (*archived_chapter.get("source_chapter_id").unwrap()),
+        page_fixture.chapter_entry.id
+    );
+
+    assert_eq!(
+        (*archived_workflow_record.get("id").unwrap()),
+        workflow_record_entry.id
+    );
+
+    assert_eq!(
+        (*archived_workflow_record.get("kind").unwrap()),
+        "chapter-subtitle-updated"
+    );
+
+    assert_eq!(
+        (*archived_workflow_record
+            .get("payload")
+            .unwrap()
+            .get("previous_subtitle")
+            .unwrap()),
+        "before archive"
+    );
+
+    assert_eq!(
+        archived_chapter
+            .get("pages")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+
+    assert_eq!(
+        (*archived_page.get("source_page_id").unwrap()),
+        page_fixture.page_entry.id
+    );
+}
+
 /// Verifies comic archive roundtrip via testcontainers.
-/// Verifies comic archive roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -82,7 +270,6 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let (archive_workset_id, workset_comic_count_before) = {
@@ -130,143 +317,27 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             Ok::<ComicArchiveEntry, BaseError>(comic_archive_entry)
         })
         .await
-        .ok()
         .unwrap();
 
-    let mut conn = shared.get().await.unwrap();
-
-    let (
-        archive_team_id,
-        archive_source_comic_id,
-        comic_archived_payload,
-        comic_archiver_id,
-        comic_created_at,
-    ) = t_comic_archive::table
-        .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
-        .select((
-            t_comic_archive::f_team_id,
-            t_comic_archive::f_source_comic_id,
-            t_comic_archive::f_archived_payload,
-            t_comic_archive::f_archiver_id,
-            t_comic_archive::f_created_at,
-        ))
-        .first::<(String, String, String, String, OffsetDateTime)>(&mut conn)
-        .await
-        .unwrap();
-
-    let workset_comic_count_after = t_workset::table
-        .filter(t_workset::f_id.eq(&archive_workset_id))
-        .select(t_workset::f_comic_count)
-        .first::<i32>(&mut conn)
-        .await
-        .unwrap();
-
-    let archived_comic_payload: serde_json::Value =
-        serde_json::from_str(&comic_archived_payload).unwrap();
-
-    assert_eq!(archive_team_id, page_fixture.team_entry.id);
-
-    assert_eq!(archive_source_comic_id, source_comic_id.as_str());
-
-    assert_eq!(comic_archiver_id, archiver_id);
-
-    assert_eq!(comic_created_at, comic_archive_entry.record.created_at);
-
-    assert_eq!(archived_comic_payload["source_comic_id"], source_comic_id);
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["source_chapter_id"],
-        page_fixture.chapter_entry.id
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["workflow_records"][0]["id"],
-        workflow_record_entry.id
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["workflow_records"][0]["kind"],
-        "chapter-subtitle-updated"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["workflow_records"][0]["payload"]
-            ["previous_subtitle"],
-        "before archive"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"]
-            .as_array()
-            .unwrap()
-            .len(),
-        1
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["source_page_id"],
-        page_fixture.page_entry.id
-    );
-
-    assert_eq!(
-        t_comic::table
-            .filter(t_comic::f_id.eq(&source_comic_id))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .await
-            .unwrap(),
-        1
-    );
-
-    assert_eq!(
-        t_chapter::table
-            .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .await
-            .unwrap(),
-        0
-    );
-
-    assert_eq!(
-        t_page::table
-            .filter(t_page::f_id.eq(&page_fixture.page_entry.id))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .await
-            .unwrap(),
-        0
-    );
-
-    assert_eq!(workset_comic_count_after, workset_comic_count_before);
-
-    assert_eq!(
-        t_page_raw_ident::table
-            .filter(t_page_raw_ident::f_page_id.eq(&page_fixture.page_entry.id))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .await
-            .unwrap(),
-        0
-    );
-
-    diesel::delete(
-        t_comic_archive::table
-            .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id)),
+    verify_archive_storage(
+        &shared,
+        &page_fixture,
+        &comic_archive_entry,
+        &workflow_record_entry,
+        (&archive_workset_id, workset_comic_count_before),
     )
-    .execute(&mut conn)
-    .await
-    .unwrap();
+    .await;
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 
 /// Verifies tombstoned comics reject both snapshot loading and archive commit.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 

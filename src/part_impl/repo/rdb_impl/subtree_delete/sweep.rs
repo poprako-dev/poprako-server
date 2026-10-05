@@ -347,8 +347,7 @@ pub async fn delete_active_scope(
     let SubtreeDeleteScope::Chapter { chapter_id, .. } = scope else {
         //
         return Err(BaseError::Unrecoverable {
-            message: "only a direct chapter may bypass subtree tombstones"
-                .into(),
+            msg: "only a direct chapter may bypass subtree tombstones".into(),
         });
     };
 

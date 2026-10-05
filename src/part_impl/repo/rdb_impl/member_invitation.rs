@@ -116,11 +116,11 @@ async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let message = trl("error-invitation-not-found");
+        let msg = trl("error-invitation-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             invitation_id = %id,
             operation = "get member invitation info",
             "expected member invitation error",
@@ -128,7 +128,7 @@ async fn get_info_by_id(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -181,11 +181,11 @@ async fn get_info_by_code(
 
     let Some(row) = row else {
         //
-        let message = trl("error-invitation-not-found");
+        let msg = trl("error-invitation-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             invitation_code = %code,
             pending = true,
             operation = "get pending member invitation by code",
@@ -194,7 +194,7 @@ async fn get_info_by_code(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 
@@ -220,11 +220,11 @@ async fn get_info_by_code_excluded(
 
     let Some(row) = row else {
         //
-        let message = trl("error-invitation-not-found");
+        let msg = trl("error-invitation-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
+            err_msg = %msg,
             invitation_code = %code,
             pending = true,
             operation = "lock pending member invitation by code",
@@ -233,7 +233,7 @@ async fn get_info_by_code_excluded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message,
+            msg,
         });
     };
 

@@ -89,7 +89,7 @@ fn list_member_invitation_infos(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, member_invitation_infos.len());
 
-        member_invitation_infos[offset..end].to_vec()
+        (*member_invitation_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
@@ -434,7 +434,11 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
                 || !member_invitation_info.is_pending
         });
 
-        accept(())
+        let rest = accept(());
+
+        drop(state);
+
+        rest
     }
 }
 
@@ -472,6 +476,10 @@ impl<'a> Run<DeleteMemberInvitation<'a>> for Mock {
 
         state.member_invitations.remove(position);
 
-        accept(())
+        let rest = accept(());
+
+        drop(state);
+
+        rest
     }
 }

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // assignment_invitation_roundtrip_uses_testcontainer(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -21,7 +26,12 @@ const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
 
 /// Verifies assignment invitation roundtrip via testcontainers.
 /// Verifies assignment invitation roundtrip via testcontainers.
-/// Verifies assignment invitation roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn assignment_invitation_roundtrip_uses_testcontainer(
     shared: RdbCore,
 ) {
@@ -64,7 +74,6 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
@@ -79,17 +88,21 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
             spec: &assignment_invitation_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(assignment_invitation_infos.len(), 1);
 
-    assert!(!assignment_invitation_infos[0].is_pending);
+    assert!(
+        !assignment_invitation_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .is_pending
+    );
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

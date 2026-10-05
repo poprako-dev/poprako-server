@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // comment_roundtrip_uses_testcontainer(CreateComment, ListCommentInfos)(positive): comment repo creates and lists included users in an isolated PostgreSQL container.
 
 use super::*;
@@ -14,7 +19,12 @@ use crate::value::comment::CommentInclOpt;
 const PREFIX: &str = "rdb-test-comment-domain-";
 
 /// Verifies comment roundtrip via testcontainers.
-/// Verifies comment roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -34,7 +44,6 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
         entry: &comment_entry,
     })
     .await
-    .ok()
     .unwrap();
 
     let comment_list_spec = CommentListSpec {
@@ -49,20 +58,25 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &comment_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comment_infos.len(), 1);
 
     assert_eq!(
-        comment_infos[0].user.as_ref().unwrap().id,
+        comment_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .id,
         team_fixture.user_entry.id
     );
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

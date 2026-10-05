@@ -1,4 +1,7 @@
-#![allow(clippy::ref_option_ref)]
+#![allow(
+    clippy::ref_option_ref,
+    reason = "Diesel AsChangeset derives borrow nullable fields without changing their three-state update semantics"
+)]
 
 //! Diesel entity types for the `t_unit` table.
 //!
@@ -92,6 +95,7 @@ pub struct UnitEntryRow<'a> {
 }
 
 impl<'a> UnitEntryRow<'a> {
+    #[must_use]
     pub fn from_edit(
         page_id: &'a str,
         edit: &'a UnitEdit,
@@ -175,6 +179,7 @@ pub struct UnitAspectRow<'a> {
 }
 
 impl<'a> UnitAspectRow<'a> {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             f_next_id: None,
@@ -192,6 +197,7 @@ impl<'a> UnitAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn order(mut self, next_id: Option<&'a str>) -> Self {
         //
         self.f_next_id = Some(next_id);
@@ -199,6 +205,7 @@ impl<'a> UnitAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub fn hide(mut self) -> Self {
         //
         self.f_hidden_at = Some(Some(OffsetDateTime::now_utc()));
@@ -206,6 +213,7 @@ impl<'a> UnitAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub fn apply_edit(mut self, edit: &'a UnitEdit) -> Self {
         //
         let UnitEdit::Save {
@@ -280,5 +288,11 @@ impl<'a> UnitAspectRow<'a> {
         }
 
         self
+    }
+}
+
+impl Default for UnitAspectRow<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }

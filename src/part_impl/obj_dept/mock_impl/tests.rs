@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
@@ -248,22 +254,22 @@ async fn upload_mark_is_exact_current_and_idempotent() {
 
     assert!(uploaded);
 
-    let mut state = mock.state.lock().unwrap();
+    let detached_prepared = {
+        let mut mock_state = mock.state.lock().unwrap();
 
-    let detached_prepared = match state
-        .objs
-        .get_mut("page_image")
-        .and_then(|objs| objs.get_mut("page-1"))
-    {
-        Some(record) => {
-            record.meta = None;
+        match mock_state
+            .objs
+            .get_mut("page_image")
+            .and_then(|objs| objs.get_mut("page-1"))
+        {
+            Some(record) => {
+                record.meta = None;
 
-            true
+                true
+            }
+            None => false,
         }
-        None => false,
     };
-
-    drop(state);
 
     assert!(detached_prepared);
 
@@ -316,9 +322,15 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
 
     assert_eq!(snapshot.obj_tasks.len(), 2);
 
-    assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
+    assert!(matches!(
+        snapshot.obj_tasks.first().unwrap().1,
+        ObjTask::Check { .. }
+    ));
 
-    assert!(matches!(snapshot.obj_tasks[1].1, ObjTask::Delete { .. }));
+    assert!(matches!(
+        snapshot.obj_tasks.get(1).unwrap().1,
+        ObjTask::Delete { .. }
+    ));
 }
 
 #[tokio::test]
@@ -373,7 +385,16 @@ async fn matching_available_content_returns_no_slot_without_mutation() {
         .unwrap();
 
     assert!(repeated_slot.is_none());
-    assert_eq!(mock.snapshot().objs["page_image"]["page-1"].version, 1);
+    assert_eq!(
+        mock.snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .version,
+        1
+    );
     assert_eq!(mock.snapshot().obj_tasks.len(), task_count);
 }
 
@@ -420,7 +441,16 @@ async fn matching_pending_content_resumes_the_current_generation() {
         .unwrap();
 
     assert_eq!(resumed_slot.key, first_slot.key);
-    assert_eq!(mock.snapshot().objs["page_image"]["page-1"].version, 1);
+    assert_eq!(
+        mock.snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .version,
+        1
+    );
     assert_eq!(mock.snapshot().obj_tasks.len(), 2);
     assert!(
         mock.snapshot()
@@ -501,7 +531,7 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.objs.get("page_image").is_none());
+    assert!(!snapshot.objs.contains_key("page_image"));
 
     assert!(snapshot.obj_tasks.is_empty());
 }

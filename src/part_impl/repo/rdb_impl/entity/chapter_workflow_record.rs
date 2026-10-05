@@ -237,8 +237,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
             );
 
             BaseError::Unrecoverable {
-                message: "persisted chapter workflow record kind is corrupt"
-                    .into(),
+                msg: "persisted chapter workflow record kind is corrupt".into(),
             }
         })?;
 
@@ -253,7 +252,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
             );
 
             BaseError::Unrecoverable {
-                message: "persisted chapter workflow record payload is corrupt"
+                msg: "persisted chapter workflow record payload is corrupt"
                     .into(),
             }
         })?;

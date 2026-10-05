@@ -28,14 +28,14 @@ pub trait ObjDeptProm {
     fn retry_task<'a>(
         &'a self,
         task: &'a ObjDeptPromTask,
-        message: &'a str,
+        msg: &'a str,
     ) -> impl Future<Output = ObjDeptRest<usize>> + Send;
 
     /// Marks a task owned by the exact execution credential for operator repair.
     fn mark_task_operator<'a>(
         &'a self,
         task: &'a ObjDeptPromTask,
-        message: &'a str,
+        msg: &'a str,
     ) -> impl Future<Output = ObjDeptRest<usize>> + Send;
 }
 

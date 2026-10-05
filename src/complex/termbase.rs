@@ -44,11 +44,11 @@ pub mod perm {
 
             _ => {
                 //
-                let err_message = trl("error-invalid-termbase-scope");
+                let err_msg = trl("error-invalid-termbase-scope");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
@@ -57,7 +57,7 @@ pub mod perm {
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
         }
@@ -77,11 +77,11 @@ pub mod perm {
 
             _ => {
                 //
-                let err_message = trl("error-invalid-termbase-scope");
+                let err_msg = trl("error-invalid-termbase-scope");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
+                    err_msg = %err_msg,
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
@@ -90,7 +90,7 @@ pub mod perm {
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: err_message,
+                    msg: err_msg,
                 });
             }
         }
@@ -136,11 +136,11 @@ pub fn build_entry(
 
         _ => {
             //
-            let err_message = trl("error-invalid-termbase-scope");
+            let err_msg = trl("error-invalid-termbase-scope");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 team_id = ?team_id,
                 comic_id = ?comic_id,
                 "expected error: invalid termbase ownership scope",
@@ -148,7 +148,7 @@ pub fn build_entry(
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             });
         }
     }
@@ -189,18 +189,18 @@ pub fn normalize_import(
 
         if !seen_sources.insert(normalized_key(&term_import.source)) {
             //
-            let err_message = trl("error-term-source-duplicate");
+            let err_msg = trl("error-term-source-duplicate");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 source = %term_import.source,
                 "expected error: duplicate imported term source",
             );
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             });
         }
 
@@ -276,7 +276,7 @@ pub fn build_term_upsert_plan(
         );
 
         return Err(BaseError::Unrecoverable {
-            message: "cached termbase term count mismatch".into(),
+            msg: "cached termbase term count mismatch".into(),
         });
     }
 
@@ -360,18 +360,18 @@ fn normalize_name(name: String) -> BaseRest<String> {
 
     if name.is_empty() {
         //
-        let err_message = trl("error-termbase-name-required");
+        let err_msg = trl("error-termbase-name-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
+            err_msg = %err_msg,
             termbase_name = %name,
             "expected error: termbase name required",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: err_message,
+            msg: err_msg,
         });
     }
 
@@ -387,11 +387,11 @@ fn term_limit_error(
     let args =
         HashMap::from([("term_limit".into(), TERMBASE_TERM_LIMIT.into())]);
 
-    let err_message = trl_kv("error-termbase-term-limit", &args);
+    let err_msg = trl_kv("error-termbase-term-limit", &args);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         current_term_count,
         additional_term_count,
         term_limit = TERMBASE_TERM_LIMIT,
@@ -400,7 +400,7 @@ fn term_limit_error(
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 

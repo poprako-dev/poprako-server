@@ -28,11 +28,6 @@ mgr-schema:
 connect:
     psql ${DATABASE_URL}
 
-check-fix:
-    cargo fmt \
-        && cargo check \
-        && cargo clippy --fix --lib -p poprako-server --allow-dirty -- --no-deps
-
 prod-build:
     scripts/docker-build-prod.sh
 

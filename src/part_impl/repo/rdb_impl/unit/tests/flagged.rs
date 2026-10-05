@@ -4,7 +4,97 @@ use super::*;
 
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::ListPageUnitFlaggedStats;
+use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 
+// Verify hiding, restoring, clearing, and setting a flag preserve text and statistics.
+async fn verify_flag_patches(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    fixture: &PageFixture,
+) {
+    let first_id = "rdb-test-unit-domain-flagged-a";
+
+    for (edit, expected_count, expected_flag) in [
+        (
+            UnitEdit::Delete {
+                id: first_id.into(),
+            },
+            0,
+            true,
+        ),
+        (patch(first_id, None), 1, true),
+        (patch(first_id, Some(false)), 0, false),
+        (patch(first_id, Some(true)), 1, true),
+    ] {
+        nucl.coord(async |context| {
+            let orders = repo
+                .step(
+                    context,
+                    &ListUnitOrders {
+                        page_id: &fixture.page_entry.id,
+                    },
+                )
+                .await?;
+
+            repo.step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &fixture.page_entry.id,
+                    orders: &orders,
+                    edits: &[edit],
+                },
+            )
+            .await?;
+
+            let units = repo
+                .step(context, &ListUnitInfosByIds { ids: &[first_id] })
+                .await?;
+
+            assert_eq!(
+                units.as_slice().first().unwrap().is_flagged,
+                expected_flag
+            );
+            assert_eq!(
+                units.as_slice().first().unwrap().translated_text.as_deref(),
+                Some("flagged")
+            );
+            assert_eq!(
+                units
+                    .as_slice()
+                    .first()
+                    .unwrap()
+                    .last_translator_id
+                    .as_deref(),
+                Some(fixture.chapter_entry.creator_id.as_ref())
+            );
+
+            accept(())
+        })
+        .await
+        .unwrap();
+
+        let stats = repo
+            .run(&ListPageUnitFlaggedStats {
+                chapter_id: &fixture.chapter_entry.id,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(
+            stats
+                .iter()
+                .map(|stat| stat.flagged_unit_count)
+                .sum::<usize>(),
+            expected_count
+        );
+        assert_eq!(stats.len(), expected_count);
+    }
+}
+
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 pub async fn verify_flags(shared: RdbCore) {
     let fixture =
         test_shared::seed_page(&shared, "rdb-test-unit-domain-flagged-").await;
@@ -55,76 +145,17 @@ pub async fn verify_flags(shared: RdbCore) {
         .unwrap();
 
     assert_eq!(stats.len(), 1);
-    assert_eq!(stats[0].page_id, fixture.page_entry.id);
-    assert_eq!(stats[0].index, fixture.page_entry.index);
-    assert_eq!(stats[0].flagged_unit_count, 1);
+    assert_eq!(
+        stats.as_slice().first().unwrap().page_id,
+        fixture.page_entry.id
+    );
+    assert_eq!(
+        stats.as_slice().first().unwrap().index,
+        fixture.page_entry.index
+    );
+    assert_eq!(stats.as_slice().first().unwrap().flagged_unit_count, 1);
 
-    let first_id = "rdb-test-unit-domain-flagged-a";
-
-    for (edit, expected_count, expected_flag) in [
-        (
-            UnitEdit::Delete {
-                id: first_id.into(),
-            },
-            0,
-            true,
-        ),
-        (patch(first_id, None), 1, true),
-        (patch(first_id, Some(false)), 0, false),
-        (patch(first_id, Some(true)), 1, true),
-    ] {
-        nucl.coord(async |context| {
-            let orders = repo
-                .step(
-                    context,
-                    &ListUnitOrders {
-                        page_id: &fixture.page_entry.id,
-                    },
-                )
-                .await?;
-
-            repo.step(
-                context,
-                &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
-                    orders: &orders,
-                    edits: &[edit],
-                },
-            )
-            .await?;
-
-            let units = repo
-                .step(context, &ListUnitInfosByIds { ids: &[first_id] })
-                .await?;
-
-            assert_eq!(units[0].is_flagged, expected_flag);
-            assert_eq!(units[0].translated_text.as_deref(), Some("flagged"));
-            assert_eq!(
-                units[0].last_translator_id.as_deref(),
-                Some(fixture.chapter_entry.creator_id.as_ref())
-            );
-
-            accept(())
-        })
-        .await
-        .unwrap();
-
-        let stats = repo
-            .run(&ListPageUnitFlaggedStats {
-                chapter_id: &fixture.chapter_entry.id,
-            })
-            .await
-            .unwrap();
-
-        assert_eq!(
-            stats
-                .iter()
-                .map(|stat| stat.flagged_unit_count)
-                .sum::<usize>(),
-            expected_count
-        );
-        assert_eq!(stats.len(), expected_count);
-    }
+    verify_flag_patches(&repo, &nucl, &fixture).await;
 
     let units = repo
         .run(&ListUnitInfosByPageIds {
@@ -133,8 +164,8 @@ pub async fn verify_flags(shared: RdbCore) {
         .await
         .unwrap();
 
-    assert!(units[0].is_flagged);
-    assert!(!units[1].is_flagged);
+    assert!(units.as_slice().first().unwrap().is_flagged);
+    assert!(!units.get(1).unwrap().is_flagged);
 }
 
 // Build a content-preserving flag patch.

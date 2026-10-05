@@ -56,6 +56,10 @@ impl R2ObjDeptPool {
     ///
     /// Returns an error when required settings are missing or the client
     /// cannot be constructed.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -146,7 +150,7 @@ impl ObjDeptPoolView for R2ObjDeptPool {
                 );
 
                 Err(ObjDeptError::Retryable {
-                    message: "failed to check physical object".into(),
+                    msg: "failed to check physical object".into(),
                 })
             }
         }
@@ -185,8 +189,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                     );
 
                     ObjDeptError::Unrecoverable {
-                        message: "failed to build object presigning config"
-                            .into(),
+                        msg: "failed to build object presigning config".into(),
                     }
                 })?,
         );
@@ -209,7 +212,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 );
 
                 ObjDeptError::Retryable {
-                    message: "failed to generate object upload URL".into(),
+                    msg: "failed to generate object upload URL".into(),
                 }
             })?;
 
@@ -222,7 +225,7 @@ impl ObjDeptPool for R2ObjDeptPool {
             );
 
             ObjDeptError::Unrecoverable {
-                message: "failed to parse generated object upload URL".into(),
+                msg: "failed to parse generated object upload URL".into(),
             }
         })?;
 
@@ -259,7 +262,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 );
 
                 ObjDeptError::Retryable {
-                    message: "failed to delete physical object".into(),
+                    msg: "failed to delete physical object".into(),
                 }
             })
     }
@@ -277,18 +280,22 @@ fn parse_public_url(url_string: &str) -> ObjDeptRest<Url> {
         );
 
         ObjDeptError::Unrecoverable {
-            message: "failed to parse physical object URL".into(),
+            msg: "failed to parse physical object URL".into(),
         }
     })
 }
 
 // Builds a URL under the configured public object domain.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     //
     if domain.is_empty() {
         //
         return Err(ObjDeptError::Unrecoverable {
-            message: "object public domain is not configured".into(),
+            msg: "object public domain is not configured".into(),
         });
     }
 
@@ -305,6 +312,10 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
 }
 
 // Builds one Cloudflare image-transformation URL.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
     //
     let path = format!(

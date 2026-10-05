@@ -1,4 +1,9 @@
 mod creation;
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Schema verification fixtures and assertions fail immediately when their invariants are violated"
+)]
 mod schema;
 
 use super::*;

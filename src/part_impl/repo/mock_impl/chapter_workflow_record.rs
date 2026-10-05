@@ -42,7 +42,7 @@ fn list_infos(
         //
         let end = std::cmp::min(offset + limit as usize, record_infos.len());
 
-        record_infos[offset..end].to_vec()
+        (*record_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
@@ -133,6 +133,10 @@ impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
                 }
             }));
 
-        accept(())
+        let rest = accept(());
+
+        drop(state);
+
+        rest
     }
 }

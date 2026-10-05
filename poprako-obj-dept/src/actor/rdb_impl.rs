@@ -57,7 +57,7 @@ pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
 
     let watermark =
         u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
-            message: "object ver is outside u32".into(),
+            msg: "object ver is outside u32".into(),
         })?;
 
     match ver.cmp(&watermark) {
@@ -81,7 +81,7 @@ pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
                 }
 
                 _ => Err(ObjDeptError::Unrecoverable {
-                    message: "invalid object row".into(),
+                    msg: "invalid object row".into(),
                 }),
             }
         }
@@ -115,7 +115,7 @@ macro_rules! handle_obj_dept_task {
         if !task_key_is_consistent {
             return Ok(
                 ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                    message: "object task key is inconsistent".into(),
+                    msg: "object task key is inconsistent".into(),
                 },
             );
         }
@@ -159,7 +159,7 @@ macro_rules! handle_obj_dept_task {
         {
             return Ok(
                 ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                    message: "object task key differs from current generation"
+                    msg: "object task key differs from current generation"
                         .into(),
                 },
             );
@@ -191,7 +191,7 @@ macro_rules! handle_obj_dept_task {
                 let Some(initial_revision) = initial_revision else {
                     return Ok(
                         ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                            message: "active object lacks a revision token".into(),
+                            msg: "active object lacks a revision token".into(),
                         },
                     );
                 };
@@ -248,7 +248,7 @@ macro_rules! handle_obj_dept_task {
 
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                                message: "object check changed multiple rows".into(),
+                                msg: "object check changed multiple rows".into(),
                             },
                         );
                     }
@@ -280,7 +280,7 @@ macro_rules! handle_obj_dept_task {
                     {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::Retry {
-                                message: "object changed during check".into(),
+                                msg: "object changed during check".into(),
                             },
                         );
                     }
@@ -292,7 +292,7 @@ macro_rules! handle_obj_dept_task {
                     ) => {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                                message: "object changed to an older watermark".into(),
+                                msg: "object changed to an older watermark".into(),
                             },
                         );
                     }
@@ -305,7 +305,7 @@ macro_rules! handle_obj_dept_task {
                 ::poprako_obj_dept::model::task::CHECK,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                message: "check task is newer than object state".into(),
+                msg: "check task is newer than object state".into(),
             }),
             (
                 ::poprako_obj_dept::model::task::DELETE,
@@ -330,10 +330,10 @@ macro_rules! handle_obj_dept_task {
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Avail
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                message: "delete task targets current object".into(),
+                msg: "delete task targets current object".into(),
             }),
             _ => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                message: "unknown object task operation".into(),
+                msg: "unknown object task operation".into(),
             }),
         }
     }};

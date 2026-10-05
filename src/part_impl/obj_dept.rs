@@ -233,6 +233,10 @@ macro_rules! implement_mock_obj_dept_from_manifest {
 for_each_obj!(implement_mock_obj_dept_from_manifest);
 
 // Builds a stable invalid-key error at the concrete mapping boundary.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn invalid_key(kind: &str) -> ObjDeptError {
     ObjDeptError::invalid(format!("invalid {} physical key", kind))
 }

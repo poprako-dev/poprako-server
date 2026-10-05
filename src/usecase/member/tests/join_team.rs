@@ -49,18 +49,18 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert_eq!(snapshot.members[0].user_id, "target-user");
+    assert_eq!(snapshot.members.first().unwrap().user_id, "target-user");
 
-    assert_eq!(snapshot.members[0].user_nickname, "Target");
+    assert_eq!(snapshot.members.first().unwrap().user_nickname, "Target");
 
-    assert_eq!(snapshot.members[0].team_id, "team-1");
+    assert_eq!(snapshot.members.first().unwrap().team_id, "team-1");
 
     assert_eq!(
-        snapshot.members[0].roles,
+        snapshot.members.first().unwrap().roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
 
-    assert!(!snapshot.member_invitations[0].is_pending);
+    assert!(!snapshot.member_invitations.first().unwrap().is_pending);
 }
 
 #[tokio::test]
@@ -83,13 +83,13 @@ async fn join_team_mismatched_qid_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.members.is_empty());
 
-    assert!(snapshot.member_invitations[0].is_pending);
+    assert!(snapshot.member_invitations.first().unwrap().is_pending);
 }
 
 #[tokio::test]
@@ -120,11 +120,11 @@ async fn join_team_duplicate_membership_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert!(snapshot.member_invitations[0].is_pending);
+    assert!(snapshot.member_invitations.first().unwrap().is_pending);
 }

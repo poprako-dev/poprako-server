@@ -54,6 +54,7 @@ pub struct TeamAspectRow<'a> {
 }
 
 impl<'a> TeamAspectRow<'a> {
+    #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_name: None,
@@ -62,6 +63,7 @@ impl<'a> TeamAspectRow<'a> {
         }
     }
 
+    #[must_use]
     pub const fn name(mut self, val: &'a str) -> Self {
         //
         self.f_name = Some(val);
@@ -69,6 +71,7 @@ impl<'a> TeamAspectRow<'a> {
         self
     }
 
+    #[must_use]
     pub const fn description(mut self, val: &'a str) -> Self {
         //
         self.f_description = Some(val);

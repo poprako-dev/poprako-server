@@ -1,8 +1,17 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use crate::data::instr::comic::CreateComicInstr;
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn comic_info_view_omits_none_fields() {
     //
     let comic_info_view = ComicInfoView {

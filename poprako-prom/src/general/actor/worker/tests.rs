@@ -1,4 +1,11 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
+
+use std::time::Duration as StdDuration;
 
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc};
 
@@ -82,7 +89,7 @@ async fn panicked_attempt_releases_worker() {
     assert!(finished.load(std::sync::atomic::Ordering::SeqCst));
 }
 
-// expired_queued_attempt_is_not_started(run_worker)(negative): a row that exhausted its deadline in the queue must not invoke business code.
+// expired_queued_attempt_is_not_started(run_worker)(negative): a row that exhausted its deadline in the delivery must not invoke business code.
 #[tokio::test]
 async fn expired_queued_attempt_is_not_started() {
     let (work_send, work_recv) = mpsc::unbounded_channel();
@@ -134,7 +141,7 @@ async fn shutdown_aborts_pending_workers() {
         .unwrap();
 }
 
-// workers_reserve_capacity_until_completion(WorkerSlot/run_worker)(positive): all four workers execute together while consumed queue items still reserve capacity.
+// workers_reserve_capacity_until_completion(WorkerSlot/run_worker)(positive): all four workers execute together while consumed delivery items still reserve capacity.
 #[tokio::test]
 async fn workers_reserve_capacity_until_completion() {
     let completed = Arc::new(Notify::new());
@@ -170,15 +177,15 @@ async fn workers_reserve_capacity_until_completion() {
             },
         ));
 
-        let permit = slot.acquire().unwrap();
-
-        assert!(slot.acquire().is_none());
-
-        assert!(slot.dispatch(
+        let dispatched = slot.dispatch(
             task_id,
             Instant::now() + StdDuration::from_secs(10),
-            permit
-        ));
+            slot.acquire().unwrap(),
+        );
+
+        assert!(dispatched);
+
+        assert!(slot.acquire().is_none());
 
         slots.push(slot);
     }
@@ -264,13 +271,13 @@ async fn failed_attempt_returns_reserved_capacity() {
             }
         }));
 
-        let permit = slot.acquire().unwrap();
-
-        assert!(slot.dispatch(
+        let dispatched = slot.dispatch(
             (),
             Instant::now() + StdDuration::from_millis(100),
-            permit
-        ));
+            slot.acquire().unwrap(),
+        );
+
+        assert!(dispatched);
 
         timeout(StdDuration::from_secs(1), completed.notified())
             .await

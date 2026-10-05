@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Mock implementation of [TokenAuth] for testing token signing with deterministic output.
 
 use poprako_util::i18n::trl;
@@ -18,7 +23,7 @@ impl TokenAuth for Mock {
         // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Unrecoverable {
-                message: "mock token signing failed".into(),
+                msg: "mock token signing failed".into(),
             });
         }
 
@@ -32,7 +37,7 @@ impl TokenAuth for Mock {
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Auth,
-                message: trl("error-unauthorized"),
+                msg: trl("error-unauthorized"),
             });
         }
 

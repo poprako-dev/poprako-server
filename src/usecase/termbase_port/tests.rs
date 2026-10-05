@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // import(import)(positive): team import creates a portable termbase and terms.
 // import(import)(positive): force merge updates metadata and merges targets.
 // import(import)(negative): same-name import without force is atomic and rejected.
@@ -18,6 +23,10 @@ use crate::test_util::fixture::team;
 use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(user_id: &str) -> MemberInfo {
     //
     MemberInfo {
@@ -129,9 +138,9 @@ async fn import_creates_team_termbase_and_terms() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.termbases[0].name, "Imported");
+    assert_eq!(snapshot.termbases.first().unwrap().name, "Imported");
 
-    assert_eq!(snapshot.termbases[0].term_count, 2);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 2);
 
     assert_eq!(snapshot.terms.len(), 2);
 }
@@ -176,11 +185,11 @@ async fn import_force_merge_updates_metadata_and_merges_targets() {
     let snapshot = mock.snapshot();
 
     assert_eq!(
-        snapshot.termbases[0].description.as_deref(),
+        snapshot.termbases.first().unwrap().description.as_deref(),
         Some("New description")
     );
 
-    assert_eq!(snapshot.termbases[0].term_count, 2);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 2);
 
     let merged_term = snapshot
         .terms
@@ -258,7 +267,7 @@ async fn import_rejects_duplicate_normalized_sources() {
     .await
     .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().termbases.is_empty());
 }
@@ -284,7 +293,7 @@ async fn export_orders_portable_terms_without_metadata() {
 
     assert_eq!(val.terms.len(), 2);
 
-    assert_eq!(val.terms[0].source, "Alpha");
+    assert_eq!(val.terms.first().unwrap().source, "Alpha");
 
-    assert_eq!(val.terms[1].source, "Beta");
+    assert_eq!(val.terms.get(1).unwrap().source, "Beta");
 }

@@ -76,6 +76,10 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 
         comic.updated_at = now();
 
-        accept(())
+        let rest = accept(());
+
+        drop(state);
+
+        rest
     }
 }

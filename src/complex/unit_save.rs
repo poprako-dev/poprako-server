@@ -9,14 +9,14 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// Reports an invalid or reused save identity without exposing payloads.
 pub fn invalid_save() -> BaseError {
     //
-    let message = trl("error-invalid-unit-oper");
+    let msg = trl("error-invalid-unit-oper");
 
-    tracing::warn!(err_variant = ?ExpectedVariant::Args, err_message = %message,
+    tracing::warn!(err_variant = ?ExpectedVariant::Args, err_msg = %msg,
     "invalid Unit save identity or payload");
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message,
+        msg,
     }
 }
 

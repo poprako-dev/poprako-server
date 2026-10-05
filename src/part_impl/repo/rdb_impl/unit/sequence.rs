@@ -66,7 +66,7 @@ struct UnitLink {
 /// Returns an unrecoverable error for a corrupt Unit chain.
 pub fn corrupt_unit_chain_err() -> BaseError {
     BaseError::Unrecoverable {
-        message: "persisted Unit chain is corrupt".to_string(),
+        msg: "persisted Unit chain is corrupt".to_string(),
     }
 }
 
@@ -329,7 +329,7 @@ fn search_fetch_count(fetch_count: usize) -> BaseRest<i64> {
         );
 
         BaseError::Unrecoverable {
-            message: "Unit search fetch count exceeds BIGINT".into(),
+            msg: "Unit search fetch count exceeds BIGINT".into(),
         }
     })
 }

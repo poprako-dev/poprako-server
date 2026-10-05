@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // comic_roundtrip_uses_testcontainer(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -17,22 +22,18 @@ use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicInclOpt;
 
 const PREFIX: &str = "rdb-test-comic-domain-";
 
-/// Verifies comic roundtrip via testcontainers.
-/// Verifies comic roundtrip via testcontainers.
-pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
-    //
-    test_shared::reset(&shared, PREFIX).await;
-
-    let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
-
-    let repo = HybRepo::new(shared.clone());
-
+// Verify requested relation inclusions before mutating the comic.
+async fn verify_related_workset_team(
+    repo: &HybRepo,
+    comic_fixture: &ComicFixture,
+) {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("Comic".into()),
@@ -48,21 +49,37 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &comic_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
 
     assert_eq!(
-        comic_infos[0].workset.as_ref().unwrap().id,
+        comic_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .workset
+            .as_ref()
+            .unwrap()
+            .id,
         comic_fixture.workset_entry.id
     );
 
     assert_eq!(
-        comic_infos[0].team.as_ref().unwrap().id,
+        comic_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .team
+            .as_ref()
+            .unwrap()
+            .id,
         comic_fixture.team_entry.id
     );
+}
 
+// Verify updated title, author search, and one-based display index search.
+async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     let comic_info_update = ComicRepl {
         id: comic_fixture.comic_entry.id.clone(),
         title: "RDB Comic Updated".into(),
@@ -74,7 +91,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         update: &comic_info_update,
     })
     .await
-    .ok()
     .unwrap();
 
     let comic_info = repo
@@ -83,7 +99,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             incls: &[],
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_info.title, "RDB Comic Updated");
@@ -103,12 +118,14 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &comic_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
 
-    assert_eq!(comic_infos[0].id, comic_fixture.comic_entry.id);
+    assert_eq!(
+        comic_infos.as_slice().first().unwrap().id,
+        comic_fixture.comic_entry.id
+    );
 
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
@@ -125,13 +142,15 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &comic_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
 
-    assert_eq!(comic_infos[0].index, 0);
+    assert_eq!(comic_infos.as_slice().first().unwrap().index, 0);
+}
 
+// Verify SQL wildcard characters are treated as literal search text.
+async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%", "_", "\\"] {
         //
         let comic_list_spec = ComicListSpec {
@@ -149,7 +168,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
                 spec: &comic_list_spec,
             })
             .await
-            .ok()
             .unwrap();
 
         assert!(comic_infos.is_empty());
@@ -166,7 +184,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         update: &comic_info_update,
     })
     .await
-    .ok()
     .unwrap();
 
     for fuzzy_title in ["%_", "\\Updated"] {
@@ -186,38 +203,22 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
                 spec: &comic_list_spec,
             })
             .await
-            .ok()
             .unwrap();
 
         assert_eq!(comic_infos.len(), 1);
     }
+}
 
-    let chapter_entry = ChapterEntry {
-        id: format!("{}stage-chapter", PREFIX),
-        comic_id: comic_fixture.comic_entry.id.clone().into(),
-        is_pinned: true,
-        index: 0,
-        subtitle: "Stage Chapter".into(),
-        creator_id: comic_fixture.creator_form.id.clone().into(),
-    };
-
-    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
-
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateChapter {
-                entry: &chapter_entry,
-            },
-        )
-        .await?;
-
-        Ok::<(), crate::result::BaseError>(())
-    })
-    .await
-    .ok()
-    .unwrap();
-
+// Seed another workset to ensure stage filters do not leak across worksets.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+async fn seed_sibling_stages(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    comic_fixture: &ComicFixture,
+) {
     let sibling_workset = WorksetEntry {
         id: format!("{}sibling-workset", PREFIX),
         team_id: comic_fixture.team_entry.id.clone(),
@@ -291,9 +292,16 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), crate::result::BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
+}
 
+// Exercise every legal single-stage phase against the pinned chapter.
+async fn verify_single_stage_filters(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    comic_fixture: &ComicFixture,
+    chapter_entry: &ChapterEntry<'_>,
+) {
     let legal_stage_phases = [
         (Stage::RawProvide, StagePhase::Pending),
         (Stage::RawProvide, StagePhase::Completed),
@@ -333,7 +341,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             .await
         })
         .await
-        .ok()
         .unwrap();
 
         let comic_list_spec = ComicListSpec {
@@ -351,12 +358,19 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
                 spec: &comic_list_spec,
             })
             .await
-            .ok()
             .unwrap();
 
         assert_eq!(comic_infos.len(), 1, "{stage:?} {phase:?}");
     }
+}
 
+// Verify intersected stage filters and the unrestricted stage mask.
+async fn verify_combined_stage_filters(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    comic_fixture: &ComicFixture,
+    chapter_entry: &ChapterEntry<'_>,
+) {
     let combined_stages = StageMask::try_from(0)
         .unwrap()
         .try_set_phase(Stage::Translate, StagePhase::Active)
@@ -379,7 +393,6 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         .await
     })
     .await
-    .ok()
     .unwrap();
 
     let combined_filter_spec = ComicListSpec {
@@ -400,11 +413,13 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &combined_filter_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(combined_comic_infos.len(), 1);
-    assert_eq!(combined_comic_infos[0].id, comic_fixture.comic_entry.id);
+    assert_eq!(
+        combined_comic_infos.as_slice().first().unwrap().id,
+        comic_fixture.comic_entry.id
+    );
 
     let no_stage_filter_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
@@ -421,17 +436,70 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &no_stage_filter_spec,
         })
         .await
-        .ok()
         .unwrap()
         .len(),
         1,
     );
+}
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+/// Verifies comic roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
+    test_shared::reset(&shared, PREFIX).await;
+
+    let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
+
+    let repo = HybRepo::new(shared.clone());
+
+    verify_related_workset_team(&repo, &comic_fixture).await;
+
+    verify_updated_search(&repo, &comic_fixture).await;
+
+    verify_literal_search(&repo, &comic_fixture).await;
+
+    let chapter_entry = ChapterEntry {
+        id: format!("{}stage-chapter", PREFIX),
+        comic_id: comic_fixture.comic_entry.id.clone().into(),
+        is_pinned: true,
+        index: 0,
+        subtitle: "Stage Chapter".into(),
+        creator_id: comic_fixture.creator_form.id.clone().into(),
+    };
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreateChapter {
+                entry: &chapter_entry,
+            },
+        )
+        .await?;
+
+        Ok::<(), crate::result::BaseError>(())
+    })
+    .await
+    .unwrap();
+
+    seed_sibling_stages(&repo, &nucl, &comic_fixture).await;
+
+    verify_single_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
+        .await;
+
+    verify_combined_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
+        .await;
+
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 

@@ -88,11 +88,11 @@ impl UnitAccessLoader {
 
         let Some(assignment_info) = assignment_info else {
             //
-            let err_message = trl("error-unit-list-perm-required");
+            let err_msg = trl("error-unit-list-perm-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Perm,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 chapter_id,
                 user_id,
                 "expected error: unit list permission denied",
@@ -100,7 +100,7 @@ impl UnitAccessLoader {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: err_message,
+                msg: err_msg,
             });
         };
 

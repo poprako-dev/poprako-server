@@ -50,11 +50,11 @@ impl BoolSql for bool {
 /// Build the expected error for a missing comic.
 pub fn missing_comic(id: &str, operation: &str) -> BaseError {
     //
-    let err_message = trl("error-comic-not-found");
+    let err_msg = trl("error-comic-not-found");
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
+        err_msg = %err_msg,
         comic_id = %id,
         operation,
         "expected error: comic not found",
@@ -62,7 +62,7 @@ pub fn missing_comic(id: &str, operation: &str) -> BaseError {
 
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: err_message,
+        msg: err_msg,
     }
 }
 
@@ -84,11 +84,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-comic-not-found");
+            let err_msg = trl("error-comic-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 comic_id = %id,
                 stage = "get_info_by_id",
                 "expected error: comic not found",
@@ -96,7 +96,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 
@@ -366,11 +366,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_message = trl("error-comic-not-found");
+            let err_msg = trl("error-comic-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
+                err_msg = %err_msg,
                 comic_id = %id,
                 stage = "get_info_excluded",
                 "expected error: comic not found",
@@ -378,7 +378,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: err_message,
+                msg: err_msg,
             }
         })?;
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Test fixtures and cases for the team use case module.
 //!
 //! Tests exercise team CRUD, avatar management, and deletion against
@@ -75,6 +80,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "team-1".into(),
@@ -193,7 +202,7 @@ async fn create_persists_team_and_returns_info() {
 
     assert_eq!(snapshot.teams.len(), 1);
 
-    assert_eq!(snapshot.teams[0].id, val.id);
+    assert_eq!(snapshot.teams.first().unwrap().id, val.id);
 }
 
 #[tokio::test]
@@ -273,7 +282,7 @@ async fn get_info_propagates_missing_team() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -303,7 +312,7 @@ async fn list_infos_returns_paged_teams() {
 
     assert_eq!(val.len(), 1);
 
-    assert_ne!(val[0].id, "team-1");
+    assert_ne!(val.first().unwrap().id, "team-1");
 }
 
 #[tokio::test]
@@ -339,7 +348,7 @@ async fn list_infos_all_teams_requires_sadmin() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -382,9 +391,9 @@ async fn update_info_updates_team() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.teams[0].name, "New");
+    assert_eq!(snapshot.teams.first().unwrap().name, "New");
 
-    assert_eq!(snapshot.teams[0].description, "New Desc");
+    assert_eq!(snapshot.teams.first().unwrap().description, "New Desc");
 }
 
 #[tokio::test]
@@ -403,7 +412,7 @@ async fn update_info_propagates_missing_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -419,7 +428,12 @@ async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
     mark_team_avatar(&mock, 3).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["team_avatar"]["team-1"]
+        mock.snapshot()
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .get("team-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -437,10 +451,16 @@ async fn mark_avatar_uploaded_rejects_stale_generation() {
 
     let err = mark_team_avatar(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(
-        !mock.snapshot().objs["team_avatar"]["team-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .get("team-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()

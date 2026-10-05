@@ -45,8 +45,20 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.objs["user_avatar"]["user-1"].version, 1);
-    assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
+    assert_eq!(
+        snapshot
+            .objs
+            .get("user_avatar")
+            .unwrap()
+            .get("user-1")
+            .unwrap()
+            .version,
+        1
+    );
+    assert!(matches!(
+        snapshot.obj_tasks.first().unwrap().1,
+        ObjTask::Check { .. }
+    ));
 }
 
 #[tokio::test]
@@ -89,7 +101,7 @@ async fn alloc_avatar_rolls_back_when_user_is_missing() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -153,8 +165,17 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
-    assert_eq!(mock.snapshot().objs["user_avatar"]["user-1"].version, 2);
+    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_eq!(
+        mock.snapshot()
+            .objs
+            .get("user_avatar")
+            .unwrap()
+            .get("user-1")
+            .unwrap()
+            .version,
+        2
+    );
 }
 
 #[tokio::test]
@@ -175,7 +196,12 @@ async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
     }
 
     assert!(
-        mock.snapshot().objs["user_avatar"]["user-1"]
+        mock.snapshot()
+            .objs
+            .get("user_avatar")
+            .unwrap()
+            .get("user-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()

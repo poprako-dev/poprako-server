@@ -5,6 +5,10 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Converts pages and units into `LabelPlus` text.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn make_label_plus(
     pages: &[PageInfo],
     units_by_page_id: &HashMap<String, Vec<UnitInfo>>,

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // create(create)(positive): creating a workset should allocate team-scoped index and persist it.
 // create(create)(negative): missing team should rollback without creating a workset.
 // get_info(get_info)(positive): existing workset should return presentation-ready info.
@@ -35,6 +40,10 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
     //
     // Build a basic workset fixture for pagination and mutation tests.
@@ -81,6 +90,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     // Build an admin member fixture for workset admin-only operations.
     MemberInfo {
@@ -186,13 +199,13 @@ async fn create_allocates_index_and_persists() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(created.id, snapshot.worksets[0].id);
+    assert_eq!(created.id, snapshot.worksets.first().unwrap().id);
 
-    assert_eq!(snapshot.worksets[0].index, 0);
+    assert_eq!(snapshot.worksets.first().unwrap().index, 0);
 
     assert_eq!(snapshot.worksets.len(), 1);
 
-    assert_eq!(snapshot.worksets[0].name, "new");
+    assert_eq!(snapshot.worksets.first().unwrap().name, "new");
 }
 
 #[tokio::test]
@@ -209,7 +222,7 @@ async fn create_rolls_back_missing_team() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(snapshot.worksets.is_empty());
 }
@@ -242,7 +255,7 @@ async fn get_info_propagates_missing_workset() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -272,9 +285,9 @@ async fn list_infos_filters_and_sorts_by_index() {
 
     assert_eq!(list.len(), 2);
 
-    assert_eq!(list[0].id, "workset-1");
+    assert_eq!(list.first().unwrap().id, "workset-1");
 
-    assert_eq!(list[1].id, "workset-2");
+    assert_eq!(list.get(1).unwrap().id, "workset-2");
 }
 
 #[tokio::test]
@@ -322,10 +335,10 @@ async fn update_info_updates_workset() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.worksets[0].name, "updated");
+    assert_eq!(snapshot.worksets.first().unwrap().name, "updated");
 
     assert_eq!(
-        snapshot.worksets[0].description,
+        snapshot.worksets.first().unwrap().description,
         Some("updated-desc".into())
     );
 }
@@ -348,7 +361,7 @@ async fn update_info_propagates_missing_workset() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -376,7 +389,7 @@ async fn delete_marks_workset_hierarchy_without_eager_object_deletes() {
     assert!(snapshot.deleted_comic_ids.contains("comic-1"));
     assert!(snapshot.deleted_comic_ids.contains("comic-2"));
     assert!(snapshot.deleted_chapter_ids.contains("chapter-1"));
-    assert_eq!(snapshot.objs["comic_cover"].len(), 2);
+    assert_eq!(snapshot.objs.get("comic_cover").unwrap().len(), 2);
     assert!(snapshot.obj_tasks.is_empty());
 }
 
@@ -405,7 +418,7 @@ async fn delete_marks_large_workset_without_eager_object_work() {
     assert_eq!(snapshot.comics.len(), 513);
     assert!(snapshot.deleted_workset_ids.contains("workset-1"));
     assert_eq!(snapshot.deleted_comic_ids.len(), 513);
-    assert_eq!(snapshot.objs["comic_cover"].len(), 513);
+    assert_eq!(snapshot.objs.get("comic_cover").unwrap().len(), 513);
     assert!(snapshot.obj_tasks.is_empty());
 }
 
@@ -472,11 +485,16 @@ async fn delete_rolls_back_missing_workset() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert_eq!(snapshot.worksets.len(), 1);
     assert_eq!(snapshot.comics.len(), 1);
     assert_eq!(
-        snapshot.objs["comic_cover"]["comic-1"]
+        snapshot
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()

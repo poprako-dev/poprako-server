@@ -23,13 +23,14 @@ COPY poprako-swagger/Cargo.toml ./poprako-swagger/Cargo.toml
 COPY poprako-obj-dept/Cargo.toml ./poprako-obj-dept/Cargo.toml
 COPY poprako-obj-dept-macro/Cargo.toml ./poprako-obj-dept-macro/Cargo.toml
 COPY poprako-rdb-core/Cargo.toml ./poprako-rdb-core/Cargo.toml
+COPY poprako-prom/Cargo.toml ./poprako-prom/Cargo.toml
 
 RUN mkdir -p src benches poprako-swagger/src && \
     printf 'fn main() {}\n' > src/main.rs && \
     printf '\n' > src/lib.rs && \
     printf 'fn main() {}\n' > benches/test_benchmark.rs && \
     printf 'fn main() {}\n' > poprako-swagger/src/main.rs && \
-    for package in poprako-util poprako-obj-dept poprako-obj-dept-macro poprako-rdb-core; do \
+    for package in poprako-util poprako-obj-dept poprako-obj-dept-macro poprako-rdb-core poprako-prom; do \
         mkdir -p "$package/src" && printf '\n' > "$package/src/lib.rs" || exit 1; \
     done
 
@@ -42,7 +43,8 @@ RUN cargo build --locked --release --bin poprako-server && \
         --package poprako-swagger \
         --package poprako-obj-dept \
         --package poprako-obj-dept-macro \
-        --package poprako-rdb-core
+        --package poprako-rdb-core \
+        --package poprako-prom
 
 # All stub artifacts were removed before this cached layer was exported.
 # Real workspace code must compile even when checkout timestamps are older.
@@ -51,6 +53,7 @@ COPY poprako-swagger ./poprako-swagger
 COPY poprako-obj-dept ./poprako-obj-dept
 COPY poprako-obj-dept-macro ./poprako-obj-dept-macro
 COPY poprako-rdb-core ./poprako-rdb-core
+COPY poprako-prom ./poprako-prom
 COPY benches ./benches
 COPY src ./src
 

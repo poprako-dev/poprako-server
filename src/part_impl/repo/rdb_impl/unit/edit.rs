@@ -138,7 +138,7 @@ fn invalid_unit_edit_plan_err() -> BaseError {
     );
 
     BaseError::Unrecoverable {
-        message: "normalized Unit edits disagree with edit plan".into(),
+        msg: "normalized Unit edits disagree with edit plan".into(),
     }
 }
 
@@ -311,7 +311,7 @@ fn ensure_affected(
     );
 
     Err(BaseError::Unrecoverable {
-        message: "Unit batch affected an unexpected row count".into(),
+        msg: "Unit batch affected an unexpected row count".into(),
     })
 }
 

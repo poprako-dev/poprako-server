@@ -62,8 +62,20 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.objs["team_avatar"]["team-1"].version, 1);
-    assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
+    assert_eq!(
+        snapshot
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .get("team-1")
+            .unwrap()
+            .version,
+        1
+    );
+    assert!(matches!(
+        snapshot.obj_tasks.first().unwrap().1,
+        ObjTask::Check { .. }
+    ));
 }
 
 #[tokio::test]
@@ -110,7 +122,7 @@ async fn alloc_avatar_rolls_back_when_team_is_missing() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -138,7 +150,7 @@ async fn alloc_avatar_rejects_byte_length_above_team_limit() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
 }
 
@@ -174,7 +186,12 @@ async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
     mark_team_avatar(&mock, 2).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["team_avatar"]["team-1"]
+        mock.snapshot()
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .get("team-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -202,8 +219,17 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 
     let err = mark_team_avatar(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
-    assert_eq!(mock.snapshot().objs["team_avatar"]["team-1"].version, 2);
+    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_eq!(
+        mock.snapshot()
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .get("team-1")
+            .unwrap()
+            .version,
+        2
+    );
 }
 
 #[tokio::test]
@@ -226,7 +252,13 @@ async fn delete_marks_team_without_eager_avatar_delete() {
 
     assert_eq!(snapshot.teams.len(), 1);
     assert!(snapshot.deleted_team_ids.contains("team-1"));
-    assert!(snapshot.objs["team_avatar"].contains_key("team-1"));
+    assert!(
+        snapshot
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .contains_key("team-1")
+    );
     assert!(snapshot.obj_tasks.is_empty());
 }
 
@@ -276,10 +308,16 @@ async fn delete_missing_team_rolls_back_avatar_debt() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.obj_tasks.is_empty());
-    assert!(snapshot.objs["team_avatar"].contains_key("team-1"));
+    assert!(
+        snapshot
+            .objs
+            .get("team_avatar")
+            .unwrap()
+            .contains_key("team-1")
+    );
 }

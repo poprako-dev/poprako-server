@@ -1,6 +1,10 @@
 use crate::result::{BaseError, BaseRest};
 
 /// Converts a database INTEGER into a non-negative business value.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn usize_from_i32(value: i32, field: &str) -> BaseRest<usize> {
     //
     usize::try_from(value).map_err(|_| {
@@ -12,12 +16,16 @@ pub fn usize_from_i32(value: i32, field: &str) -> BaseRest<usize> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must be non-negative", field),
+            msg: format!("database field {} must be non-negative", field),
         }
     })
 }
 
 /// Converts a business value into a database INTEGER.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn i32_from_usize(value: usize, field: &str) -> BaseRest<i32> {
     //
     i32::try_from(value).map_err(|_| {
@@ -29,12 +37,16 @@ pub fn i32_from_usize(value: usize, field: &str) -> BaseRest<i32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} exceeds INTEGER range", field),
+            msg: format!("database field {} exceeds INTEGER range", field),
         }
     })
 }
 
 /// Converts a database BIGINT into a non-negative business value.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn usize_from_i64(value: i64, field: &str) -> BaseRest<usize> {
     //
     usize::try_from(value).map_err(|_| {
@@ -46,12 +58,16 @@ pub fn usize_from_i64(value: i64, field: &str) -> BaseRest<usize> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must be non-negative", field),
+            msg: format!("database field {} must be non-negative", field),
         }
     })
 }
 
 /// Converts a database BIGINT into a non-negative role-mask value.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn u32_from_i64(value: i64, field: &str) -> BaseRest<u32> {
     //
     u32::try_from(value).map_err(|_| {
@@ -63,7 +79,7 @@ pub fn u32_from_i64(value: i64, field: &str) -> BaseRest<u32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("database field {} must fit u32", field),
+            msg: format!("database field {} must fit u32", field),
         }
     })
 }

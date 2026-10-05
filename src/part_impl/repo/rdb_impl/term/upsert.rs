@@ -120,7 +120,7 @@ fn ensure_upsert_ids(
     );
 
     Err(BaseError::Unrecoverable {
-        message: "invalid Term upsert scope or duplicate id".into(),
+        msg: "invalid Term upsert scope or duplicate id".into(),
     })
 }
 
@@ -144,7 +144,7 @@ fn ensure_upsert_affected(
     );
 
     Err(BaseError::Unrecoverable {
-        message: "Term batch affected an unexpected row count".into(),
+        msg: "Term batch affected an unexpected row count".into(),
     })
 }
 

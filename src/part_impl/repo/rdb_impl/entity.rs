@@ -1,5 +1,11 @@
-#![allow(clippy::option_option)]
-#![allow(clippy::struct_field_names)]
+#![allow(
+    clippy::option_option,
+    reason = "Diesel changesets distinguish unchanged values from clearing nullable columns"
+)]
+#![allow(
+    clippy::struct_field_names,
+    reason = "Database entity fields retain the names and identity suffixes of their mapped columns"
+)]
 
 //! Diesel entity types for the RDB repository.
 

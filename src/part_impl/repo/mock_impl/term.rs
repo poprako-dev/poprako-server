@@ -153,7 +153,11 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
             }
         };
 
-        accept(term_infos)
+        let rest = accept(term_infos);
+
+        drop(state);
+
+        rest
     }
 }
 
@@ -363,7 +367,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
         if !(entries_in_scope && updates_in_scope && ids_unique) {
             //
             return Err(BaseError::Unrecoverable {
-                message: "invalid Term upsert scope or duplicate id".into(),
+                msg: "invalid Term upsert scope or duplicate id".into(),
             });
         }
 

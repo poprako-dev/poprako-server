@@ -130,13 +130,17 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
             .map(|record| (record.created_at, record.archived_payload.clone()))
             .collect();
 
-        accept(payloads)
+        let rest = accept(payloads);
+
+        drop(state);
+
+        rest
     }
 }
 
 // Assemble and return a comic archive snapshot (including chapter, page, and unit info) for submission.
 fn get_snapshot_excluded(
-    context: &mut MockContext,
+    context: &MockContext,
     source_comic_id: &str,
 ) -> BaseRest<ComicArchiveSnapshot> {
     //

@@ -139,7 +139,11 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(true)
+        let rest = accept(true);
+
+        drop(state);
+
+        rest
     }
 }
 
@@ -171,18 +175,22 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             return accept(false);
         };
 
-        if !state.chapters[chapter_index]
+        if !state
+            .chapters
+            .get(chapter_index)
+            .unwrap()
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
             return accept(false);
         }
 
-        if state.chapters[chapter_index].page_count <= 0 {
+        if state.chapters.get(chapter_index).unwrap().page_count == 0 {
             return accept(false);
         }
 
-        let chapter_info = &mut state.chapters[chapter_index];
+        let chapter_info =
+            &mut (*state.chapters.get_mut(chapter_index).unwrap());
 
         chapter_info.stages = chapter_info
             .stages
@@ -190,6 +198,10 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(true)
+        let rest = accept(true);
+
+        drop(state);
+
+        rest
     }
 }

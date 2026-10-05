@@ -48,7 +48,7 @@ pub enum RdbError {
     /// A pooled connection could not be acquired.
     PoolGet {
         /// Safe diagnostic from the pool implementation.
-        message: String,
+        msg: String,
     },
 
     /// Waiting for a pooled connection exceeded the configured bound.
@@ -57,6 +57,10 @@ pub enum RdbError {
 
 impl std::fmt::Display for RdbError {
     // Formats an infrastructure failure without adding contextual classification.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //
         match self {
@@ -65,13 +69,8 @@ impl std::fmt::Display for RdbError {
                 write!(formatter, "failed to build RDB pool: {}", source)
             }
 
-            Self::PoolGet { message } => {
-                //
-                write!(
-                    formatter,
-                    "failed to acquire RDB connection: {}",
-                    message
-                )
+            Self::PoolGet { msg } => {
+                write!(formatter, "failed to acquire RDB connection: {}", msg)
             }
 
             Self::PoolWaitTimeout => {
@@ -184,7 +183,7 @@ fn pool_get_error(source: &PoolError) -> RdbError {
         PoolError::Timeout(TimeoutType::Wait) => RdbError::PoolWaitTimeout,
 
         _ => RdbError::PoolGet {
-            message: source.to_string(),
+            msg: source.to_string(),
         },
     }
 }

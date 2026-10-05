@@ -30,7 +30,7 @@ async fn coord_rolls_back_state() {
             context.state.users.push(seeded);
 
             Err::<(), _>(BaseError::Unrecoverable {
-                message: "rollback".into(),
+                msg: "rollback".into(),
             })
         })
         .await;

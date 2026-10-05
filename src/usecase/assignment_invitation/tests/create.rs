@@ -30,30 +30,48 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(snapshot.assignment_invitations.len(), 1);
 
-    assert_eq!(snapshot.assignment_invitations[0].id, val.id);
+    assert_eq!(snapshot.assignment_invitations.first().unwrap().id, val.id);
 
-    assert_eq!(snapshot.assignment_invitations[0].code, val.code);
+    assert_eq!(
+        snapshot.assignment_invitations.first().unwrap().code,
+        val.code
+    );
 
-    assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
+    assert_eq!(
+        snapshot.assignment_invitations.first().unwrap().chapter_id,
+        "chapter-1"
+    );
 
-    assert_eq!(snapshot.assignment_invitations[0].inviter_id, "admin-user");
+    assert_eq!(
+        snapshot.assignment_invitations.first().unwrap().inviter_id,
+        "admin-user"
+    );
 
-    assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
+    assert_eq!(
+        snapshot.assignment_invitations.first().unwrap().invitee_qid,
+        "target-qid"
+    );
 
-    assert!(snapshot.assignment_invitations[0].is_pending);
+    assert!(snapshot.assignment_invitations.first().unwrap().is_pending);
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
     assert_eq!(
-        snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation {
+        snapshot.prom_records.first().unwrap().payload(),
+        PromPayload::Invitation {
             payload: InvitationPayload::PurgeExpiredAssignmentInvitation {
                 invitation_id: val.id,
             },
         }
     );
 
-    assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
+    assert!(
+        snapshot.prom_records.first().unwrap().visible_at()
+            >= before + EXPIRY_DELAY
+    );
 
-    assert!(snapshot.prom_records[0].visible_at() <= now() + EXPIRY_DELAY);
+    assert!(
+        snapshot.prom_records.first().unwrap().visible_at()
+            <= now() + EXPIRY_DELAY
+    );
 }

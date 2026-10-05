@@ -72,6 +72,10 @@ where
     T: FormatTime,
 {
     // Formats native rejection events without visiting private payload values.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn format_event(
         &self,
         context: &FmtContext<'_, S, N>,
@@ -135,6 +139,10 @@ struct RejectionFields<'a> {
 
 impl Visit for RejectionFields<'_> {
     // Records the native numeric HTTP rejection status.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn record_u64(&mut self, field: &Field, value: u64) {
         //
         if self.result.is_err() || field.name() != "status" {
@@ -145,6 +153,10 @@ impl Visit for RejectionFields<'_> {
     }
 
     // Records the library-controlled concrete rejection type.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn record_str(&mut self, field: &Field, value: &str) {
         //
         if self.result.is_err() || field.name() != "rejection_type" {

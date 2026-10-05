@@ -58,26 +58,24 @@ fn unit_from_edit(
         return Err(expected("error-invalid-unit-oper"));
     };
 
-    let (translated_text, last_translator_id) = match translation {
-        //
-        Some(translation) => (
-            Some(translation.translated_text.clone()),
-            Some(translation.last_translator_id.clone()),
-        ),
+    let (translated_text, last_translator_id) =
+        translation.as_ref().map_or((None, None), |translation| {
+            //
+            (
+                Some(translation.translated_text.clone()),
+                Some(translation.last_translator_id.clone()),
+            )
+        });
 
-        None => (None, None),
-    };
-
-    let (is_proofread, proofread_text, last_proofreader_id) = match revision {
-        //
-        Some(revision) => (
-            revision.is_proofread,
-            revision.proofread_text.clone(),
-            Some(revision.last_proofreader_id.clone()),
-        ),
-
-        None => (false, None, None),
-    };
+    let (is_proofread, proofread_text, last_proofreader_id) =
+        revision.as_ref().map_or((false, None, None), |revision| {
+            //
+            (
+                revision.is_proofread,
+                revision.proofread_text.clone(),
+                Some(revision.last_proofreader_id.clone()),
+            )
+        });
 
     let current_time = now();
 

@@ -31,6 +31,10 @@ fn page(id: &str, index: usize) -> PageInfo {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn page_image(
     id: &str,
     version: u32,
@@ -58,27 +62,29 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     let pending_meta = page_image("page-pending", 4, false, 4, "jpg");
 
-    let mut state = mock.state.lock().unwrap();
+    {
+        let mut state = mock.state.lock().unwrap();
 
-    let page_images = state.objs.entry("page_image").or_default();
+        let page_images = state.objs.entry("page_image").or_default();
 
-    page_images.insert(
-        "page-uploaded".into(),
-        MockObjRecord {
-            version: uploaded_meta.key.ver,
-            meta: Some(uploaded_meta),
-        },
-    );
+        page_images.insert(
+            "page-uploaded".into(),
+            MockObjRecord {
+                version: uploaded_meta.key.ver,
+                meta: Some(uploaded_meta),
+            },
+        );
 
-    page_images.insert(
-        "page-pending".into(),
-        MockObjRecord {
-            version: pending_meta.key.ver,
-            meta: Some(pending_meta),
-        },
-    );
+        page_images.insert(
+            "page-pending".into(),
+            MockObjRecord {
+                version: pending_meta.key.ver,
+                meta: Some(pending_meta),
+            },
+        );
 
-    drop(state);
+        drop(state);
+    }
 
     let page_models = vec![
         page("page-uploaded", 0),
@@ -90,7 +96,7 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     assert_eq!(page_views.len(), 3);
 
-    let uploaded_view = &page_views[0];
+    let uploaded_view = page_views.first().unwrap();
 
     assert_eq!(
         uploaded_view.image_url.as_deref(),
@@ -115,7 +121,7 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     assert_eq!(uploaded_view.ext, Some(ImageExt::Png));
 
-    let pending_view = &page_views[1];
+    let pending_view = page_views.get(1).unwrap();
 
     assert_eq!(pending_view.image_url, None);
 
@@ -127,7 +133,7 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     assert_eq!(pending_view.ext, Some(ImageExt::Jpg));
 
-    let missing_view = &page_views[2];
+    let missing_view = page_views.get(2).unwrap();
 
     assert_eq!(missing_view.image_url, None);
 
@@ -153,8 +159,8 @@ async fn list_infos_sorts_pages_and_resolves_only_available_image_urls() {
     mock.seed_page(page("page-2", 2));
     mock.seed_page(page("page-1", 1));
 
-    seed_page_obj(&mock, "page-2", 2, true, 2, ImageExt::Png);
-    seed_page_obj(&mock, "page-1", 1, false, 1, ImageExt::Jpg);
+    seed_page_obj(&mock, "page-2", 2, true, (2, ImageExt::Png));
+    seed_page_obj(&mock, "page-1", 1, false, (1, ImageExt::Jpg));
 
     let pages = list_infos(
         (&mock, &mock),
@@ -167,21 +173,21 @@ async fn list_infos_sorts_pages_and_resolves_only_available_image_urls() {
     .unwrap();
 
     assert_eq!(pages.len(), 2);
-    assert_eq!(pages[0].id, "page-1");
-    assert_eq!(pages[0].image_url, None);
-    assert_eq!(pages[0].image_optimized_url, None);
-    assert_eq!(pages[0].image_thumbnail_url, None);
-    assert_eq!(pages[1].id, "page-2");
+    assert_eq!(pages.first().unwrap().id, "page-1");
+    assert_eq!(pages.first().unwrap().image_url, None);
+    assert_eq!(pages.first().unwrap().image_optimized_url, None);
+    assert_eq!(pages.first().unwrap().image_thumbnail_url, None);
+    assert_eq!(pages.get(1).unwrap().id, "page-2");
     assert_eq!(
-        pages[1].image_url.as_deref(),
+        pages.get(1).unwrap().image_url.as_deref(),
         Some("https://obj.test/page/chapter_chapter-1/page-2-2.png")
     );
     assert_eq!(
-        pages[1].image_optimized_url.as_deref(),
+        pages.get(1).unwrap().image_optimized_url.as_deref(),
         Some("https://obj.test/optimized/page/chapter_chapter-1/page-2-2.png")
     );
     assert_eq!(
-        pages[1].image_thumbnail_url.as_deref(),
+        pages.get(1).unwrap().image_thumbnail_url.as_deref(),
         Some("https://obj.test/thumbnail/page/chapter_chapter-1/page-2-2.png")
     );
 }
@@ -235,7 +241,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -278,7 +284,7 @@ async fn get_info_resolves_available_image_metadata_and_urls() {
     ));
     mock.seed_page(page("page-1", 0));
 
-    seed_page_obj(&mock, "page-1", 7, true, 7, ImageExt::Png);
+    seed_page_obj(&mock, "page-1", 7, true, (7, ImageExt::Png));
 
     let found = get_info((&mock, &mock), page_token("user-1"), "page-1".into())
         .await
@@ -314,5 +320,5 @@ async fn get_info_rejects_non_member_without_assignment() {
         .err()
         .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }

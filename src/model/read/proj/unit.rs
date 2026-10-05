@@ -109,6 +109,10 @@ pub struct UnitCountDelta {
 }
 
 // Convert a unit count into the signed representation used by counter deltas.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn signed_count(value: usize, field: &str) -> BaseRest<i32> {
     //
     i32::try_from(value).map_err(|_| {
@@ -120,7 +124,7 @@ fn signed_count(value: usize, field: &str) -> BaseRest<i32> {
         );
 
         BaseError::Unrecoverable {
-            message: format!("unit count {} exceeds signed delta range", field),
+            msg: format!("unit count {} exceeds signed delta range", field),
         }
     })
 }

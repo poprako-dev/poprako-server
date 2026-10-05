@@ -180,7 +180,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                         ::tracing::error!(task_id = row.id, "claimed object task has no execution credential");
 
                         return Err(ObjDeptError::Unrecoverable {
-                            message: "claimed object task has no execution credential".into(),
+                            msg: "claimed object task has no execution credential".into(),
                         });
                     };
 
@@ -297,7 +297,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             pub async fn retry_task(
                 core: &RdbCore,
                 task: &ObjDeptPromTask,
-                message: &str,
+                msg: &str,
             ) -> ObjDeptRest<usize> {
                 let mut conn = core.get().await.map_err(rdb_err)?;
 
@@ -315,7 +315,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::f_visible_at.eq(
                         ::time::OffsetDateTime::now_utc() + RETRY_DELAY,
                     ),
-                    #table::f_error.eq(Some(message)),
+                    #table::f_error.eq(Some(msg)),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
                 .execute(&mut conn)
@@ -326,7 +326,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             pub async fn mark_task_operator(
                 core: &RdbCore,
                 task: &ObjDeptPromTask,
-                message: &str,
+                msg: &str,
             ) -> ObjDeptRest<usize> {
                 let mut conn = core.get().await.map_err(rdb_err)?;
 
@@ -339,7 +339,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .set((
                     #table::f_status.eq(OPERATOR),
                     #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_error.eq(Some(message)),
+                    #table::f_error.eq(Some(msg)),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
                 .execute(&mut conn)
@@ -347,7 +347,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .map_err(diesel_err)
             }
 
-            #[allow(dead_code)]
+            #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
             fn assert_full_schema(row: FullRow) {
                 //
                 let FullRow {
@@ -412,17 +412,17 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             async fn retry_task<'a>(
                 &'a self,
                 task: &'a ::poprako_obj_dept::model::task::ObjDeptPromTask,
-                message: &'a str,
+                msg: &'a str,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-                #module::retry_task(&self.core, task, message).await
+                #module::retry_task(&self.core, task, msg).await
             }
 
             async fn mark_task_operator<'a>(
                 &'a self,
                 task: &'a ::poprako_obj_dept::model::task::ObjDeptPromTask,
-                message: &'a str,
+                msg: &'a str,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-                #module::mark_task_operator(&self.core, task, message).await
+                #module::mark_task_operator(&self.core, task, msg).await
             }
         }
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::unit::UnitOrder;
 use crate::result::{BaseError, BaseRest};
@@ -106,7 +111,7 @@ fn order_units_rejects_corrupt_persisted_graphs() {
         let error = order_test_units(&mut orders).unwrap_err();
 
         assert!(
-            matches!(error, BaseError::Unrecoverable { message } if message == "persisted Unit chain is corrupt"),
+            matches!(error, BaseError::Unrecoverable { msg } if msg == "persisted Unit chain is corrupt"),
             "{case}"
         );
     }
@@ -123,7 +128,7 @@ fn order_units_preserves_tombstones_and_payload_at_every_position() {
             (order("c", None), "tail translation", 41),
         ];
 
-        expected[hidden_index].0.is_hidden = true;
+        expected.get_mut(hidden_index).unwrap().0.is_hidden = true;
 
         let mut records = [
             expected[2].clone(),

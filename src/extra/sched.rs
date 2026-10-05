@@ -42,6 +42,17 @@ impl SchedDesc {
     pub async fn join(mut self) -> Result<(), JoinError> {
         (&mut self.task).await
     }
+
+    /// Requests cancellation and waits for shutdown to complete.
+    ///
+    /// # Errors
+    /// Returns the supervisor task's join error.
+    pub async fn cancel_and_join(mut self) -> Result<(), JoinError> {
+        //
+        self.token.cancel();
+
+        (&mut self.task).await
+    }
 }
 
 impl Drop for SchedDesc {

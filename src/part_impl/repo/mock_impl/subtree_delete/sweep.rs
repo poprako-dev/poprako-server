@@ -223,13 +223,7 @@ fn claim_comics(mut ids: Vec<String>) -> Option<SubtreeDeleteSweepTarget> {
     ids.truncate(64);
 
     //
-    match ids.is_empty() {
-        //
-        true => None,
-
-        //
-        false => Some(SubtreeDeleteSweepTarget::Comics { ids }),
-    }
+    (!ids.is_empty()).then_some(SubtreeDeleteSweepTarget::Comics { ids })
 }
 
 // Restrict workset claims to one bounded batch.
@@ -238,11 +232,5 @@ fn claim_worksets(mut ids: Vec<String>) -> Option<SubtreeDeleteSweepTarget> {
     ids.truncate(64);
 
     //
-    match ids.is_empty() {
-        //
-        true => None,
-
-        //
-        false => Some(SubtreeDeleteSweepTarget::Worksets { ids }),
-    }
+    (!ids.is_empty()).then_some(SubtreeDeleteSweepTarget::Worksets { ids })
 }

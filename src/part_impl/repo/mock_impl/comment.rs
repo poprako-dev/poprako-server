@@ -75,7 +75,7 @@ fn list_comments(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, comment_infos.len());
 
-        comment_infos[offset..end].to_vec()
+        (*comment_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
