@@ -29,6 +29,10 @@ use crate::usecase::team::view::{team_info_view, team_info_views};
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `O` — Resolves the avatar signed URL through `ObjDept`.
 #[instrument(level = "info", skip(repo, obj_dept))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     id: String,

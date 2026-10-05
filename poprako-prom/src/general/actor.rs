@@ -88,6 +88,11 @@ where
     /// Decodes and validates one envelope before invoking its typed handler.
     /// Task acknowledgement remains the responsibility of the running actor.
     #[instrument(level = "info", skip_all)]
+    #[expect(
+        clippy::future_not_send,
+        clippy::uninlined_format_args,
+        reason = "Direct dispatch supports local delivery contexts and keeps interpolation arguments explicit"
+    )]
     pub async fn dispatch_payload(
         &self,
         topic: &str,

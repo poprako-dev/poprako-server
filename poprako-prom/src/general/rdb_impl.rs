@@ -95,6 +95,10 @@ impl std::error::Error for PromError {}
 
 /// Records a database failure once and retains its application-neutral class.
 #[doc(hidden)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn diesel_error(source: diesel::result::Error) -> PromError {
     //
     use diesel::result::{DatabaseErrorKind, Error};

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Role bitmask conversion and serde round-trip tests.
 // try_from(RoleField)(positive): singular valid bit should construct a role field.
 // try_from(RoleField)(negative): zero, composite, or out-of-range bits should be rejected.
@@ -17,7 +22,7 @@ use super::*;
 fn try_from_accepts_every_singular_bit() {
     for &bit in RoleField::VALID_VALUES {
         //
-        let field = RoleField::try_from(bit).ok().unwrap();
+        let field = RoleField::try_from(bit).unwrap();
 
         assert_eq!(u32::from(field), bit);
     }
@@ -76,7 +81,7 @@ fn deserialize_rejects_invalid_field_value_with_message() {
 #[test]
 fn try_from_accepts_valid_role_mask() {
     //
-    let role_mask = RoleMask::try_from(3).ok().unwrap();
+    let role_mask = RoleMask::try_from(3).unwrap();
 
     assert_eq!(u32::from(role_mask), 3);
 }
@@ -127,6 +132,10 @@ fn deserialize_rejects_invalid_bits_with_message() {
     assert!(err.to_string().contains(&trl("error-invalid-role")));
 }
 
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn assert_expected_role_error(err: BaseError) {
     //
     let BaseError::Expected { msg, .. } = err else {

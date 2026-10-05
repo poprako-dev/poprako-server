@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // Tests for assignment deletion behavior.
 mod delete;
 // Tests for assignment joining behavior.
@@ -149,7 +154,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "creator-user".into(),
         creator: None,
         created_at: time,
@@ -158,6 +163,10 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
 }
 
 // Build a member fixture with explicit role mask for membership assertions.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     // Build a team member fixture with a deterministic role set.
     MemberInfo {
@@ -173,6 +182,10 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
 }
 
 // Build an assignment fixture for a user/chapter role setup.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,

@@ -65,30 +65,23 @@ fn list_team_infos(
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let mut team_infos = match oper.spec.user_id.as_deref() {
-        //
-        Some(user_id) => state
-            .teams
-            .iter()
-            .filter(|team_info| {
-                //
-                !state.deleted_team_ids.contains(&team_info.id)
-                    && state.members.iter().any(|member_info| {
+    let mut team_infos = state
+        .teams
+        .iter()
+        .filter(|team_info| {
+            //
+            !state.deleted_team_ids.contains(&team_info.id)
+                && oper.spec.user_id.as_deref().is_none_or(|user_id| {
+                    //
+                    state.members.iter().any(|member_info| {
                         //
                         member_info.user_id == user_id
                             && member_info.team_id == team_info.id
                     })
-            })
-            .cloned()
-            .collect::<Vec<_>>(),
-
-        None => state
-            .teams
-            .iter()
-            .filter(|team_info| !state.deleted_team_ids.contains(&team_info.id))
-            .cloned()
-            .collect::<Vec<_>>(),
-    };
+                })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
 
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
 
@@ -104,7 +97,7 @@ fn list_team_infos(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, team_infos.len());
 
-        team_infos[offset..end].to_vec()
+        (*team_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // archive(archive)(positive): archive should retain the comic marker, queue every image key, and remove active descendants.
 // archive(archive)(negative): non-admin callers should not create archive rows or delete active data.
 // archive(archive)(negative): archive persistence failure should roll back payload, outbox, and active-data changes.
@@ -28,71 +33,12 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
-fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
-    //
-    let archived_at = OffsetDateTime::now_utc();
-
-    let stage_mask = StageMask::try_from(0)
-        .unwrap()
-        .try_set_phase(Stage::Publish, StagePhase::Completed)
-        .unwrap();
-
-    mock.seed_user(
-        UserInfo {
-            id: "user-1".into(),
-            qid: "qid-user-1".into(),
-            nickname: "archiver".into(),
-            is_sadmin: false,
-            last_active_at: archived_at,
-            created_at: archived_at,
-            updated_at: archived_at,
-        },
-        UserCredential {
-            user_id: "user-1".into(),
-            password_hash: "hashed".into(),
-        },
-    );
-
-    mock.seed_workset(WorksetInfo {
-        id: "workset-1".into(),
-        team_id: "team-1".into(),
-        index: 4,
-        name: "workset".into(),
-        description: Some("archive scope".into()),
-        comic_count: 7,
-        created_at: archived_at,
-        updated_at: archived_at,
-    });
-
-    mock.seed_member(MemberInfo {
-        id: "member-1".into(),
-        user_id: "user-1".into(),
-        user_nickname: "archiver".into(),
-        user_last_active_at: archived_at,
-        team_id: "team-1".into(),
-        user: None,
-        team: None,
-        roles: member_roles,
-    });
-
-    mock.seed_comic(ComicInfo {
-        id: "comic-1".into(),
-        workset_id: "workset-1".into(),
-        index: 2,
-        title: "comic title".into(),
-        author: "comic author".into(),
-        description: Some("comic description".into()),
-        chapter_count: 1,
-        creator_id: "user-1".into(),
-        workset: None,
-        team: None,
-        creator: None,
-        last_active_at: archived_at,
-        archived_at: None,
-        created_at: archived_at,
-        updated_at: archived_at,
-    });
-
+// Seed active descendants that archive must capture and remove.
+fn seed_archive_descendants(
+    mock: &Mock,
+    archived_at: OffsetDateTime,
+    stage_mask: StageMask,
+) {
     mock.seed_chapter(ChapterInfo {
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
@@ -176,6 +122,74 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     });
 }
 
+fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
+    //
+    let archived_at = OffsetDateTime::now_utc();
+
+    let stage_mask = StageMask::try_from(0)
+        .unwrap()
+        .try_set_phase(Stage::Publish, StagePhase::Completed)
+        .unwrap();
+
+    mock.seed_user(
+        UserInfo {
+            id: "user-1".into(),
+            qid: "qid-user-1".into(),
+            nickname: "archiver".into(),
+            is_sadmin: false,
+            last_active_at: archived_at,
+            created_at: archived_at,
+            updated_at: archived_at,
+        },
+        UserCredential {
+            user_id: "user-1".into(),
+            password_hash: "hashed".into(),
+        },
+    );
+
+    mock.seed_workset(WorksetInfo {
+        id: "workset-1".into(),
+        team_id: "team-1".into(),
+        index: 4,
+        name: "workset".into(),
+        description: Some("archive scope".into()),
+        comic_count: 7,
+        created_at: archived_at,
+        updated_at: archived_at,
+    });
+
+    mock.seed_member(MemberInfo {
+        id: "member-1".into(),
+        user_id: "user-1".into(),
+        user_nickname: "archiver".into(),
+        user_last_active_at: archived_at,
+        team_id: "team-1".into(),
+        user: None,
+        team: None,
+        roles: member_roles,
+    });
+
+    mock.seed_comic(ComicInfo {
+        id: "comic-1".into(),
+        workset_id: "workset-1".into(),
+        index: 2,
+        title: "comic title".into(),
+        author: "comic author".into(),
+        description: Some("comic description".into()),
+        chapter_count: 1,
+        creator_id: "user-1".into(),
+        workset: None,
+        team: None,
+        creator: None,
+        last_active_at: archived_at,
+        archived_at: None,
+        created_at: archived_at,
+        updated_at: archived_at,
+    });
+
+    seed_archive_descendants(mock, archived_at, stage_mask);
+}
+
 fn token() -> UserToken {
     UserToken {
         user_id: "user-1".into(),
@@ -223,7 +237,11 @@ fn seed_archive_objs(mock: &Mock) -> (ObjKey, ObjKey) {
         },
     );
 
-    (cover_key, page_key)
+    let rest = (cover_key, page_key);
+
+    drop(state);
+
+    rest
 }
 
 #[tokio::test]
@@ -244,8 +262,8 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
     assert_ne!(archive_comic_val.archived_id, "comic-1");
 
     assert_eq!(snapshot.comics.len(), 1);
-    assert_eq!(snapshot.comics[0].id, "comic-1");
-    assert!(snapshot.comics[0].archived_at.is_some());
+    assert_eq!(snapshot.comics.first().unwrap().id, "comic-1");
+    assert!(snapshot.comics.first().unwrap().archived_at.is_some());
 
     assert!(snapshot.chapters.is_empty());
     assert!(snapshot.assignments.is_empty());
@@ -254,61 +272,34 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
     assert!(snapshot.page_raw_idents.is_empty());
     assert!(snapshot.units.is_empty());
 
-    assert_eq!(snapshot.worksets[0].comic_count, 7);
+    assert_eq!(snapshot.worksets.first().unwrap().comic_count, 7);
 
     assert_eq!(snapshot.comic_archives.len(), 1);
-    assert_eq!(snapshot.comic_archives[0].team_id, "team-1");
-    assert_eq!(snapshot.comic_archives[0].source_comic_id, "comic-1");
-    assert_eq!(snapshot.comic_archives[0].archiver_id, "user-1");
-
-    let archived_comic_payload: serde_json::Value =
-        serde_json::from_str(&snapshot.comic_archives[0].archived_payload)
-            .unwrap();
-
-    assert_eq!(archived_comic_payload["source_comic_id"], "comic-1");
-    assert_eq!(archived_comic_payload["workset"]["id"], "workset-1");
+    assert_eq!(snapshot.comic_archives.first().unwrap().team_id, "team-1");
     assert_eq!(
-        archived_comic_payload["chapters"].as_array().unwrap().len(),
-        1
+        snapshot.comic_archives.first().unwrap().source_comic_id,
+        "comic-1"
     );
     assert_eq!(
-        archived_comic_payload["chapters"][0]["source_chapter_id"],
-        "chapter-1"
+        snapshot.comic_archives.first().unwrap().archiver_id,
+        "user-1"
     );
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["assignments"]
-            .as_array()
+
+    assert_archive_payload(
+        &snapshot.comic_archives.first().unwrap().archived_payload,
+    );
+
+    assert!(
+        snapshot
+            .objs
+            .get("comic_cover")
             .unwrap()
-            .len(),
-        1
-    );
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["assignments"][0]["user"]["nickname"],
-        "archiver"
-    );
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"]
-            .as_array()
+            .get("comic-1")
             .unwrap()
-            .len(),
-        1
+            .meta
+            .is_none()
     );
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["source_page_id"],
-        "page-1"
-    );
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["source_unit_id"],
-        "unit-1"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["is_flagged"],
-        true
-    );
-
-    assert!(snapshot.objs["comic_cover"]["comic-1"].meta.is_none());
-    assert!(snapshot.objs["page_image"].is_empty());
+    assert!(snapshot.objs.get("page_image").unwrap().is_empty());
     assert_eq!(snapshot.obj_tasks.len(), 2);
     assert!(snapshot.obj_tasks.iter().any(|(topic, task)| {
         *topic == "comic_cover"
@@ -346,9 +337,11 @@ async fn export_returns_stored_strings_grouped_by_month() {
     .await
     .unwrap();
 
-    let stored = &mock.snapshot().comic_archives[0].archived_payload;
+    let snapshot = mock.snapshot();
 
-    assert_eq!(val.0[&month], vec![stored.clone()]);
+    let stored = &snapshot.comic_archives.first().unwrap().archived_payload;
+
+    assert_eq!((*val.0.get(&month).unwrap()), vec![stored.clone()]);
 }
 
 #[tokio::test]
@@ -363,7 +356,10 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
     let archive_result =
         archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
 
-    assert_expected_variant(archive_result.unwrap_err(), ExpectedVariant::Perm);
+    assert_expected_variant(
+        &archive_result.unwrap_err(),
+        ExpectedVariant::Perm,
+    );
 
     let snapshot = mock.snapshot();
 
@@ -372,7 +368,12 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
     assert_eq!(snapshot.comic_archives.len(), 0);
 
     assert_eq!(
-        snapshot.objs["comic_cover"]["comic-1"]
+        snapshot
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -380,7 +381,12 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
         cover_key
     );
     assert_eq!(
-        snapshot.objs["page_image"]["page-1"]
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -407,7 +413,10 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
     let archive_result =
         archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
 
-    assert_expected_variant(archive_result.unwrap_err(), ExpectedVariant::Args);
+    assert_expected_variant(
+        &archive_result.unwrap_err(),
+        ExpectedVariant::Args,
+    );
 
     let snapshot = mock.snapshot();
 
@@ -417,7 +426,12 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
     assert_eq!(snapshot.page_raw_idents.len(), 1);
 
     assert_eq!(
-        snapshot.objs["comic_cover"]["comic-1"]
+        snapshot
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -425,7 +439,12 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
         cover_key
     );
     assert_eq!(
-        snapshot.objs["page_image"]["page-1"]
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -466,12 +485,17 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
 
     assert_eq!(snapshot.units.len(), 1);
 
-    assert_eq!(snapshot.worksets[0].comic_count, 7);
+    assert_eq!(snapshot.worksets.first().unwrap().comic_count, 7);
 
     assert_eq!(snapshot.comic_archives.len(), 0);
 
     assert_eq!(
-        snapshot.objs["comic_cover"]["comic-1"]
+        snapshot
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -479,7 +503,12 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
         cover_key
     );
     assert_eq!(
-        snapshot.objs["page_image"]["page-1"]
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -487,4 +516,79 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
         page_key
     );
     assert!(snapshot.obj_tasks.is_empty());
+}
+
+fn assert_archive_payload(payload: &str) {
+    let archived_comic_payload: serde_json::Value =
+        serde_json::from_str(payload).unwrap();
+
+    let archived_chapter = archived_comic_payload
+        .get("chapters")
+        .unwrap()
+        .get(0)
+        .unwrap();
+
+    let archived_page = archived_chapter.get("pages").unwrap().get(0).unwrap();
+
+    let archived_unit = archived_page.get("units").unwrap().get(0).unwrap();
+
+    assert_eq!(
+        (*archived_comic_payload.get("source_comic_id").unwrap()),
+        "comic-1"
+    );
+    assert_eq!(
+        (*archived_comic_payload
+            .get("workset")
+            .unwrap()
+            .get("id")
+            .unwrap()),
+        "workset-1"
+    );
+    assert_eq!(
+        archived_comic_payload
+            .get("chapters")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        (*archived_chapter.get("source_chapter_id").unwrap()),
+        "chapter-1"
+    );
+    assert_eq!(
+        archived_chapter
+            .get("assignments")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        (*archived_chapter
+            .get("assignments")
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .get("user")
+            .unwrap()
+            .get("nickname")
+            .unwrap()),
+        "archiver"
+    );
+    assert_eq!(
+        archived_chapter
+            .get("pages")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!((*archived_page.get("source_page_id").unwrap()), "page-1");
+    assert_eq!((*archived_unit.get("source_unit_id").unwrap()), "unit-1");
+
+    assert_eq!((*archived_unit.get("is_flagged").unwrap()), true);
 }

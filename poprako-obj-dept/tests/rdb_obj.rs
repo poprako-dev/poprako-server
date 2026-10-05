@@ -1,5 +1,8 @@
 #![cfg(feature = "rdb_impl")]
-#![allow(non_camel_case_types)]
+#![allow(
+    non_camel_case_types,
+    reason = "Diesel table declarations preserve database column names"
+)]
 
 use poprako_obj_dept::objs_def;
 
@@ -27,7 +30,7 @@ objs_def! {
 
 #[test]
 fn expands_direct_typed_object() {
-    let _marker = PageImage;
+    let _: PageImage = PageImage;
 
     assert_eq!(page_image_rdb_impl::TOPIC, "page_image");
 }

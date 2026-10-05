@@ -11,6 +11,8 @@ command -v uv >/dev/null 2>&1 || {
 
 # Each check is independent. Run them all so one failure never hides another.
 sh scripts/ci-parallel.sh \
+    "Workspace lint policy" \
+    "sh scripts/ci-lint-policy.sh" \
     "Rust formatting" \
     "cargo fmt --all --check" \
     "Rust file length" \

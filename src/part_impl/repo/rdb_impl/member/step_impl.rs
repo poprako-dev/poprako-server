@@ -66,6 +66,10 @@ pub async fn find_info_by_user_id_and_team_id(
 
 /// Query a paginated, filtered list of member infos.
 #[instrument(level = "info", skip_all)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,

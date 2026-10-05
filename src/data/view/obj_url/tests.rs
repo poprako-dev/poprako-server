@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 #[test]
@@ -27,6 +32,10 @@ fn owned_url_moves_its_text_and_serializes_as_a_string() {
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn shared_url_moves_its_handle_and_preserves_string_serialization() {
     //
     let text = Arc::new(String::from("https://obj.test/avatar"));

@@ -1,6 +1,15 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::PageInfoView;
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn page_info_view_omits_absent_image_urls() {
     let page_info_view = PageInfoView {
         id: "page-1".into(),

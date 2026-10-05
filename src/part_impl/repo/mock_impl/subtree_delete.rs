@@ -22,6 +22,7 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest, accept};
 
 /// Collect worksets covered by a deletion scope.
+#[must_use]
 pub fn workset_ids(
     state: &MockState,
     scope: &SubtreeDeleteScope,
@@ -48,6 +49,7 @@ pub fn workset_ids(
 }
 
 /// Collect comics covered by a deletion scope.
+#[must_use]
 pub fn comic_ids(
     state: &MockState,
     scope: &SubtreeDeleteScope,
@@ -75,6 +77,7 @@ pub fn comic_ids(
 }
 
 /// Collect chapters covered by a deletion scope.
+#[must_use]
 pub fn chapter_ids(
     state: &MockState,
     scope: &SubtreeDeleteScope,
@@ -113,6 +116,8 @@ pub(super) fn page_ids(state: &MockState, chapter_id: &str) -> HashSet<String> {
 }
 
 /// Lock and resolve an active deletion root.
+/// # Errors
+/// Returns the expected not-found error for a missing or deleted root or ancestor.
 pub fn lock_scope(
     state: &MockState,
     root: &SubtreeRoot<'_>,
@@ -214,6 +219,8 @@ pub fn lock_scope(
 }
 
 /// Mark a deletion scope and its descendants.
+/// # Errors
+/// Returns an unrecoverable error for direct chapter deletion, which cannot be tombstoned.
 pub fn mark_scope(
     state: &mut MockState,
     scope: &SubtreeDeleteScope,

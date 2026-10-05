@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Injected task, runner recovery, scheduling, and shutdown regressions.
 
 use std::collections::VecDeque;
@@ -61,6 +66,10 @@ struct TestRunner {
 
 #[async_trait]
 impl SchedTaskRunner for TestRunner {
+    #[expect(
+        clippy::panic,
+        reason = "This fault-injection fixture deliberately panics to verify recovery and isolation"
+    )]
     async fn run(&mut self, token: CancellationToken) -> BaseRest<SchedNext> {
         self.rounds += 1;
 
@@ -115,9 +124,10 @@ impl Drop for TestRunner {
     fn drop(&mut self) {
         self.probe.retired.fetch_add(1, Ordering::SeqCst);
 
-        if self.probe.drop_panics.swap(false, Ordering::SeqCst) {
-            panic!("injected runner drop panic");
-        }
+        assert!(
+            !self.probe.drop_panics.swap(false, Ordering::SeqCst),
+            "injected runner drop panic"
+        );
     }
 }
 
@@ -137,9 +147,10 @@ impl SchedTask for TestTask {
     fn runner(&self) -> Box<dyn SchedTaskRunner + Send> {
         let id = self.probe.created.fetch_add(1, Ordering::SeqCst);
 
-        if self.probe.creation_panics.swap(false, Ordering::SeqCst) {
-            panic!("injected runner creation panic");
-        }
+        assert!(
+            !self.probe.creation_panics.swap(false, Ordering::SeqCst),
+            "injected runner creation panic"
+        );
 
         Box::new(TestRunner {
             probe: self.probe.clone(),
@@ -191,7 +202,7 @@ fn defaults_bound_attempts_and_shutdown() {
 
     assert_eq!(config.concurrency.get(), 1);
 
-    assert_eq!(config.timeout, Duration::from_secs(300));
+    assert_eq!(config.timeout, Duration::from_mins(5));
 
     assert_eq!(config.idle_interval, Duration::from_secs(5));
 
@@ -300,10 +311,15 @@ async fn continue_is_immediate_and_wait_uses_idle_interval() {
 
     assert_eq!(records.len(), 2);
 
-    assert_eq!(records[0].2, records[1].2);
+    assert_eq!(records.first().unwrap().2, records.get(1).unwrap().2);
 
     assert_eq!(
-        (records[0].0, records[0].1, records[1].0, records[1].1),
+        (
+            records.first().unwrap().0,
+            records.first().unwrap().1,
+            records.get(1).unwrap().0,
+            records.get(1).unwrap().1
+        ),
         (0, 1, 0, 2)
     );
 
@@ -340,7 +356,7 @@ async fn errors_and_panics_retry_without_losing_workers() {
 
         task.config.retry_interval = Duration::from_secs(3);
 
-        task.config.idle_interval = Duration::from_secs(60);
+        task.config.idle_interval = Duration::from_mins(1);
 
         probe.creation_panics.store(scenario == 2, Ordering::SeqCst);
 
@@ -512,7 +528,7 @@ async fn shutdown_finishes_current_work_without_another_round() {
 async fn idle_wait_and_descriptor_drop_are_cancellable() {
     let (mut task, probe) = task(vec![]);
 
-    task.config.idle_interval = Duration::from_secs(3600);
+    task.config.idle_interval = Duration::from_hours(1);
 
     let desc = start(vec![Box::new(task)]);
 

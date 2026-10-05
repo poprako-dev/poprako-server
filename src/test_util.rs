@@ -21,12 +21,16 @@ pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
     page_image_limit: 25,
 };
 
-/// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
+/// Asserts that `err` is a [`BaseError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
-pub fn assert_expected_variant(err_: BaseError, expected: ExpectedVariant) {
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
+pub fn assert_expected_variant(err_: &BaseError, expected: ExpectedVariant) {
     //
     let BaseError::Expected { variant, .. } = err_ else {
-        panic!("expected RootError::Expected");
+        panic!("expected BaseError::Expected");
     };
 
     match (variant, expected) {
@@ -40,6 +44,10 @@ pub fn assert_expected_variant(err_: BaseError, expected: ExpectedVariant) {
 }
 
 /// Asserts that `err` is an expected error with the exact variant and i18n key.
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 pub fn assert_expected_message(
     err_: BaseError,
     expected: ExpectedVariant,
@@ -51,11 +59,11 @@ pub fn assert_expected_message(
         msg: actual,
     } = err_
     else {
-        panic!("expected RootError::Expected");
+        panic!("expected BaseError::Expected");
     };
 
     assert_expected_variant(
-        BaseError::Expected {
+        &BaseError::Expected {
             variant,
             msg: actual.clone(),
         },

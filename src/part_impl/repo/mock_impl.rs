@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! In-memory repository and prom adapters for tests.
 
 // Mock helper for in-memory nucl-related types.
@@ -280,6 +285,10 @@ impl poprako_orchestra::Context for MockContext {
 
 #[cfg_attr(test, derive(Clone, Default))]
 /// Toggleable failure flags for testing error paths in mock adapters.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Independent fault-injection switches must be combinable in test scenarios"
+)]
 pub struct MockFlags {
     //
     /// Simulates a token authentication failure.
@@ -313,11 +322,14 @@ pub struct Mock {
 
 impl Mock {
     /// Create a new mock with empty state and no failure flags.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Seed a user and its credential directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_user(&self, user: UserInfo, credential: UserCredential) {
         //
         let mut state = self.state.lock().unwrap();
@@ -328,26 +340,36 @@ impl Mock {
     }
 
     /// Seed an announcement directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_announcement(&self, announcement: AnnouncementInfo) {
         self.state.lock().unwrap().announcements.push(announcement);
     }
 
     /// Seed a comment directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_comment(&self, comment: CommentInfo) {
         self.state.lock().unwrap().comments.push(comment);
     }
 
     /// Seed a team directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_team(&self, team: TeamInfo) {
         self.state.lock().unwrap().teams.push(team);
     }
 
     /// Seed a member directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_member(&self, member: MemberInfo) {
         self.state.lock().unwrap().members.push(member);
     }
 
     /// Seed a member invitation directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_member_invitation(
         &self,
         member_invitation: MemberInvitationInfo,
@@ -360,36 +382,50 @@ impl Mock {
     }
 
     /// Seed a workset directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_workset(&self, workset: WorksetInfo) {
         self.state.lock().unwrap().worksets.push(workset);
     }
 
     /// Seed a comic directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_comic(&self, comic: ComicInfo) {
         self.state.lock().unwrap().comics.push(comic);
     }
 
     /// Seed a terminology base directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_termbase(&self, termbase: TermbaseInfo) {
         self.state.lock().unwrap().termbases.push(termbase);
     }
 
     /// Seed a terminology entry directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_term(&self, term: TermInfo) {
         self.state.lock().unwrap().terms.push(term);
     }
 
     /// Seed a chapter directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_chapter(&self, chapter: ChapterInfo) {
         self.state.lock().unwrap().chapters.push(chapter);
     }
 
     /// Seed an assignment directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_assignment(&self, assignment: AssignmentInfo) {
         self.state.lock().unwrap().assignments.push(assignment);
     }
 
     /// Seed an assignment invitation directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_assignment_invitation(
         &self,
         assignment_invitation: AssignmentInvitationInfo,
@@ -402,11 +438,19 @@ impl Mock {
     }
 
     /// Seed a page directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_page(&self, page: PageInfo) {
         self.state.lock().unwrap().pages.push(page);
     }
 
     /// Seed one verified page-image object for read-projection tests.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn seed_page_image_obj(&self, id: &str, ext: &str) {
         let meta = ObjMeta {
             key: ObjKey {
@@ -435,21 +479,31 @@ impl Mock {
     }
 
     /// Seed a unit directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_unit(&self, unit: UnitInfo) {
         self.state.lock().unwrap().units.push(unit);
     }
 
     /// Seed a system mail directly into the mock state.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
     pub fn seed_system_mail(&self, system_mail: SystemMailInfo) {
         self.state.lock().unwrap().system_mails.push(system_mail);
     }
 
     /// Return a point-in-time copy of the current mock state for assertion.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn snapshot(&self) -> MockSnapshot {
         self.state.lock().unwrap().clone().into()
     }
 
     /// Enable token authentication failures for subsequent opers.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn with_token_failure(self) -> Self {
         //
         self.flags.lock().unwrap().token_failure = true;
@@ -458,6 +512,9 @@ impl Mock {
     }
 
     /// Fail archive persistence before a transaction can commit.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn with_archive_commit_failure(self) -> Self {
         //
         self.flags.lock().unwrap().archive_commit_failure = true;
@@ -466,6 +523,9 @@ impl Mock {
     }
 
     /// Fail team creation before a transaction can commit.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn with_create_team_failure(self) -> Self {
         //
         self.flags.lock().unwrap().create_team_failure = true;
@@ -474,6 +534,9 @@ impl Mock {
     }
 
     /// Fail object deletion before a transaction can commit.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn with_obj_delete_failure(self) -> Self {
         //
         self.flags.lock().unwrap().obj_delete_failure = true;
@@ -482,6 +545,9 @@ impl Mock {
     }
 
     /// Disable thumbnail URLs for subsequent object read operations.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn with_obj_thumbnail_disabled(self) -> Self {
         self.flags.lock().unwrap().obj_thumbnail_disabled = true;
 
@@ -489,17 +555,24 @@ impl Mock {
     }
 
     /// Return the number of events emitted so far.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn event_count(&self) -> usize {
         self.events.lock().unwrap().len()
     }
 
     /// Drain and return all accumulated events, clearing the buffer.
+    /// # Panics
+    /// Panics if the mock state, flags, or event mutex is poisoned.
+    #[must_use]
     pub fn drain_events(&self) -> Vec<Event> {
         std::mem::take(&mut *self.events.lock().unwrap())
     }
 }
 
 /// Build an expected-args [`RootError`] with a translated message.
+#[must_use]
 pub fn expected(msg: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -508,11 +581,13 @@ pub fn expected(msg: &str) -> BaseError {
 }
 
 /// Build an unrecoverable [`RootError`] with the given message.
+#[must_use]
 pub fn unrecoverable(msg: &str) -> BaseError {
     BaseError::Unrecoverable { msg: msg.into() }
 }
 
 /// Return the current UTC timestamp.
+#[must_use]
 pub fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }

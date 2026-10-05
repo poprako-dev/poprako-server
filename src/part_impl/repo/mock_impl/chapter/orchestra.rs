@@ -35,7 +35,7 @@ fn list_chapter_infos(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, chapter_infos.len());
 
-        chapter_infos[offset..end].to_vec()
+        (*chapter_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 

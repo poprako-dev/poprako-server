@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use std::borrow::Cow;
 
 use super::ChapterWorkflowRecordEntry;

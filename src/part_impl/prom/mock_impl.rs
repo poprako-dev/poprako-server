@@ -1,3 +1,8 @@
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Mock deferred-task recording and on-demand processing.
 
 mod defer;
@@ -27,16 +32,21 @@ pub struct MockPromRecord {
 
 impl MockPromRecord {
     /// Returns the durable message identifier.
+    #[must_use]
     pub fn id(&self) -> &str {
         &self.id
     }
 
     /// Returns the first processing time.
+    #[must_use]
     pub fn visible_at(&self) -> OffsetDateTime {
         self.visible_at
     }
 
     /// Decodes the stored payload for assertions and processing.
+    /// # Panics
+    /// Panics if the recorded payload is invalid JSON or has an invalid shape.
+    #[must_use]
     pub fn payload(&self) -> PromPayload {
         serde_json::from_str(&self.payload_json)
             .expect("stored prom payload should deserialize successfully")
@@ -44,6 +54,8 @@ impl MockPromRecord {
 }
 
 /// Processes every recorded non-object deferred action.
+/// # Errors
+/// Returns an unrecoverable error when dispatch requests retry or dead-letter handling.
 pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
     let snapshot = mock.snapshot();
 

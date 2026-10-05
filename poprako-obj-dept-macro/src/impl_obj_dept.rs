@@ -172,6 +172,10 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
 }
 
 // Parses a named field in a macro input declaration.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn parse_field(input: ParseStream<'_>, expected: &str) -> Result<()> {
     //
     let field = input.parse::<Ident>()?;

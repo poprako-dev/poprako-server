@@ -78,7 +78,9 @@ fn raw_ident_deserializes_optional_filenames_for_both_allocations() {
         let mut body = json!({"image_hash": ImageHash::new([1; 32]), "new_byte_len": 4096, "ext": "png"});
 
         if let Some(input) = input {
-            body["raw_ident"] = input;
+            body.as_object_mut()
+                .unwrap()
+                .insert("raw_ident".into(), input);
         }
 
         let single: AllocPageImageInstr =

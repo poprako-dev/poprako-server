@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // http_body_serializes_success_envelope(HttpBody)(positive): emits code zero and data.
 
 use super::*;
@@ -108,7 +114,10 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
         assert_eq!(actual, status);
 
         assert_eq!(
-            serde_json::from_str::<serde_json::Value>(&body).unwrap()["code"],
+            (*serde_json::from_str::<serde_json::Value>(&body)
+                .unwrap()
+                .get("code")
+                .unwrap()),
             code
         );
 

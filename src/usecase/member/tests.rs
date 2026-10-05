@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // Member join flows and invitation conversion behavior.
 mod join_team;
 // Member role updates and deletion scenarios.
@@ -173,7 +178,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
 
     assert!(create_outcome.is_ok());
 
-    let created = create_outcome.ok().unwrap();
+    let created = create_outcome.unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -221,7 +226,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().members.len(), 1);
 }
@@ -254,7 +259,7 @@ async fn create_duplicate_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().members.len(), 2);
 }
@@ -298,16 +303,16 @@ async fn list_infos_member_lists_team_members() {
 
     assert!(member_info_vals.is_ok());
 
-    let member_info_vals = member_info_vals.ok().unwrap();
+    let member_info_vals = member_info_vals.unwrap();
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals[0].id, "member-translator");
+    assert_eq!(member_info_vals.first().unwrap().id, "member-translator");
 
-    assert_eq!(member_info_vals[1].id, "member-admin");
+    assert_eq!(member_info_vals.get(1).unwrap().id, "member-admin");
 
     assert_eq!(
-        member_info_vals[0].last_active_at,
+        member_info_vals.first().unwrap().last_active_at,
         translator_last_active_at.to_unix_milli()
     );
 }
@@ -352,11 +357,11 @@ async fn list_infos_filters_by_role() {
 
     assert!(member_info_vals.is_ok());
 
-    let member_info_vals = member_info_vals.ok().unwrap();
+    let member_info_vals = member_info_vals.unwrap();
 
     assert_eq!(member_info_vals.len(), 1);
 
-    assert_eq!(member_info_vals[0].id, "member-reviewer");
+    assert_eq!(member_info_vals.first().unwrap().id, "member-reviewer");
 }
 
 #[tokio::test]
@@ -419,11 +424,11 @@ async fn list_infos_applies_pagination_after_filtering() {
 
     assert!(member_info_vals.is_ok());
 
-    let member_info_vals = member_info_vals.ok().unwrap();
+    let member_info_vals = member_info_vals.unwrap();
 
     assert_eq!(member_info_vals.len(), 1);
 
-    assert_eq!(member_info_vals[0].id, "member-reviewer");
+    assert_eq!(member_info_vals.first().unwrap().id, "member-reviewer");
 }
 
 #[tokio::test]
@@ -482,13 +487,13 @@ async fn list_infos_owner_lists_own_memberships() {
 
     assert!(member_info_vals.is_ok());
 
-    let member_info_vals = member_info_vals.ok().unwrap();
+    let member_info_vals = member_info_vals.unwrap();
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals[0].id, "member-two");
+    assert_eq!(member_info_vals.first().unwrap().id, "member-two");
 
-    assert_eq!(member_info_vals[1].id, "member-one");
+    assert_eq!(member_info_vals.get(1).unwrap().id, "member-one");
 }
 
 #[tokio::test]
@@ -513,7 +518,7 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[test]
@@ -531,10 +536,14 @@ fn list_infos_rejects_invalid_combination() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
     let member_list_spec: MemberListSpec = ListMemberInfosInstr {
@@ -547,7 +556,6 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
         limit: crate::value::pagination::PubListLimit::new(5).unwrap(),
     }
     .try_into()
-    .ok()
     .unwrap();
 
     let MemberListSpec::User {

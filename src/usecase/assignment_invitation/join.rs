@@ -258,6 +258,10 @@ fn ensure_member_roles(
 }
 
 // Creates a new assignment or merges the invitation roles into an existing one.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn upsert_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -329,6 +333,10 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
 }
 
 // Merges invited roles into an existing assignment and records any change.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn merge_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,

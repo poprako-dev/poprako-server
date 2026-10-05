@@ -1,3 +1,8 @@
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use std::time::Duration;
@@ -36,7 +41,7 @@ fn read_merges_current_window_buckets() {
 
     assert_eq!(metric_total.total, 3);
 
-    assert_eq!(metric_total.average_latency_ms, 20.0);
+    assert!((metric_total.average_latency_ms - 20.0).abs() < f64::EPSILON);
 
     assert_eq!(metric_total.by_error.get(&422), Some(&1));
 
@@ -62,7 +67,7 @@ fn read_merges_current_window_buckets() {
 
     assert_eq!(current_minute.total, 2);
 
-    assert_eq!(current_minute.average_latency_ms, 25.0);
+    assert!((current_minute.average_latency_ms - 25.0).abs() < f64::EPSILON);
 }
 
 #[test]

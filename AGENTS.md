@@ -58,6 +58,15 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 ### Canonical Rust checks
 
+Lint policy is defined in the root `Cargo.toml` under `workspace.lints`.
+Every workspace package must exclusively inherit it with `[lints] workspace = true`.
+Rust warnings and enabled Clippy rules are errors for all targets; unsafe code
+is forbidden. `sh scripts/ci-lint-policy.sh` checks inheritance and policy strength.
+Do not add crate-wide or test-mode lint-group exemptions. Necessary individual
+lint exemptions belong on the relevant function or boundary module and must
+include an English `reason`. Test-only modules may allow `unwrap_used` and
+`expect_used` for fixture setup and assertions while retaining all other checks.
+
 Agents must prefer these exact `just` commands from the repository root.
 Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
 
@@ -79,7 +88,7 @@ Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
   after failure. Fix the failure and rerun the same canonical command.
 - For formatting changes, use `just fmt`, then `just fmt-check`.
   Apply the same Cargo fallback only if `just` is unavailable.
-  Do not use `just check-fix` or `cargo clippy --fix` as a validation shortcut.
+  Do not use `cargo clippy --fix` as a validation shortcut.
 - Preserve the pinned toolchain and existing Cargo environment/configuration.
   Do not override `RUSTFLAGS`, `CARGO_ENCODED_RUSTFLAGS`, `CARGO_TARGET_DIR`,
   `CARGO_BUILD_TARGET`, or profile/incremental settings, create a separate

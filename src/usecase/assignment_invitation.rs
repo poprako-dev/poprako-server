@@ -56,6 +56,10 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Removes one assignment invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn purge_expired<C, R>(
     (repo,): (&R,),
     invitation_id: &str,

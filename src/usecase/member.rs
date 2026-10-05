@@ -47,6 +47,10 @@ use crate::usecase::member::view::{member_info_view, member_info_views};
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -145,6 +149,10 @@ where
         actor_user_id = %token.user_id,
         code = "[REDACTED]",
     )
+)]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
 )]
 pub async fn join_team<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
@@ -309,6 +317,10 @@ where
 ///
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -403,6 +415,10 @@ where
 ///
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

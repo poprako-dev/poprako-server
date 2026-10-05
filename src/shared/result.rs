@@ -12,6 +12,10 @@ use crate::result::{BaseError, ExpectedVariant};
 /// Converts a Diesel error into the appropriate `RegularError` variant.
 ///
 /// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn diesel(source: DieselError) -> BaseError {
     //
     match source {

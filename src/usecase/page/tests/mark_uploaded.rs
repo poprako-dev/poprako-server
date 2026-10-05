@@ -89,7 +89,12 @@ async fn current_generation_is_marked_idempotently() {
     mark(&mock, 3).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["page_image"]["page-1"]
+        mock.snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -105,10 +110,16 @@ async fn stale_generation_does_not_mark_current() {
 
     let err = mark(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(
-        !mock.snapshot().objs["page_image"]["page-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -124,9 +135,15 @@ async fn stale_replay_is_rejected_before_current_generation_is_accepted() {
 
     let stale_error = mark(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(stale_error, ExpectedVariant::Args);
+    assert_expected_variant(&stale_error, ExpectedVariant::Args);
     assert!(
-        !mock.snapshot().objs["page_image"]["page-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -136,7 +153,12 @@ async fn stale_replay_is_rejected_before_current_generation_is_accepted() {
     mark(&mock, 3).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["page_image"]["page-1"]
+        mock.snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -150,14 +172,25 @@ async fn non_raw_provider_cannot_mark_page_image_uploaded() {
 
     seed_scope(&mock);
 
-    mock.state.lock().unwrap().assignments[0].roles =
-        RoleMask::from(RoleField::REVIEWER);
+    mock.state
+        .lock()
+        .unwrap()
+        .assignments
+        .get_mut(0)
+        .unwrap()
+        .roles = RoleMask::from(RoleField::REVIEWER);
 
     let error = mark(&mock, 3).await.err().unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
     assert!(
-        !mock.snapshot().objs["page_image"]["page-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -179,10 +212,16 @@ async fn tombstoned_chapter_cannot_mark_page_image_uploaded() {
 
     let error = mark(&mock, 3).await.err().unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(
-        !mock.snapshot().objs["page_image"]["page-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()

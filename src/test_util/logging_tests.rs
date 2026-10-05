@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Regression coverage for private payloads at use-case tracing boundaries.
 
 use std::collections::BTreeMap;
@@ -33,6 +39,10 @@ use crate::value::unit::UnitTextPart;
 struct Fields(BTreeMap<String, String>);
 
 impl Visit for Fields {
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
         self.0.insert(field.name().into(), format!("{:?}", value));
     }
@@ -177,4 +187,6 @@ async fn private_payload_spans_record_metadata_without_content() {
 
         assert!(fields.values().all(|value| !value.contains(secret)));
     }
+
+    drop(spans);
 }

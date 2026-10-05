@@ -36,6 +36,29 @@ unic-langid = "0.9.6"
 utoipa = "5.5.0"
 uuid = "1.23.4"
 
+[workspace.lints.rust]
+warnings = "deny"
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+unreachable = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+exit = "deny"
+indexing_slicing = "deny"
+string_slice = "deny"
+mod_module_files = "deny"
+allow_attributes_without_reason = "deny"
+
 [package]
 name = "poprako-server"
 version.workspace = true
@@ -47,6 +70,9 @@ repository.workspace = true
 keywords = ["manga", "translation", "backend", "axum", "diesel"]
 categories = ["web-programming", "asynchronous"]
 publish.workspace = true
+
+[lints]
+workspace = true
 
 [features]
 benchmark = []

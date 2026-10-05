@@ -89,6 +89,10 @@ pub fn ensure_snapshot_archivable(
 }
 
 /// Builds one compressed archive row on Tokio's blocking pool.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn prepare_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
@@ -121,6 +125,10 @@ pub async fn prepare_entry(
 }
 
 // Builds one compressed archive row and source cleanup identifiers.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn build_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,

@@ -57,6 +57,10 @@ const EXPIRY_DELAY: Duration = Duration::from_hours(120);
 
 /// Removes one member invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn purge_expired<C, R>(
     (repo,): (&R,),
     invitation_id: &str,

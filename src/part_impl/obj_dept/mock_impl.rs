@@ -1,9 +1,9 @@
-//! In-memory ObjDept operations used by server tests.
+//! In-memory `ObjDept` operations used by server tests.
 
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use time::{Duration, OffsetDateTime};
 use url::Url;
@@ -19,6 +19,10 @@ use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn gen_urls(
     meta: Option<&ObjMeta>,
     spec: ObjUrlSpec,
@@ -36,15 +40,15 @@ pub fn gen_urls(
 
     let key = &meta.key.image;
 
-    let origin_url = match spec.includes_origin() {
-        true => Some(parse_mock_url(key)?),
-        false => None,
-    };
+    let origin_url = spec
+        .includes_origin()
+        .then(|| parse_mock_url(key))
+        .transpose()?;
 
-    let optimized_url = match spec.includes_optimized() {
-        true => Some(parse_mock_url(&format!("optimized/{}", key))?),
-        false => None,
-    };
+    let optimized_url = spec
+        .includes_optimized()
+        .then(|| parse_mock_url(&format!("optimized/{}", key)))
+        .transpose()?;
 
     let thumbnail_url = match (spec.includes_thumbnail(), thumbnail_enabled) {
         (true, true) => Some(parse_mock_url(&format!("thumbnail/{}", key))?),
@@ -59,6 +63,10 @@ pub fn gen_urls(
 }
 
 // Parses one deterministic object URL for tests.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn parse_mock_url(path: &str) -> ObjDeptRest<Url> {
     Url::parse(&format!("https://obj.test/{}", path)).map_err(|source| {
         ObjDeptError::Unrecoverable {
@@ -91,9 +99,8 @@ where
 
     let reused_key = matching_meta.map(|meta| meta.key.clone());
 
-    let (key, previous) = match reused_key {
-        Some(key) => (key, None),
-        None => {
+    let (key, previous) = reused_key.map_or_else(
+        || {
             let ver = objs.get(id).map_or(Ok(1), |previous| {
                 previous.version.checked_add(1).ok_or_else(|| {
                     ObjDeptError::Unrecoverable {
@@ -123,9 +130,10 @@ where
                 },
             );
 
-            (key, previous)
-        }
-    };
+            Ok::<_, ObjDeptError>((key, previous))
+        },
+        |key| Ok((key, None)),
+    )?;
 
     if let Some(previous_key) =
         previous.and_then(|record| record.meta.map(|meta| meta.key))
@@ -143,7 +151,7 @@ where
     Ok(Some(ObjSlot {
         key,
         url,
-        headers: Default::default(),
+        headers: BTreeMap::default(),
         expires_at: OffsetDateTime::now_utc() + Duration::minutes(5),
     }))
 }
@@ -165,7 +173,10 @@ where
 
     ids.sort_unstable();
 
-    if ids.windows(2).any(|pair| pair[0] == pair[1]) {
+    if ids
+        .windows(2)
+        .any(|pair| matches!(pair, [left, right] if left == right))
+    {
         return Err(ObjDeptError::Invalid {
             msg: "duplicate object slot id".into(),
         });
@@ -179,7 +190,7 @@ where
 
             Ok(slot.map(|slot| (K::id(&spec.dom).to_owned(), slot)))
         })
-        .filter_map(|result| result.transpose())
+        .filter_map(Result::transpose)
         .collect()
 }
 
@@ -249,6 +260,8 @@ macro_rules! implement_mock_obj_dept {
                 };
 
                 meta.is_avail = true;
+
+                drop(state);
 
                 Ok(true)
             }

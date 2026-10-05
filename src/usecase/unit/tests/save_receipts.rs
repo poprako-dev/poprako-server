@@ -40,16 +40,19 @@ async fn replay_returns_original_struct_array_and_preserves_counts() {
         serde_json::to_value(&replay).unwrap()
     );
 
-    assert_eq!(first.created_unit_ids[0].local_id, "local-save");
+    assert_eq!(
+        first.created_unit_ids.first().unwrap().local_id,
+        "local-save"
+    );
 
     assert_eq!(
-        first.created_unit_ids[0].unit_id,
-        mock.snapshot().units[0].id
+        first.created_unit_ids.first().unwrap().unit_id,
+        mock.snapshot().units.first().unwrap().id
     );
 
     assert_eq!(mock.snapshot().units.len(), 1);
 
-    assert_eq!(mock.snapshot().pages[0].total_unit_count, 1);
+    assert_eq!(mock.snapshot().pages.first().unwrap().total_unit_count, 1);
 
     assert_eq!(mock.snapshot().chapter_workflow_records.len(), records);
 
@@ -69,11 +72,11 @@ async fn replay_returns_original_struct_array_and_preserves_counts() {
         }
     ));
 
-    let mut state = mock.state.lock().unwrap();
+    {
+        let mut state = mock.state.lock().unwrap();
 
-    state.assignments.clear();
-
-    drop(state);
+        state.assignments.clear();
+    }
 
     assert!(
         save_edits(
@@ -135,7 +138,7 @@ async fn delete_returns_an_empty_struct_array() {
         (&mock, &mock),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Delete {
-            id: created.created_unit_ids[0].unit_id.clone(),
+            id: created.created_unit_ids.first().unwrap().unit_id.clone(),
         }]),
     )
     .await

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // assignment_roundtrip_uses_testcontainer(CreateAssignment, ListAssignmentInfos::Spec, ListAssignmentInfos::Chapters, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
 
 use super::*;
@@ -16,14 +21,53 @@ use crate::part::repo::oper::assignment::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
 use crate::result::BaseError;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-domain-";
 
+// Verify the included assignment resolves every ancestor through the owning team.
+async fn verify_assignment_ancestor_inclusions(
+    repo: &HybRepo,
+    chapter_fixture: &ChapterFixture,
+    assignment_entry: &AssignmentEntry<'_>,
+) {
+    let assignment_info = repo
+        .run(&GetAssignmentInfo {
+            id: &assignment_entry.id,
+            incls: &[AssignmentInclOpt::ChapterComicWorksetTeam],
+        })
+        .await
+        .unwrap();
+
+    let chapter_info = assignment_info.chapter.as_ref().unwrap();
+
+    let comic_info = chapter_info.comic.as_ref().unwrap();
+
+    assert_eq!(chapter_info.id, chapter_fixture.chapter_entry.id);
+
+    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
+
+    assert_eq!(
+        comic_info.workset.as_ref().unwrap().id,
+        chapter_fixture.workset_entry.id
+    );
+
+    assert_eq!(
+        comic_info.team.as_ref().unwrap().id,
+        chapter_fixture.team_entry.id
+    );
+}
+
 /// Verifies assignment roundtrip via testcontainers.
-/// Verifies assignment roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -62,7 +106,6 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let assignment_list_spec = AssignmentListSpec::Chapter {
@@ -78,13 +121,19 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &assignment_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
 
     assert_eq!(
-        assignment_infos[0].user.as_ref().unwrap().id,
+        assignment_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .id,
         assignee_form.id
     );
 
@@ -96,12 +145,14 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
             incls: &[],
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
 
-    assert_eq!(assignment_infos[0].id, assignment_entry.id);
+    assert_eq!(
+        assignment_infos.as_slice().first().unwrap().id,
+        assignment_entry.id
+    );
 
     let assignment_role_update = AssignmentRoleRepl {
         id: assignment_entry.id.clone(),
@@ -121,7 +172,6 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let assignment_info = repo
@@ -130,42 +180,20 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
             incls: &[AssignmentInclOpt::User],
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(assignment_info.roles, reviewer_role);
 
-    let assignment_info = repo
-        .run(&GetAssignmentInfo {
-            id: &assignment_entry.id,
-            incls: &[AssignmentInclOpt::ChapterComicWorksetTeam],
-        })
-        .await
-        .ok()
-        .unwrap();
+    verify_assignment_ancestor_inclusions(
+        &repo,
+        &chapter_fixture,
+        &assignment_entry,
+    )
+    .await;
 
-    let chapter_info = assignment_info.chapter.as_ref().unwrap();
-
-    let comic_info = chapter_info.comic.as_ref().unwrap();
-
-    assert_eq!(chapter_info.id, chapter_fixture.chapter_entry.id);
-
-    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
-
-    assert_eq!(
-        comic_info.workset.as_ref().unwrap().id,
-        chapter_fixture.workset_entry.id
-    );
-
-    assert_eq!(
-        comic_info.team.as_ref().unwrap().id,
-        chapter_fixture.team_entry.id
-    );
-
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

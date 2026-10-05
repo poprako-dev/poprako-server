@@ -57,6 +57,10 @@ pub enum RdbError {
 
 impl std::fmt::Display for RdbError {
     // Formats an infrastructure failure without adding contextual classification.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //
         match self {

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Mock implementation of [TokenAuth] for testing token signing with deterministic output.
 
 use poprako_util::i18n::trl;

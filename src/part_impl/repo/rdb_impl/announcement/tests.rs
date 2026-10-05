@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // announcement_roundtrip_uses_testcontainer(CreateAnnouncement, GetAnnouncementInfo, ListAnnouncementInfos, UpdateAnnouncement, DeleteAnnouncement)(positive): announcement repo creates, updates, lists, and deletes in an isolated PostgreSQL container.
 // announcement_roundtrip_uses_testcontainer(GetAnnouncementInfo)(negative): deleted announcement should return the expected not-found error.
 
@@ -20,7 +25,12 @@ use crate::value::announcement::AnnouncementInclOpt;
 const PREFIX: &str = "rdb-test-announcement-domain-";
 
 /// Verifies announcement roundtrip via testcontainers.
-/// Verifies announcement roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -41,7 +51,6 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         entry: &announcement_entry,
     })
     .await
-    .ok()
     .unwrap();
 
     let announcement_repl = AnnouncementRepl {
@@ -54,14 +63,12 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: &announcement_entry.id,
     })
     .await
-    .ok()
     .unwrap();
 
     repo.run(&UpdateAnnouncement {
         update: &announcement_repl,
     })
     .await
-    .ok()
     .unwrap();
 
     let announcement_list_spec = AnnouncementListSpec {
@@ -76,17 +83,29 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &announcement_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(announcement_infos.len(), 1);
 
-    assert_eq!(announcement_infos[0].title, "Updated RDB Announcement");
-
-    assert_eq!(announcement_infos[0].content, "updated announcement");
+    assert_eq!(
+        announcement_infos.as_slice().first().unwrap().title,
+        "Updated RDB Announcement"
+    );
 
     assert_eq!(
-        announcement_infos[0].user.as_ref().unwrap().id,
+        announcement_infos.as_slice().first().unwrap().content,
+        "updated announcement"
+    );
+
+    assert_eq!(
+        announcement_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .id,
         team_fixture.user_entry.id
     );
 
@@ -94,14 +113,12 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: &announcement_entry.id,
     })
     .await
-    .ok()
     .unwrap();
 
     repo.run(&DeleteAnnouncement {
         id: &announcement_entry.id,
     })
     .await
-    .ok()
     .unwrap();
 
     let missing_error = repo
@@ -112,22 +129,20 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         .err()
         .unwrap();
 
-    assert_expected_variant(missing_error, ExpectedVariant::Args);
+    assert_expected_variant(&missing_error, ExpectedVariant::Args);
 
     let announcement_infos = repo
         .run(&ListAnnouncementInfos {
             spec: &announcement_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert!(announcement_infos.is_empty());
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Test fixtures and cases for the system mail use case module.
 //!
 //! Tests exercise listing unread mails and marking as read against
@@ -75,7 +80,7 @@ async fn list_returns_current_user_unread_mails() {
 
     assert_eq!(mails.len(), 1);
 
-    assert_eq!(mails[0].id, "sys_mail-1");
+    assert_eq!(mails.first().unwrap().id, "sys_mail-1");
 }
 
 #[tokio::test]
@@ -102,9 +107,9 @@ async fn list_applies_pagination_after_desc_sort() {
     assert_eq!(mails.len(), 2);
 
     // Should be sorted by created_at DESC.
-    assert_eq!(mails[0].id, "sys_mail-2");
+    assert_eq!(mails.first().unwrap().id, "sys_mail-2");
 
-    assert_eq!(mails[1].id, "sys_mail-3");
+    assert_eq!(mails.get(1).unwrap().id, "sys_mail-3");
 }
 
 #[tokio::test]
@@ -145,9 +150,9 @@ async fn mark_read_marks_batch_of_mails() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.system_mails[0].is_read);
+    assert!(snapshot.system_mails.first().unwrap().is_read);
 
-    assert!(snapshot.system_mails[1].is_read);
+    assert!(snapshot.system_mails.get(1).unwrap().is_read);
 }
 
 #[tokio::test]
@@ -168,11 +173,11 @@ async fn mark_read_rejects_missing_id_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.system_mails[0].is_read);
+    assert!(!snapshot.system_mails.first().unwrap().is_read);
 }
 
 #[tokio::test]
@@ -192,7 +197,7 @@ async fn mark_read_accepts_duplicate_ids() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().system_mails[0].is_read);
+    assert!(mock.snapshot().system_mails.first().unwrap().is_read);
 }
 
 #[tokio::test]
@@ -209,9 +214,9 @@ async fn mark_read_rejects_other_user_mail() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.system_mails[0].is_read);
+    assert!(!snapshot.system_mails.first().unwrap().is_read);
 }

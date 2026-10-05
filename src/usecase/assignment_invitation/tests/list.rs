@@ -20,5 +20,5 @@ async fn list_infos_non_reviewer_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }

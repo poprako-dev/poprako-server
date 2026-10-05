@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use crate::complex::image as image_complex;
 
 use crate::config::image::ImageConfig;
@@ -12,6 +17,10 @@ const IMAGE_CONFIG: ImageConfig = ImageConfig {
 };
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn byte_length_uses_each_kind_specific_configured_mib_limit() {
     //
     let cases = [
@@ -53,6 +62,10 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn missing_byte_length_uses_the_runtime_page_limit_in_its_message() {
     //
     let failure = image_complex::invalid_byte_length_rejection(

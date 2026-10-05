@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // member_me_query(Query)(positive): missing incl should deserialize as an empty vector.
 // member_me_query(Query)(positive): one incl occurrence should deserialize as one item.
 // member_me_query(Query)(positive): repeated incl keys should preserve every item.
@@ -8,6 +13,10 @@ use axum::http::Uri;
 use axum::response::IntoResponse;
 
 // Build a local URI from the query string and reuse `Query::try_from_uri` to parse a MemberMeListQuery.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn parse_query(query: &str) -> MemberMeListQuery {
     //
     let uri = format!("http://localhost/members/me?{}", query)

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // sign_token(JwtAuth::sign_token)(positive): signed JWT should contain the requested user id.
 // new_rejects_non_positive_expiration(JwtAuth::new)(negative): non-positive lifetimes should fail during construction.
 
@@ -29,7 +34,7 @@ fn sign_token() {
 
     assert!(signed_token.is_ok());
 
-    let signed_token = signed_token.ok().unwrap();
+    let signed_token = signed_token.unwrap();
 
     let token_data = decode::<TestClaims>(
         &signed_token,

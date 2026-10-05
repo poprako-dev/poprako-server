@@ -347,7 +347,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .map_err(diesel_err)
             }
 
-            #[allow(dead_code)]
+            #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
             fn assert_full_schema(row: FullRow) {
                 //
                 let FullRow {

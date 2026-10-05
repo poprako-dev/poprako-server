@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use poprako_orchestra::Nucl as _;
@@ -38,7 +43,6 @@ async fn workset_loader_returns_same_info_in_run_and_step_modes() {
         "workset-1",
     )
     .await
-    .ok()
     .unwrap();
 
     let step_info = mock
@@ -52,7 +56,6 @@ async fn workset_loader_returns_same_info_in_run_and_step_modes() {
             .await
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(run_info.id, step_info.id);
@@ -78,5 +81,5 @@ async fn workset_loader_rejects_missing_membership_before_pure_rules() {
     .err()
     .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }

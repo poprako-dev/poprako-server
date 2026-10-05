@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use poprako_obj_dept::key::ObjKey;
@@ -31,18 +36,17 @@ async fn update_stage_admin_advances_any_stage() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     let snapshot = mock.snapshot();
 
-    let stages = &snapshot.chapters[0].stages;
+    let stages = &snapshot.chapters.first().unwrap().stages;
 
     assert_eq!(stages.get_phase(Stage::Publish), StagePhase::Completed);
 
     assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
-    let workflow_record = &snapshot.chapter_workflow_records[0];
+    let workflow_record = snapshot.chapter_workflow_records.first().unwrap();
 
     assert_eq!(workflow_record.actor_user_id.as_deref(), Some("user-1"));
 
@@ -75,7 +79,6 @@ async fn update_stage_noop_does_not_create_workflow_record() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     let snapshot = mock.snapshot();
@@ -83,7 +86,12 @@ async fn update_stage_noop_does_not_create_workflow_record() {
     assert_eq!(snapshot.chapter_workflow_records.len(), 0);
 
     assert_eq!(
-        snapshot.chapters[0].stages.get_phase(Stage::Translate),
+        snapshot
+            .chapters
+            .first()
+            .unwrap()
+            .stages
+            .get_phase(Stage::Translate),
         StagePhase::Pending,
     );
 }
@@ -116,7 +124,7 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -131,7 +139,6 @@ async fn update_stage_rejects_invalid_transition() {
     chapter_info.stages = chapter_info
         .stages
         .try_set_phase(Stage::Publish, StagePhase::Completed)
-        .ok()
         .unwrap();
 
     mock.seed_chapter(chapter_info);
@@ -155,7 +162,7 @@ async fn update_stage_rejects_invalid_transition() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -232,7 +239,16 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.objs["page_image"]["page-1"].meta.is_none());
+    assert!(
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
+            .meta
+            .is_none()
+    );
     assert!(snapshot.page_raw_idents.is_empty());
     assert_eq!(snapshot.pages.len(), 1);
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
@@ -243,11 +259,11 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(events.len(), 2);
     assert!(matches!(
-        events[0],
+        *events.first().unwrap(),
         crate::part::effect::event::Event::ChapterWorkflowCompleted { .. }
     ));
     assert!(matches!(
-        events[1],
+        *events.get(1).unwrap(),
         crate::part::effect::event::Event::ChapterPublished { .. }
     ));
 }
@@ -293,5 +309,8 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
 
     assert!(matches!(stage_result, Err(BaseError::Expected { .. })));
 
-    assert_eq!(mock.snapshot().chapters[0].subtitle, "chapter 0");
+    assert_eq!(
+        mock.snapshot().chapters.first().unwrap().subtitle,
+        "chapter 0"
+    );
 }

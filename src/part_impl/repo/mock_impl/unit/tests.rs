@@ -53,13 +53,13 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
 
     assert_eq!(hidden.total, 0);
 
-    assert!(state.units[0].hidden_at.is_some());
+    assert!(state.units.first().unwrap().hidden_at.is_some());
 
     let unit_infos = list_infos(&state, "page-1").unwrap();
 
     assert_eq!(unit_infos.len(), 1);
 
-    assert!(unit_infos[0].hidden_at.is_some());
+    assert!(unit_infos.first().unwrap().hidden_at.is_some());
 
     let restore = UnitEdit::Save {
         id: "unit-1".to_string(),
@@ -92,7 +92,7 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
 
     assert_eq!(restored.proofread, 1);
 
-    assert!(state.units[0].hidden_at.is_none());
+    assert!(state.units.first().unwrap().hidden_at.is_none());
 }
 
 #[test]
@@ -140,14 +140,14 @@ fn reads_preserve_page_repetitions_tombstones_and_independent_snapshots() {
         ["other", "first", "second", "first", "second"],
     );
 
-    state.units[2].translated_text = Some("updated".into());
+    state.units.get_mut(2).unwrap().translated_text = Some("updated".into());
 
     assert_eq!(
-        snapshots[1].translated_text.as_deref(),
+        snapshots.get(1).unwrap().translated_text.as_deref(),
         Some("first content")
     );
 
-    assert!(snapshots[2].hidden_at.is_some());
+    assert!(snapshots.get(2).unwrap().hidden_at.is_some());
 }
 
 #[test]

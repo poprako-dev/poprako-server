@@ -76,6 +76,10 @@ impl JwtAuth {
     ///
     /// Returns an error when required environment variables are missing or
     /// malformed.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -104,6 +108,10 @@ impl JwtAuth {
 impl TokenAuth for JwtAuth {
     // Signs a user token by encoding JWT claims with configured expiration.
     #[instrument(level = "info", skip_all)]
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.

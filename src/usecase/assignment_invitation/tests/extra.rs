@@ -32,11 +32,11 @@ async fn join_mismatched_qid_is_rejected() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.assignments.is_empty());
 
-    assert!(snapshot.assignment_invitations[0].is_pending);
+    assert!(snapshot.assignment_invitations.first().unwrap().is_pending);
 }

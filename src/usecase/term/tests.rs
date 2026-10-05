@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // create(create)(positive): creation normalizes text and increments term_count.
 // create(create)(negative): admin without a translation role cannot create a term.
 // create(create)(negative): duplicate normalized targets are rejected.
@@ -26,6 +31,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
     // Build a team member fixture with explicit role bits.
     MemberInfo {
@@ -91,15 +100,18 @@ async fn create_normalizes_and_increments_count() {
 
     assert_eq!(snapshot.terms.len(), 1);
 
-    assert_eq!(snapshot.terms[0].id, val.id);
+    assert_eq!(snapshot.terms.first().unwrap().id, val.id);
 
-    assert_eq!(snapshot.terms[0].source, "Source");
+    assert_eq!(snapshot.terms.first().unwrap().source, "Source");
 
-    assert_eq!(snapshot.terms[0].targets, ["Target A", "Target B"]);
+    assert_eq!(
+        snapshot.terms.first().unwrap().targets,
+        ["Target A", "Target B"]
+    );
 
-    assert!(snapshot.terms[0].comment.is_none());
+    assert!(snapshot.terms.first().unwrap().comment.is_none());
 
-    assert_eq!(snapshot.termbases[0].term_count, 1);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 1);
 }
 
 #[tokio::test]
@@ -123,7 +135,7 @@ async fn create_rejects_admin_without_translation_role() {
 
     assert!(snapshot.terms.is_empty());
 
-    assert_eq!(snapshot.termbases[0].term_count, 0);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 0);
 }
 
 #[tokio::test]
@@ -142,13 +154,13 @@ async fn create_rejects_duplicate_normalized_targets() {
         .await
         .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.terms.is_empty());
 
-    assert_eq!(snapshot.termbases[0].term_count, 0);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 0);
 }
 
 #[tokio::test]
@@ -167,13 +179,13 @@ async fn create_rejects_empty_targets() {
         .await
         .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.terms.is_empty());
 
-    assert_eq!(snapshot.termbases[0].term_count, 0);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 0);
 }
 
 #[tokio::test]
@@ -183,7 +195,13 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
 
     seed_scope(&mock, RoleField::TRANSLATOR);
 
-    mock.state.lock().unwrap().termbases[0].term_count = 199;
+    mock.state
+        .lock()
+        .unwrap()
+        .termbases
+        .get_mut(0)
+        .unwrap()
+        .term_count = 199;
 
     create((&mock, &mock), token("user-1"), create_instr())
         .await
@@ -205,7 +223,7 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
 
     assert_eq!(snapshot.terms.len(), 1);
 
-    assert_eq!(snapshot.termbases[0].term_count, 200);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 200);
 }
 
 #[tokio::test]
@@ -257,7 +275,7 @@ async fn update_replaces_fields_and_touches_parent() {
         .await
         .unwrap();
 
-    let before = mock.snapshot().termbases[0].updated_at;
+    let before = mock.snapshot().termbases.first().unwrap().updated_at;
 
     let instr = UpdateTermInfoInstr {
         id: val.id.clone(),
@@ -272,13 +290,16 @@ async fn update_replaces_fields_and_touches_parent() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.terms[0].source, "Updated");
+    assert_eq!(snapshot.terms.first().unwrap().source, "Updated");
 
-    assert_eq!(snapshot.terms[0].targets, ["New"]);
+    assert_eq!(snapshot.terms.first().unwrap().targets, ["New"]);
 
-    assert_eq!(snapshot.terms[0].comment.as_deref(), Some("Comment"));
+    assert_eq!(
+        snapshot.terms.first().unwrap().comment.as_deref(),
+        Some("Comment")
+    );
 
-    assert!(snapshot.termbases[0].updated_at >= before);
+    assert!(snapshot.termbases.first().unwrap().updated_at >= before);
 }
 
 #[tokio::test]
@@ -300,5 +321,5 @@ async fn delete_removes_term_and_decrements_count() {
 
     assert!(snapshot.terms.is_empty());
 
-    assert_eq!(snapshot.termbases[0].term_count, 0);
+    assert_eq!(snapshot.termbases.first().unwrap().term_count, 0);
 }

@@ -16,18 +16,20 @@ async fn admin_delete_removes_pages_objects_and_clears_chapter_counts() {
 
     {
         let mut state = mock.state.lock().unwrap();
-        let chapter_info = &mut state.chapters[0];
+        let chapter_info = &mut (*state.chapters.get_mut(0).unwrap());
 
         chapter_info.total_unit_count = 7;
         chapter_info.translated_unit_count = 5;
         chapter_info.proofread_unit_count = 3;
+
+        drop(state);
     }
 
     mock.seed_member(page_member("user-1", RoleMask::from(RoleField::ADMIN)));
     mock.seed_page(page_model("page-1", 0));
     mock.seed_page(page_model("page-2", 1));
 
-    let page_key = seed_page_obj(&mock, "page-1", 1, true, 1, ImageExt::Png);
+    let page_key = seed_page_obj(&mock, "page-1", 1, true, (1, ImageExt::Png));
 
     let before = OffsetDateTime::now_utc();
 
@@ -50,7 +52,7 @@ async fn admin_delete_removes_pages_objects_and_clears_chapter_counts() {
     .unwrap();
 
     let snapshot = mock.snapshot();
-    let chapter_info = &snapshot.chapters[0];
+    let chapter_info = &snapshot.chapters.first().unwrap();
 
     assert!(snapshot.pages.is_empty());
     assert!(snapshot.page_raw_idents.is_empty());
@@ -58,13 +60,13 @@ async fn admin_delete_removes_pages_objects_and_clears_chapter_counts() {
     assert_eq!(chapter_info.total_unit_count, 0);
     assert_eq!(chapter_info.translated_unit_count, 0);
     assert_eq!(chapter_info.proofread_unit_count, 0);
-    assert!(snapshot.objs["page_image"].is_empty());
+    assert!(snapshot.objs.get("page_image").unwrap().is_empty());
     assert_eq!(snapshot.obj_tasks.len(), 1);
     assert!(matches!(
-        &snapshot.obj_tasks[0].1,
+        &snapshot.obj_tasks.first().unwrap().1,
         ObjTask::Delete { key } if key == &page_key
     ));
-    assert!(snapshot.comics[0].last_active_at >= before);
+    assert!(snapshot.comics.first().unwrap().last_active_at >= before);
 }
 
 #[tokio::test]
@@ -79,7 +81,7 @@ async fn non_admin_delete_rejection_rolls_back_pages_and_objects() {
     ));
     mock.seed_page(page_model("page-1", 0));
 
-    let page_key = seed_page_obj(&mock, "page-1", 1, true, 1, ImageExt::Png);
+    let page_key = seed_page_obj(&mock, "page-1", 1, true, (1, ImageExt::Png));
 
     let error = delete(
         (&mock, &mock, &mock),
@@ -92,11 +94,16 @@ async fn non_admin_delete_rejection_rolls_back_pages_and_objects() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
     assert_eq!(snapshot.pages.len(), 1);
-    assert_eq!(snapshot.chapters[0].page_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().page_count, 1);
     assert_eq!(
-        snapshot.objs["page_image"]["page-1"]
+        snapshot
+            .objs
+            .get("page_image")
+            .unwrap()
+            .get("page-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()

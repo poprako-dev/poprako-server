@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use diesel::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _};
@@ -10,7 +15,7 @@ use poprako_prom::general::delivery::ClaimedTask;
 use poprako_prom::general::dispatch_flow::DispatchFlow;
 use poprako_rdb_core::RdbCore;
 
-use crate::part::nucl::Serial;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -20,6 +25,68 @@ use crate::part_impl::prom::rdb_impl::repo::{
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::BaseError;
+
+// Verify the writer persists committed tasks and rolls back aborted tasks before a consumer starts.
+async fn verify_writer_transactions(
+    shared: &RdbCore,
+    nucl: &RdbNucl<ReptRead>,
+    writer: &RdbProm,
+) -> String {
+    use crate::part::prom::payload::invitation::InvitationPayload;
+    use diesel::TextExpressionMethods as _;
+
+    let payload = PromPayload::Invitation {
+        payload: InvitationPayload::PurgeExpiredMemberInvitation {
+            invitation_id: "nonexistent".into(),
+        },
+    };
+
+    let committed_id = "rdb-test-prom-writer-commit".to_string();
+
+    let rollback_id = "rdb-test-prom-writer-rollback".to_string();
+
+    let committed = Task {
+        id: &committed_id,
+        payload: &payload,
+        delay: None,
+    };
+
+    nucl.coord(async |context| {
+        Defer::new(committed).step_on(writer, context).await
+    })
+    .await
+    .unwrap();
+
+    let rolled_back = Task {
+        id: &rollback_id,
+        payload: &payload,
+        delay: None,
+    };
+
+    let result = nucl
+        .coord(async |context| {
+            Defer::new(rolled_back).step_on(writer, context).await?;
+
+            Err::<(), _>(BaseError::Unrecoverable {
+                msg: "deliberate rollback".into(),
+            })
+        })
+        .await;
+
+    assert!(result.is_err());
+
+    let mut conn = shared.get().await.unwrap();
+
+    let ids = t_local_message::table
+        .filter(t_local_message::f_id.like("rdb-test-prom-writer-%"))
+        .select(t_local_message::f_id)
+        .load::<String>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(ids, std::slice::from_ref(&committed_id));
+    committed_id
+}
 
 // dispatch_uses_injected_repo(Actor::dispatch_payload)(positive): a decoded task mutates the injected mock without accessing queue storage.
 #[tokio::test]
@@ -181,6 +248,10 @@ async fn persisted_task(
 }
 
 // fixed_topics_control_concurrency(ClaimPending)(positive): different payload kinds share one serial queue while another topic runs concurrently.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn fixed_topics_control_concurrency(core: &RdbCore) {
     use crate::part::prom::payload::invitation::InvitationPayload;
 
@@ -260,6 +331,10 @@ async fn fixed_topics_control_concurrency(core: &RdbCore) {
 }
 
 // same_topic_requests_remain_independent(Defer/RetryTask/ResetStuck)(positive): later tasks never replace or complete an earlier attempt.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn same_topic_requests_remain_independent(core: &RdbCore) {
     let nucl = RdbNucl::<Serial>::new(core.clone());
 
@@ -290,7 +365,7 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
 
             _ => {
                 RetryTask::new(
-                    &first.id(),
+                    first.id(),
                     first.claim_token(),
                     action,
                     &OffsetDateTime::now_utc(),
@@ -406,7 +481,6 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
     shared: poprako_rdb_core::RdbCore,
 ) {
     use crate::part::nucl::ReptRead;
-    use crate::part::prom::payload::invitation::InvitationPayload;
     use crate::part_impl::nucl::rdb_impl::RdbNucl;
     use crate::part_impl::obj_dept::tests::ArtworkTestPool;
     use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
@@ -415,10 +489,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
     use crate::part_impl::repo::HybRepo;
     use crate::part_impl::repo::mock_impl::Mock;
     use crate::{Sched, SchedConfig, SubtreeDeleteTask};
-    use diesel::{
-        ExpressionMethods as _, QueryDsl as _, TextExpressionMethods as _,
-    };
-    use poprako_orchestra::{Nucl as _, OperStep as _};
+    use diesel::{ExpressionMethods as _, QueryDsl as _};
     use poprako_prom::general::actor::PromActor;
     use poprako_prom::general::handler::Dispatcher;
 
@@ -426,56 +497,10 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
 
     let writer = RdbProm::new();
 
-    let payload = PromPayload::Invitation {
-        payload: InvitationPayload::PurgeExpiredMemberInvitation {
-            invitation_id: "nonexistent".into(),
-        },
-    };
-
-    let committed_id = "rdb-test-prom-writer-commit".to_string();
-
-    let rollback_id = "rdb-test-prom-writer-rollback".to_string();
-
-    let committed = Task {
-        id: &committed_id,
-        payload: &payload,
-        delay: None,
-    };
-
-    nucl.coord(async |context| {
-        Defer::new(committed).step_on(&writer, context).await
-    })
-    .await
-    .unwrap();
-
-    let rolled_back = Task {
-        id: &rollback_id,
-        payload: &payload,
-        delay: None,
-    };
-
-    let result = nucl
-        .coord(async |context| {
-            Defer::new(rolled_back).step_on(&writer, context).await?;
-
-            Err::<(), _>(BaseError::Unrecoverable {
-                msg: "deliberate rollback".into(),
-            })
-        })
-        .await;
-
-    assert!(result.is_err());
+    let committed_id =
+        verify_writer_transactions(&shared, &nucl, &writer).await;
 
     let mut conn = shared.get().await.unwrap();
-
-    let ids = t_local_message::table
-        .filter(t_local_message::f_id.like("rdb-test-prom-writer-%"))
-        .select(t_local_message::f_id)
-        .load::<String>(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(ids, [committed_id.clone()]);
 
     let repo = HybRepo::new(shared.clone());
 

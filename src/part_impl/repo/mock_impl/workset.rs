@@ -61,7 +61,7 @@ fn list_workset_infos(
         // Internal implementation detail.
         let end = std::cmp::min(offset + limit, workset_infos.len());
 
-        workset_infos[offset..end].to_vec()
+        (*workset_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 

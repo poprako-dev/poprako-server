@@ -4,6 +4,10 @@ use crate::complex::member as member_complex;
 use crate::test_util;
 
 // Builds one team member with a deterministic role mask.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn member(id: &str, role: RoleField) -> MemberInfo {
     MemberInfo {
         id: id.into(),

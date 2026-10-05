@@ -21,7 +21,7 @@ pub struct DuplicateHistoryRepo {
 
 impl DuplicateHistoryRepo {
     /// Wraps the real repository without changing its transaction coordinator.
-    pub fn new(repo: HybRepo) -> Self {
+    pub const fn new(repo: HybRepo) -> Self {
         //
         Self {
             repo,

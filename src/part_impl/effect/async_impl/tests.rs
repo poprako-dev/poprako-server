@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // develop_dispatches_user_signup(AsyncEffectDevelop::develop)(positive): signup events should create one system mail for the invitor.
 // develop_dispatches_chapter_workflow_completed(AsyncEffectDevelop::develop)(positive): workflow completion should notify next-phase and reviewer assignees.
 // develop_dispatches_chapter_published(AsyncEffectDevelop::develop)(positive): chapter publication should notify reviewer assignees.
@@ -108,7 +113,7 @@ fn chapter_info() -> ChapterInfo {
         total_unit_count: 1,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: StageMask::try_from(0).ok().unwrap(),
+        stages: StageMask::try_from(0).unwrap(),
         creator_id: "creator-user".to_string(),
         creator: None,
         created_at: time,
@@ -180,7 +185,10 @@ async fn develop_dispatches_user_signup() {
 
     assert_eq!(snapshot.system_mails.len(), 1);
 
-    assert_eq!(snapshot.system_mails[0].receiver_id, "user-owner");
+    assert_eq!(
+        snapshot.system_mails.first().unwrap().receiver_id,
+        "user-owner"
+    );
 }
 
 #[tokio::test]
@@ -269,7 +277,10 @@ async fn develop_dispatches_chapter_published() {
 
     assert_eq!(snapshot.system_mails.len(), 1);
 
-    assert_eq!(snapshot.system_mails[0].receiver_id, "reviewer-user");
+    assert_eq!(
+        snapshot.system_mails.first().unwrap().receiver_id,
+        "reviewer-user"
+    );
 }
 
 // cancel_is_idempotent(EffectActorDesc::cancel)(positive): repeated cancellation safely joins the consumer.
@@ -369,6 +380,10 @@ async fn descriptor_drop_stops_consumer() {
 
 // join_reports_supervisor_failure(EffectActorDesc::join)(negative): abrupt task termination is reported through the runtime owner.
 #[tokio::test]
+#[expect(
+    clippy::panic,
+    reason = "This fault-injection fixture deliberately panics to verify recovery and isolation"
+)]
 async fn join_reports_supervisor_failure() {
     let mock = Mock::new();
 

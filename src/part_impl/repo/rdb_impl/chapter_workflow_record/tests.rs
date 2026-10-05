@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! RDB coverage for immutable chapter workflow record persistence.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -23,6 +28,12 @@ use crate::value::chapter_workflow_record::{
 const PREFIX: &str = "rdb-test-chapter-workflow-record-domain-";
 
 /// Verifies JSONB payloads, deterministic paging, and explicit deletion.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     shared: RdbCore,
 ) {
@@ -72,7 +83,6 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let list_spec = ChapterWorkflowRecordListSpec {
@@ -84,27 +94,31 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     let latest_record_infos = repo
         .run(&ListChapterWorkflowRecordInfos { spec: &list_spec })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(latest_record_infos.len(), 2);
 
-    assert_eq!(latest_record_infos[0].id, entries[1].id);
+    assert_eq!(
+        latest_record_infos.as_slice().first().unwrap().id,
+        entries.get(1).unwrap().id
+    );
 
-    assert_eq!(latest_record_infos[1].id, entries[0].id);
+    assert_eq!(
+        latest_record_infos.get(1).unwrap().id,
+        entries.as_slice().first().unwrap().id
+    );
 
     assert!(matches!(
-        &latest_record_infos[0].payload,
+        &latest_record_infos.as_slice().first().unwrap().payload,
         ChapterWorkflowRecordPayload::StageTransitioned {
             origin: ChapterWorkflowRecordOrigin::UnitEdit,
             ..
         }
     ));
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

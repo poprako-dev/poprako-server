@@ -33,6 +33,10 @@ pub enum DispatchFlow {
 impl DispatchFlow {
     /// Stops waiting after the request's deadline, without discarding success.
     #[must_use]
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn limit_wait(
         self,
         requested_at: OffsetDateTime,

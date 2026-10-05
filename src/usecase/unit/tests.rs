@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // save_edits(save_edits)(positive): token identity is persisted and save returns Unit.
 // save_edits(save_edits)(positive): Delete tombstones and Patch restores a Unit.
 // save_edits(save_edits)(positive): concurrent inserts before one anchor remain a complete chain.
@@ -52,16 +57,18 @@ async fn create_uses_token_identity_and_updates_counts() {
 
     assert_eq!(snapshot.units.len(), 1);
 
+    let unit_info = snapshot.units.first().unwrap();
+
     assert_eq!(
-        snapshot.units[0].last_translator_id.as_deref(),
+        unit_info.last_translator_id.as_deref(),
         Some("translator-1")
     );
 
-    assert_eq!(snapshot.pages[0].total_unit_count, 1);
+    assert_eq!(snapshot.pages.first().unwrap().total_unit_count, 1);
 
-    assert_eq!(snapshot.pages[0].translated_unit_count, 1);
+    assert_eq!(snapshot.pages.first().unwrap().translated_unit_count, 1);
 
-    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
 }
 
 #[tokio::test]
@@ -86,7 +93,7 @@ async fn transform_updates_selected_text_without_cascading_targets() {
     .await
     .unwrap();
 
-    let unit_id = mock.snapshot().units[0].id.clone();
+    let unit_id = mock.snapshot().units.first().unwrap().id.clone();
 
     transform(
         (&mock, &mock),
@@ -115,16 +122,18 @@ async fn transform_updates_selected_text_without_cascading_targets() {
     let snapshot = mock.snapshot();
 
     assert_eq!(
-        snapshot.units[0].translated_text.as_deref(),
+        snapshot.units.first().unwrap().translated_text.as_deref(),
         Some("beta final")
     );
 
+    let unit_info = snapshot.units.first().unwrap();
+
     assert_eq!(
-        snapshot.units[0].last_translator_id.as_deref(),
+        unit_info.last_translator_id.as_deref(),
         Some("translator-2")
     );
 
-    assert_eq!(snapshot.pages[0].translated_unit_count, 1);
+    assert_eq!(snapshot.pages.first().unwrap().translated_unit_count, 1);
 }
 
 #[tokio::test]
@@ -149,7 +158,7 @@ async fn overlapping_transform_rolls_back_the_complete_request() {
         TransformChapterUnitsInstr {
             part: UnitTextPart::TranslatedText,
             units: vec![UnitTransformInstr {
-                unit_id: before.units[0].id.clone(),
+                unit_id: before.units.first().unwrap().id.clone(),
                 transforms: vec![
                     UnitTextTransformInstr {
                         origin: "abc".to_string(),
@@ -175,8 +184,8 @@ async fn overlapping_transform_rolls_back_the_complete_request() {
     ));
 
     assert_eq!(
-        mock.snapshot().units[0].translated_text,
-        before.units[0].translated_text
+        mock.snapshot().units.first().unwrap().translated_text,
+        before.units.first().unwrap().translated_text
     );
 }
 
@@ -193,7 +202,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     .await
     .unwrap();
 
-    let unit_id = mock.snapshot().units[0].id.clone();
+    let unit_id = mock.snapshot().units.first().unwrap().id.clone();
 
     save_edits(
         (&mock, &mock),
@@ -205,9 +214,9 @@ async fn delete_then_patch_restores_the_tombstone() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().units[0].hidden_at.is_some());
+    assert!(mock.snapshot().units.first().unwrap().hidden_at.is_some());
 
-    assert_eq!(mock.snapshot().pages[0].total_unit_count, 0);
+    assert_eq!(mock.snapshot().pages.first().unwrap().total_unit_count, 0);
 
     save_edits(
         (&mock, &mock),
@@ -227,11 +236,11 @@ async fn delete_then_patch_restores_the_tombstone() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.units[0].hidden_at.is_none());
+    assert!(snapshot.units.first().unwrap().hidden_at.is_none());
 
-    assert!(!snapshot.units[0].is_bubble);
+    assert!(!snapshot.units.first().unwrap().is_bubble);
 
-    assert_eq!(snapshot.pages[0].total_unit_count, 1);
+    assert_eq!(snapshot.pages.first().unwrap().total_unit_count, 1);
 }
 
 #[tokio::test]
@@ -253,7 +262,7 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
         (&mock, &mock),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Patch {
-            id: before.units[0].id.clone(),
+            id: before.units.first().unwrap().id.clone(),
             next_id: Patch::Skip,
             is_bubble: None,
             is_flagged: None,
@@ -281,11 +290,11 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
     let after = mock.snapshot();
 
     assert_eq!(
-        after.units[0].proofread_text,
-        before.units[0].proofread_text
+        after.units.first().unwrap().proofread_text,
+        before.units.first().unwrap().proofread_text
     );
 
-    assert_eq!(after.pages[0].proofread_unit_count, 0);
+    assert_eq!(after.pages.first().unwrap().proofread_unit_count, 0);
 }
 
 #[tokio::test]
@@ -296,29 +305,17 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
     save_edits(
         (&proofreader, &proofreader),
         token("translator-1"),
-        save_instr(vec![UnitEditInstr::Create {
-            local_id: "proofreader-local".to_string(),
-            next_id: None,
-            is_bubble: true,
-            is_flagged: false,
-            coord: UnitCoordInstr {
-                x_coord: 1.0,
-                y_coord: 2.0,
-            },
-            translation: None,
-            revision: Some(UnitRevisionInstr {
-                is_proofread: true,
-                proofread_text: Some("proofread".to_string()),
-            }),
-        }]),
+        save_instr(vec![create_with_revision("proofreader-local", None)]),
     )
     .await
     .unwrap();
 
     let proofreader_snapshot = proofreader.snapshot();
 
+    let unit_info = proofreader_snapshot.units.first().unwrap();
+
     assert_eq!(
-        proofreader_snapshot.units[0].last_proofreader_id.as_deref(),
+        unit_info.last_proofreader_id.as_deref(),
         Some("translator-1")
     );
 
@@ -330,32 +327,22 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
     save_edits(
         (&dual, &dual),
         token("translator-1"),
-        save_instr(vec![UnitEditInstr::Create {
-            local_id: "dual-local".to_string(),
-            next_id: None,
-            is_bubble: true,
-            is_flagged: false,
-            coord: UnitCoordInstr {
-                x_coord: 1.0,
-                y_coord: 2.0,
-            },
-            translation: Some(UnitTranslationInstr {
-                translated_text: "translated".to_string(),
-            }),
-            revision: Some(UnitRevisionInstr {
-                is_proofread: true,
-                proofread_text: Some("proofread".to_string()),
-            }),
-        }]),
+        save_instr(vec![create_with_revision(
+            "dual-local",
+            Some("translated"),
+        )]),
     )
     .await
     .unwrap();
 
     let dual_snapshot = dual.snapshot();
 
-    assert_eq!(dual_snapshot.pages[0].translated_unit_count, 1);
+    assert_eq!(
+        dual_snapshot.pages.first().unwrap().translated_unit_count,
+        1
+    );
 
-    assert_eq!(dual_snapshot.pages[0].proofread_unit_count, 1);
+    assert_eq!(dual_snapshot.pages.first().unwrap().proofread_unit_count, 1);
 }
 
 #[tokio::test]
@@ -371,7 +358,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     .await
     .unwrap();
 
-    let anchor_id = mock.snapshot().units[0].id.clone();
+    let anchor_id = mock.snapshot().units.first().unwrap().id.clone();
 
     let first_mock = mock.clone();
 
@@ -434,6 +421,29 @@ fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageUnitEditsInstr {
         page_id: "page-1".to_string(),
         edits,
     }
+}
+
+// Extend a create fixture with a completed proofreader revision.
+#[expect(
+    clippy::panic,
+    reason = "This fixture must remain a Create variant before its revision is assigned"
+)]
+fn create_with_revision(
+    local_id: &str,
+    translated_text: Option<&str>,
+) -> UnitEditInstr {
+    let mut edit = create(local_id, None, translated_text);
+
+    let UnitEditInstr::Create { revision, .. } = &mut edit else {
+        panic!("create fixture must produce a Create variant");
+    };
+
+    *revision = Some(UnitRevisionInstr {
+        is_proofread: true,
+        proofread_text: Some("proofread".to_string()),
+    });
+
+    edit
 }
 
 // Build a create-unit edit fixture for a page.

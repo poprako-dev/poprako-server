@@ -1,6 +1,15 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::TeamInfoView;
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn team_info_view_omits_absent_avatar_urls() {
     let team_info_view = TeamInfoView {
         id: "team-1".into(),

@@ -29,7 +29,11 @@ impl Run<MarkUserOnline<'_>> for Mock {
             .or_default()
             .insert(oper.user_id.into(), expires_at);
 
-        accept(())
+        let rest = accept(());
+
+        drop(online_user_deadlines);
+
+        rest
     }
 }
 
@@ -64,6 +68,10 @@ impl Run<ListOnlineUserIds<'_>> for Mock {
 
         online_user_ids.sort();
 
-        accept(online_user_ids)
+        let rest = accept(online_user_ids);
+
+        drop(online_user_deadlines);
+
+        rest
     }
 }

@@ -59,6 +59,10 @@ impl<T> WorkerSlot<T> {
 
 /// Executes each queued attempt within its claim deadline and isolates panics.
 /// Abandoned attempts remain processing until the timed-out attempt is reclaimed.
+#[expect(
+    clippy::future_not_send,
+    reason = "Workers also support locally awaited processors; detached actors enforce Send at their spawn boundary"
+)]
 pub async fn run_worker<T, F, Fut>(
     mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
     completed: Arc<Notify>,

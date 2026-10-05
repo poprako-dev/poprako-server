@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
@@ -14,6 +19,7 @@ use crate::part::repo::oper::chapter::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
 use crate::result::accept;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
@@ -21,78 +27,11 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 
-/// Verifies chapter roundtrip via testcontainers.
-/// Verifies chapter roundtrip via testcontainers.
-pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
-    //
-    test_shared::reset(&shared, PREFIX).await;
-
-    let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
-
-    let repo = HybRepo::new(shared.clone());
-
-    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
-
-    let stage_mask = StageMask::try_from(0u32).ok().unwrap();
-
-    let chapter_stage_update = ChapterStageRepl {
-        id: chapter_fixture.chapter_entry.id.clone(),
-        stages: stage_mask,
-    };
-
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &UpdateChapterStage {
-                update: &chapter_stage_update,
-            },
-        )
-        .await?;
-
-        accept(())
-    })
-    .await
-    .ok()
-    .unwrap();
-
-    let first_start = repo
-        .run(&StartChapterStage {
-            id: &chapter_fixture.chapter_entry.id,
-            stage: Stage::Translate,
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    let repeated_start = repo
-        .run(&StartChapterStage {
-            id: &chapter_fixture.chapter_entry.id,
-            stage: Stage::Translate,
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    assert!(first_start);
-
-    assert!(!repeated_start);
-
-    let started_chapter = repo
-        .run(&GetChapterInfo {
-            id: &chapter_fixture.chapter_entry.id,
-            incls: &[],
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    assert!(
-        started_chapter
-            .stages
-            .has_phase(Stage::Translate, StagePhase::Active)
-    );
-
+// Verify creator inclusion, ancestor inclusion, and the pinned chapter query.
+async fn verify_chapter_inclusions(
+    repo: &HybRepo,
+    chapter_fixture: &ChapterFixture,
+) {
     let chapter_list_spec = ChapterListSpec {
         comic_id: chapter_fixture.comic_entry.id.clone(),
         incl_opt: vec![ChapterInclOpt::Creator],
@@ -105,13 +44,19 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &chapter_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(chapter_infos.len(), 1);
 
     assert_eq!(
-        chapter_infos[0].creator.as_ref().unwrap().id,
+        chapter_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .creator
+            .as_ref()
+            .unwrap()
+            .id,
         chapter_fixture.creator_form.id
     );
 
@@ -127,10 +72,15 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &chapter_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
-    let comic_info = chapter_infos[0].comic.as_ref().unwrap();
+    let comic_info = chapter_infos
+        .as_slice()
+        .first()
+        .unwrap()
+        .comic
+        .as_ref()
+        .unwrap();
 
     assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
 
@@ -150,16 +100,86 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
             incls: &[ChapterInclOpt::Creator],
         })
         .await
-        .ok()
         .unwrap()
         .unwrap();
 
     assert_eq!(pinned_chapter_info.id, chapter_fixture.chapter_entry.id);
+}
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+/// Verifies chapter roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
+    test_shared::reset(&shared, PREFIX).await;
+
+    let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let stage_mask = StageMask::try_from(0u32).unwrap();
+
+    let chapter_stage_update = ChapterStageRepl {
+        id: chapter_fixture.chapter_entry.id.clone(),
+        stages: stage_mask,
+    };
+
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &UpdateChapterStage {
+                update: &chapter_stage_update,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let first_start = repo
+        .run(&StartChapterStage {
+            id: &chapter_fixture.chapter_entry.id,
+            stage: Stage::Translate,
+        })
+        .await
+        .unwrap();
+
+    let repeated_start = repo
+        .run(&StartChapterStage {
+            id: &chapter_fixture.chapter_entry.id,
+            stage: Stage::Translate,
+        })
+        .await
+        .unwrap();
+
+    assert!(first_start);
+
+    assert!(!repeated_start);
+
+    let started_chapter = repo
+        .run(&GetChapterInfo {
+            id: &chapter_fixture.chapter_entry.id,
+            incls: &[],
+        })
+        .await
+        .unwrap();
+
+    assert!(
+        started_chapter
+            .stages
+            .has_phase(Stage::Translate, StagePhase::Active)
+    );
+
+    verify_chapter_inclusions(&repo, &chapter_fixture).await;
+
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::{
     Mock, RoleMask, Stage, UpdateChapterStageInstr, chapter, seed_scope, token,
     update_stage,
@@ -18,7 +23,6 @@ async fn update_stage_admin_reverts_without_role_holder() {
     chapter_info.stages = chapter_info
         .stages
         .try_set_phase(Stage::Translate, StagePhase::Active)
-        .ok()
         .unwrap();
 
     mock.seed_chapter(chapter_info);
@@ -33,11 +37,13 @@ async fn update_stage_admin_reverts_without_role_holder() {
         },
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(
-        mock.snapshot().chapters[0]
+        mock.snapshot()
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .get_phase(Stage::Translate),
         StagePhase::Pending

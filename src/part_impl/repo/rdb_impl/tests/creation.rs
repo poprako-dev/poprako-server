@@ -1,4 +1,9 @@
-//! Chapter creation contracts exercised through use cases and real PostgreSQL.
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
+//! Chapter creation contracts exercised through use cases and real `PostgreSQL`.
 
 mod failure;
 mod snapshot;
@@ -347,9 +352,15 @@ async fn chapter_creation_history_failure_restores_siblings() {
 
     assert_eq!(assignments.len(), 1);
 
-    assert_eq!(assignments[0].user_id, token.user_id);
+    assert_eq!(
+        assignments.as_slice().first().unwrap().user_id,
+        token.user_id
+    );
 
-    assert_eq!(assignments[0].roles, RoleMask::from(RoleField::TRANSLATOR));
+    assert_eq!(
+        assignments.as_slice().first().unwrap().roles,
+        RoleMask::from(RoleField::TRANSLATOR)
+    );
 
     assert_history(
         &repo,

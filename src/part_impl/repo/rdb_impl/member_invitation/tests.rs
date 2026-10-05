@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // member_invitation_roundtrip_uses_testcontainer(MemberInvitationRepo)(positive): member invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
 use super::*;
@@ -22,7 +27,12 @@ use crate::value::role::{RoleField, RoleMask};
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
 
 /// Verifies member invitation roundtrip via testcontainers.
-/// Verifies member invitation roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -63,7 +73,6 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let member_invitation_list_spec = MemberInvitationListSpec {
@@ -79,17 +88,21 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &member_invitation_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(member_invitation_infos.len(), 1);
 
-    assert!(!member_invitation_infos[0].is_pending);
+    assert!(
+        !member_invitation_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .is_pending
+    );
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

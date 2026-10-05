@@ -19,6 +19,8 @@ use crate::value::incl::expand_incl_opts;
 
 /// Looks up a chapter by id from the mock state, applying include options to
 /// resolve relations.
+/// # Errors
+/// Returns the expected not-found error for a missing or deleted chapter.
 pub fn get_chapter_by_id(
     state: &MockState,
     id: &str,
@@ -40,6 +42,8 @@ pub fn get_chapter_by_id(
 }
 
 /// Resolves the minimal Unit edit scope through its owning Page.
+/// # Errors
+/// Returns the expected not-found error for a missing page or chapter.
 pub fn get_unit_edit_scope_by_page_id(
     state: &MockState,
     page_id: &str,
@@ -64,6 +68,7 @@ pub fn get_unit_edit_scope_by_page_id(
 }
 
 /// Returns chapters for a comic from the mock state, sorted by index descending.
+#[must_use]
 pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
     //
     let mut chapter_infos = state
@@ -82,6 +87,10 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 }
 
 /// Inserts a new chapter into the mock state, returning the created [`ChapterInfo`].
+/// # Panics
+/// Panics if an empty stage mask cannot be constructed.
+/// # Errors
+/// Returns the expected already-exists error for a duplicate chapter identifier.
 pub fn create_chapter(
     state: &mut MockState,
     chapter_entry: &ChapterEntry<'_>,

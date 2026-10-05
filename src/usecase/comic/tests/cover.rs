@@ -50,12 +50,20 @@ async fn alloc_cover_updates_object_state_enqueues_check_and_returns_put_url() {
 
     let snapshot = mock.snapshot();
 
-    let record = &snapshot.objs["comic_cover"]["comic-1"];
+    let record = snapshot
+        .objs
+        .get("comic_cover")
+        .unwrap()
+        .get("comic-1")
+        .unwrap();
 
     assert_eq!(record.version, 1);
     assert!(!record.meta.as_ref().unwrap().is_avail);
     assert_eq!(snapshot.obj_tasks.len(), 1);
-    assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
+    assert!(matches!(
+        snapshot.obj_tasks.first().unwrap().1,
+        ObjTask::Check { .. }
+    ));
 }
 
 #[tokio::test]
@@ -72,7 +80,7 @@ async fn alloc_cover_rolls_back_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -86,7 +94,12 @@ async fn mark_cover_uploaded_marks_matching_generation() {
     mark_comic_cover(&mock, 2).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["comic_cover"]["comic-1"]
+        mock.snapshot()
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -104,7 +117,12 @@ async fn mark_cover_uploaded_accepts_repeated_matching_generation() {
     mark_comic_cover(&mock, 2).await.unwrap();
 
     assert!(
-        mock.snapshot().objs["comic_cover"]["comic-1"]
+        mock.snapshot()
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -120,9 +138,15 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
     let err = mark_comic_cover(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert!(
-        !mock.snapshot().objs["comic_cover"]["comic-1"]
+        !mock
+            .snapshot()
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .get("comic-1")
+            .unwrap()
             .meta
             .as_ref()
             .unwrap()
@@ -149,9 +173,16 @@ async fn mark_cover_uploaded_rejects_old_allocation_replay() {
 
     let err = mark_comic_cover(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
-    let record = &mock.snapshot().objs["comic_cover"]["comic-1"];
+    let snapshot = mock.snapshot();
+
+    let record = snapshot
+        .objs
+        .get("comic_cover")
+        .unwrap()
+        .get("comic-1")
+        .unwrap();
 
     assert_eq!(record.version, 2);
     assert!(!record.meta.as_ref().unwrap().is_avail);
@@ -163,7 +194,13 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
 
     seed_comic_cover_scope(&mock, 1);
 
-    mock.state.lock().unwrap().worksets[0].comic_count = 1;
+    mock.state
+        .lock()
+        .unwrap()
+        .worksets
+        .get_mut(0)
+        .unwrap()
+        .comic_count = 1;
 
     delete::<_, MockContext, _>(
         (&mock, &mock),
@@ -177,7 +214,7 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
 
     assert_eq!(snapshot.comics.len(), 1);
     assert!(snapshot.deleted_comic_ids.contains("comic-1"));
-    assert_eq!(snapshot.worksets[0].comic_count, 0);
+    assert_eq!(snapshot.worksets.first().unwrap().comic_count, 0);
     assert!(snapshot.obj_tasks.is_empty());
 
     assert!(
@@ -189,7 +226,7 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
     let swept_snapshot = mock.snapshot();
 
     assert!(swept_snapshot.comics.is_empty());
-    assert!(swept_snapshot.objs["comic_cover"].is_empty());
+    assert!(swept_snapshot.objs.get("comic_cover").unwrap().is_empty());
     assert!(swept_snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(task, ObjTask::Delete { key } if key.id == "comic-1")
     }));
@@ -211,7 +248,7 @@ async fn delete_rolls_back_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().worksets.len(), 1);
     assert!(mock.snapshot().obj_tasks.is_empty());
 }

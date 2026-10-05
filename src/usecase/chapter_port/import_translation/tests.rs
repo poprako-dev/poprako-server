@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // import_translation(import)(positive): proofreader imports real LabelPlus material transactionally.
 // import_translation(import)(negative): page-count mismatch rejects import and leaves units and counters unchanged.
 
@@ -125,7 +131,7 @@ fn chapter(
         total_unit_count,
         translated_unit_count: total_unit_count,
         proofread_unit_count,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "user-1".into(),
         comic: None,
         creator: None,
@@ -135,6 +141,10 @@ fn chapter(
 }
 
 // Build assignment fixture for import perm checks.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -260,13 +270,7 @@ async fn import_label_plus_material_updates_units_and_counts() {
     )
     .await;
 
-    let imported = match imported {
-        //
-        // Convert transport errors into explicit panics in this happy-path unit test.
-        Ok(imported) => imported,
-
-        Err(_) => panic!("expected import success"),
-    };
+    let imported = imported.unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -369,13 +373,16 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert_eq!(snapshot.units.len(), 1);
 
-    assert_eq!(snapshot.units[0].translated_text, Some("old".into()));
+    assert_eq!(
+        snapshot.units.first().unwrap().translated_text,
+        Some("old".into())
+    );
 
-    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
 }
 
 #[tokio::test]
@@ -420,10 +427,13 @@ async fn import_replaces_units_and_clears_empty_pages() {
     assert_eq!(imported.imported_page_count, 2);
     assert_eq!(imported.imported_unit_count, 1);
     assert_eq!(visible_page_one.len(), 1);
-    assert_eq!(visible_page_one[0].proofread_text, Some("new text".into()));
+    assert_eq!(
+        visible_page_one.first().unwrap().proofread_text,
+        Some("new text".into())
+    );
     assert_eq!(visible_page_two, 0);
-    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
-    assert_eq!(snapshot.chapters[0].proofread_unit_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().proofread_unit_count, 1);
 }
 
 #[tokio::test]
@@ -460,17 +470,17 @@ async fn import_keep_preserves_visible_page_units() {
     assert_eq!(imported.imported_unit_count, 0);
     assert_eq!(visible_units.len(), 2);
     assert_eq!(
-        visible_units[0].translated_text,
+        visible_units.first().unwrap().translated_text,
         Some("old page one".into())
     );
     assert_eq!(
-        visible_units[1].translated_text,
+        visible_units.get(1).unwrap().translated_text,
         Some("old page two".into())
     );
-    assert_eq!(snapshot.chapters[0].total_unit_count, 2);
+    assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 2);
 
     assert!(matches!(
-        snapshot.chapter_workflow_records[0].payload,
+        snapshot.chapter_workflow_records.first().unwrap().payload,
         ChapterWorkflowRecordPayload::TranslationImported {
             imported_page_count: 0,
             imported_unit_count: 0,
@@ -517,10 +527,10 @@ async fn import_keep_reuses_page_with_only_hidden_units() {
     assert_eq!(imported.imported_unit_count, 1);
     assert_eq!(visible_page_two.len(), 1);
     assert_eq!(
-        visible_page_two[0].proofread_text,
+        visible_page_two.first().unwrap().proofread_text,
         Some("new second-page text".into())
     );
-    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
     assert!(
         snapshot
             .units

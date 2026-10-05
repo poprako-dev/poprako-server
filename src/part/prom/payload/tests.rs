@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 // task_payload_serde(current_json)(positive): domain and operation tags round trip with required ownership.

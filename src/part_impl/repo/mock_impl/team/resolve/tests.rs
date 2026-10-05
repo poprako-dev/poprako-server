@@ -57,7 +57,7 @@ fn seed_scope(mock: &Mock) {
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "user-1".into(),
         creator: None,
         created_at: time,
@@ -65,6 +65,10 @@ fn seed_scope(mock: &Mock) {
     });
 }
 
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn assert_expected(error: BaseError, msg_key: &str) {
     let BaseError::Expected { variant, msg } = error else {
         panic!("expected client-visible resource error");
@@ -85,7 +89,6 @@ async fn run_resolves_comic_and_reports_missing_root() {
     let team_id = mock
         .run(&ResolveTeamId::Comic { id: "comic-1" })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(team_id, "team-1");
@@ -93,7 +96,6 @@ async fn run_resolves_comic_and_reports_missing_root() {
     let team_id = mock
         .run(&ResolveTeamId::Chapter { id: "chapter-1" })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(team_id, "team-1");
@@ -171,6 +173,5 @@ async fn step_resolves_chapter_and_reports_missing_root() {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 }

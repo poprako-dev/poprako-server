@@ -1,6 +1,15 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 #[test]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn image_hash_round_trips_canonical_base64() {
     //
     let encoded = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -14,6 +23,10 @@ fn image_hash_round_trips_canonical_base64() {
 }
 
 #[test]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn image_hash_rejects_noncanonical_encodings() {
     //
     let invalid_hashes = [

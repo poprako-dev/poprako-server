@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // export_translation(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
 mod visibility;
@@ -81,7 +86,7 @@ fn chapter(id: &str) -> ChapterInfo {
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).unwrap(),
         creator_id: "user-1".into(),
         comic: None,
         creator: None,
@@ -90,6 +95,10 @@ fn chapter(id: &str) -> ChapterInfo {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -224,12 +233,7 @@ async fn export_returns_both_formats_and_records_one_export() {
     )
     .await;
 
-    let exported = match exported {
-        //
-        Ok(exported) => exported,
-
-        Err(_) => panic!("expected export success"),
-    };
+    let exported = exported.unwrap();
 
     assert!(exported.raw_idents.is_none());
 
@@ -237,7 +241,16 @@ async fn export_returns_both_formats_and_records_one_export() {
 
     assert_eq!(poprako.chapter_id, "chapter-1");
 
-    assert!(poprako.pages[0].units[0].is_flagged);
+    assert!(
+        poprako
+            .pages
+            .first()
+            .unwrap()
+            .units
+            .first()
+            .unwrap()
+            .is_flagged
+    );
 
     assert_eq!(poprako.chapter_index, 3);
 
@@ -247,12 +260,29 @@ async fn export_returns_both_formats_and_records_one_export() {
 
     assert_eq!(poprako.pages.len(), 2);
 
-    assert_eq!(poprako.pages[0].units.len(), 2);
-
-    assert_eq!(poprako.pages[0].units[0].unit_id, "unit-a");
+    assert_eq!(poprako.pages.first().unwrap().units.len(), 2);
 
     assert_eq!(
-        poprako.pages[0].units[0].proofread_text,
+        poprako
+            .pages
+            .first()
+            .unwrap()
+            .units
+            .first()
+            .unwrap()
+            .unit_id,
+        "unit-a"
+    );
+
+    assert_eq!(
+        poprako
+            .pages
+            .first()
+            .unwrap()
+            .units
+            .first()
+            .unwrap()
+            .proofread_text,
         Some("alpha proof".into())
     );
 
@@ -270,7 +300,10 @@ async fn export_returns_both_formats_and_records_one_export() {
     assert!(label_plus.contains("alpha proof"));
 
     assert!(
-        mock.snapshot().chapters[0]
+        mock.snapshot()
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .has_phase(Stage::TypesetRedraw, StagePhase::Active,)
     );
@@ -280,13 +313,13 @@ async fn export_returns_both_formats_and_records_one_export() {
     assert_eq!(snapshot.chapter_workflow_records.len(), 2);
 
     assert!(matches!(
-        &snapshot.chapter_workflow_records[0].payload,
+        &snapshot.chapter_workflow_records.first().unwrap().payload,
         ChapterWorkflowRecordPayload::TranslationExported { formats }
             if *formats == ExportFormatSpec::BOTH
     ));
 
     assert!(matches!(
-        &snapshot.chapter_workflow_records[1].payload,
+        &snapshot.chapter_workflow_records.get(1).unwrap().payload,
         ChapterWorkflowRecordPayload::StageTransitioned {
             stage: Stage::TypesetRedraw,
             previous_phase: StagePhase::Pending,
@@ -319,7 +352,10 @@ async fn export_by_unassigned_team_member_does_not_start_typeset_redraw() {
     let snapshot = mock.snapshot();
 
     assert!(
-        snapshot.chapters[0]
+        snapshot
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .has_phase(Stage::TypesetRedraw, StagePhase::Pending)
     );
@@ -327,7 +363,7 @@ async fn export_by_unassigned_team_member_does_not_start_typeset_redraw() {
     assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
     assert!(matches!(
-        &snapshot.chapter_workflow_records[0].payload,
+        &snapshot.chapter_workflow_records.first().unwrap().payload,
         ChapterWorkflowRecordPayload::TranslationExported { formats }
             if *formats == ExportFormatSpec::POPRAKO
     ));
@@ -383,9 +419,9 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     assert_eq!(raw_idents.len(), 1);
 
-    assert_eq!(raw_idents[0].page_id, "page-1");
+    assert_eq!(raw_idents.first().unwrap().page_id, "page-1");
 
-    assert_eq!(raw_idents[0].raw_ident, "原稿 01.JPG");
+    assert_eq!(raw_idents.first().unwrap().raw_ident, "原稿 01.JPG");
 
     assert!(
         default_export
@@ -429,9 +465,9 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     assert_eq!(duplicate_raw_idents.len(), 2);
 
-    assert_eq!(duplicate_raw_idents[0].page_id, "page-1");
+    assert_eq!(duplicate_raw_idents.first().unwrap().page_id, "page-1");
 
-    assert_eq!(duplicate_raw_idents[1].page_id, "page-2");
+    assert_eq!(duplicate_raw_idents.get(1).unwrap().page_id, "page-2");
 
     assert_eq!(
         duplicate_export
@@ -512,7 +548,10 @@ async fn export_only_artwork_assignees_start_stage() {
                 matches!(role, RoleField::TYPESETTER | RoleField::REDRAWER);
 
             assert_eq!(
-                snapshot.chapters[0]
+                snapshot
+                    .chapters
+                    .first()
+                    .unwrap()
                     .stages
                     .has_phase(Stage::TypesetRedraw, StagePhase::Active),
                 should_start,

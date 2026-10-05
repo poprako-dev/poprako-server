@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // page_roundtrip_uses_testcontainer(SetPageUnitCountMetrics, ListPageInfos)(positive): page repo persists and updates page counts in an isolated PostgreSQL container.
 
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
@@ -6,6 +12,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part::nucl::ReptRead;
@@ -18,23 +25,42 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
+use time::OffsetDateTime;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
-/// Verifies page roundtrip via testcontainers.
-/// Verifies page roundtrip via testcontainers.
-pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
+// Verify identity, creation time, and all counters together after reordering.
+fn assert_page_order(
+    page_infos: &[PageInfo],
+    expected: [(&str, OffsetDateTime, (usize, usize, usize)); 2],
+) {
     //
-    test_shared::reset(&shared, PREFIX).await;
+    assert_eq!(page_infos.len(), expected.len());
 
-    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+    for (page_info, (id, created_at, (total, translated, proofread))) in
+        page_infos.iter().zip(expected)
+    {
+        assert_eq!(page_info.id, id);
 
-    let repo = HybRepo::new(shared.clone());
+        assert_eq!(page_info.created_at, created_at);
 
-    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+        assert_eq!(page_info.total_unit_count, total);
 
+        assert_eq!(page_info.translated_unit_count, translated);
+
+        assert_eq!(page_info.proofread_unit_count, proofread);
+    }
+}
+
+// Set and read all page counters before changing the manifest.
+async fn verify_page_counters(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    page_fixture: &PageFixture,
+) -> OffsetDateTime {
     let unit_count_metrics = UnitCountMetrics {
         total: 2,
         translated: 1,
@@ -55,7 +81,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let page_infos = repo
@@ -63,19 +88,31 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             chapter_id: &page_fixture.chapter_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(page_infos.len(), 1);
 
-    assert_eq!(page_infos[0].total_unit_count, 2);
+    let page_info = page_infos.as_slice().first().unwrap();
 
-    assert_eq!(page_infos[0].translated_unit_count, 1);
+    assert_eq!(page_info.total_unit_count, 2);
 
-    assert_eq!(page_infos[0].proofread_unit_count, 1);
+    assert_eq!(page_info.translated_unit_count, 1);
 
-    let retained_created_at = page_infos[0].created_at;
+    assert_eq!(page_info.proofread_unit_count, 1);
 
+    page_info.created_at
+}
+
+// Verify a newly created page starts with empty counters and a current timestamp.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
+async fn create_second_page(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    page_fixture: &PageFixture,
+) -> (PageManifestEntry, OffsetDateTime) {
     let second_page_entry = PageManifestEntry {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
@@ -101,7 +138,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             })
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(new_page_info.total_unit_count, 0);
@@ -113,7 +149,17 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
     let new_created_at = new_page_info.created_at;
 
     assert!(new_created_at <= time::OffsetDateTime::now_utc());
+    (second_page_entry, new_created_at)
+}
 
+// Swap page positions and verify the first-page query and retained metadata.
+async fn verify_manifest_reorder(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    page_fixture: &PageFixture,
+    second_page_entry: &PageManifestEntry,
+    (retained_created_at, new_created_at): (OffsetDateTime, OffsetDateTime),
+) {
     let manifest_entries = vec![
         PageManifestEntry {
             id: second_page_entry.id.clone(),
@@ -151,7 +197,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let reordered_page_infos = repo
@@ -159,28 +204,15 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             chapter_id: &page_fixture.chapter_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
-    assert_eq!(reordered_page_infos[0].id, second_page_entry.id);
-
-    assert_eq!(reordered_page_infos[0].total_unit_count, 0);
-
-    assert_eq!(reordered_page_infos[0].translated_unit_count, 0);
-
-    assert_eq!(reordered_page_infos[0].proofread_unit_count, 0);
-
-    assert_eq!(reordered_page_infos[0].created_at, new_created_at);
-
-    assert_eq!(reordered_page_infos[1].id, page_fixture.page_entry.id);
-
-    assert_eq!(reordered_page_infos[1].total_unit_count, 2);
-
-    assert_eq!(reordered_page_infos[1].translated_unit_count, 1);
-
-    assert_eq!(reordered_page_infos[1].proofread_unit_count, 1);
-
-    assert_eq!(reordered_page_infos[1].created_at, retained_created_at);
+    assert_page_order(
+        &reordered_page_infos,
+        [
+            (&second_page_entry.id, new_created_at, (0, 0, 0)),
+            (&page_fixture.page_entry.id, retained_created_at, (2, 1, 1)),
+        ],
+    );
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.as_str()];
 
@@ -189,7 +221,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             chapter_ids: &chapter_ids,
         })
         .await
-        .ok()
         .unwrap();
 
     let first_page_info = first_page_infos
@@ -198,7 +229,16 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .expect("first page info for the chapter");
 
     assert_eq!(first_page_info.id, second_page_entry.id);
+}
 
+// Force a manifest transaction failure and verify all original metadata survives.
+async fn verify_manifest_rollback(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    page_fixture: &PageFixture,
+    second_page_entry: &PageManifestEntry,
+    (retained_created_at, new_created_at): (OffsetDateTime, OffsetDateTime),
+) {
     let rollback_entries = vec![
         PageManifestEntry {
             id: page_fixture.page_entry.id.clone(),
@@ -244,29 +284,23 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             chapter_id: &page_fixture.chapter_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
-    assert_eq!(rolled_back_page_infos[0].id, second_page_entry.id);
+    assert_page_order(
+        &rolled_back_page_infos,
+        [
+            (&second_page_entry.id, new_created_at, (0, 0, 0)),
+            (&page_fixture.page_entry.id, retained_created_at, (2, 1, 1)),
+        ],
+    );
+}
 
-    assert_eq!(rolled_back_page_infos[0].created_at, new_created_at);
-
-    assert_eq!(rolled_back_page_infos[0].total_unit_count, 0);
-
-    assert_eq!(rolled_back_page_infos[0].translated_unit_count, 0);
-
-    assert_eq!(rolled_back_page_infos[0].proofread_unit_count, 0);
-
-    assert_eq!(rolled_back_page_infos[1].id, page_fixture.page_entry.id);
-
-    assert_eq!(rolled_back_page_infos[1].created_at, retained_created_at);
-
-    assert_eq!(rolled_back_page_infos[1].total_unit_count, 2);
-
-    assert_eq!(rolled_back_page_infos[1].translated_unit_count, 1);
-
-    assert_eq!(rolled_back_page_infos[1].proofread_unit_count, 1);
-
+// Verify page lookup hides the tombstoned parent chapter.
+async fn verify_tombstoned_page(
+    shared: &RdbCore,
+    repo: &HybRepo,
+    page_fixture: &PageFixture,
+) {
     let mut conn = shared.get().await.unwrap();
 
     diesel::update(
@@ -295,7 +329,14 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             ..
         }
     ));
+}
 
+// Verify every bounded page list rejects an overflowing stored manifest.
+async fn verify_page_count_bound(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    page_fixture: &PageFixture,
+) {
     let overflow_entries = (2..=MAX_CHAPTER_PAGE_COUNT)
         .map(|index| PageManifestEntry {
             id: format!("{PREFIX}page-overflow-{index:03}"),
@@ -355,16 +396,59 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .unwrap();
 
     assert!(matches!(excluded_error, BaseError::Unrecoverable { .. }));
+}
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+/// Verifies page roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
+    test_shared::reset(&shared, PREFIX).await;
+
+    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let retained_created_at =
+        verify_page_counters(&repo, &nucl, &page_fixture).await;
+
+    let (second_page_entry, new_created_at) =
+        create_second_page(&repo, &nucl, &page_fixture).await;
+
+    verify_manifest_reorder(
+        &repo,
+        &nucl,
+        &page_fixture,
+        &second_page_entry,
+        (retained_created_at, new_created_at),
+    )
+    .await;
+
+    verify_manifest_rollback(
+        &repo,
+        &nucl,
+        &page_fixture,
+        &second_page_entry,
+        (retained_created_at, new_created_at),
+    )
+    .await;
+
+    verify_tombstoned_page(&shared, &repo, &page_fixture).await;
+
+    verify_page_count_bound(&repo, &nucl, &page_fixture).await;
+
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 
 /// Verifies original filename upsert, rollback, foreign keys, and page cascades.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
     use crate::model::write::page::PageRawIdentsRepl;
     use crate::part::repo::oper::page::{

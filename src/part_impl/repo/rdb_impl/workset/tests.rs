@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // workset_roundtrip_uses_testcontainer(WorksetRepo)(positive): workset repo persists, lists, and updates a workset in an isolated PostgreSQL container.
 
 use super::*;
@@ -14,7 +19,8 @@ use crate::part_impl::repo::rdb_impl::test_shared;
 const PREFIX: &str = "rdb-test-workset-domain-";
 
 /// Verifies workset roundtrip via testcontainers.
-/// Verifies workset roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -30,7 +36,6 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(workset_infos.len(), 1);
@@ -45,7 +50,6 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
         update: &workset_info_update,
     })
     .await
-    .ok()
     .unwrap();
 
     let workset_info = repo
@@ -53,15 +57,13 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
             id: &workset_fixture.workset_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(workset_info.name, "RDB Workset Updated");
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use poprako_obj_dept::oper::ClearObjs;
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
@@ -125,7 +130,10 @@ async fn defer_records_non_object_payload() {
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
-    assert_eq!(snapshot.prom_records[0].id(), "prom-invitation-1");
+    assert_eq!(
+        snapshot.prom_records.first().unwrap().id(),
+        "prom-invitation-1"
+    );
 }
 
 #[tokio::test]
@@ -346,7 +354,10 @@ async fn empty_raw_provide_does_not_wait_or_complete_the_stage() {
     let snapshot = mock.snapshot();
 
     assert!(
-        snapshot.chapters[0]
+        snapshot
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
     );

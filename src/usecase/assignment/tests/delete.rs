@@ -85,7 +85,7 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().assignments.len(), 2);
 }
@@ -112,7 +112,7 @@ async fn delete_rejects_published_chapter() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }

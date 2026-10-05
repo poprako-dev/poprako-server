@@ -115,6 +115,11 @@ jobs:
 
   production-image:
     name: Production image
+    needs:
+      - migrations
+      - rust
+      - security
+      - typescript
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.build_production_image)

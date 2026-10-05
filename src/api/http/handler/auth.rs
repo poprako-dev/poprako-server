@@ -121,6 +121,10 @@ pub async fn logout() -> HttpNoContent {
 }
 
 // Builds the `authorization-token` HttpOnly cookie used by auth responses.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn auth_cookie(token: &str) -> Cookie<'static> {
     //
     Cookie::build((AUTH_COOKIE_NAME, format!("Bearer {}", token)))

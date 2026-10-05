@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Page use-case tests.
 
 use poprako_obj_dept::key::ObjKey;
@@ -154,8 +159,7 @@ fn seed_page_obj(
     id: &str,
     version: u32,
     is_avail: bool,
-    hash: u8,
-    ext: ImageExt,
+    (hash, ext): (u8, ImageExt),
 ) -> ObjKey {
     let key = ObjKey {
         id: id.into(),

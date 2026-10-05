@@ -28,6 +28,10 @@ diesel::table! {
 // claim_reads_are_bounded(ClaimPending)(negative): an unrelated topic's backlog cannot add heap reads to this topic's claim.
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn claim_reads_are_bounded() {
     //
     let test_rdb = start().await;

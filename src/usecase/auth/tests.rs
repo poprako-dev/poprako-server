@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Test fixtures and cases for the authentication use case module.
 //!
 //! Tests exercise the [`register`] and [`login`] functions against a
@@ -31,8 +36,7 @@ use crate::value::role::{RoleField, RoleMask};
 fn invitation(
     id: &str,
     team_id: &str,
-    invitor_id: &str,
-    invitee_qid: &str,
+    (invitor_id, invitee_qid): (&str, &str),
     code: &str,
     pending: bool,
 ) -> MemberInvitationInfo {
@@ -67,6 +71,10 @@ fn login_data(qid: &str, password: &str) -> LoginAuthInstr {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     //
     let mock = Mock::new();
@@ -76,8 +84,7 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     mock.seed_member_invitation(invitation(
         "invitation-1",
         "team-1",
-        "invitor-1",
-        "qid-1",
+        ("invitor-1", "qid-1"),
         "code-1",
         true,
     ));
@@ -87,7 +94,6 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
         register_data("qid-1", "Nick", "code-1"),
     )
     .await
-    .ok()
     .unwrap();
 
     assert_eq!(val.token, format!("token:{}", val.user_id));
@@ -96,19 +102,19 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
 
     assert_eq!(snapshot.users.len(), 1);
 
-    assert_eq!(snapshot.users[0].id, val.user_id);
+    assert_eq!(snapshot.users.first().unwrap().id, val.user_id);
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert_eq!(snapshot.members[0].user_id, val.user_id);
+    assert_eq!(snapshot.members.first().unwrap().user_id, val.user_id);
 
-    assert!(!snapshot.member_invitations[0].is_pending);
+    assert!(!snapshot.member_invitations.first().unwrap().is_pending);
 
     let events = mock.drain_events();
 
     assert_eq!(events.len(), 1);
 
-    let Event::UserSignedUp { payload } = &events[0] else {
+    let Event::UserSignedUp { payload } = events.first().unwrap() else {
         panic!("expected UserSignedUp event");
     };
 
@@ -127,8 +133,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
     mock.seed_member_invitation(invitation(
         "invitation-1",
         "team-1",
-        "invitor-1",
-        "qid-1",
+        ("invitor-1", "qid-1"),
         "code-1",
         true,
     ));
@@ -141,7 +146,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -149,7 +154,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
 
     assert!(snapshot.members.is_empty());
 
-    assert!(snapshot.member_invitations[0].is_pending);
+    assert!(snapshot.member_invitations.first().unwrap().is_pending);
 
     assert_eq!(mock.event_count(), 0);
 }
@@ -162,8 +167,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
     mock.seed_member_invitation(invitation(
         "invitation-1",
         "team-1",
-        "invitor-1",
-        "qid-1",
+        ("invitor-1", "qid-1"),
         "code-1",
         true,
     ));
@@ -184,7 +188,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert!(!snapshot.member_invitations[0].is_pending);
+    assert!(!snapshot.member_invitations.first().unwrap().is_pending);
 
     assert_eq!(mock.event_count(), 1);
 }
@@ -201,7 +205,6 @@ async fn login_returns_signed_token_for_matching_credentials() {
 
     let val = login((&mock, &mock), login_data("qid-1", "password"))
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(val.user_id, "user-1");
@@ -219,7 +222,7 @@ async fn login_propagates_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -237,7 +240,7 @@ async fn login_rejects_wrong_password() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert_expected_variant(&err, ExpectedVariant::Auth);
 }
 
 #[tokio::test]

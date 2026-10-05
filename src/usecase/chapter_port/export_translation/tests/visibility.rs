@@ -58,36 +58,51 @@ async fn export_formats_share_visible_units_and_contiguous_indexes() {
         if let Some(poprako) = exported.poprako {
             assert_eq!(poprako.pages.len(), 2);
 
-            assert_eq!(poprako.pages[0].page_id, "page-1");
+            assert_eq!(poprako.pages.first().unwrap().page_id, "page-1");
 
-            assert_eq!(poprako.pages[1].page_id, "page-2");
+            assert_eq!(poprako.pages.get(1).unwrap().page_id, "page-2");
 
-            assert!(poprako.pages[1].units.is_empty());
+            assert!(poprako.pages.get(1).unwrap().units.is_empty());
 
-            let units = &poprako.pages[0].units;
+            let units = &poprako.pages.first().unwrap().units;
 
             assert_eq!(units.len(), 2);
 
             assert_eq!(
-                (units[0].unit_id.as_str(), units[0].unit_index),
+                (
+                    units.first().unwrap().unit_id.as_str(),
+                    units.first().unwrap().unit_index
+                ),
                 ("unit-a", 0)
             );
 
             assert_eq!(
-                (units[1].unit_id.as_str(), units[1].unit_index),
+                (
+                    units.get(1).unwrap().unit_id.as_str(),
+                    units.get(1).unwrap().unit_index
+                ),
                 ("unit-b", 1)
             );
 
-            assert_eq!(units[0].translated_text.as_deref(), Some("alpha"));
+            assert_eq!(
+                units.first().unwrap().translated_text.as_deref(),
+                Some("alpha")
+            );
 
             assert_eq!(
-                units[0].proofread_text.as_deref(),
+                units.first().unwrap().proofread_text.as_deref(),
                 Some(" alpha proof ")
             );
 
-            assert_eq!(units[1].translated_text.as_deref(), Some(" beta "));
+            assert_eq!(
+                units.get(1).unwrap().translated_text.as_deref(),
+                Some(" beta ")
+            );
 
-            assert_eq!(units[1].proofread_text.as_deref(), Some(""));
+            assert_eq!(
+                units.get(1).unwrap().proofread_text.as_deref(),
+                Some("")
+            );
         }
 
         if let Some(label_plus) = exported.label_plus {

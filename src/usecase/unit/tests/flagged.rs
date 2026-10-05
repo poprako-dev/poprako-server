@@ -29,9 +29,9 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
         .await
         .unwrap();
 
-        let id = &created.created_unit_ids[0].unit_id;
+        let id = &created.created_unit_ids.first().unwrap().unit_id;
 
-        assert!(mock.snapshot().units[0].is_flagged);
+        assert!(mock.snapshot().units.first().unwrap().is_flagged);
 
         for payload in [
             json!({"edit": "patch", "id": id}),
@@ -47,7 +47,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
             .await
             .unwrap();
 
-            assert!(mock.snapshot().units[0].is_flagged);
+            assert!(mock.snapshot().units.first().unwrap().is_flagged);
         }
 
         save_edits(
@@ -64,13 +64,20 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
 
         let snapshot = mock.snapshot();
 
-        assert!(!snapshot.units[0].is_flagged);
-        assert!(snapshot.units[0].hidden_at.is_none());
-        assert!(snapshot.units[0].last_translator_id.is_none());
-        assert!(snapshot.units[0].last_proofreader_id.is_none());
-        assert_eq!(snapshot.pages[0].total_unit_count, 1);
-        assert_eq!(snapshot.pages[0].translated_unit_count, 0);
-        assert_eq!(snapshot.pages[0].proofread_unit_count, 0);
+        assert!(!snapshot.units.first().unwrap().is_flagged);
+        assert!(snapshot.units.first().unwrap().hidden_at.is_none());
+        assert!(snapshot.units.first().unwrap().last_translator_id.is_none());
+        assert!(
+            snapshot
+                .units
+                .first()
+                .unwrap()
+                .last_proofreader_id
+                .is_none()
+        );
+        assert_eq!(snapshot.pages.first().unwrap().total_unit_count, 1);
+        assert_eq!(snapshot.pages.first().unwrap().translated_unit_count, 0);
+        assert_eq!(snapshot.pages.first().unwrap().proofread_unit_count, 0);
         assert!(snapshot.chapter_workflow_records.is_empty());
     }
 }
@@ -87,7 +94,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     .await
     .unwrap();
 
-    let id = &created.created_unit_ids[0].unit_id;
+    let id = &created.created_unit_ids.first().unwrap().unit_id;
 
     save_edits(
         (&mock, &mock),
@@ -100,7 +107,12 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     .unwrap();
 
     assert_eq!(
-        mock.snapshot().units[0].last_translator_id.as_deref(),
+        mock.snapshot()
+            .units
+            .first()
+            .unwrap()
+            .last_translator_id
+            .as_deref(),
         Some("translator-1")
     );
 
@@ -118,7 +130,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
         .await
         .unwrap();
 
-        assert!(mock.snapshot().units[0].is_flagged);
+        assert!(mock.snapshot().units.first().unwrap().is_flagged);
     }
 
     let save_count = mock.state.lock().unwrap().unit_saves.len();
@@ -151,11 +163,15 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     .await;
 
     assert!(rejected.is_err());
-    assert!(mock.snapshot().units[0].is_flagged);
+    assert!(mock.snapshot().units.first().unwrap().is_flagged);
     assert_eq!(mock.state.lock().unwrap().unit_saves.len(), save_count);
 }
 
 #[tokio::test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 async fn flagged_receipts_preserve_legacy_digest_and_reject_changed_flag() {
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
@@ -185,13 +201,15 @@ async fn flagged_receipts_preserve_legacy_digest_and_reject_changed_flag() {
         .unwrap();
 
     assert_eq!(
-        saved.created_unit_ids[0].unit_id,
-        replay.created_unit_ids[0].unit_id
+        saved.created_unit_ids.first().unwrap().unit_id,
+        replay.created_unit_ids.first().unwrap().unit_id
     );
 
     let mut changed = request();
 
-    let UnitEditInstr::Create { is_flagged, .. } = &mut changed.edits[0] else {
+    let UnitEditInstr::Create { is_flagged, .. } =
+        &mut (*changed.edits.get_mut(0).unwrap())
+    else {
         panic!("expected create");
     };
 
@@ -202,7 +220,7 @@ async fn flagged_receipts_preserve_legacy_digest_and_reject_changed_flag() {
             .await
             .is_err()
     );
-    assert!(!mock.snapshot().units[0].is_flagged);
+    assert!(!mock.snapshot().units.first().unwrap().is_flagged);
 
     let legacy_patch = br#"[{"edit":"patch","id":"unit-1","next_id":"Skip","is_bubble":null,"coord":null,"translation":"Skip","revision":"Skip"}]"#;
 

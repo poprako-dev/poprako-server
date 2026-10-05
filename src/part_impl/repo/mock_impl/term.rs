@@ -153,7 +153,11 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
             }
         };
 
-        accept(term_infos)
+        let rest = accept(term_infos);
+
+        drop(state);
+
+        rest
     }
 }
 

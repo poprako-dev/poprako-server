@@ -1,4 +1,39 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! PostgreSQL correctness coverage for hierarchy mark-and-sweep deletion.
+
+// Generate typed Unit insert rows for each page in the requested subtree scale.
+fn subtree_unit_rows(
+    pages: &[PageEntry],
+    prefix: &str,
+    scale: Scale,
+) -> Vec<UnitRow> {
+    let now = OffsetDateTime::now_utc();
+    pages
+        .iter()
+        .flat_map(|page| {
+            (0..scale.units_per_page).map(move |unit_index| UnitRow {
+                f_id: format!("{}unit-{}-{unit_index:04}", prefix, page.id),
+                f_page_id: page.id.clone(),
+                f_next_id: None,
+                f_hidden_at: None,
+                f_is_bubble: true,
+                f_is_proofread: false,
+                f_x_coord: 0.0,
+                f_y_coord: 0.0,
+                f_translated_text: None,
+                f_last_translator_id: None,
+                f_proofread_text: None,
+                f_last_proofreader_id: None,
+                f_created_at: now,
+                f_updated_at: now,
+            })
+        })
+        .collect::<Vec<_>>()
+}
 
 /// PostgreSQL hierarchy sweep scenarios.
 mod sweep;
@@ -42,6 +77,10 @@ const PREFIX: &str = "rdb-test-subtree-";
 
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "This test projection retains the exact typed Diesel column names"
+)]
 struct UnitRow {
     f_id: String,
 
@@ -121,28 +160,7 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
         })
         .collect::<Vec<_>>();
 
-    let now = OffsetDateTime::now_utc();
-    let units = pages
-        .iter()
-        .flat_map(|page| {
-            (0..scale.units_per_page).map(move |unit_index| UnitRow {
-                f_id: format!("{}unit-{}-{unit_index:04}", prefix, page.id),
-                f_page_id: page.id.clone(),
-                f_next_id: None,
-                f_hidden_at: None,
-                f_is_bubble: true,
-                f_is_proofread: false,
-                f_x_coord: 0.0,
-                f_y_coord: 0.0,
-                f_translated_text: None,
-                f_last_translator_id: None,
-                f_proofread_text: None,
-                f_last_proofreader_id: None,
-                f_created_at: now,
-                f_updated_at: now,
-            })
-        })
-        .collect::<Vec<_>>();
+    let units = subtree_unit_rows(&pages, prefix, scale);
 
     let comic_rows = comics
         .iter()
@@ -227,9 +245,8 @@ async fn mark_and_sweep_workset(shared: &RdbCore, workset_id: &str) {
                 .await
                 .unwrap();
 
-            match swept {
-                true => continue,
-                false => break,
+            if !swept {
+                break;
             }
         }
     }

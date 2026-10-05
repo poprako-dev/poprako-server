@@ -39,7 +39,7 @@ impl<'a> Step<Defer<'a, String, PromPayload, ()>, MockContext> for Mock {
         //
         // Internal implementation detail.
         let payload_json = serde_json::to_string(oper.task.payload)
-            .map_err(serialize_payload_err)?;
+            .map_err(|err| serialize_payload_err(&err))?;
 
         let now = OffsetDateTime::now_utc();
 

@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use url::Url;
 
 use super::*;
@@ -36,6 +41,10 @@ fn single_use_url_moves_generated_bytes_and_consumes_its_entry() {
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn repeated_url_shares_generated_bytes_until_final_consumption() {
     //
     let origin = Url::parse("https://obj.test/repeated").unwrap();

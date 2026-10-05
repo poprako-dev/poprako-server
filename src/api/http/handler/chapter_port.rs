@@ -131,6 +131,10 @@ pub async fn export_translation(
     ),
 ))]
 #[instrument(level = "info", skip_all)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn export_translation_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,

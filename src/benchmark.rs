@@ -101,6 +101,10 @@ pub struct UnitOrderInput(Vec<UnitOrder>);
 
 /// Builds an unordered maximum-size Unit chain.
 #[must_use]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn unit_order_input() -> UnitOrderInput {
     //
     UnitOrderInput(
@@ -161,6 +165,10 @@ pub fn order_visible_unit_ids(unit_order_input: UnitOrderInput) -> bool {
 }
 
 // Builds one large benchmark archive snapshot with deterministic content.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
     //
     let stages = StageMask::try_from(0).ok()?;
@@ -286,6 +294,10 @@ fn poprako_content() -> &'static str {
 }
 
 // Builds a deterministic large payload reused by export benchmarks.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn export_input() -> LabelPlusExportInput {
     //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
@@ -338,6 +350,10 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
 }
 
 // Builds one deterministic page unit used by both archive and export fixtures.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn unit_info(
     page_id: &str,
     chapter_index: usize,

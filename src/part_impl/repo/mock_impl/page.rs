@@ -94,7 +94,7 @@ fn list_unit_diff_stats(
         .into_iter()
         .map(|page_info| {
             //
-            let mut stats = PageUnitDiffStats {
+            let mut unit_diff_stats = PageUnitDiffStats {
                 page_id: page_info.id,
                 index: page_info.index,
                 translated_unit_count: 0,
@@ -104,7 +104,7 @@ fn list_unit_diff_stats(
 
             for unit_info in state.units.iter().filter(|unit_info| {
                 //
-                unit_info.page_id == stats.page_id
+                unit_info.page_id == unit_diff_stats.page_id
                     && unit_info.hidden_at.is_none()
             }) {
                 //
@@ -114,25 +114,26 @@ fn list_unit_diff_stats(
                 let has_revision =
                     has_unit_text(unit_info.proofread_text.as_deref());
 
-                stats.translated_unit_count += usize::from(has_translation);
+                unit_diff_stats.translated_unit_count +=
+                    usize::from(has_translation);
 
-                stats.editted_unit_count += usize::from(
+                unit_diff_stats.editted_unit_count += usize::from(
                     has_translation
                         && has_revision
                         && unit_info.translated_text
                             != unit_info.proofread_text,
                 );
 
-                stats.proofreader_append_unit_count +=
+                unit_diff_stats.proofreader_append_unit_count +=
                     usize::from(!has_translation && has_revision);
             }
 
-            stats
+            unit_diff_stats
         })
-        .filter(|stats| {
+        .filter(|unit_diff_stats| {
             //
-            stats.editted_unit_count > 0
-                || stats.proofreader_append_unit_count > 0
+            unit_diff_stats.editted_unit_count > 0
+                || unit_diff_stats.proofreader_append_unit_count > 0
         })
         .collect();
 

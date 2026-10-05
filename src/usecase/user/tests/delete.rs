@@ -73,7 +73,7 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
             .all(|member_info| member_info.user_id != "user-1")
     );
 
-    assert!(snapshot.objs["user_avatar"].is_empty());
+    assert!(snapshot.objs.get("user_avatar").unwrap().is_empty());
 
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(task, ObjTask::Delete { key } if key.id == "user-1" && key.ver == 2)
@@ -136,7 +136,7 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -148,7 +148,13 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
 
     assert!(snapshot.obj_tasks.is_empty());
 
-    assert!(snapshot.objs["user_avatar"].contains_key("user-1"));
+    assert!(
+        snapshot
+            .objs
+            .get("user_avatar")
+            .unwrap()
+            .contains_key("user-1")
+    );
 }
 
 #[tokio::test]
@@ -190,7 +196,7 @@ async fn delete_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -213,7 +219,7 @@ async fn delete_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().users.is_empty());
 }

@@ -77,6 +77,10 @@ impl BaseError {
 pub type BaseRest<T> = Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Application success constructors preserve the shared BaseRest contract"
+)]
 pub const fn accept<T>(v: T) -> BaseRest<T> {
     Ok(v)
 }

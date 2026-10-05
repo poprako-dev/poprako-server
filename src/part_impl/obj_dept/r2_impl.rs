@@ -56,6 +56,10 @@ impl R2ObjDeptPool {
     ///
     /// Returns an error when required settings are missing or the client
     /// cannot be constructed.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -282,6 +286,10 @@ fn parse_public_url(url_string: &str) -> ObjDeptRest<Url> {
 }
 
 // Builds a URL under the configured public object domain.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     //
     if domain.is_empty() {
@@ -304,6 +312,10 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
 }
 
 // Builds one Cloudflare image-transformation URL.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
     //
     let path = format!(

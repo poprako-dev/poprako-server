@@ -1,4 +1,7 @@
-#![allow(clippy::option_if_let_else)]
+#![allow(
+    clippy::option_if_let_else,
+    reason = "Generic serialization and schema derives emit this lint on non-Option fields"
+)]
 // FIXME: This module-level allow is needed because Clippy reports
 // `option_if_let_else` inside the generated `Serialize` implementation for
 // `HttpBody<T>`, at the ordinary generic `data: T` field. `T` is not an
@@ -286,7 +289,10 @@ pub type HttpNoContent = Result<NoContent, HttpError>;
 /// Converts a usecase value into a valued [`HttpResult`] with the given status.
 /// NOTE: accept is not only used for return a successful `Ok`, but also
 /// provide type infos in type inferences, so it is necessary.
-#[allow(clippy::unnecessary_wraps)]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "HTTP success constructors preserve the shared handler Result type and type inference"
+)]
 pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
 where
     T: Serialize,
@@ -317,6 +323,10 @@ where
 }
 
 /// Returns a `204 No Content` result with an empty body.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Success constructors preserve the shared HTTP handler Result contract"
+)]
 pub fn no_content() -> Result<NoContent, HttpError> {
     Ok(NoContent::new())
 }

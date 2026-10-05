@@ -11,7 +11,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
 };
 
 /// Persisted state affected by creating a Comic or Chapter in one Workset.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CreationSnapshot {
     workset: (i32, i32, OffsetDateTime),
 

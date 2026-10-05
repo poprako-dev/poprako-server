@@ -116,7 +116,10 @@ impl<'a> UnitEditSequencePlan<'a> {
 
         validate_visible_count(visible_count)?;
 
-        let (_ordered_ids, next_ids) = sequence.finish()?;
+        let (ordered_ids, next_ids) = sequence.finish()?;
+
+        #[cfg(not(test))]
+        let _ = ordered_ids;
 
         let mut changed_successors = Vec::new();
 
@@ -140,7 +143,7 @@ impl<'a> UnitEditSequencePlan<'a> {
 
         accept(Self {
             #[cfg(test)]
-            ordered_ids: _ordered_ids,
+            ordered_ids,
             next_ids,
             changed_successors,
             #[cfg(test)]

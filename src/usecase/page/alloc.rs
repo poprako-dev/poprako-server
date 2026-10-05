@@ -264,6 +264,10 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
 }
 
 // Validates the caller and current chapter state.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn ensure_alloc_perm<C, R>(
     repo: &R,
     token: &UserToken,

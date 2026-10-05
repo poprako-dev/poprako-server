@@ -91,6 +91,10 @@ impl<const N: u32> utoipa::PartialSchema for ListLimit<N> {
 #[cfg(feature = "swagger")]
 impl<const N: u32> utoipa::ToSchema for ListLimit<N> {
     // Name the OpenAPI schema with its compile-time limit.
+    #[expect(
+        clippy::uninlined_format_args,
+        reason = "Repository formatting keeps interpolation arguments explicit"
+    )]
     fn name() -> std::borrow::Cow<'static, str> {
         std::borrow::Cow::Owned(format!("ListLimit{}", N))
     }

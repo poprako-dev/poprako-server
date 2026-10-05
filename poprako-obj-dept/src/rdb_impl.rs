@@ -45,6 +45,10 @@ pub struct ObjRdbWrite<'a> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn decode_row<K>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
 where
     K: KeyMap<Img = String>,
@@ -87,6 +91,10 @@ where
 /// # Errors
 ///
 /// Returns an unrecoverable error for an invalid row or ver overflow.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
     //
     let ver = match row {
@@ -125,6 +133,10 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn active_key<K>(
     id: &str,
     row: Option<&ObjRdbRow>,
@@ -208,6 +220,10 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
 
 /// Maps an RDB pool failure already traced by its production adapter.
 #[must_use]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn rdb_err(source: RdbError) -> ObjDeptError {
     //
     match source {
@@ -227,6 +243,10 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
 }
 
 // Validates a stored physical key against its relational metadata.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn validate_key<K>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
 where
     K: KeyMap<Img = String>,

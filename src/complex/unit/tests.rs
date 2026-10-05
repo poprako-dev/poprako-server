@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 use crate::complex::unit as unit_complex;
 
@@ -113,7 +118,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
     assert_eq!(edits.len(), 1);
 
     assert!(matches!(
-        &edits[0],
+        edits.first().unwrap(),
         UnitEdit::Save {
             next_id: Patch::Clear,
             is_bubble: Some(false),
@@ -137,7 +142,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
         )],
     );
 
-    assert_args(self_anchor.unwrap_err());
+    assert_args(&self_anchor.unwrap_err());
 
     let unknown = unit_complex::normalize_edits(
         &["a"],
@@ -146,7 +151,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
         }],
     );
 
-    assert_args(unknown.unwrap_err());
+    assert_args(&unknown.unwrap_err());
 }
 
 #[test]
@@ -159,17 +164,21 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
     .unwrap();
 
     assert!(matches!(
-        &edits[0],
+        edits.first().unwrap(),
         UnitEdit::Create { id, .. } if id == "a"
     ));
 
     assert!(matches!(
-        &edits[1],
+        edits.get(1).unwrap(),
         UnitEdit::Save { id, .. } if id == "a"
     ));
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn edit_sequence_plan_combines_create_restore_delete_and_moves() {
     //
     let orders = vec![
@@ -187,9 +196,7 @@ fn edit_sequence_plan_combines_create_restore_delete_and_moves() {
     ];
 
     let Ok(plan) = unit_complex::plan_edit_sequence(&orders, &edits) else {
-        assert!(false, "valid Unit edits must produce a sequence plan");
-
-        return;
+        panic!("valid Unit edits must produce a sequence plan");
     };
 
     assert_eq!(plan.ordered_ids(), &["a", "d", "c", "b"]);
@@ -211,6 +218,10 @@ fn edit_sequence_plan_combines_create_restore_delete_and_moves() {
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn edit_sequence_plan_handles_a_long_tombstone_chain_linearly() {
     //
     let ids = (0..600)
@@ -228,15 +239,11 @@ fn edit_sequence_plan_handles_a_long_tombstone_chain_linearly() {
         .collect::<Vec<_>>();
 
     let Some(last_id) = ids.last() else {
-        assert!(false, "the fixture must contain a last Unit");
-
-        return;
+        panic!("the fixture must contain a last Unit");
     };
 
     let Some(first_id) = ids.first() else {
-        assert!(false, "the fixture must contain a first Unit");
-
-        return;
+        panic!("the fixture must contain a first Unit");
     };
 
     let edits = vec![save(
@@ -247,9 +254,7 @@ fn edit_sequence_plan_handles_a_long_tombstone_chain_linearly() {
     )];
 
     let Ok(plan) = unit_complex::plan_edit_sequence(&orders, &edits) else {
-        assert!(false, "a valid long tombstone chain must remain editable");
-
-        return;
+        panic!("a valid long tombstone chain must remain editable");
     };
 
     assert_eq!(plan.ordered_ids().first(), Some(&last_id.as_str()));
@@ -307,15 +312,21 @@ fn search_phrase_trims_unicode_and_accepts_one_character() {
         "日",
     );
 
-    assert_args(unit_complex::normalize_search_phrase("".into()).unwrap_err());
+    assert_args(
+        &unit_complex::normalize_search_phrase(String::new()).unwrap_err(),
+    );
 
     assert_args(
-        unit_complex::normalize_search_phrase(" \u{2003}\n ".into())
+        &unit_complex::normalize_search_phrase(" \u{2003}\n ".into())
             .unwrap_err(),
     );
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn transform_uses_original_text_without_target_cascading() {
     //
     let unit_info = unit("abc def", "proofread");
@@ -360,10 +371,14 @@ fn transform_rejects_overlapping_original_matches() {
     )
     .unwrap_err();
 
-    assert_args(error);
+    assert_args(&error);
 }
 
 #[test]
+#[expect(
+    clippy::panic,
+    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
+)]
 fn proofread_transform_preserves_approval_and_updates_attribution() {
     //
     let unit_info = unit("translated", "proofread old");
@@ -396,7 +411,7 @@ fn proofread_transform_preserves_approval_and_updates_attribution() {
 }
 
 // Assert that an error is an argument validation error.
-fn assert_args(error: BaseError) {
+fn assert_args(error: &BaseError) {
     assert!(matches!(
         error,
         BaseError::Expected {

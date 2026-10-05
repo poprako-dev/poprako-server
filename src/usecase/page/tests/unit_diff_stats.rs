@@ -19,8 +19,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-1-a",
         "page-1",
-        Some("translated"),
-        Some("proofread"),
+        (Some("translated"), Some("proofread")),
         false,
         false,
     ));
@@ -28,8 +27,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-1-b",
         "page-1",
-        Some("another translation"),
-        Some("another proofread"),
+        (Some("another translation"), Some("another proofread")),
         true,
         false,
     ));
@@ -37,8 +35,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-2-equal",
         "page-2",
-        Some("same"),
-        Some("same"),
+        (Some("same"), Some("same")),
         true,
         false,
     ));
@@ -46,8 +43,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-2-empty",
         "page-2",
-        None,
-        Some(" \t\r\n\u{3000}"),
+        (None, Some(" \t\r\n\u{3000}")),
         true,
         false,
     ));
@@ -55,8 +51,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-2-hidden",
         "page-2",
-        Some("translated"),
-        Some("hidden proofread"),
+        (Some("translated"), Some("hidden proofread")),
         true,
         true,
     ));
@@ -64,8 +59,7 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_order() {
     mock.seed_unit(unit_info(
         "unit-page-3",
         "page-3",
-        None,
-        Some("proofread without translation"),
+        (None, Some("proofread without translation")),
         true,
         false,
     ));
@@ -92,8 +86,7 @@ async fn list_unit_diff_stats_returns_empty_when_no_visible_diff_exists() {
     mock.seed_unit(unit_info(
         "unit-1",
         "page-1",
-        Some("same"),
-        Some("same"),
+        (Some("same"), Some("same")),
         true,
         false,
     ));
@@ -185,8 +178,7 @@ async fn list_unit_diff_stats_counts_text_states_independently_of_approval() {
         mock.seed_unit(unit_info(
             &format!("unit-{index}"),
             "page-1",
-            translation,
-            revision,
+            (translation, revision),
             index % 2 == 0,
             false,
         ));
@@ -194,8 +186,7 @@ async fn list_unit_diff_stats_counts_text_states_independently_of_approval() {
         mock.seed_unit(unit_info(
             &format!("hidden-{index}"),
             "page-1",
-            translation,
-            revision,
+            (translation, revision),
             index % 2 != 0,
             true,
         ));
@@ -210,8 +201,7 @@ async fn list_unit_diff_stats_counts_text_states_independently_of_approval() {
     mock.seed_unit(unit_info(
         "other-unit",
         "other-page",
-        Some("x"),
-        Some("y"),
+        (Some("x"), Some("y")),
         true,
         false,
     ));
@@ -222,11 +212,11 @@ async fn list_unit_diff_stats_counts_text_states_independently_of_approval() {
 
     assert_eq!(stats.len(), 1);
 
-    assert_eq!(stats[0].translated_unit_count, 7);
+    assert_eq!(stats.first().unwrap().translated_unit_count, 7);
 
-    assert_eq!(stats[0].editted_unit_count, 3);
+    assert_eq!(stats.first().unwrap().editted_unit_count, 3);
 
-    assert_eq!(stats[0].proofreader_append_unit_count, 4);
+    assert_eq!(stats.first().unwrap().proofreader_append_unit_count, 4);
 }
 
 #[tokio::test]
@@ -311,8 +301,7 @@ fn instr() -> ListPageUnitDiffStatsInstr {
 fn unit_info(
     id: &str,
     page_id: &str,
-    translated_text: Option<&str>,
-    proofread_text: Option<&str>,
+    (translated_text, proofread_text): (Option<&str>, Option<&str>),
     is_proofread: bool,
     is_hidden: bool,
 ) -> UnitInfo {
@@ -359,7 +348,7 @@ async fn flagged_stats_count_visible_units_in_page_order() {
         ("e", "page-3", true, false),
         ("f", "unrelated-page", true, false),
     ] {
-        let mut unit = unit_info(id, page_id, None, None, false, hidden);
+        let mut unit = unit_info(id, page_id, (None, None), false, hidden);
 
         unit.is_flagged = flagged;
 

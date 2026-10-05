@@ -39,6 +39,10 @@ fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
 }
 
 // Persists one actor decision through the durable-task adapter.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn persist_action<P>(
     prom: &P,
     task: &ObjDeptPromTask,
@@ -70,6 +74,10 @@ async fn wait_poll(token: &CancellationToken) -> bool {
 }
 
 // Runs typed dispatch and persists its fenced task mutation.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn run_attempt<P, H, F>(
     prom: &P,
     handler: &H,
@@ -107,6 +115,10 @@ where
 
 // Keeps the actor helper call graph in the repository's required order.
 // Claims immediately, drains visible work, and waits only when no task is available.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn run_claim_loop<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
     P: ObjDeptProm,
@@ -237,6 +249,10 @@ where
 }
 
 // Runs claim and maintenance under one cancellation supervisor.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
     P: ObjDeptProm + Clone,

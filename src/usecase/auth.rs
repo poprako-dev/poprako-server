@@ -184,6 +184,10 @@ where
     skip(repo, auth, instr),
     fields(qid = %instr.qid, password = "[REDACTED]"),
 )]
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
     instr: LoginAuthInstr,

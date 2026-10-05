@@ -1,5 +1,17 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::entity::LocalTaskEntryRow;
-use time::OffsetDateTime;
+use crate::part_impl::prom::rdb_impl::repo::{
+    ClaimPending, CompleteTask, ResetStuck,
+};
+use diesel::{ExpressionMethods as _, QueryDsl as _};
+use poprako_orchestra::{Nucl as _, OperStep as _};
+use poprako_prom::general::rdb_impl::LocalTaskStatus;
+use poprako_rdb_core::{RdbConn, RdbPooledConn};
+use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
 use super::*;
@@ -9,6 +21,69 @@ use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::result::BaseError;
 use crate::shared::test_rdb::start;
 use diesel_async::RunQueryDsl as _;
+
+// Recover stuck attempts until the shared failure budget dead-letters the task.
+async fn verify_shared_retry_budget(
+    nucl: &RdbNucl<Serial>,
+    repo: &RdbPromRepo,
+    conn: &mut RdbConn,
+    topic: &str,
+) {
+    // Recovery consumes the shared failure budget, independently of claim_token age.
+    for expected_retries in 2..=4 {
+        let attempt = nucl
+            .coord(async |context| {
+                ClaimPending::new(topic).step_on(repo, context).await
+            })
+            .await
+            .unwrap()
+            .unwrap();
+
+        let cutoff = OffsetDateTime::now_utc() - Duration::minutes(15);
+
+        diesel::update(
+            t_local_message::table
+                .filter(t_local_message::f_id.eq(attempt.id())),
+        )
+        .set(t_local_message::f_updated_at.eq(cutoff))
+        .execute(conn)
+        .await
+        .unwrap();
+
+        nucl.coord(async |context| {
+            ResetStuck::new(topic, &cutoff).step_on(repo, context).await
+        })
+        .await
+        .unwrap();
+
+        nucl.coord(async |context| {
+            CompleteTask::new(attempt.id(), attempt.claim_token())
+                .step_on(repo, context)
+                .await
+        })
+        .await
+        .unwrap();
+
+        let (status, retried_count) = t_local_message::table
+            .filter(t_local_message::f_id.eq(attempt.id()))
+            .select((
+                t_local_message::f_status,
+                t_local_message::f_retried_count,
+            ))
+            .first::<(String, i64)>(conn)
+            .await
+            .unwrap();
+
+        let expected_status = match expected_retries {
+            4 => LocalTaskStatus::Dead,
+            _ => LocalTaskStatus::Pending,
+        };
+
+        assert_eq!(status, expected_status.as_str());
+
+        assert_eq!(retried_count, expected_retries.min(3));
+    }
+}
 
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
@@ -58,11 +133,10 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 ) {
     use crate::part_impl::nucl::rdb_impl::RdbNucl;
     use crate::part_impl::prom::rdb_impl::repo::{
-        ClaimPending, CompleteTask, ResetStuck, RetryTask,
+        ClaimPending, CompleteTask, RetryTask,
     };
     use diesel::{ExpressionMethods as _, QueryDsl as _};
     use poprako_orchestra::{Nucl as _, OperStep as _};
-    use poprako_prom::general::rdb_impl::LocalTaskStatus;
     use time::Duration;
 
     let topic = "rdb-test-prom-atomic-topic";
@@ -71,27 +145,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
     test_shared::reset(&shared, prefix).await;
 
-    let mut conn = shared.get().await.unwrap();
-
-    let now = OffsetDateTime::now_utc();
-
-    let entries = ["rdb-test-prom-atomic-first", "rdb-test-prom-atomic-next"]
-        .map(|id| LocalTaskEntryRow {
-            f_id: id,
-            f_topic: topic,
-            f_status: LocalTaskStatus::Pending,
-            f_claim_token: None,
-            f_payload: serde_json::json!({}),
-            f_visible_at: now,
-            f_created_at: now,
-            f_updated_at: now,
-        });
-
-    diesel::insert_into(t_local_message::table)
-        .values(&entries)
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let (mut conn, now) = seed_atomic_tasks(&shared, topic).await;
 
     let (nucl, repo) =
         (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new());
@@ -125,7 +179,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     let later = now + Duration::minutes(5);
 
     nucl.coord(async |context| {
-        RetryTask::new(&first.id(), first.claim_token(), "retry", &later, 1)
+        RetryTask::new(first.id(), first.claim_token(), "retry", &later, 1)
             .step_on(&repo, context)
             .await
     })
@@ -143,7 +197,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     assert_eq!(next.id(), "rdb-test-prom-atomic-next");
 
     nucl.coord(async |context| {
-        CompleteTask::new(&next.id(), next.claim_token())
+        CompleteTask::new(next.id(), next.claim_token())
             .step_on(&repo, context)
             .await
     })
@@ -160,7 +214,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     assert!(rows.is_none());
 
     diesel::update(
-        t_local_message::table.filter(t_local_message::f_id.eq(&first.id())),
+        t_local_message::table.filter(t_local_message::f_id.eq(first.id())),
     )
     .set(t_local_message::f_visible_at.eq(now))
     .execute(&mut conn)
@@ -184,76 +238,15 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
         assert_eq!(attempt.retried_count(), 1);
 
         nucl.coord(async |context| {
-            RetryTask::new(
-                &attempt.id(),
-                attempt.claim_token(),
-                "wait",
-                &now,
-                0,
-            )
-            .step_on(&repo, context)
-            .await
-        })
-        .await
-        .unwrap();
-    }
-
-    // Recovery consumes the shared failure budget, independently of claim_token age.
-    for expected_retries in 2..=4 {
-        let attempt = nucl
-            .coord(async |context| {
-                ClaimPending::new(topic).step_on(&repo, context).await
-            })
-            .await
-            .unwrap()
-            .unwrap();
-
-        let cutoff = OffsetDateTime::now_utc() - Duration::minutes(15);
-
-        diesel::update(
-            t_local_message::table
-                .filter(t_local_message::f_id.eq(&attempt.id())),
-        )
-        .set(t_local_message::f_updated_at.eq(cutoff))
-        .execute(&mut conn)
-        .await
-        .unwrap();
-
-        nucl.coord(async |context| {
-            ResetStuck::new(topic, &cutoff)
+            RetryTask::new(attempt.id(), attempt.claim_token(), "wait", &now, 0)
                 .step_on(&repo, context)
                 .await
         })
         .await
         .unwrap();
-
-        nucl.coord(async |context| {
-            CompleteTask::new(&attempt.id(), attempt.claim_token())
-                .step_on(&repo, context)
-                .await
-        })
-        .await
-        .unwrap();
-
-        let (status, retried_count) = t_local_message::table
-            .filter(t_local_message::f_id.eq(&attempt.id()))
-            .select((
-                t_local_message::f_status,
-                t_local_message::f_retried_count,
-            ))
-            .first::<(String, i64)>(&mut conn)
-            .await
-            .unwrap();
-
-        let expected_status = match expected_retries {
-            4 => LocalTaskStatus::Dead,
-            _ => LocalTaskStatus::Pending,
-        };
-
-        assert_eq!(status, expected_status.as_str());
-
-        assert_eq!(retried_count, expected_retries.min(3));
     }
+
+    verify_shared_retry_budget(&nucl, &repo, &mut conn, topic).await;
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }
@@ -352,9 +345,12 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     assert_eq!(processing_tokens.len(), 1);
 
     nucl.coord(async |context| {
-        CompleteTask::new(entry.f_id, processing_tokens[0].unwrap())
-            .step_on(&repo, context)
-            .await
+        CompleteTask::new(
+            entry.f_id,
+            processing_tokens.as_slice().first().unwrap().unwrap(),
+        )
+        .step_on(&repo, context)
+        .await
     })
     .await
     .unwrap();
@@ -432,7 +428,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
             nucl.coord(async |context| {
                 RetryTask::new(
-                    &attempt.id(),
+                    attempt.id(),
                     attempt.claim_token(),
                     "wait",
                     &later,
@@ -460,4 +456,33 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
     assert!(rows.is_none());
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
+}
+
+async fn seed_atomic_tasks(
+    shared: &poprako_rdb_core::RdbCore,
+    topic: &'static str,
+) -> (RdbPooledConn, OffsetDateTime) {
+    let mut conn = shared.get().await.unwrap();
+
+    let now = OffsetDateTime::now_utc();
+
+    let entries = ["rdb-test-prom-atomic-first", "rdb-test-prom-atomic-next"]
+        .map(|id| LocalTaskEntryRow {
+            f_id: id,
+            f_topic: topic,
+            f_status: LocalTaskStatus::Pending,
+            f_claim_token: None,
+            f_payload: serde_json::json!({}),
+            f_visible_at: now,
+            f_created_at: now,
+            f_updated_at: now,
+        });
+
+    diesel::insert_into(t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    (conn, now)
 }

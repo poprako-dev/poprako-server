@@ -1,4 +1,7 @@
-#![allow(clippy::ref_option_ref)]
+#![allow(
+    clippy::ref_option_ref,
+    reason = "Diesel AsChangeset derives borrow nullable fields without changing their three-state update semantics"
+)]
 
 //! Diesel entity types for the `t_comic` table.
 //!

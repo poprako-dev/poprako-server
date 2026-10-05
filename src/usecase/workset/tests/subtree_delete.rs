@@ -89,7 +89,13 @@ async fn comic_sweep_rolls_back_the_whole_claim_on_object_failure() {
     assert_eq!(snapshot.comics.len(), 1);
     assert!(snapshot.deleted_comic_ids.contains("comic-1"));
     assert!(snapshot.obj_tasks.is_empty());
-    assert!(snapshot.objs["comic_cover"].contains_key("comic-1"));
+    assert!(
+        snapshot
+            .objs
+            .get("comic_cover")
+            .unwrap()
+            .contains_key("comic-1")
+    );
 }
 
 #[tokio::test]

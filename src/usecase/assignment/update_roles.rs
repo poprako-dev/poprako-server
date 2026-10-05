@@ -106,6 +106,10 @@ where
 }
 
 // Persist an existing assignment role change and its workflow record.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn update_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -152,6 +156,10 @@ where
 }
 
 // Create an assignment and record its creation in the chapter workflow.
+#[expect(
+    clippy::future_not_send,
+    reason = "This locally awaited generic interface does not require its future to be Send"
+)]
 async fn create_assignment<C, R>(
     repo: &R,
     context: &mut C,

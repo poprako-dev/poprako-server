@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use time::OffsetDateTime;
@@ -72,7 +77,7 @@ async fn mark_self_online_adds_member_to_team_list() {
 
     let snapshot = mock.snapshot();
 
-    let last_active_at = snapshot.users[0].last_active_at;
+    let last_active_at = snapshot.users.first().unwrap().last_active_at;
 
     assert!(last_active_at > OffsetDateTime::UNIX_EPOCH);
 
@@ -108,10 +113,10 @@ async fn mark_self_online_rejects_non_member() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     assert_eq!(
-        mock.snapshot().users[0].last_active_at,
+        mock.snapshot().users.first().unwrap().last_active_at,
         OffsetDateTime::UNIX_EPOCH
     );
 }
@@ -129,7 +134,7 @@ async fn list_online_user_ids_rejects_non_member() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -144,7 +149,7 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let online_user_ids =
         list_online_user_ids((&mock,), token("missing-user"), "team-1".into())
@@ -154,7 +159,7 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
     assert!(online_user_ids.is_empty());
 
     assert_eq!(
-        mock.snapshot().members[0].user_last_active_at,
+        mock.snapshot().members.first().unwrap().user_last_active_at,
         OffsetDateTime::UNIX_EPOCH
     );
 }

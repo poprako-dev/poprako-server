@@ -153,6 +153,6 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
     .unwrap();
 
     assert_eq!(list.comics.len(), 1);
-    assert!(list.comics[0].cover_url.is_none());
-    assert!(list.comics[0].cover_thumbnail_url.is_none());
+    assert!(list.comics.first().unwrap().cover_url.is_none());
+    assert!(list.comics.first().unwrap().cover_thumbnail_url.is_none());
 }

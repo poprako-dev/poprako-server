@@ -284,10 +284,11 @@ impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
 
         let page_info = fallback_page_info();
 
-        match oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
-            true => accept(vec![page_info]),
-            false => accept(Vec::new()),
+        if !oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
+            return accept(Vec::new());
         }
+
+        accept(vec![page_info])
     }
 }
 

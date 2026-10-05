@@ -160,21 +160,21 @@ async fn mixed_manifest_preserves_order_counts_and_object_obligations() {
 
     assert_eq!(reserved.pages.len(), 3);
 
-    assert_eq!(reserved.pages[0].page_id, "page-b");
+    assert_eq!(reserved.pages.first().unwrap().page_id, "page-b");
 
-    assert_eq!(reserved.pages[0].index, 0);
+    assert_eq!(reserved.pages.first().unwrap().index, 0);
 
-    assert!(reserved.pages[0].slot.is_none());
+    assert!(reserved.pages.first().unwrap().slot.is_none());
 
-    assert_eq!(reserved.pages[1].index, 1);
+    assert_eq!(reserved.pages.get(1).unwrap().index, 1);
 
-    assert!(reserved.pages[1].slot.is_some());
+    assert!(reserved.pages.get(1).unwrap().slot.is_some());
 
-    assert_eq!(reserved.pages[2].page_id, "page-a");
+    assert_eq!(reserved.pages.get(2).unwrap().page_id, "page-a");
 
-    assert_eq!(reserved.pages[2].index, 2);
+    assert_eq!(reserved.pages.get(2).unwrap().index, 2);
 
-    assert!(reserved.pages[2].slot.is_some());
+    assert!(reserved.pages.get(2).unwrap().slot.is_some());
 
     let snapshot = mock.snapshot();
 
@@ -277,11 +277,11 @@ async fn unknown_retained_page_rejects_before_manifest_writes() {
 
     assert_eq!(snapshot.pages.len(), 1);
 
-    assert_eq!(snapshot.pages[0].id, "page-a");
+    assert_eq!(snapshot.pages.first().unwrap().id, "page-a");
 
-    assert_eq!(snapshot.pages[0].index, 0);
+    assert_eq!(snapshot.pages.first().unwrap().index, 0);
 
-    assert_eq!(snapshot.chapters[0].page_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().page_count, 1);
 
     assert!(snapshot.objs.is_empty());
 
@@ -365,23 +365,23 @@ async fn duplicate_page_id_is_args_error_without_side_effects() {
     .err()
     .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.pages.len(), 1);
 
-    assert_eq!(snapshot.pages[0].id, "page-a");
+    assert_eq!(snapshot.pages.first().unwrap().id, "page-a");
 
-    assert_eq!(snapshot.pages[0].index, 0);
+    assert_eq!(snapshot.pages.first().unwrap().index, 0);
 
-    assert_eq!(snapshot.pages[0].total_unit_count, 3);
+    assert_eq!(snapshot.pages.first().unwrap().total_unit_count, 3);
 
-    assert_eq!(snapshot.pages[0].translated_unit_count, 2);
+    assert_eq!(snapshot.pages.first().unwrap().translated_unit_count, 2);
 
-    assert_eq!(snapshot.pages[0].proofread_unit_count, 1);
+    assert_eq!(snapshot.pages.first().unwrap().proofread_unit_count, 1);
 
-    assert_eq!(snapshot.chapters[0].page_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().page_count, 1);
 
     assert!(snapshot.objs.is_empty());
 
@@ -424,29 +424,29 @@ async fn cross_chapter_retained_page_is_args_error_without_side_effects() {
     .err()
     .unwrap();
 
-    assert_expected_variant(error, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.pages.len(), 2);
 
-    assert_eq!(snapshot.pages[0].id, "page-a");
+    assert_eq!(snapshot.pages.first().unwrap().id, "page-a");
 
-    assert_eq!(snapshot.pages[0].index, 0);
+    assert_eq!(snapshot.pages.first().unwrap().index, 0);
 
-    assert_eq!(snapshot.pages[1].id, "page-other");
+    assert_eq!(snapshot.pages.get(1).unwrap().id, "page-other");
 
-    assert_eq!(snapshot.pages[1].index, 0);
+    assert_eq!(snapshot.pages.get(1).unwrap().index, 0);
 
-    assert_eq!(snapshot.pages[1].total_unit_count, 5);
+    assert_eq!(snapshot.pages.get(1).unwrap().total_unit_count, 5);
 
-    assert_eq!(snapshot.pages[1].translated_unit_count, 4);
+    assert_eq!(snapshot.pages.get(1).unwrap().translated_unit_count, 4);
 
-    assert_eq!(snapshot.pages[1].proofread_unit_count, 3);
+    assert_eq!(snapshot.pages.get(1).unwrap().proofread_unit_count, 3);
 
-    assert_eq!(snapshot.chapters[0].page_count, 1);
+    assert_eq!(snapshot.chapters.first().unwrap().page_count, 1);
 
-    assert_eq!(snapshot.chapters[1].page_count, 1);
+    assert_eq!(snapshot.chapters.get(1).unwrap().page_count, 1);
 
     assert!(snapshot.objs.is_empty());
 

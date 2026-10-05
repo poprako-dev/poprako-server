@@ -136,6 +136,10 @@ async fn get_info_excluded(
 
 // List termbase rows with team/comic filter and optional fuzzy name.
 #[instrument(level = "info", skip_all)]
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseListSpec,

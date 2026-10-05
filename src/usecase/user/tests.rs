@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 //! Test fixtures and cases for the user use case module.
 //!
 //! Tests exercise user profile reads, updates, avatar management, activity
@@ -75,6 +80,10 @@ fn token(user_id: &str) -> UserToken {
 }
 
 // Seeds one current user-avatar generation that is not yet available.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
@@ -146,7 +155,7 @@ async fn get_info_preserves_activity_for_self() {
     assert_eq!(val.last_active_at, 0);
 
     assert_eq!(
-        mock.snapshot().users[0].last_active_at,
+        mock.snapshot().users.first().unwrap().last_active_at,
         OffsetDateTime::UNIX_EPOCH
     );
 
@@ -180,7 +189,7 @@ async fn get_info_propagates_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -203,7 +212,12 @@ async fn mark_avatar_uploaded_optimistically_exposes_current_generation() {
 
     let snapshot = mock.snapshot();
 
-    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+    let avatar_meta = snapshot
+        .objs
+        .get("user_avatar")
+        .unwrap()
+        .get("user-1")
+        .unwrap()
         .meta
         .as_ref()
         .unwrap();
@@ -228,11 +242,16 @@ async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
-    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+    let avatar_meta = snapshot
+        .objs
+        .get("user_avatar")
+        .unwrap()
+        .get("user-1")
+        .unwrap()
         .meta
         .as_ref()
         .unwrap();
@@ -257,11 +276,16 @@ async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
-    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+    let avatar_meta = snapshot
+        .objs
+        .get("user_avatar")
+        .unwrap()
+        .get("user-1")
+        .unwrap()
         .meta
         .as_ref()
         .unwrap();
@@ -291,11 +315,11 @@ async fn update_info_updates_user_and_member_nickname() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.users[0].qid, "qid-new");
+    assert_eq!(snapshot.users.first().unwrap().qid, "qid-new");
 
-    assert_eq!(snapshot.users[0].nickname, "New");
+    assert_eq!(snapshot.users.first().unwrap().nickname, "New");
 
-    assert_eq!(snapshot.members[0].user_nickname, "New");
+    assert_eq!(snapshot.members.first().unwrap().user_nickname, "New");
 }
 
 #[tokio::test]
@@ -317,13 +341,13 @@ async fn update_info_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(&err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.users[0].qid, "qid-1");
+    assert_eq!(snapshot.users.first().unwrap().qid, "qid-1");
 
-    assert_eq!(snapshot.users[0].nickname, "Old");
+    assert_eq!(snapshot.users.first().unwrap().nickname, "Old");
 }
 
 #[tokio::test]
@@ -340,7 +364,7 @@ async fn update_info_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().users.is_empty());
 }
@@ -369,7 +393,7 @@ async fn update_password_replaces_the_verified_password() {
     assert!(
         user_complex::verify_password(
             "new-password",
-            &snapshot.credentials[0].password_hash,
+            &snapshot.credentials.first().unwrap().password_hash,
         )
         .await
     );
@@ -377,7 +401,7 @@ async fn update_password_replaces_the_verified_password() {
     assert!(
         !user_complex::verify_password(
             "old-password",
-            &snapshot.credentials[0].password_hash,
+            &snapshot.credentials.first().unwrap().password_hash,
         )
         .await
     );
@@ -403,14 +427,14 @@ async fn update_password_rejects_an_incorrect_current_password() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert_expected_variant(&err, ExpectedVariant::Auth);
 
     let snapshot = mock.snapshot();
 
     assert!(
         user_complex::verify_password(
             "old-password",
-            &snapshot.credentials[0].password_hash,
+            &snapshot.credentials.first().unwrap().password_hash,
         )
         .await
     );

@@ -14,7 +14,10 @@ async fn create_rejects_published_chapter() {
     {
         let mut state = mock.state.lock().unwrap();
 
-        state.chapters[0].stages = state.chapters[0]
+        state.chapters.get_mut(0).unwrap().stages = state
+            .chapters
+            .first()
+            .unwrap()
             .stages
             .try_set_phase(Stage::Publish, StagePhase::Completed)
             .unwrap();
@@ -53,7 +56,7 @@ async fn delete_rejects_published_chapter() {
             .err()
             .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(&err, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }

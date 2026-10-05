@@ -13,6 +13,10 @@ use crate::test_util::http_logging::LogBuffer;
 struct Unformattable;
 
 impl Debug for Unformattable {
+    #[expect(
+        clippy::panic,
+        reason = "This fault-injection fixture deliberately panics to verify recovery and isolation"
+    )]
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         panic!("private field must never be formatted")
     }

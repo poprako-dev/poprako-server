@@ -1,3 +1,9 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // member_roundtrip_uses_testcontainer(MemberRepo)(positive): member repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
 // concurrent_admin_role_removals_are_serialized(MemberRepo)(concurrency): overlapping admin removals leave one admin and surface one retryable conflict.
 
@@ -33,8 +39,71 @@ use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-domain-";
 
+// Persist both administrators before the concurrent snapshot reads begin.
+async fn create_admin_members(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    first_member_entry: &MemberEntry,
+    second_member_entry: &MemberEntry,
+) {
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateMember {
+                entry: first_member_entry,
+            },
+        )
+        .await?;
+
+        repo.step(
+            context,
+            &CreateMember {
+                entry: second_member_entry,
+            },
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .unwrap();
+}
+
+// Verify membership activity projections reflect a touched owning user.
+async fn verify_member_activity(
+    repo: &HybRepo,
+    member_id: &str,
+    user_id: &str,
+) {
+    repo.run(&UpdateUser::TouchLastActive { id: user_id })
+        .await
+        .unwrap();
+
+    let touched_user_info =
+        repo.run(&GetUserInfo { id: user_id }).await.unwrap();
+
+    let touched_member_info = repo
+        .run(&GetMemberInfo {
+            id: member_id,
+            incls: &[],
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        touched_member_info.user_last_active_at,
+        touched_user_info.last_active_at
+    );
+}
+
 /// Verifies member roundtrip via testcontainers.
-/// Verifies member roundtrip via testcontainers.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -70,37 +139,14 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
-    repo.run(&UpdateUser::TouchLastActive {
-        id: &team_fixture.user_entry.id,
-    })
-    .await
-    .ok()
-    .unwrap();
-
-    let touched_user_info = repo
-        .run(&GetUserInfo {
-            id: &team_fixture.user_entry.id,
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    let touched_member_info = repo
-        .run(&GetMemberInfo {
-            id: &member_entry.id,
-            incls: &[],
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        touched_member_info.user_last_active_at,
-        touched_user_info.last_active_at
-    );
+    verify_member_activity(
+        &repo,
+        &member_entry.id,
+        &team_fixture.user_entry.id,
+    )
+    .await;
 
     let member_list_spec = MemberListSpec::Team {
         team_id: team_fixture.team_entry.id.clone(),
@@ -116,13 +162,19 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
             spec: &member_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(member_infos.len(), 1);
 
     assert_eq!(
-        member_infos[0].user.as_ref().unwrap().id,
+        member_infos
+            .as_slice()
+            .first()
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .id,
         team_fixture.user_entry.id
     );
 
@@ -145,7 +197,6 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         Ok::<(), BaseError>(())
     })
     .await
-    .ok()
     .unwrap();
 
     let member_info = repo
@@ -154,20 +205,24 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
             incls: &[MemberInclOpt::User],
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(member_info.roles, member_role);
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 
 /// Verifies user cleanup removes memberships hidden by a team tombstone.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn user_cleanup_includes_tombstoned_team_memberships(
     shared: RdbCore,
 ) {
@@ -256,6 +311,12 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
 }
 
 /// Verifies concurrent admin removals preserve one team administrator.
+/// # Panics
+/// Panics if fixture setup fails or a scenario assertion is violated.
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -291,29 +352,13 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateMember {
-                entry: &first_member_entry,
-            },
-        )
-        .await?;
-
-        repo.step(
-            context,
-            &CreateMember {
-                entry: &second_member_entry,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .ok()
-    .unwrap();
+    create_admin_members(
+        &repo,
+        &nucl,
+        &first_member_entry,
+        &second_member_entry,
+    )
+    .await;
 
     let (ready_tx, mut ready_rx) = mpsc::channel(2);
 
@@ -385,16 +430,14 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
             spec: &member_list_spec,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(admin_member_infos.len(), 1);
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
 }
 
@@ -446,12 +489,11 @@ async fn remove_admin_role_after_read(
             .await
             .expect("test read coordinator must remain available");
 
-        let write_permit = write_permits
+        write_permits
             .acquire()
             .await
-            .expect("test write coordinator must remain available");
-
-        write_permit.forget();
+            .expect("test write coordinator must remain available")
+            .forget();
 
         let member_role_update = MemberRoleRepl {
             id: member_id,

@@ -10,6 +10,10 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::shared::user::UserToken;
 use crate::value::role::{RoleField, RoleMask};
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
@@ -106,6 +110,10 @@ pub fn token(user_id: &str) -> UserToken {
     }
 }
 
+#[expect(
+    clippy::uninlined_format_args,
+    reason = "Repository formatting keeps interpolation arguments explicit"
+)]
 pub fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),

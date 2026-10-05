@@ -1,3 +1,8 @@
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 use super::*;
 
 use axum::Router;

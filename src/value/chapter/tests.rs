@@ -1,3 +1,8 @@
+#![allow(
+    clippy::unwrap_used,
+    reason = "Test fixtures and assertions fail immediately when their invariants are violated"
+)]
+
 // validates_one_shot_phases(is_valid_stage_phase)(positive): one-shot stages accept pending and completed phases.
 // validates_three_phase_phases(is_valid_stage_phase)(positive): three-phase stages accept all phases.
 // rejects_active_one_shot_phase(is_valid_stage_phase)(negative): one-shot stages reject active phase.
@@ -57,7 +62,6 @@ fn advances_one_shot_stage() {
         (Stage::RawProvide, StagePhase::Pending),
         StageOper::Advance,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(phase, StagePhase::Completed);
@@ -70,13 +74,11 @@ fn advances_three_phase_stage() {
         (Stage::Translate, StagePhase::Pending),
         StageOper::Advance,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(phase, StagePhase::Active);
 
     let phase = try_modify_stage((Stage::Translate, phase), StageOper::Advance)
-        .ok()
         .unwrap();
 
     assert_eq!(phase, StagePhase::Completed);
@@ -89,14 +91,12 @@ fn reverts_three_phase_stage() {
         (Stage::Proofread, StagePhase::Completed),
         StageOper::Revert,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(phase, StagePhase::Active);
 
-    let phase = try_modify_stage((Stage::Proofread, phase), StageOper::Revert)
-        .ok()
-        .unwrap();
+    let phase =
+        try_modify_stage((Stage::Proofread, phase), StageOper::Revert).unwrap();
 
     assert_eq!(phase, StagePhase::Pending);
 }
@@ -108,7 +108,6 @@ fn accepts_pending_revert_noop() {
         (Stage::TypesetRedraw, StagePhase::Pending),
         StageOper::Revert,
     )
-    .ok()
     .unwrap();
 
     assert_eq!(phase, StagePhase::Pending);
@@ -163,9 +162,7 @@ fn accepts_ignore_filter_mask() {
     //
     let ignore_translate_mask = 0b11 << 2;
 
-    let mask = StageMask::try_filter_from(ignore_translate_mask)
-        .ok()
-        .unwrap();
+    let mask = StageMask::try_filter_from(ignore_translate_mask).unwrap();
 
     assert!(mask.ignores_stage(Stage::Translate));
 }
@@ -183,7 +180,7 @@ fn rejects_active_one_shot_filter_mask() {
 #[test]
 fn rejects_invalid_set_phase() {
     //
-    let mask = StageMask::try_from(0u32).ok().unwrap();
+    let mask = StageMask::try_from(0u32).unwrap();
 
     let err = mask.try_set_phase(Stage::Publish, StagePhase::Active).err();
 
