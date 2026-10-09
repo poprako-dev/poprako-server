@@ -182,7 +182,7 @@ pub struct ArchivedIssuePayload<'a> {
     /// Owning Page identity.
     pub page_id: &'a str,
     /// Zero-based position within the Page.
-    pub index: i32,
+    pub index: usize,
 
     /// Open category.
     pub variant: &'a str,

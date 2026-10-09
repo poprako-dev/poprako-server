@@ -36,7 +36,7 @@ use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::test_rdb::start;
 
-fn entry(id: &str, page_id: &str, index: i32) -> IssueEntry {
+fn entry(id: &str, page_id: &str, index: usize) -> IssueEntry {
     IssueEntry {
         id: id.into(),
         page_id: page_id.into(),
@@ -108,7 +108,8 @@ async fn verify_storage_validation_boundary(shared: &RdbCore, page_id: &str) {
         "blank-variant",
         "blank-layer",
     ] {
-        let mut row = IssueRow::from(&entry("review-invalid", page_id, 3));
+        let mut row =
+            IssueRow::try_from(&entry("review-invalid", page_id, 3)).unwrap();
 
         match variant {
             "partial" => row.f_height = None,
@@ -326,6 +327,22 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
             .await
             .is_err()
     );
+
+    assert_eq!(
+        ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),
+        baseline
+    );
+
+    let invalid_entries = vec![entry(
+        "review-overflow",
+        page_id,
+        usize::try_from(i32::MAX).unwrap() + 1,
+    )];
+
+    assert!(matches!(
+        replace(&repo, &nucl, chapter_id, &invalid_entries).await,
+        Err(BaseError::Unrecoverable { .. })
+    ));
 
     assert_eq!(
         ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),

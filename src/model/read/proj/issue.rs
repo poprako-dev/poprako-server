@@ -11,7 +11,7 @@ pub struct IssueInfo {
     /// Owning Page identity.
     pub page_id: String,
     /// Zero-based position within this Page.
-    pub index: i32,
+    pub index: usize,
 
     /// Open, nonblank issue category.
     pub variant: String,

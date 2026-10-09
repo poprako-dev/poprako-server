@@ -1,10 +1,16 @@
 //! Typed Diesel rows for current review issues.
 
+#[cfg(test)]
+mod tests;
+
 use diesel::{Insertable, Queryable, Selectable};
 
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue::IssueEntry;
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::result::{BaseError, BaseRest, accept};
 
@@ -27,12 +33,15 @@ pub struct IssueRow {
     pub f_note: String,
 }
 
-impl From<&IssueEntry> for IssueRow {
-    fn from(entry: &IssueEntry) -> Self {
-        Self {
+impl TryFrom<&IssueEntry> for IssueRow {
+    type Error = BaseError;
+
+    fn try_from(entry: &IssueEntry) -> BaseRest<Self> {
+        //
+        accept(Self {
             f_id: entry.id.clone(),
             f_page_id: entry.page_id.clone(),
-            f_index: entry.index,
+            f_index: i32_from_usize(entry.index, "t_issue.f_index")?,
             f_variant: entry.variant.clone(),
             f_layer_path: entry.layer_path.clone(),
             f_x_coord: entry.rect.map(|rect| rect.x_coord),
@@ -40,7 +49,7 @@ impl From<&IssueEntry> for IssueRow {
             f_width: entry.rect.map(|rect| rect.width),
             f_height: entry.rect.map(|rect| rect.height),
             f_note: entry.note.clone(),
-        }
+        })
     }
 }
 
@@ -75,7 +84,7 @@ impl TryFrom<IssueRow> for IssueInfo {
         accept(Self {
             id: row.f_id,
             page_id: row.f_page_id,
-            index: row.f_index,
+            index: usize_from_i32(row.f_index, "t_issue.f_index")?,
             variant: row.f_variant,
             layer_path: row.f_layer_path,
             rect,

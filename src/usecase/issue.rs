@@ -92,14 +92,6 @@ where
                 for (index, issue_instr) in
                     page_instr.issues.into_iter().enumerate()
                 {
-                    let index = i32::try_from(index).map_err(|_| {
-                        //
-                        issue_complex::error(
-                            ExpectedVariant::Args,
-                            "error-issue-input",
-                        )
-                    })?;
-
                     let issue_entry = IssueEntry {
                         id: next_snowflake_id(),
                         page_id: page_info.id.clone(),

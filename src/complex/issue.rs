@@ -64,10 +64,6 @@ pub fn ensure_import(
 
     for page_instr in &instr.pages {
         //
-        if i32::try_from(page_instr.issues.len()).is_err() {
-            return Err(error(ExpectedVariant::Args, "error-issue-input"));
-        }
-
         for issue_instr in &page_instr.issues {
             //
             if issue_instr.variant.trim().is_empty()

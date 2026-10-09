@@ -10,7 +10,7 @@ pub struct IssueEntry {
     /// Page resolved from the chapter's ordered manifest.
     pub page_id: String,
     /// Contiguous zero-based position within the Page.
-    pub index: i32,
+    pub index: usize,
 
     /// Open issue category.
     pub variant: String,

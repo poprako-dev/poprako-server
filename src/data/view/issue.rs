@@ -44,7 +44,7 @@ pub struct IssueInfoView {
     /// Owning Page identity.
     pub page_id: String,
     /// Zero-based position within the Page.
-    pub index: i32,
+    pub index: usize,
 
     /// Open category.
     pub variant: String,

@@ -70,7 +70,10 @@ async fn replace(
 
     for entries in repl.entries.chunks(2000) {
         //
-        let rows = entries.iter().map(IssueRow::from).collect::<Vec<_>>();
+        let rows = entries
+            .iter()
+            .map(IssueRow::try_from)
+            .collect::<BaseRest<Vec<_>>>()?;
 
         diesel::insert_into(t_issue::table)
             .values(&rows)

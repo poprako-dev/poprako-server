@@ -9021,8 +9021,8 @@
                 },
                 "index": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Zero-based position within the Page."
+                  "description": "Zero-based position within the Page.",
+                  "minimum": 0
                 },
                 "layer_path": {
                   "type": [
@@ -10239,8 +10239,8 @@
           },
           "index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Zero-based position within the Page."
+            "description": "Zero-based position within the Page.",
+            "minimum": 0
           },
           "layer_path": {
             "type": [
