@@ -26,5 +26,7 @@ CREATE TABLE IF NOT EXISTS "t_chapter" (
 
     "f_deleted_at"                 TIMESTAMPTZ,
     "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    "f_confirmed_artwork_version"   BIGINT CHECK ("f_confirmed_artwork_version" BETWEEN 0 AND 4294967295)
 );

@@ -913,6 +913,54 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/issues/import": {
+      "post": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "Replaces the Chapter's single current review without advancing workflow.",
+        "operationId": "import",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportChapterIssuesInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Current review replaced completely",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterIssuesVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current REVIEWER assignment required; administrator status alone does not authorize import"
+          },
+          "422": {
+            "description": "Missing Chapter, published Chapter, mismatched Page count, or invalid issue input"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/mark-pinned": {
       "post": {
         "tags": [
@@ -2595,6 +2643,44 @@
           },
           "422": {
             "description": "Page, image identity, storage object, or published chapter is invalid"
+          }
+        }
+      }
+    },
+    "/api/v1/pages/{page_id}/issues": {
+      "get": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "Reads the Page's issues in ascending index order; an empty review returns [].",
+        "operationId": "list_infos",
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "description": "Page ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered current Page issues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_IssueInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership or chapter assignment required"
+          },
+          "422": {
+            "description": "Page or owning Chapter not found"
           }
         }
       }
@@ -7485,6 +7571,43 @@
           }
         }
       },
+      "HttpBody_ImportChapterIssuesVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Counts for the complete chapter import, including empty Pages.",
+            "required": [
+              "imported_page_count",
+              "imported_issue_count"
+            ],
+            "properties": {
+              "imported_issue_count": {
+                "type": "integer",
+                "description": "Number of newly inserted issues.",
+                "minimum": 0
+              },
+              "imported_page_count": {
+                "type": "integer",
+                "description": "Number of mapped Pages.",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
       "HttpBody_ImportChapterTranslationVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -8864,6 +8987,78 @@
           }
         }
       },
+      "HttpBody_Vec_IssueInfoView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Read-only issue in the chapter's single current review.",
+              "required": [
+                "id",
+                "page_id",
+                "index",
+                "variant",
+                "note"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Server-generated identity."
+                },
+                "index": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Zero-based position within the Page."
+                },
+                "layer_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional opaque layer path."
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Original note text."
+                },
+                "page_id": {
+                  "type": "string",
+                  "description": "Owning Page identity."
+                },
+                "rect": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IssueRectView",
+                      "description": "Optional whole-page rectangle."
+                    }
+                  ]
+                },
+                "variant": {
+                  "type": "string",
+                  "description": "Open category."
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_MemberInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -9862,6 +10057,42 @@
           }
         }
       },
+      "ImportChapterIssuesInstr": {
+        "type": "object",
+        "description": "Replaces the single current review for a Chapter in current Page order.",
+        "required": [
+          "pages"
+        ],
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageIssuesInstr"
+            },
+            "description": "Exactly one item per current Page, including Pages without issues."
+          }
+        }
+      },
+      "ImportChapterIssuesVal": {
+        "type": "object",
+        "description": "Counts for the complete chapter import, including empty Pages.",
+        "required": [
+          "imported_page_count",
+          "imported_issue_count"
+        ],
+        "properties": {
+          "imported_issue_count": {
+            "type": "integer",
+            "description": "Number of newly inserted issues.",
+            "minimum": 0
+          },
+          "imported_page_count": {
+            "type": "integer",
+            "description": "Number of mapped Pages.",
+            "minimum": 0
+          }
+        }
+      },
       "ImportChapterTranslationInstr": {
         "type": "object",
         "description": "Request body for importing chapter translations.",
@@ -9988,6 +10219,158 @@
             "type": "integer",
             "description": "Number of existing terminology entries merged.",
             "minimum": 0
+          }
+        }
+      },
+      "IssueInfoView": {
+        "type": "object",
+        "description": "Read-only issue in the chapter's single current review.",
+        "required": [
+          "id",
+          "page_id",
+          "index",
+          "variant",
+          "note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Server-generated identity."
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Zero-based position within the Page."
+          },
+          "layer_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional opaque layer path."
+          },
+          "note": {
+            "type": "string",
+            "description": "Original note text."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Owning Page identity."
+          },
+          "rect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IssueRectView",
+                "description": "Optional whole-page rectangle."
+              }
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "description": "Open category."
+          }
+        }
+      },
+      "IssueInstr": {
+        "type": "object",
+        "description": "One issue in a complete chapter import.",
+        "required": [
+          "variant",
+          "note"
+        ],
+        "properties": {
+          "layer_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional opaque nonblank layer path."
+          },
+          "note": {
+            "type": "string",
+            "description": "Original text, preserved verbatim including empty strings and newlines."
+          },
+          "rect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IssueRectInstr",
+                "description": "Optional normalized whole-page rectangle, independent of layer selection."
+              }
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "description": "Open category, required to contain non-whitespace text."
+          }
+        }
+      },
+      "IssueRectInstr": {
+        "type": "object",
+        "description": "A finite rectangle contained within the normalized whole Page.",
+        "required": [
+          "x_coord",
+          "y_coord",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "height": {
+            "type": "number",
+            "format": "double",
+            "description": "Positive height, with the bottom edge at most 1."
+          },
+          "width": {
+            "type": "number",
+            "format": "double",
+            "description": "Positive width, with the right edge at most 1."
+          },
+          "x_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Left edge, in [0, 1]."
+          },
+          "y_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Top edge, in [0, 1]."
+          }
+        }
+      },
+      "IssueRectView": {
+        "type": "object",
+        "description": "Geometry in normalized whole-page coordinates.",
+        "required": [
+          "x_coord",
+          "y_coord",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "height": {
+            "type": "number",
+            "format": "double",
+            "description": "Height."
+          },
+          "width": {
+            "type": "number",
+            "format": "double",
+            "description": "Width."
+          },
+          "x_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Left edge."
+          },
+          "y_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Top edge."
           }
         }
       },
@@ -10588,6 +10971,22 @@
             "type": "integer",
             "format": "int64",
             "description": "Timestamp of last update, in Unix milliseconds."
+          }
+        }
+      },
+      "PageIssuesInstr": {
+        "type": "object",
+        "description": "Issues for one position in the chapter's current Page manifest.",
+        "required": [
+          "issues"
+        ],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueInstr"
+            },
+            "description": "Array order determines the zero-based issue index."
           }
         }
       },

@@ -34,8 +34,8 @@ use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordD
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload,
     ArchivedChapterWorkflowRecordPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
-    ArchivedWorksetPayload,
+    ArchivedIssuePayload, ArchivedIssueRectPayload, ArchivedPagePayload,
+    ArchivedUnitPayload, ArchivedUserPayload, ArchivedWorksetPayload,
 };
 
 /// Rejects archive attempts until every retained chapter has published.
@@ -258,6 +258,24 @@ fn build_page_payloads(
                 proofread_unit_count: page_info.proofread_unit_count,
                 created_at: page_info.created_at.to_unix_milli(),
                 updated_at: page_info.updated_at.to_unix_milli(),
+                issues: page_snapshot
+                    .issue_infos
+                    .iter()
+                    .map(|issue| ArchivedIssuePayload {
+                        id: &issue.id,
+                        page_id: &issue.page_id,
+                        index: issue.index,
+                        variant: &issue.variant,
+                        layer_path: issue.layer_path.as_deref(),
+                        rect: issue.rect.map(|rect| ArchivedIssueRectPayload {
+                            x_coord: rect.x_coord,
+                            y_coord: rect.y_coord,
+                            width: rect.width,
+                            height: rect.height,
+                        }),
+                        note: &issue.note,
+                    })
+                    .collect(),
                 units: page_snapshot
                     .unit_infos
                     .iter()

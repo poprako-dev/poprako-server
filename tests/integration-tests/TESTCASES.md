@@ -100,3 +100,18 @@ API document together.
 - AW5: comic archival and ancestor deletion retire artwork and record durable deletion tasks.
 
 The main runner now includes it_13. Final database cleanup also deletes `t_chapter_artwork` rows.
+
+## it_14 — 整章监稿导入与只读查询
+
+一个 Chapter 逻辑上最多一份当前监稿；Page 下的 Issue 是这份监稿的明细。
+
+| ID  | 场景           | 断言                                                                                                     |
+| --- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| IS1 | 权限与空页读取 | 管理员无 REVIEWER 分配导入 403；团队成员可读空数组；普通成员导入 403                                     |
+| IS2 | 整章导入       | 当前页序映射、连续索引、自定义类型、图层与矩形的四种组合、多行及空备注                                   |
+| IS3 | 输入拒绝       | 页数不一致、空白类型/路径、越界/非正矩形返回 422，原监稿完整保留                                         |
+| IS4 | 替换和清空     | 整章替换重新生成 ID；每页空 issues 清空唯一当前监稿                                                      |
+| IS5 | 成稿确认       | 分配不清空；新版本确认清空；同版本重试保留后来导入内容；过期确认失败不清空；阶段已完成时新版本确认仍清空 |
+| IS6 | 发布与级联     | 已发布章节拒绝导入并保留监稿；Page 删除清理所属 Issue                                                    |
+
+Rust RDB 测试补充数据库约束、批量插入、替换失败回滚、并发批次隔离和归档快照；Mock 用例覆盖相同业务权限、替换和清理规则。

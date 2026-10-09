@@ -25,6 +25,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment Diesel entity types.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member Diesel entity types.
 pub mod member;
 /// Member invitation Diesel entity types.

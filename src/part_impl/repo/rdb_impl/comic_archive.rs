@@ -4,6 +4,8 @@
 mod commit;
 // Permanent archive payload query.
 mod payload;
+// Ordered Page, Unit and current review snapshot loading and assembly.
+mod pages;
 
 /// Comic archive RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -23,12 +25,13 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
+use crate::model::read::proj::issue::IssueInfo;
 use crate::part::nucl::ReptRead;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot};
+use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchiveSnapshot};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -39,8 +42,6 @@ use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::ChapterWorkflowRecordInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
@@ -48,93 +49,11 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_c
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, f_created_at as workflow_record_created_at, f_id as workflow_record_id, t_chapter_workflow_record};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index, t_page};
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
-
-// Standardize chain-corruption failures for unit graph validation.
-fn corrupt_unit_chain_err() -> BaseError {
-    BaseError::Unrecoverable {
-        msg: "persisted Unit chain is corrupt".to_string(),
-    }
-}
-
-// Reorder chained unit infos by next_id links and return only visible units.
-fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
-    //
-    if unit_infos.is_empty() {
-        return accept(Vec::new());
-    }
-
-    let mut infos_by_id = unit_infos
-        .into_iter()
-        .map(|unit_info| (unit_info.id.clone(), unit_info))
-        .collect::<HashMap<_, _>>();
-
-    let mut predecessor_counts = infos_by_id
-        .keys()
-        .map(|id| (id.clone(), 0_usize))
-        .collect::<HashMap<_, _>>();
-
-    for unit_info in infos_by_id.values() {
-        //
-        let Some(next_id) = unit_info.next_id.as_ref() else {
-            continue;
-        };
-
-        if next_id == &unit_info.id {
-            return Err(corrupt_unit_chain_err());
-        }
-
-        let Some(predecessor_count) = predecessor_counts.get_mut(next_id)
-        else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        *predecessor_count += 1;
-
-        if *predecessor_count > 1 {
-            return Err(corrupt_unit_chain_err());
-        }
-    }
-
-    let head_ids = predecessor_counts
-        .iter()
-        .filter_map(|(id, count)| (*count == 0).then_some(id.as_str()))
-        .collect::<Vec<_>>();
-
-    let [head_id] = head_ids.as_slice() else {
-        return Err(corrupt_unit_chain_err());
-    };
-
-    let (mut current_id, mut visible_infos) = (
-        Some((*head_id).to_string()),
-        Vec::with_capacity(infos_by_id.len()),
-    );
-
-    while let Some(id) = current_id.as_ref() {
-        //
-        let Some(unit_info) = infos_by_id.remove(id) else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        current_id.clone_from(&unit_info.next_id);
-
-        if unit_info.hidden_at.is_none() {
-            visible_infos.push(unit_info);
-        }
-    }
-
-    if !infos_by_id.is_empty() {
-        return Err(corrupt_unit_chain_err());
-    }
-
-    accept(visible_infos)
-}
 
 // Lock and load the root Comic and its Workset for an archive snapshot.
 async fn load_archive_root(
@@ -303,48 +222,6 @@ async fn load_archive_chapter_relations(
     accept((workflow_record_infos, assignment_infos, user_infos))
 }
 
-// Lock and load ordered Pages and their Units.
-async fn load_archive_pages(
-    conn: &mut RdbConn,
-    source_chapter_ids: &[String],
-) -> BaseRest<(Vec<PageInfo>, Vec<UnitInfo>)> {
-    //
-    let page_rows = t_page
-        .filter(page_chapter_id.eq_any(source_chapter_ids))
-        .select(PageInfoRow::as_select())
-        .order_by((page_chapter_id.asc(), page_index.asc(), page_id.asc()))
-        .for_update()
-        .load::<PageInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let page_infos = page_rows
-        .into_iter()
-        .map(TryInto::try_into)
-        .collect::<BaseRest<Vec<PageInfo>>>()?;
-
-    let source_page_ids = page_infos
-        .iter()
-        .map(|page_info| page_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let unit_rows = t_unit
-        .filter(unit_page_id.eq_any(&source_page_ids))
-        .select(UnitInfoRow::as_select())
-        .order_by(unit_page_id.asc())
-        .for_update()
-        .load::<UnitInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let unit_infos = unit_rows
-        .into_iter()
-        .map(Into::into)
-        .collect::<Vec<UnitInfo>>();
-
-    accept((page_infos, unit_infos))
-}
-
 // Loaded descendants needed to assemble Chapter snapshots.
 struct ArchiveChapterParts {
     // Chapters included in the archive.
@@ -361,6 +238,8 @@ struct ArchiveChapterParts {
     page_infos: Vec<PageInfo>,
     // Units belonging to the selected Pages.
     unit_infos: Vec<UnitInfo>,
+    // Current review details belonging to the selected Pages.
+    issue_infos: Vec<IssueInfo>,
 }
 
 // Assemble loaded archive descendants into Chapter snapshots.
@@ -376,6 +255,7 @@ fn assemble_chapter_snapshots(
         users_by_id,
         page_infos,
         unit_infos,
+        issue_infos,
     } = coord_fields;
 
     let mut assignment_infos_by_chapter =
@@ -422,35 +302,8 @@ fn assemble_chapter_snapshots(
             .push(workflow_record_info);
     }
 
-    let mut unit_infos_by_page = HashMap::new();
-
-    for unit_info in unit_infos {
-        //
-        unit_infos_by_page
-            .entry(unit_info.page_id.clone())
-            .or_insert_with(Vec::new)
-            .push(unit_info);
-    }
-
-    let mut page_snapshots_by_chapter = HashMap::new();
-
-    for page_info in page_infos {
-        //
-        let unordered_unit_infos =
-            unit_infos_by_page.remove(&page_info.id).unwrap_or_default();
-
-        let mut unit_infos = order_unit_infos(unordered_unit_infos)?;
-
-        unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
-
-        page_snapshots_by_chapter
-            .entry(page_info.chapter_id.clone())
-            .or_insert_with(Vec::new)
-            .push(ComicArchivePageSnapshot {
-                page_info,
-                unit_infos,
-            });
-    }
+    let mut page_snapshots_by_chapter =
+        pages::assemble_page_snapshots(page_infos, unit_infos, issue_infos)?;
 
     let chapter_snapshots = chapter_infos
         .into_iter()
@@ -501,8 +354,8 @@ async fn get_snapshot_excluded(
     let (workflow_record_infos, assignment_infos, user_infos) =
         load_archive_chapter_relations(conn, &source_chapter_ids).await?;
 
-    let (page_infos, unit_infos) =
-        load_archive_pages(conn, &source_chapter_ids).await?;
+    let (page_infos, unit_infos, issue_infos) =
+        pages::load_archive_pages(conn, &source_chapter_ids).await?;
 
     let chapter_snapshots = assemble_chapter_snapshots(
         source_comic_id,
@@ -513,6 +366,7 @@ async fn get_snapshot_excluded(
             users_by_id: user_infos,
             page_infos,
             unit_infos,
+            issue_infos,
         },
     )?;
 

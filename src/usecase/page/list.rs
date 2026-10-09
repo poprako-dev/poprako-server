@@ -128,8 +128,8 @@ where
     page_info_view(obj_dept, page_info).await
 }
 
-// Load concrete membership or assignment evidence for page-list access.
-async fn ensure_user_can_list_infos<C, R>(
+/// Loads concrete membership or assignment evidence for Page read access.
+pub async fn ensure_user_can_list_infos<C, R>(
     repo: &R,
     token: &UserToken,
     chapter_id: &str,

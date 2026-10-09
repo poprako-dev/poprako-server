@@ -47,6 +47,7 @@ fn chapter(page_count: usize) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         comic: None,

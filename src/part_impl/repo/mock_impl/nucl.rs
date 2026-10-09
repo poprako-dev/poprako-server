@@ -69,6 +69,8 @@ impl Nucl for Mock {
         T: Send,
         E: Send,
     {
+        let _transaction_guard = self.transaction_lock.lock().await;
+
         let state = self.state.lock().unwrap().clone();
 
         let flags = self.flags.lock().unwrap().clone();

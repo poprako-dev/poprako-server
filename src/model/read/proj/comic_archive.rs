@@ -6,6 +6,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::workset::WorksetInfo;
@@ -38,6 +39,8 @@ pub struct ComicArchivePageSnapshot {
     pub page_info: PageInfo,
     /// Ordered text units belonging to this page at the time of archiving.
     pub unit_infos: Vec<UnitInfo>,
+    /// Ordered issues from the Chapter's current review.
+    pub issue_infos: Vec<IssueInfo>,
 }
 
 /// One compressed row to persist in an archive table.

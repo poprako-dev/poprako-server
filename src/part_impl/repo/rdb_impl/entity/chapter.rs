@@ -40,6 +40,8 @@ pub struct ChapterInfoRow {
     pub f_reviewed_at: Option<OffsetDateTime>,
     pub f_published_at: Option<OffsetDateTime>,
 
+    pub f_confirmed_artwork_version: Option<i64>,
+
     pub f_creator_id: String,
 
     pub f_created_at: OffsetDateTime,
@@ -99,6 +101,13 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
                 "t_chapter.f_proofread_unit_count",
             )?,
             stages,
+            confirmed_artwork_ver: row
+                .f_confirmed_artwork_version
+                .map(u32::try_from)
+                .transpose()
+                .map_err(|_| BaseError::Unrecoverable {
+                    msg: "invalid confirmed artwork version".into(),
+                })?,
             creator_id: row.f_creator_id,
             creator: None,
             created_at: row.f_created_at,

@@ -18,6 +18,8 @@ pub mod comic;
 pub mod comment;
 /// Image response views.
 pub mod image;
+/// Current chapter review issues.
+pub mod issue;
 /// Member response views.
 pub mod member;
 /// Member-invitation response views.

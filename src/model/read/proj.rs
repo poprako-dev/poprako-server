@@ -14,6 +14,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment read projection.
 pub mod comment;
+/// Current review issue projections.
+pub mod issue;
 /// Member read projection.
 pub mod member;
 /// Member invitation read projection.

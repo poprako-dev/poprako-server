@@ -540,10 +540,10 @@ fn comic() -> ComicInfo {
 // Build baseline chapter fixture with one-page expectation.
 fn chapter() -> ChapterInfo {
     //
-    // Build a baseline chapter fixture for unit-level operations.
     let current_time = OffsetDateTime::now_utc();
 
     ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".to_string(),
         comic_id: "comic-1".to_string(),
         comic: None,

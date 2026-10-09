@@ -47,6 +47,7 @@ fn seed_scope(mock: &Mock) {
     });
 
     mock.seed_chapter(ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         comic: None,

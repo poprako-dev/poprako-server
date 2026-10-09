@@ -7,8 +7,8 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfosExcluded, LockChapters,
-    SetChapterPageCountMetrics, StartChapterStage, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    SetChapterConfirmedArtworkVersion, SetChapterPageCountMetrics,
+    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
@@ -472,6 +472,34 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
 
             chapter_info.updated_at = now();
         }
+
+        accept(())
+    }
+}
+
+impl Step<SetChapterConfirmedArtworkVersion<'_>, MockContext> for Mock {
+    // Minimum transaction isolation required by this operation.
+    type Level = ReptRead;
+
+    // Application error returned by this operation.
+    type Error = BaseError;
+
+    // Executes this repository operation.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &SetChapterConfirmedArtworkVersion<'_>,
+    ) -> BaseRest<()> {
+        //
+        let chapter_info = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter| chapter.id == oper.id)
+            .ok_or_else(|| expected("error-chapter-not-found"))?;
+
+        chapter_info.confirmed_artwork_ver = Some(oper.version);
 
         accept(())
     }

@@ -66,6 +66,7 @@ diesel::table! {
         f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_confirmed_artwork_version -> Nullable<Int8>,
     }
 }
 
@@ -144,6 +145,21 @@ diesel::table! {
         f_user_id -> Text,
         f_content -> Text,
         f_created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_issue (f_id) {
+        f_id -> Text,
+        f_page_id -> Text,
+        f_index -> Int4,
+        f_variant -> Text,
+        f_layer_path -> Nullable<Text>,
+        f_x_coord -> Nullable<Float8>,
+        f_y_coord -> Nullable<Float8>,
+        f_width -> Nullable<Float8>,
+        f_height -> Nullable<Float8>,
+        f_note -> Text,
     }
 }
 
@@ -400,6 +416,7 @@ diesel::joinable!(t_comic -> t_workset (f_workset_id));
 diesel::joinable!(t_comic_archive -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_user (f_user_id));
+diesel::joinable!(t_issue -> t_page (f_page_id));
 diesel::joinable!(t_member -> t_team (f_team_id));
 diesel::joinable!(t_member -> t_user (f_user_id));
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
@@ -428,6 +445,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_comic_archive,
     t_comic_cover,
     t_comment,
+    t_issue,
     t_local_message,
     t_member,
     t_member_invitation,

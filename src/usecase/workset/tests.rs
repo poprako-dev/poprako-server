@@ -134,6 +134,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
+        confirmed_artwork_ver: None,
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,

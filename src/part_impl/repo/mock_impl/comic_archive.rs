@@ -138,6 +138,57 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     }
 }
 
+// Assemble the current review with ordered Page and visible Unit snapshots.
+fn page_snapshots(
+    context: &MockContext,
+    chapter_id: &str,
+) -> BaseRest<Vec<ComicArchivePageSnapshot>> {
+    //
+    let mut page_snapshots = context
+        .state
+        .pages
+        .iter()
+        .filter(|page_info| page_info.chapter_id == chapter_id)
+        .cloned()
+        .map(|page_info| {
+            //
+            // Internal implementation detail.
+            // Internal implementation detail.
+            let unordered_unit_infos = context
+                .state
+                .units
+                .iter()
+                .filter(|unit_info| unit_info.page_id == page_info.id)
+                .cloned()
+                .collect();
+
+            let mut unit_infos = order_unit_infos(unordered_unit_infos)?;
+
+            unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
+
+            let mut issue_infos = context
+                .state
+                .issues
+                .iter()
+                .filter(|issue| issue.page_id == page_info.id)
+                .cloned()
+                .collect::<Vec<_>>();
+
+            issue_infos.sort_by_key(|issue| issue.index);
+
+            accept(ComicArchivePageSnapshot {
+                page_info,
+                unit_infos,
+                issue_infos,
+            })
+        })
+        .collect::<BaseRest<Vec<_>>>()?;
+
+    page_snapshots.sort_by_key(|snapshot| snapshot.page_info.index);
+
+    accept(page_snapshots)
+}
+
 // Assemble and return a comic archive snapshot (including chapter, page, and unit info) for submission.
 fn get_snapshot_excluded(
     context: &MockContext,
@@ -204,36 +255,7 @@ fn get_snapshot_excluded(
                 })
                 .collect::<BaseRest<Vec<_>>>()?;
 
-            let page_snapshots = context
-                .state
-                .pages
-                .iter()
-                .filter(|page_info| page_info.chapter_id == chapter_info.id)
-                .cloned()
-                .map(|page_info| {
-                    //
-                    // Internal implementation detail.
-                    // Internal implementation detail.
-                    let unordered_unit_infos = context
-                        .state
-                        .units
-                        .iter()
-                        .filter(|unit_info| unit_info.page_id == page_info.id)
-                        .cloned()
-                        .collect();
-
-                    let mut unit_infos =
-                        order_unit_infos(unordered_unit_infos)?;
-
-                    unit_infos
-                        .retain(|unit_info| unit_info.hidden_at.is_none());
-
-                    accept(ComicArchivePageSnapshot {
-                        page_info,
-                        unit_infos,
-                    })
-                })
-                .collect::<BaseRest<Vec<_>>>()?;
+            let page_snapshots = page_snapshots(context, &chapter_info.id)?;
 
             let mut workflow_record_infos = context
                 .state
@@ -342,6 +364,10 @@ fn commit(
         //
         termbase_info.comic_id.as_deref()
             != Some(comic_archive_entry.record.source_comic_id.as_str())
+    });
+
+    context.state.issues.retain(|issue| {
+        !comic_archive_entry.source_page_ids.contains(&issue.page_id)
     });
 
     context.state.units.retain(|unit_info| {

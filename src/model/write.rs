@@ -14,6 +14,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment mutation models.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member mutation models.
 pub mod member;
 /// Member invitation mutation models.

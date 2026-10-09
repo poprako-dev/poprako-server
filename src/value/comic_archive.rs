@@ -160,6 +160,41 @@ pub struct ArchivedUserPayload<'a> {
     pub updated_at: i64,
 }
 
+/// Whole-page rectangle retained in an immutable archive.
+#[derive(Serialize)]
+pub struct ArchivedIssueRectPayload {
+    /// Left edge.
+    pub x_coord: f64,
+    /// Top edge.
+    pub y_coord: f64,
+    /// Width.
+    pub width: f64,
+    /// Height.
+    pub height: f64,
+}
+
+/// Read-only issue retained in an immutable archive.
+#[derive(Serialize)]
+pub struct ArchivedIssuePayload<'a> {
+    /// Original issue identity.
+    pub id: &'a str,
+
+    /// Owning Page identity.
+    pub page_id: &'a str,
+    /// Zero-based position within the Page.
+    pub index: i32,
+
+    /// Open category.
+    pub variant: &'a str,
+    /// Optional opaque layer path.
+    pub layer_path: Option<&'a str>,
+    /// Optional whole-page rectangle.
+    pub rect: Option<ArchivedIssueRectPayload>,
+
+    /// Original note text.
+    pub note: &'a str,
+}
+
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedPagePayload<'a> {
@@ -179,6 +214,8 @@ pub struct ArchivedPagePayload<'a> {
     pub updated_at: i64,
     /// Archived payloads for all translation units on this page.
     pub units: Vec<ArchivedUnitPayload<'a>>,
+    /// The current review details in ascending Page issue order.
+    pub issues: Vec<ArchivedIssuePayload<'a>>,
 }
 
 /// Immutable unit payload serialized into an archive entry.

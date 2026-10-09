@@ -105,3 +105,8 @@ error-invalid-page-raw-ident = Original page filename must be nonblank and conta
 error-artwork-upload-role-required = A chapter typesetter or redrawer assignment, or owning-team administrator role, is required.
 error-stale-artwork-upload = The artwork upload version is missing or stale.
 error-artwork-unavailable = No artwork is currently available for this chapter.
+
+error-issue-reviewer-required = Only an assigned chapter reviewer may import review issues.
+error-issue-page-count = The import must contain exactly one item per current page.
+error-issue-input = Issue categories and supplied layer paths must not be blank.
+error-issue-rect = The issue rectangle must be finite, positive, and contained within the page.

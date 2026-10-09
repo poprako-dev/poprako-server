@@ -390,6 +390,11 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
 
                 context
                     .state
+                    .issues
+                    .retain(|issue| !ids.contains(&issue.page_id));
+
+                context
+                    .state
                     .units
                     .retain(|unit_info| !ids.contains(&unit_info.page_id));
 
@@ -409,6 +414,11 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
             DeletePages::Ids { ids } => {
                 //
                 // Internal implementation detail.
+                context
+                    .state
+                    .issues
+                    .retain(|issue| !ids.contains(&issue.page_id));
+
                 context
                     .state
                     .units

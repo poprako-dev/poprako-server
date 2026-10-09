@@ -110,6 +110,10 @@ pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
         .chapter_workflow_records
         .retain(|info| info.chapter_id != chapter_id);
 
+    state
+        .issues
+        .retain(|info| !page_ids.contains(&info.page_id));
+
     state.units.retain(|info| !page_ids.contains(&info.page_id));
 
     state.pages.retain(|info| !page_ids.contains(&info.id));

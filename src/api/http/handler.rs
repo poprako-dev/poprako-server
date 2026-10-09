@@ -22,6 +22,8 @@ pub mod comic;
 pub mod comment;
 /// Health check request handlers.
 pub mod health;
+/// Current chapter review issues.
+pub mod issue;
 /// Member request handlers.
 pub mod member;
 /// Member invitation request handlers.

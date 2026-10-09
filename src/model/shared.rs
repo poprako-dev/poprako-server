@@ -1,3 +1,5 @@
+/// Current chapter review issues.
+pub mod issue;
 /// Value groups shared by Unit read and write models.
 pub mod unit;
 /// Durable Unit save identities and receipts.

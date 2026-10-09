@@ -40,6 +40,7 @@ fn seed_archive_descendants(
     stage_mask: StageMask,
 ) {
     mock.seed_chapter(ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         comic: None,

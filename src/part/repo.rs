@@ -40,6 +40,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment repository port.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member repository port.
 pub mod member;
 /// Member invitation repository port.

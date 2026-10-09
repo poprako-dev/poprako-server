@@ -56,6 +56,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment use cases.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member management use cases.
 pub mod member;
 /// Member invitation use cases.

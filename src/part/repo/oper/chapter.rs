@@ -158,3 +158,13 @@ pub struct UnpinOtherChapters<'a> {
     /// Chapter identifier to exclude from unpinning.
     pub excluded_id: &'a str,
 }
+
+/// Records the first successful business confirmation of an artwork generation.
+#[derive(Oper)]
+#[oper(output = ())]
+pub struct SetChapterConfirmedArtworkVersion<'a> {
+    /// Locked owning Chapter.
+    pub id: &'a str,
+    /// Successfully confirmed generation.
+    pub version: u32,
+}

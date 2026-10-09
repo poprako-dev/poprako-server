@@ -77,6 +77,7 @@ fn chapter(id: &str) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
+        confirmed_artwork_ver: None,
         id: id.into(),
         comic_id: "comic-1".into(),
         is_pinned: true,
