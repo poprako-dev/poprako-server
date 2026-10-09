@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS t_issue;
+DROP TABLE IF EXISTS "t_issue";

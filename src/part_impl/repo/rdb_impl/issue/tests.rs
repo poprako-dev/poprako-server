@@ -4,7 +4,7 @@
     reason = "Persistence fixtures and assertions fail immediately on violated invariants"
 )]
 
-//! Typed persistence, replacement rollback, constraints and lifecycle tests.
+//! Typed persistence, business validation boundaries and lifecycle tests.
 
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
@@ -94,8 +94,8 @@ async fn replace(
     .map_err(BaseError::from)
 }
 
-// review_constraints(t_issue)(negative): the database rejects partial, nonfinite, out-of-page and duplicate-index geometry.
-async fn verify_constraints(shared: &RdbCore, page_id: &str) {
+// review_storage_boundary(t_issue)(positive): persistence leaves geometry and text validation to the business layer.
+async fn verify_storage_validation_boundary(shared: &RdbCore, page_id: &str) {
     let mut conn = shared.get().await.unwrap();
 
     for variant in [
@@ -105,6 +105,8 @@ async fn verify_constraints(shared: &RdbCore, page_id: &str) {
         "nan",
         "outside",
         "zero-size",
+        "blank-variant",
+        "blank-layer",
     ] {
         let mut row = IssueRow::from(&entry("review-invalid", page_id, 3));
 
@@ -114,15 +116,26 @@ async fn verify_constraints(shared: &RdbCore, page_id: &str) {
             "infinite" => row.f_width = Some(f64::INFINITY),
             "nan" => row.f_x_coord = Some(f64::NAN),
             "outside" => row.f_width = Some(1.0),
+            "blank-variant" => row.f_variant = " \n\t".into(),
+            "blank-layer" => row.f_layer_path = Some(" \n\t".into()),
             _ => row.f_width = Some(0.0),
         }
 
-        assert!(
+        assert_eq!(
             diesel::insert_into(t_issue::table)
                 .values(&row)
                 .execute(&mut conn)
                 .await
-                .is_err()
+                .unwrap(),
+            1
+        );
+
+        assert_eq!(
+            diesel::delete(t_issue::table.filter(t_issue::f_id.eq(&row.f_id)))
+                .execute(&mut conn)
+                .await
+                .unwrap(),
+            1
         );
     }
 
@@ -319,7 +332,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
         baseline
     );
 
-    verify_constraints(&shared, page_id).await;
+    verify_storage_validation_boundary(&shared, page_id).await;
 
     let failure = nucl
         .coord(async |context| {

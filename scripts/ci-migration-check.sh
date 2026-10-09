@@ -61,6 +61,22 @@ psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file "$migration_batch"
 psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file "$migration_batch"
 
 diesel migration revert --all --config-file /dev/null
+
+# A successful rollback must remove every business table and history entry.
+rollback_state=$(psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+    --tuples-only --no-align --command "
+        SELECT
+            (SELECT COUNT(*) FROM pg_tables
+                WHERE schemaname = 'public'
+                    AND tablename <> '__diesel_schema_migrations'),
+            (SELECT COUNT(*) FROM __diesel_schema_migrations);
+    ")
+
+if [ "$rollback_state" != "0|0" ]; then
+    echo "Migration rollback left business tables or history entries: $rollback_state" >&2
+    exit 1
+fi
+
 diesel migration run --config-file /dev/null
 
 # Exercise the standalone legacy upgrade, preservation fixture, and replay.

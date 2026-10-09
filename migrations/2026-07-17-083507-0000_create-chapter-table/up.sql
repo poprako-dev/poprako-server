@@ -1,32 +1,33 @@
 CREATE TABLE IF NOT EXISTS "t_chapter" (
-    "f_id"                         TEXT        PRIMARY KEY,
+    "f_id"                        TEXT        PRIMARY KEY,
 
-    "f_comic_id"                   TEXT        NOT NULL REFERENCES "t_comic" ("f_id") ON DELETE RESTRICT,
-    "f_is_pinned"                  BOOLEAN     NOT NULL DEFAULT FALSE,
+    "f_comic_id"                  TEXT        NOT NULL REFERENCES "t_comic" ("f_id") ON DELETE RESTRICT,
+    "f_is_pinned"                 BOOLEAN     NOT NULL DEFAULT FALSE,
 
-    "f_index"                      INTEGER     NOT NULL,
-    "f_subtitle"                   TEXT        NOT NULL,
+    "f_index"                     INTEGER     NOT NULL,
+    "f_subtitle"                  TEXT        NOT NULL,
 
-    "f_page_count"                 INTEGER     NOT NULL DEFAULT 0,
-    "f_total_unit_count"           INTEGER     NOT NULL DEFAULT 0,
-    "f_translated_unit_count"      INTEGER     NOT NULL DEFAULT 0,
-    "f_proofread_unit_count"       INTEGER     NOT NULL DEFAULT 0,
+    "f_page_count"                INTEGER     NOT NULL DEFAULT 0,
+    "f_total_unit_count"          INTEGER     NOT NULL DEFAULT 0,
+    "f_translated_unit_count"     INTEGER     NOT NULL DEFAULT 0,
+    "f_proofread_unit_count"      INTEGER     NOT NULL DEFAULT 0,
 
-    "f_uploaded_at"                TIMESTAMPTZ,
-    "f_translating_at"             TIMESTAMPTZ,
-    "f_translated_at"              TIMESTAMPTZ,
-    "f_proofreading_at"            TIMESTAMPTZ,
-    "f_proofread_at"               TIMESTAMPTZ,
-    "f_typesetting_at"             TIMESTAMPTZ,
-    "f_typeset_at"                 TIMESTAMPTZ,
-    "f_reviewed_at"                TIMESTAMPTZ,
-    "f_published_at"               TIMESTAMPTZ,
+    "f_uploaded_at"               TIMESTAMPTZ,
+    "f_translating_at"            TIMESTAMPTZ,
+    "f_translated_at"             TIMESTAMPTZ,
+    "f_proofreading_at"           TIMESTAMPTZ,
+    "f_proofread_at"              TIMESTAMPTZ,
+    "f_typesetting_at"            TIMESTAMPTZ,
+    "f_typeset_at"                TIMESTAMPTZ,
+    "f_reviewed_at"               TIMESTAMPTZ,
+    "f_published_at"              TIMESTAMPTZ,
 
-    "f_creator_id"                 TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
+    "f_creator_id"                TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
 
-    "f_deleted_at"                 TIMESTAMPTZ,
-    "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "f_deleted_at"                TIMESTAMPTZ,
 
-    "f_confirmed_artwork_version"   BIGINT CHECK ("f_confirmed_artwork_version" BETWEEN 0 AND 4294967295)
+    "f_created_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "f_updated_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    "f_confirmed_artwork_version" BIGINT
 );
