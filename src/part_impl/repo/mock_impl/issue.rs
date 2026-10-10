@@ -96,7 +96,7 @@ impl Step<ReplaceChapterIssues<'_>, MockContext> for Mock {
                 page_artwork_id: entry.page_artwork_id.clone(),
                 index: entry.index,
                 variant: entry.variant.clone(),
-                layer_path: entry.layer_path.clone(),
+                layer_name: entry.layer_name.clone(),
                 rect: entry.rect,
                 note: entry.note.clone(),
             }));

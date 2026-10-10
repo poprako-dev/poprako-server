@@ -100,7 +100,7 @@ where
                         page_artwork_id: page_instr.page_artwork_id.clone(),
                         index,
                         variant: issue_instr.variant,
-                        layer_path: issue_instr.layer_path,
+                        layer_name: issue_instr.layer_name,
                         rect: issue_instr.rect.map(Into::into),
                         note: issue_instr.note,
                     };

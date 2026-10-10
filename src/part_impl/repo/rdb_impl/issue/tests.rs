@@ -40,7 +40,7 @@ fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
         page_artwork_id: chapter_id.into(),
         index,
         variant: "custom category".into(),
-        layer_path: Some("opaque path".into()),
+        layer_name: Some("  他们两个…  ".into()),
         rect: Some(IssueRect {
             x_coord: 0.1,
             y_coord: 0.2,
@@ -116,7 +116,7 @@ async fn verify_storage_validation_boundary(
             "nan" => row.f_x_coord = Some(f64::NAN),
             "outside" => row.f_width = Some(1.0),
             "blank-variant" => row.f_variant = " \n\t",
-            "blank-layer" => row.f_layer_path = Some(" \n\t"),
+            "blank-layer" => row.f_layer_name = Some(" \n\t"),
             _ => row.f_width = Some(0.0),
         }
 
@@ -227,6 +227,12 @@ async fn verify_archive(
 
     assert_eq!(issues.len(), 2100);
 
+    let archived_issue = issues.as_slice().first().unwrap();
+
+    assert_eq!(archived_issue.get("layer_name").unwrap(), "  他们两个…  ");
+
+    assert!(archived_issue.get("layer_path").is_none());
+
     let rollback = nucl
         .coord(async |context| {
             CommitComicArchive { entry: &entry }
@@ -311,7 +317,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     entries.get_mut(1).unwrap().index = 0;
 
-    entries.first_mut().unwrap().layer_path = None;
+    entries.first_mut().unwrap().layer_name = None;
 
     entries.first_mut().unwrap().rect = None;
 
@@ -328,6 +334,13 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     assert_eq!(baseline.get(1).unwrap().rect, entries.get(1).unwrap().rect);
 
     assert_eq!(baseline.get(1).unwrap().note, "first line\nsecond line");
+
+    assert!(baseline.as_slice().first().unwrap().layer_name.is_none());
+
+    assert_eq!(
+        baseline.get(1).unwrap().layer_name.as_deref(),
+        Some("  他们两个…  ")
+    );
 
     let invalid_entries = vec![
         entry("review-duplicate-1", chapter_id, 0),

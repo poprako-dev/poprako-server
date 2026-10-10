@@ -390,7 +390,7 @@ fn build_chapter_payload(
                             page_artwork_id: &issue.page_artwork_id,
                             index: issue.index,
                             variant: &issue.variant,
-                            layer_path: issue.layer_path.as_deref(),
+                            layer_name: issue.layer_name.as_deref(),
                             rect: issue.rect.map(|rect| {
                                 ArchivedIssueRectPayload {
                                     x_coord: rect.x_coord,

@@ -217,7 +217,7 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
                 page_artwork_id: "artwork-0".into(),
                 issues: vec![IssueInstr {
                     variant: "custom issue".into(),
-                    layer_path: Some("opaque path".into()),
+                    layer_name: Some("  他们两个…  ".into()),
                     rect: Some(IssueRectInstr {
                         x_coord: 0.1,
                         y_coord: 0.2,
@@ -264,6 +264,8 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     assert_eq!(first.note, "  line one\nline two  ");
 
+    assert_eq!(first.layer_name.as_deref(), Some("  他们两个…  "));
+
     let issues = list_infos::<MockContext, _>(
         (&mock,),
         token("user-1"),
@@ -273,6 +275,8 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     .unwrap();
 
     assert_eq!(issues.len(), 1);
+
+    assert_eq!(issues.first().unwrap().layer_name, first.layer_name);
 
     submit(&mock, input("")).await.unwrap();
 
@@ -319,11 +323,11 @@ async fn import_accepts_all_optional_geometry_combinations() {
 
     page.issues.clear();
 
-    for layer in [None, Some("0.1.0".to_owned())] {
+    for layer in [None, Some("他们两个…".to_owned())] {
         for has_rect in [false, true] {
             page.issues.push(IssueInstr {
                 variant: "open category".into(),
-                layer_path: layer.clone(),
+                layer_name: layer.clone(),
                 rect: has_rect.then_some(IssueRectInstr {
                     x_coord: 0.0,
                     y_coord: 0.0,
@@ -397,7 +401,7 @@ async fn rejected_input_preserves_current_review() {
 
         match field {
             "variant" => issue.variant = " \n\t".into(),
-            _ => issue.layer_path = Some(" \n\t".into()),
+            _ => issue.layer_name = Some(" \n\t".into()),
         }
 
         assert!(submit(&mock, instr).await.is_err());

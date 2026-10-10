@@ -1,5 +1,8 @@
 //! Chapter review import instructions, independent of read projections.
 
+#[cfg(test)]
+mod tests;
+
 use serde::Deserialize;
 
 #[cfg(feature = "swagger")]
@@ -35,12 +38,13 @@ impl From<IssueRectInstr> for IssueRect {
 
 /// One issue in a complete chapter import.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueInstr {
     /// Open category, required to contain non-whitespace text.
     pub variant: String,
-    /// Optional opaque nonblank layer path.
-    pub layer_path: Option<String>,
+    /// Optional human-readable, nonblank layer name, preserved verbatim.
+    pub layer_name: Option<String>,
     /// Optional normalized whole-page rectangle, independent of layer selection.
     pub rect: Option<IssueRectInstr>,
 

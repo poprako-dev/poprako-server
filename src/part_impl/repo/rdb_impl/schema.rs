@@ -154,7 +154,7 @@ diesel::table! {
         f_page_artwork_id -> Text,
         f_index -> Int4,
         f_variant -> Text,
-        f_layer_path -> Nullable<Text>,
+        f_layer_name -> Nullable<Text>,
         f_x_coord -> Nullable<Float8>,
         f_y_coord -> Nullable<Float8>,
         f_width -> Nullable<Float8>,

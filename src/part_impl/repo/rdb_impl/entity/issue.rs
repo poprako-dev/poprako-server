@@ -24,7 +24,7 @@ pub struct IssueRow {
     pub f_index: i32,
 
     pub f_variant: String,
-    pub f_layer_path: Option<String>,
+    pub f_layer_name: Option<String>,
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
     pub f_width: Option<f64>,
@@ -66,7 +66,7 @@ impl TryFrom<IssueRow> for IssueInfo {
             page_artwork_id: row.f_page_artwork_id,
             index: usize_from_i32(row.f_index, "t_issue.f_index")?,
             variant: row.f_variant,
-            layer_path: row.f_layer_path,
+            layer_name: row.f_layer_name,
             rect,
             note: row.f_note,
         })
@@ -83,7 +83,7 @@ pub struct IssueEntryRow<'a> {
     pub f_index: i32,
 
     pub f_variant: &'a str,
-    pub f_layer_path: Option<&'a str>,
+    pub f_layer_name: Option<&'a str>,
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
     pub f_width: Option<f64>,
@@ -102,7 +102,7 @@ impl<'a> TryFrom<&'a IssueEntry> for IssueEntryRow<'a> {
             f_page_artwork_id: &entry.page_artwork_id,
             f_index: i32_from_usize(entry.index, "t_issue.f_index")?,
             f_variant: &entry.variant,
-            f_layer_path: entry.layer_path.as_deref(),
+            f_layer_name: entry.layer_name.as_deref(),
             f_x_coord: entry.rect.map(|rect| rect.x_coord),
             f_y_coord: entry.rect.map(|rect| rect.y_coord),
             f_width: entry.rect.map(|rect| rect.width),

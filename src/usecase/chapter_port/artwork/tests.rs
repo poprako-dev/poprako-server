@@ -248,7 +248,7 @@ fn seed_review(mock: &Mock) -> IssueInfo {
         page_artwork_id: "artwork-1".into(),
         index: 0,
         variant: "custom".into(),
-        layer_path: None,
+        layer_name: None,
         rect: None,
         note: "review".into(),
     };

@@ -56,7 +56,7 @@ activity updates commit together or roll back together.
 `POST /api/v1/chapters/{chapter_id}/issues/import`
 
 ```json
-{"pages":[{"page_artwork_id":"existing-id","issues":[{"variant":"文字位置","layer_path":"0.1.0","rect":{"x_coord":0.1,"y_coord":0.2,"width":0.3,"height":0.1},"note":"向左移动"}]}]}
+{"pages":[{"page_artwork_id":"existing-id","issues":[{"variant":"文字位置","layer_name":"他们两个…","rect":{"x_coord":0.1,"y_coord":0.2,"width":0.3,"height":0.1},"note":"向左移动"}]}]}
 ```
 
 Each target ID must identify a composite page in this Chapter and appear once.
@@ -72,17 +72,22 @@ Published Chapters reject imports. Import does not advance Review or change Unit
 The response includes `imported_page_count` (explicit targets including empty ones)
 and `imported_issue_count`.
 
-`variant` is any nonblank string. `layer_path` is an optional opaque nonblank
-string; absent or null refers to the composite as a whole. `rect` is independently
-optional, normalized to the entire composite with top-left origin, finite values,
-positive size and all edges in `[0, 1]`. No PSD path syntax or category enumeration
-is imposed. `note` preserves text, newlines and emptiness.
+`variant` is any nonblank string. `layer_name` is an optional human-readable
+nonblank name copied from the reviewed PSD layer and preserved verbatim; absent
+or null refers to the composite as a whole. It is display metadata, not an
+identity or a qualified path; duplicate layer names are valid. Obsolete or unknown
+issue fields are rejected rather than silently discarded. Import files must carry
+the readable name, not a numeric PSD tree index.
+
+`rect` is independently optional, normalized to the entire composite with top-left
+origin, finite values, positive size and all edges in `[0, 1]`. No category
+enumeration is imposed. `note` preserves text, newlines and emptiness.
 
 ## Read, removal and archive
 
 `GET /api/v1/chapters/{chapter_id}/issues` returns a flat `IssueInfoView[]`, ordered
 by composite page index then Issue index. Each entry contains `id`,
-`page_artwork_id`, `index`, `variant`, nullable `layer_path`/`rect` and `note`.
+`page_artwork_id`, `index`, `variant`, nullable `layer_name`/`rect` and `note`.
 Access follows Page read permissions. Empty reviews return an empty array.
 
 Replacing or confirming either a composite image or ChapterArtwork ZIP preserves

@@ -21,7 +21,7 @@ interface Issue {
     page_artwork_id: string;
     index: number;
     variant: string;
-    layer_path: string | null;
+    layer_name: string | null;
     rect: Rect | null;
     note: string;
 }
@@ -97,10 +97,10 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
         pages: [{
             page_artwork_id: ids[0]!,
             issues: [
-                { variant: "custom category", layer_path: "opaque/path", rect, note: " first line\nsecond line " },
+                { variant: "custom category", layer_name: "  他们两个…  ", rect, note: " first line\nsecond line " },
                 { variant: "whole composite", note: "" },
-                { variant: "layer without rectangle", layer_path: "0.1.0", rect: null, note: "" },
-                { variant: "composite rectangle", layer_path: null, rect, note: "" },
+                { variant: "layer without rectangle", layer_name: "帮忙跟 两位后辈 道个谢", rect: null, note: "" },
+                { variant: "composite rectangle", layer_name: null, rect, note: "" },
             ],
         }, { page_artwork_id: ids[2]!, issues: [] }],
     };
@@ -128,15 +128,16 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     assert.assertEquals(first.map((issue) => issue.index), [0, 1, 2, 3]);
     assert.assertEquals(first[0]!.page_artwork_id, ids[0]);
     assert.assertEquals(first[0]!.note, " first line\nsecond line ");
+    assert.assertEquals(first[0]!.layer_name, "  他们两个…  ");
     assert.assertEquals(first[0]!.rect, rect);
-    assert.assertEquals(first[1]!.layer_path, null);
+    assert.assertEquals(first[1]!.layer_name, null);
     assert.assertEquals(first[1]!.rect, null);
 
     // IS3: rejected imports preserve the full review, including duplicate or unknown targets.
     const target = body.pages[0]!;
     const invalidBodies = [
         { pages: [{ ...target, issues: [{ variant: " ", note: "" }] }] },
-        { pages: [{ ...target, issues: [{ variant: "custom", layer_path: " ", note: "" }] }] },
+        { pages: [{ ...target, issues: [{ variant: "custom", layer_name: " ", note: "" }] }] },
         { pages: [target, target] },
         { pages: [{ ...target, page_artwork_id: sourcePageId }] },
         ...[

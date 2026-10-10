@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "t_issue" (
     "f_index"           INTEGER          NOT NULL,
 
     "f_variant"         TEXT             NOT NULL,
-    "f_layer_path"      TEXT,
+    "f_layer_name"      TEXT,
 
     "f_x_coord"         DOUBLE PRECISION,
     "f_y_coord"         DOUBLE PRECISION,

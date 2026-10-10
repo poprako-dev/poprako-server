@@ -224,7 +224,7 @@ async fn review(mock: &Mock, id: &str) {
             page_artwork_id: id.into(),
             issues: vec![IssueInstr {
                 variant: "custom".into(),
-                layer_path: Some("0.1".into()),
+                layer_name: Some("对白".into()),
                 rect: None,
                 note: "fix this text".into(),
             }],

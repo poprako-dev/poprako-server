@@ -55,7 +55,7 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
                 page_artwork_id: "artwork-1".into(),
                 index: 0,
                 variant: "custom".into(),
-                layer_path: None,
+                layer_name: None,
                 rect: None,
                 note: "fix the tail page".into(),
             });

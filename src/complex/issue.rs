@@ -67,9 +67,9 @@ pub fn ensure_import_issue(
             //
             if issue_instr.variant.trim().is_empty()
                 || issue_instr
-                    .layer_path
+                    .layer_name
                     .as_ref()
-                    .is_some_and(|path| path.trim().is_empty())
+                    .is_some_and(|name| name.trim().is_empty())
             {
                 return Err(error(ExpectedVariant::Args, "error-issue-input"));
             }

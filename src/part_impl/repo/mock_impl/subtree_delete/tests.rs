@@ -38,7 +38,7 @@ fn subtree_cleanup_removes_current_review_issues() {
         page_artwork_id: "artwork-review".into(),
         index: 0,
         variant: "custom".into(),
-        layer_path: None,
+        layer_name: None,
         rect: None,
         note: "review".into(),
     });

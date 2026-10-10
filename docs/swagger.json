@@ -9407,12 +9407,12 @@
                   "description": "Zero-based position within the review page.",
                   "minimum": 0
                 },
-                "layer_path": {
+                "layer_name": {
                   "type": [
                     "string",
                     "null"
                   ],
-                  "description": "Optional opaque layer path."
+                  "description": "Optional human-readable layer name, preserved verbatim."
                 },
                 "note": {
                   "type": "string",
@@ -10745,12 +10745,12 @@
             "description": "Zero-based position within the review page.",
             "minimum": 0
           },
-          "layer_path": {
+          "layer_name": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Optional opaque layer path."
+            "description": "Optional human-readable layer name, preserved verbatim."
           },
           "note": {
             "type": "string",
@@ -10785,12 +10785,12 @@
           "note"
         ],
         "properties": {
-          "layer_path": {
+          "layer_name": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Optional opaque nonblank layer path."
+            "description": "Optional human-readable, nonblank layer name, preserved verbatim."
           },
           "note": {
             "type": "string",
@@ -10811,7 +10811,8 @@
             "type": "string",
             "description": "Open category, required to contain non-whitespace text."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "IssueRectInstr": {
         "type": "object",

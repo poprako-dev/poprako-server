@@ -1,6 +1,6 @@
 # Revision note：MangaProof 元数据与整章导入
 
-> 背景研究：本文记录 MP 原生格式，不作为当前 PRK 导入协议。当前协议见 [chapter-issues.md](chapter-issues.md)，由 MP 新导出格式适配；一个 Chapter 最多一份当前监稿，整章导入整体替换。
+> 背景研究：本文记录 MP 原生格式，不作为当前 PRK 导入协议。当前协议见 [chapter-issues.md](chapter-issues.md)：使用可读的 `layer_name`，不保存数字图层索引路径；一个 Chapter 最多一份当前监稿，整章导入整体替换。
 
 调研日期：2026-10-09。本文保留调研时的 MP 原生格式分析与建议；已实现的后端契约以 [chapter-issues.md](chapter-issues.md) 为准。
 

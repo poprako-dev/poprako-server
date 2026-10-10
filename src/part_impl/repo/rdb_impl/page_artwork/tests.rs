@@ -176,7 +176,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             page_artwork_id: "composite-a".into(),
             index: 0,
             variant: "custom".into(),
-            layer_path: None,
+            layer_name: None,
             rect: None,
             note: "review".into(),
         }];
