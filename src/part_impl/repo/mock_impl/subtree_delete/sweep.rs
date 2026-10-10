@@ -114,12 +114,12 @@ pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
         .page_artworks
         .iter()
         .filter(|info| info.chapter_id == chapter_id)
-        .map(|info| info.id.clone())
+        .map(|info| info.id.as_str())
         .collect::<Vec<_>>();
 
     state
         .issues
-        .retain(|info| !artwork_ids.contains(&info.page_artwork_id));
+        .retain(|info| !artwork_ids.contains(&info.page_artwork_id.as_str()));
 
     state
         .page_artworks

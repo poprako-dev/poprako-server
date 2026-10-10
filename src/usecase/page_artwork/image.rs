@@ -96,7 +96,7 @@ where
                 })?;
 
             let page_artwork_patch = PageArtworkPatch {
-                id: page_artwork_info.id.clone(),
+                id: page_artwork_info.id,
                 raw_ident: instr.raw_ident,
             };
 
@@ -107,7 +107,7 @@ where
             .await?;
 
             let page_artwork_entry = PageArtworkEntry {
-                id: page_artwork_info.id,
+                id: page_artwork_patch.id,
                 chapter_id: page_artwork_info.chapter_id,
                 index: page_artwork_info.index,
                 raw_ident: page_artwork_patch.raw_ident,

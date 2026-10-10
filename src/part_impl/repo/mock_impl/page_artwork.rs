@@ -113,18 +113,18 @@ impl Step<ReplacePageArtworkManifest<'_>, MockContext> for Mock {
                 info.chapter_id == oper.chapter_id
                     && !oper.entries.iter().any(|entry| entry.id == info.id)
             })
-            .map(|info| info.id.clone())
+            .map(|info| info.id.as_str())
             .collect::<Vec<_>>();
 
-        context
-            .state
-            .issues
-            .retain(|issue| !removed_ids.contains(&issue.page_artwork_id));
+        context.state.issues.retain(|issue| {
+            !removed_ids.contains(&issue.page_artwork_id.as_str())
+        });
 
-        context
-            .state
-            .page_artworks
-            .retain(|info| !removed_ids.contains(&info.id));
+        context.state.page_artworks.retain(|info| {
+            //
+            info.chapter_id != oper.chapter_id
+                || oper.entries.iter().any(|entry| entry.id == info.id)
+        });
 
         for entry in oper.entries {
             //

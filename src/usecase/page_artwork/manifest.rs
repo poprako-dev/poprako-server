@@ -85,30 +85,38 @@ where
                 &page_artwork_infos,
             )?;
 
-            let page_artwork_entries = instr
-                .pages
-                .iter()
-                .enumerate()
-                .map(|(index, page)| PageArtworkEntry {
-                    id: page
-                        .page_artwork_id
-                        .clone()
-                        .unwrap_or_else(next_snowflake_id),
+            let mut page_artwork_entries =
+                Vec::with_capacity(instr.pages.len());
+
+            let mut image_inputs = Vec::with_capacity(instr.pages.len());
+
+            for (index, page) in instr.pages.into_iter().enumerate() {
+                //
+                let page_artwork_entry = PageArtworkEntry {
+                    id: page.page_artwork_id.unwrap_or_else(next_snowflake_id),
                     chapter_id: chapter_info.id.clone(),
                     index,
-                    raw_ident: page.raw_ident.clone(),
-                })
-                .collect::<Vec<_>>();
+                    raw_ident: page.raw_ident,
+                };
+
+                page_artwork_entries.push(page_artwork_entry);
+
+                image_inputs.push((
+                    page.image_hash,
+                    page.ext,
+                    page.new_byte_len,
+                ));
+            }
 
             let removed_ids = page_artwork_infos
-                .iter()
+                .into_iter()
                 .filter(|info| {
                     //
                     !page_artwork_entries.iter().any(|page_artwork_entry| {
                         page_artwork_entry.id == info.id
                     })
                 })
-                .map(|info| info.id.clone())
+                .map(|info| info.id)
                 .collect::<Vec<_>>();
 
             DeleteObjs::<PageArtworkImage>::new(&removed_ids)
@@ -126,15 +134,15 @@ where
             let mut allocated_page_artwork_vals =
                 Vec::with_capacity(page_artwork_entries.len());
 
-            for (page_artwork_entry, page) in
-                page_artwork_entries.iter().zip(instr.pages)
+            for (page_artwork_entry, image_input) in
+                page_artwork_entries.iter().zip(image_inputs)
             {
                 //
                 let allocated_page_artwork_val = alloc_image_slot(
                     (obj_dept, image_config),
                     context,
                     page_artwork_entry,
-                    (page.image_hash, page.ext, page.new_byte_len),
+                    image_input,
                 )
                 .await?;
 

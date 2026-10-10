@@ -28,7 +28,7 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page::DeletePages;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::issue::IssueRow;
+use crate::part_impl::repo::rdb_impl::entity::issue::IssueEntryRow;
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, BaseRest, accept};
@@ -105,9 +105,9 @@ async fn verify_storage_validation_boundary(
         "blank-variant",
         "blank-layer",
     ] {
-        let mut row =
-            IssueRow::try_from(&entry("review-invalid", chapter_id, 3))
-                .unwrap();
+        let issue_entry = entry("review-invalid", chapter_id, 3);
+
+        let mut row = IssueEntryRow::try_from(&issue_entry).unwrap();
 
         match variant {
             "partial" => row.f_height = None,
@@ -115,8 +115,8 @@ async fn verify_storage_validation_boundary(
             "infinite" => row.f_width = Some(f64::INFINITY),
             "nan" => row.f_x_coord = Some(f64::NAN),
             "outside" => row.f_width = Some(1.0),
-            "blank-variant" => row.f_variant = " \n\t".into(),
-            "blank-layer" => row.f_layer_path = Some(" \n\t".into()),
+            "blank-variant" => row.f_variant = " \n\t",
+            "blank-layer" => row.f_layer_path = Some(" \n\t"),
             _ => row.f_width = Some(0.0),
         }
 

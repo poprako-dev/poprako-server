@@ -17,13 +17,13 @@ fn clear(context: &mut MockContext, chapter_id: &str) {
         .page_artworks
         .iter()
         .filter(|info| info.chapter_id == chapter_id)
-        .map(|info| info.id.clone())
+        .map(|info| info.id.as_str())
         .collect::<Vec<_>>();
 
     context
         .state
         .issues
-        .retain(|issue| !ids.contains(&issue.page_artwork_id));
+        .retain(|issue| !ids.contains(&issue.page_artwork_id.as_str()));
 }
 
 impl Run<ListIssueInfos<'_>> for Mock {

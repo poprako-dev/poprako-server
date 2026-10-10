@@ -23,7 +23,9 @@ use crate::part::repo::oper::page_artwork::{
     UpdatePageArtworkInfo,
 };
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::page_artwork::PageArtworkRow;
+use crate::part_impl::repo::rdb_impl::entity::page_artwork::{
+    PageArtworkEntryRow, PageArtworkRow,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbContext;
@@ -162,7 +164,7 @@ where
             //
             let rows = entries
                 .iter()
-                .map(PageArtworkRow::try_from)
+                .map(PageArtworkEntryRow::try_from)
                 .collect::<BaseRest<Vec<_>>>()?;
 
             let upsert = diesel::insert_into(t_page_artwork::table)
