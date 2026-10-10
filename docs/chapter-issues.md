@@ -15,7 +15,8 @@ neither determines identity. Two pages may have identical names and images.
 
 `GET /api/v1/chapters/{chapter_id}/page-artworks` returns ordered page views with
 ID, Chapter ID, zero-based index, raw identifier, nullable image generation and
-URLs, upload state and timestamps. Read permissions follow translation Pages.
+raw and thumbnail URLs, upload state and timestamps. Image URLs are exposed as
+`image_url` and `image_thumbnail_url`. Read permissions follow translation Pages.
 Unavailable generations have no read URLs.
 
 `POST /api/v1/chapters/{chapter_id}/page-artworks/alloc` takes the complete final

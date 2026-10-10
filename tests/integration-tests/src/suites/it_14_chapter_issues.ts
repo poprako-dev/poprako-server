@@ -51,6 +51,8 @@ interface ArtworkPage {
     index: number;
     raw_ident: string | null;
     image_uploaded: boolean;
+    image_url?: string;
+    image_thumbnail_url?: string;
 }
 
 export async function runIt14Module(ctx: RunCtx): Promise<void> {
@@ -186,10 +188,16 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
         }
     }
 
-    // IS7: reorder uses explicit IDs; identical hashes and filenames never merge pages.
+    // IS7: explicit IDs preserve identity; uploaded composites expose only raw and thumbnail URLs.
     const reordered = await allocate([...ids].reverse().map((id) => ({ ...image, page_artwork_id: id })));
     assert.assert(reordered.every((page) => page.slot === null));
-    assert.assertEquals((await readPages()).map((page) => page.id), [...ids].reverse());
+    const reorderedPages = await readPages();
+    assert.assertEquals(reorderedPages.map((page) => page.id), [...ids].reverse());
+    for (const page of reorderedPages) {
+        assert.assertEquals(typeof page.image_url, "string");
+        assert.assertEquals(typeof page.image_thumbnail_url, "string");
+        assert.assert(!Object.hasOwn(page, "image_optimized_url"));
+    }
     assert.assertEquals(await read(), current);
     const replaced = expectSuccessData(
         await ctx.sadmin.post<SuccessBody<Allocation>>(`/api/v1/page-artworks/${ids[0]}/image/alloc`, {

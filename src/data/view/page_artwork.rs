@@ -30,9 +30,6 @@ pub struct PageArtworkInfoView {
     /// Presigned download URL for the full image, if uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
-    /// Download URL for the optimized image, if available.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image_optimized_url: Option<String>,
     /// Presigned download URL for the thumbnail image, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_thumbnail_url: Option<String>,
@@ -60,7 +57,6 @@ impl PageArtworkInfoView {
         model: PageArtworkInfo,
         obj_meta: Option<&ObjMeta>,
         image_url: Option<String>,
-        image_optimized_url: Option<String>,
         image_thumbnail_url: Option<String>,
     ) -> Self {
         //
@@ -79,7 +75,6 @@ impl PageArtworkInfoView {
             index: model.index,
             raw_ident: model.raw_ident,
             image_url,
-            image_optimized_url,
             image_thumbnail_url,
             image_hash,
             ext,

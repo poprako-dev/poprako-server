@@ -70,10 +70,7 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let url_spec = ObjUrlSpec::default()
-        .with_origin()
-        .with_optimized()
-        .with_thumbnail();
+    let url_spec = ObjUrlSpec::default().with_origin().with_thumbnail();
 
     let image_urls =
         GenObjUrls::<PageArtworkImage>::new(&image_metas, url_spec)
@@ -94,9 +91,6 @@ where
                 image_meta,
                 image_urls
                     .and_then(|urls| urls.origin_url.as_ref())
-                    .map(ToString::to_string),
-                image_urls
-                    .and_then(|urls| urls.optimized_url.as_ref())
                     .map(ToString::to_string),
                 image_urls
                     .and_then(|urls| urls.thumbnail_url.as_ref())
