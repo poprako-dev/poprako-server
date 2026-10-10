@@ -14,3 +14,6 @@ pub struct ComicCover;
 
 /// Chapter artwork file association.
 pub struct ChapterArtwork;
+
+/// Composite artwork page image association.
+pub struct PageArtworkImage;

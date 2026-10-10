@@ -24,10 +24,8 @@ use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
-use crate::part::repo::oper::issue::{
-    ClearChapterIssues, ListIssueInfos, ReplaceChapterIssues,
-};
-use crate::part::repo::oper::page::{DeletePages, ListPageInfosExcluded};
+use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
+use crate::part::repo::oper::page::DeletePages;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueRow;
@@ -36,10 +34,10 @@ use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::test_rdb::start;
 
-fn entry(id: &str, page_id: &str, index: usize) -> IssueEntry {
+fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
     IssueEntry {
         id: id.into(),
-        page_id: page_id.into(),
+        page_artwork_id: chapter_id.into(),
         index,
         variant: "custom category".into(),
         layer_path: Some("opaque path".into()),
@@ -67,10 +65,6 @@ async fn replace(
         .step_on(repo, context)
         .await?;
 
-        ListPageInfosExcluded { chapter_id }
-            .step_on(repo, context)
-            .await?;
-
         let chapter_issues_repl = ChapterIssuesRepl {
             chapter_id,
             entries,
@@ -95,7 +89,10 @@ async fn replace(
 }
 
 // review_storage_boundary(t_issue)(positive): persistence leaves geometry and text validation to the business layer.
-async fn verify_storage_validation_boundary(shared: &RdbCore, page_id: &str) {
+async fn verify_storage_validation_boundary(
+    shared: &RdbCore,
+    chapter_id: &str,
+) {
     let mut conn = shared.get().await.unwrap();
 
     for variant in [
@@ -109,7 +106,8 @@ async fn verify_storage_validation_boundary(shared: &RdbCore, page_id: &str) {
         "blank-layer",
     ] {
         let mut row =
-            IssueRow::try_from(&entry("review-invalid", page_id, 3)).unwrap();
+            IssueRow::try_from(&entry("review-invalid", chapter_id, 3))
+                .unwrap();
 
         match variant {
             "partial" => row.f_height = None,
@@ -142,21 +140,20 @@ async fn verify_storage_validation_boundary(shared: &RdbCore, page_id: &str) {
 
     assert_eq!(
         t_issue::table
-            .filter(t_issue::f_page_id.eq(page_id))
+            .filter(t_issue::f_page_artwork_id.eq(chapter_id))
             .count()
             .get_result::<i64>(&mut conn)
             .await
             .unwrap(),
-        2
+        1
     );
 }
 
-// review_archive(GetComicArchiveSnapshotExcluded)(positive): ordered current issues are captured in the immutable Page snapshot.
+// review_archive(GetComicArchiveSnapshotExcluded)(positive): ordered current issues are captured in the immutable Chapter snapshot.
 async fn verify_archive(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
-    page_id: &str,
 ) {
     let snapshot = nucl
         .coord(async |context| {
@@ -176,19 +173,15 @@ async fn verify_archive(
         .await
         .unwrap();
 
-    let page = snapshot
-        .chapter_snapshots
-        .as_slice()
-        .first()
-        .unwrap()
-        .page_snapshots
-        .as_slice()
-        .first()
-        .unwrap();
+    let page = snapshot.chapter_snapshots.as_slice().first().unwrap();
 
-    assert_eq!(page.page_info.id, page_id);
+    assert_eq!(page.chapter_info.id, chapter_id);
+
+    let page = page.page_artwork_snapshots.as_slice().first().unwrap();
 
     assert_eq!(page.issue_infos.len(), 2100);
+
+    assert_eq!(page.page_artwork_info.index, 3);
 
     assert_eq!(page.issue_infos.as_slice().first().unwrap().index, 0);
 
@@ -220,7 +213,7 @@ async fn verify_archive(
         .as_slice()
         .first()
         .unwrap()
-        .get("pages")
+        .get("page_artworks")
         .unwrap()
         .as_array()
         .unwrap()
@@ -241,7 +234,7 @@ async fn verify_archive(
                 .await?;
 
             let active_count = t_issue::table
-                .filter(t_issue::f_page_id.eq(page_id))
+                .filter(t_issue::f_page_artwork_id.eq(chapter_id))
                 .count()
                 .get_result::<i64>(context.conn())
                 .await
@@ -258,7 +251,11 @@ async fn verify_archive(
     assert!(rollback.is_err());
 
     assert_eq!(
-        ListIssueInfos { page_id }.run_on(repo).await.unwrap().len(),
+        ListIssueInfos { chapter_id }
+            .run_on(repo)
+            .await
+            .unwrap()
+            .len(),
         2100
     );
 }
@@ -279,12 +276,40 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     let chapter_id = &fixture.chapter_entry.id;
 
-    let page_id = &fixture.page_entry.id;
+    nucl.coord(async |context| {
+        let entries = [
+            crate::model::write::page_artwork::PageArtworkEntry {
+                id: chapter_id.clone(),
+                chapter_id: chapter_id.clone(),
+                index: 3,
+                raw_ident: None,
+            },
+            crate::model::write::page_artwork::PageArtworkEntry {
+                id: format!("{chapter_id}-extra"),
+                chapter_id: chapter_id.clone(),
+                index: 7,
+                raw_ident: None,
+            },
+        ];
+
+        crate::part::repo::oper::page_artwork::ReplacePageArtworkManifest {
+            chapter_id,
+            entries: &entries,
+        }
+        .step_on(&repo, context)
+        .await
+    })
+    .await
+    .unwrap();
 
     let mut entries = vec![
-        entry("review-first", page_id, 0),
-        entry("review-second", page_id, 1),
+        entry("review-first", chapter_id, 0),
+        entry("review-second", chapter_id, 1),
     ];
+
+    entries.get_mut(1).unwrap().page_artwork_id = format!("{chapter_id}-extra");
+
+    entries.get_mut(1).unwrap().index = 0;
 
     entries.first_mut().unwrap().layer_path = None;
 
@@ -292,7 +317,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     replace(&repo, &nucl, chapter_id, &entries).await.unwrap();
 
-    let baseline = ListIssueInfos { page_id }.run_on(&repo).await.unwrap();
+    let baseline = ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap();
 
     assert_eq!(baseline.len(), 2);
 
@@ -305,8 +330,8 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     assert_eq!(baseline.get(1).unwrap().note, "first line\nsecond line");
 
     let invalid_entries = vec![
-        entry("review-duplicate-1", page_id, 0),
-        entry("review-duplicate-2", page_id, 0),
+        entry("review-duplicate-1", chapter_id, 0),
+        entry("review-duplicate-2", chapter_id, 0),
     ];
 
     assert!(
@@ -316,11 +341,12 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     );
 
     assert_eq!(
-        ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),
+        ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap(),
         baseline
     );
 
-    let invalid_entries = vec![entry("review-invalid-fk", "missing-page", 0)];
+    let invalid_entries =
+        vec![entry("review-invalid-fk", "missing-chapter", 0)];
 
     assert!(
         replace(&repo, &nucl, chapter_id, &invalid_entries)
@@ -329,13 +355,13 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     );
 
     assert_eq!(
-        ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),
+        ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap(),
         baseline
     );
 
     let invalid_entries = vec![entry(
         "review-overflow",
-        page_id,
+        chapter_id,
         usize::try_from(i32::MAX).unwrap() + 1,
     )];
 
@@ -345,15 +371,20 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     ));
 
     assert_eq!(
-        ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),
+        ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap(),
         baseline
     );
 
-    verify_storage_validation_boundary(&shared, page_id).await;
+    verify_storage_validation_boundary(&shared, chapter_id).await;
 
     let failure = nucl
         .coord(async |context| {
-            ClearChapterIssues { chapter_id }
+            let repl = ChapterIssuesRepl {
+                chapter_id,
+                entries: &[],
+            };
+
+            ReplaceChapterIssues { repl: &repl }
                 .step_on(&repo, context)
                 .await?;
 
@@ -366,7 +397,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     assert!(failure.is_err());
 
     assert_eq!(
-        ListIssueInfos { page_id }.run_on(&repo).await.unwrap(),
+        ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap(),
         baseline
     );
 
@@ -393,11 +424,11 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     .unwrap();
 
     let first = (0..2100)
-        .map(|index| entry(&format!("review-a-{index}"), page_id, index))
+        .map(|index| entry(&format!("review-a-{index}"), chapter_id, index))
         .collect::<Vec<_>>();
 
     let second = (0..2100)
-        .map(|index| entry(&format!("review-b-{index}"), page_id, index))
+        .map(|index| entry(&format!("review-b-{index}"), chapter_id, index))
         .collect::<Vec<_>>();
 
     let (first_result, second_result) = tokio::join!(
@@ -407,7 +438,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     assert!(first_result.is_ok() || second_result.is_ok());
 
-    let issues = ListIssueInfos { page_id }.run_on(&repo).await.unwrap();
+    let issues = ListIssueInfos { chapter_id }.run_on(&repo).await.unwrap();
 
     assert_eq!(issues.len(), 2100);
 
@@ -426,12 +457,12 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
             .all(|issue| issue.id.split('-').nth(1) == Some(batch))
     );
 
-    verify_archive(&repo, &nucl, chapter_id, page_id).await;
+    verify_archive(&repo, &nucl, chapter_id).await;
 
     replace(&repo, &nucl, chapter_id, &[]).await.unwrap();
 
     assert!(
-        ListIssueInfos { page_id }
+        ListIssueInfos { chapter_id }
             .run_on(&repo)
             .await
             .unwrap()
@@ -442,7 +473,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
         &repo,
         &nucl,
         chapter_id,
-        &[entry("review-final", page_id, 0)],
+        &[entry("review-final", chapter_id, 0)],
     )
     .await
     .unwrap();
@@ -455,12 +486,13 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     .await
     .unwrap();
 
-    assert!(
-        ListIssueInfos { page_id }
+    assert_eq!(
+        ListIssueInfos { chapter_id }
             .run_on(&repo)
             .await
             .unwrap()
-            .is_empty()
+            .len(),
+        1
     );
 
     test_shared::cleanup(&shared, "rdb-test-review-")

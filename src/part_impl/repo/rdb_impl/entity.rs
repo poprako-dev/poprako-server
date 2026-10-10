@@ -33,6 +33,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page Diesel entity types.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail Diesel entity types.
 pub mod system_mail;
 /// Team Diesel entity types.

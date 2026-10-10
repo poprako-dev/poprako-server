@@ -913,13 +913,51 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/issues": {
+      "get": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "Reads the Chapter's issues ordered by composite page and issue position; an empty review returns [].",
+        "operationId": "list_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered current Chapter issues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_IssueInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership or chapter assignment required"
+          },
+          "422": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/issues/import": {
       "post": {
         "tags": [
           "issues"
         ],
         "summary": "Replaces the Chapter's single current review without advancing workflow.",
-        "operationId": "import",
+        "operationId": "import_issue",
         "parameters": [
           {
             "name": "chapter_id",
@@ -956,7 +994,7 @@
             "description": "Current REVIEWER assignment required; administrator status alone does not authorize import"
           },
           "422": {
-            "description": "Missing Chapter, published Chapter, mismatched Page count, or invalid issue input"
+            "description": "Missing Chapter, published Chapter, or invalid issue input"
           }
         }
       }
@@ -992,6 +1030,92 @@
           },
           "422": {
             "description": "Published chapters cannot be pinned"
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}/page-artworks": {
+      "get": {
+        "tags": [
+          "page-artworks"
+        ],
+        "summary": "Lists the Chapter's independently ordered composite pages.",
+        "operationId": "list_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Composite pages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageArtworkInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chapter read access required"
+          },
+          "422": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}/page-artworks/alloc": {
+      "post": {
+        "tags": [
+          "page-artworks"
+        ],
+        "summary": "Replaces the authoritative composite manifest and allocates needed uploads.",
+        "operationId": "alloc_chapter_page_artworks",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocChapterPageArtworksInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Composite allocations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageArtworksVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Composite write access required"
+          },
+          "422": {
+            "description": "Invalid manifest or published Chapter"
           }
         }
       }
@@ -2520,6 +2644,95 @@
         }
       }
     },
+    "/api/v1/page-artworks/{page_artwork_id}/image/alloc": {
+      "post": {
+        "tags": [
+          "page-artworks"
+        ],
+        "summary": "Allocates a replacement composite image while preserving issues.",
+        "operationId": "alloc_image",
+        "parameters": [
+          {
+            "name": "page_artwork_id",
+            "in": "path",
+            "description": "Composite page ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocPageArtworkImageInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Image allocation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocatedPageArtworkVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Composite write access required"
+          },
+          "422": {
+            "description": "Invalid input, missing page or published Chapter"
+          }
+        }
+      }
+    },
+    "/api/v1/page-artworks/{page_artwork_id}/image/mark-uploaded": {
+      "post": {
+        "tags": [
+          "page-artworks"
+        ],
+        "summary": "Marks an exact composite generation uploaded without changing workflow.",
+        "operationId": "mark_image_uploaded",
+        "parameters": [
+          {
+            "name": "page_artwork_id",
+            "in": "path",
+            "description": "Composite page ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkPageArtworkImageUploadedInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Generation confirmed"
+          },
+          "403": {
+            "description": "Composite write access required"
+          },
+          "422": {
+            "description": "Stale generation, missing page or published Chapter"
+          }
+        }
+      }
+    },
     "/api/v1/pages/{page_id}": {
       "get": {
         "tags": [
@@ -2643,44 +2856,6 @@
           },
           "422": {
             "description": "Page, image identity, storage object, or published chapter is invalid"
-          }
-        }
-      }
-    },
-    "/api/v1/pages/{page_id}/issues": {
-      "get": {
-        "tags": [
-          "issues"
-        ],
-        "summary": "Reads the Page's issues in ascending index order; an empty review returns [].",
-        "operationId": "list_infos",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "description": "Page ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ordered current Page issues",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_IssueInfoView"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Team membership or chapter assignment required"
-          },
-          "422": {
-            "description": "Page or owning Chapter not found"
           }
         }
       }
@@ -4688,6 +4863,38 @@
           }
         }
       },
+      "AllocChapterPageArtworksInstr": {
+        "type": "object",
+        "description": "Complete independently ordered composite page manifest.",
+        "required": [
+          "pages"
+        ],
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageArtworkImageInstr"
+            },
+            "description": "Final page sequence; omitted old pages are deleted."
+          }
+        }
+      },
+      "AllocChapterPageArtworksVal": {
+        "type": "object",
+        "description": "Allocations aligned with the complete submitted manifest.",
+        "required": [
+          "pages"
+        ],
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllocatedPageArtworkVal"
+            },
+            "description": "Resolved pages in request order."
+          }
+        }
+      },
       "AllocChapterPagesInstr": {
         "type": "object",
         "description": "Input parameters for reserving all page images of a chapter.",
@@ -4764,6 +4971,38 @@
                 "description": "Upload capability, absent when this cover is already uploaded."
               }
             ]
+          }
+        }
+      },
+      "AllocPageArtworkImageInstr": {
+        "type": "object",
+        "description": "Single composite image replacement.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Composite image format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "Composite image hash."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Exact upload byte length.",
+            "minimum": 0
+          },
+          "raw_ident": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Original PSD filename or relative path."
           }
         }
       },
@@ -4878,6 +5117,53 @@
               {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Upload capability, absent when this avatar is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "AllocatedPageArtworkVal": {
+        "type": "object",
+        "description": "One resolved composite page and its current image generation.",
+        "required": [
+          "page_artwork_id",
+          "index",
+          "image_hash",
+          "ext",
+          "image_version"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Image format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "Composite image hash."
+          },
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Allocated or reused image generation.",
+            "minimum": 0
+          },
+          "index": {
+            "type": "integer",
+            "description": "Final page position.",
+            "minimum": 0
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Stable composite page identity."
+          },
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability; absent when the exact content is already available."
               }
             ]
           }
@@ -6611,6 +6897,39 @@
           }
         }
       },
+      "HttpBody_AllocChapterPageArtworksVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Allocations aligned with the complete submitted manifest.",
+            "required": [
+              "pages"
+            ],
+            "properties": {
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AllocatedPageArtworkVal"
+                },
+                "description": "Resolved pages in request order."
+              }
+            }
+          }
+        }
+      },
       "HttpBody_AllocChapterPagesVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6739,6 +7058,70 @@
                   {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Upload capability, absent when this avatar is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AllocatedPageArtworkVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "One resolved composite page and its current image generation.",
+            "required": [
+              "page_artwork_id",
+              "index",
+              "image_hash",
+              "ext",
+              "image_version"
+            ],
+            "properties": {
+              "ext": {
+                "$ref": "#/components/schemas/ImageExt",
+                "description": "Image format."
+              },
+              "image_hash": {
+                "$ref": "#/components/schemas/ImageHash",
+                "description": "Composite image hash."
+              },
+              "image_version": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Allocated or reused image generation.",
+                "minimum": 0
+              },
+              "index": {
+                "type": "integer",
+                "description": "Final page position.",
+                "minimum": 0
+              },
+              "page_artwork_id": {
+                "type": "string",
+                "description": "Stable composite page identity."
+              },
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability; absent when the exact content is already available."
                   }
                 ]
               }
@@ -7588,7 +7971,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Counts for the complete chapter import, including empty Pages.",
+            "description": "Counts for the complete chapter import, including empty review pages.",
             "required": [
               "imported_page_count",
               "imported_issue_count"
@@ -7601,7 +7984,7 @@
               },
               "imported_page_count": {
                 "type": "integer",
-                "description": "Number of mapped Pages.",
+                "description": "Number of pages in the imported review file.",
                 "minimum": 0
               }
             }
@@ -9009,7 +9392,7 @@
               "description": "Read-only issue in the chapter's single current review.",
               "required": [
                 "id",
-                "page_id",
+                "page_artwork_id",
                 "index",
                 "variant",
                 "note"
@@ -9021,7 +9404,7 @@
                 },
                 "index": {
                   "type": "integer",
-                  "description": "Zero-based position within the Page.",
+                  "description": "Zero-based position within the review page.",
                   "minimum": 0
                 },
                 "layer_path": {
@@ -9035,9 +9418,9 @@
                   "type": "string",
                   "description": "Original note text."
                 },
-                "page_id": {
+                "page_artwork_id": {
                   "type": "string",
-                  "description": "Owning Page identity."
+                  "description": "Owning composite page identity."
                 },
                 "rect": {
                   "oneOf": [
@@ -9208,6 +9591,126 @@
                 "team_id": {
                   "type": "string",
                   "description": "Owning team identifier."
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_PageArtworkInfoView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready composite artwork page information.",
+              "required": [
+                "id",
+                "chapter_id",
+                "index",
+                "image_uploaded",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "chapter_id": {
+                  "type": "string",
+                  "description": "Owning chapter identifier."
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Timestamp of creation, in Unix milliseconds."
+                },
+                "ext": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageExt",
+                      "description": "File format, if one exists."
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique page identifier."
+                },
+                "image_hash": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageHash",
+                      "description": "Content hash of the page image, if one exists."
+                    }
+                  ]
+                },
+                "image_optimized_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Download URL for the optimized image, if available."
+                },
+                "image_thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Presigned download URL for the thumbnail image, if available."
+                },
+                "image_uploaded": {
+                  "type": "boolean",
+                  "description": "Whether the current image is available."
+                },
+                "image_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Presigned download URL for the full image, if uploaded."
+                },
+                "image_version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Current allocated image version.",
+                  "minimum": 0
+                },
+                "index": {
+                  "type": "integer",
+                  "description": "Ordinal position within the chapter.",
+                  "minimum": 0
+                },
+                "raw_ident": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Original PSD filename or relative path."
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Timestamp of last update, in Unix milliseconds."
                 }
               }
             }
@@ -10059,7 +10562,7 @@
       },
       "ImportChapterIssuesInstr": {
         "type": "object",
-        "description": "Replaces the single current review for a Chapter in current Page order.",
+        "description": "Replaces the single current review for a Chapter using explicit composite IDs.",
         "required": [
           "pages"
         ],
@@ -10069,13 +10572,13 @@
             "items": {
               "$ref": "#/components/schemas/PageIssuesInstr"
             },
-            "description": "Exactly one item per current Page, including Pages without issues."
+            "description": "Composite page IDs with their issues; omitted pages have no issues."
           }
         }
       },
       "ImportChapterIssuesVal": {
         "type": "object",
-        "description": "Counts for the complete chapter import, including empty Pages.",
+        "description": "Counts for the complete chapter import, including empty review pages.",
         "required": [
           "imported_page_count",
           "imported_issue_count"
@@ -10088,7 +10591,7 @@
           },
           "imported_page_count": {
             "type": "integer",
-            "description": "Number of mapped Pages.",
+            "description": "Number of pages in the imported review file.",
             "minimum": 0
           }
         }
@@ -10227,7 +10730,7 @@
         "description": "Read-only issue in the chapter's single current review.",
         "required": [
           "id",
-          "page_id",
+          "page_artwork_id",
           "index",
           "variant",
           "note"
@@ -10239,7 +10742,7 @@
           },
           "index": {
             "type": "integer",
-            "description": "Zero-based position within the Page.",
+            "description": "Zero-based position within the review page.",
             "minimum": 0
           },
           "layer_path": {
@@ -10253,9 +10756,9 @@
             "type": "string",
             "description": "Original note text."
           },
-          "page_id": {
+          "page_artwork_id": {
             "type": "string",
-            "description": "Owning Page identity."
+            "description": "Owning composite page identity."
           },
           "rect": {
             "oneOf": [
@@ -10312,7 +10815,7 @@
       },
       "IssueRectInstr": {
         "type": "object",
-        "description": "A finite rectangle contained within the normalized whole Page.",
+        "description": "A finite rectangle contained within the normalized whole composite.",
         "required": [
           "x_coord",
           "y_coord",
@@ -10556,6 +11059,21 @@
             "type": "integer",
             "format": "int32",
             "description": "Version returned in the cover upload slot.",
+            "minimum": 0
+          }
+        }
+      },
+      "MarkPageArtworkImageUploadedInstr": {
+        "type": "object",
+        "description": "Exact-generation composite upload confirmation.",
+        "required": [
+          "image_version"
+        ],
+        "properties": {
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Allocated image version.",
             "minimum": 0
           }
         }
@@ -10836,6 +11354,147 @@
           }
         }
       },
+      "PageArtworkImageInstr": {
+        "type": "object",
+        "description": "One item in an authoritative composite manifest.",
+        "required": [
+          "image_hash",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Composite image format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 of the extracted composite image."
+          },
+          "new_byte_len": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Required for a new or unavailable image generation.",
+            "minimum": 0
+          },
+          "page_artwork_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Existing composite page identity; omission creates a new page."
+          },
+          "raw_ident": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Original PSD filename or relative path, for presentation only."
+          }
+        }
+      },
+      "PageArtworkInfoView": {
+        "type": "object",
+        "description": "Presentation-ready composite artwork page information.",
+        "required": [
+          "id",
+          "chapter_id",
+          "index",
+          "image_uploaded",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string",
+            "description": "Owning chapter identifier."
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp of creation, in Unix milliseconds."
+          },
+          "ext": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageExt",
+                "description": "File format, if one exists."
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique page identifier."
+          },
+          "image_hash": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageHash",
+                "description": "Content hash of the page image, if one exists."
+              }
+            ]
+          },
+          "image_optimized_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Download URL for the optimized image, if available."
+          },
+          "image_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Presigned download URL for the thumbnail image, if available."
+          },
+          "image_uploaded": {
+            "type": "boolean",
+            "description": "Whether the current image is available."
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Presigned download URL for the full image, if uploaded."
+          },
+          "image_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Current allocated image version.",
+            "minimum": 0
+          },
+          "index": {
+            "type": "integer",
+            "description": "Ordinal position within the chapter.",
+            "minimum": 0
+          },
+          "raw_ident": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Original PSD filename or relative path."
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp of last update, in Unix milliseconds."
+          }
+        }
+      },
       "PageImageInstr": {
         "type": "object",
         "description": "One page image in a complete chapter manifest.",
@@ -10976,8 +11635,9 @@
       },
       "PageIssuesInstr": {
         "type": "object",
-        "description": "Issues for one position in the chapter's current Page manifest.",
+        "description": "Issues for one explicit composite page in the imported review file.",
         "required": [
+          "page_artwork_id",
           "issues"
         ],
         "properties": {
@@ -10987,6 +11647,10 @@
               "$ref": "#/components/schemas/IssueInstr"
             },
             "description": "Array order determines the zero-based issue index."
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Stable composite page ID within the target Chapter."
           }
         }
       },
@@ -12492,6 +13156,14 @@
     {
       "name": "chapter-port",
       "description": "Chapter translation and artwork import/export endpoints"
+    },
+    {
+      "name": "page-artworks",
+      "description": "Composite artwork page endpoints"
+    },
+    {
+      "name": "issues",
+      "description": "Composite artwork review endpoints"
     },
     {
       "name": "pages",

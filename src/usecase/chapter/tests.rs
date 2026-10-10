@@ -2,6 +2,8 @@
 mod fixture;
 // Team administration without chapter assignments.
 mod administration;
+// Direct Chapter deletion with independent composite artwork objects.
+mod composite;
 // Preset-assignment scenarios and perm transitions.
 mod preset_assignment;
 // Workflow-stage transition assertions for chapter usecases.

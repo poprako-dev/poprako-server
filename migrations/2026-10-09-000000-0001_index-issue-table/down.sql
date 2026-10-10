@@ -1,1 +1,1 @@
-DROP INDEX IF EXISTS "uidx_issue_page_id_index";
+DROP INDEX IF EXISTS "uidx_issue_page_artwork_index";

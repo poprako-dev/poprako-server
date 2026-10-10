@@ -22,6 +22,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page read projection.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Hierarchical deletion scope projections.
 pub mod subtree_delete;
 /// System mail read projection.

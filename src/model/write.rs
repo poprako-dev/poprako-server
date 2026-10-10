@@ -22,6 +22,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page mutation models.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail mutation models.
 pub mod system_mail;
 /// Team mutation models.

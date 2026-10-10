@@ -1,5 +1,7 @@
 //! Calendar-month values used by comic archive export.
 
+/// Composite page archive payloads.
+pub mod artwork;
 /// Archived chapter workflow-record payload values.
 pub mod workflow_record;
 
@@ -15,6 +17,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
+use crate::value::comic_archive::artwork::ArchivedPageArtworkPayload;
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
@@ -107,6 +110,9 @@ pub struct ArchivedChapterPayload<'a> {
     pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload<'a>>,
     /// Archived payloads for all pages in this chapter.
     pub pages: Vec<ArchivedPagePayload<'a>>,
+
+    /// Ordered composite pages and their review issues.
+    pub page_artworks: Vec<ArchivedPageArtworkPayload<'a>>,
 }
 
 /// Immutable workflow record payload retained inside an archived chapter.
@@ -160,41 +166,6 @@ pub struct ArchivedUserPayload<'a> {
     pub updated_at: i64,
 }
 
-/// Whole-page rectangle retained in an immutable archive.
-#[derive(Serialize)]
-pub struct ArchivedIssueRectPayload {
-    /// Left edge.
-    pub x_coord: f64,
-    /// Top edge.
-    pub y_coord: f64,
-    /// Width.
-    pub width: f64,
-    /// Height.
-    pub height: f64,
-}
-
-/// Read-only issue retained in an immutable archive.
-#[derive(Serialize)]
-pub struct ArchivedIssuePayload<'a> {
-    /// Original issue identity.
-    pub id: &'a str,
-
-    /// Owning Page identity.
-    pub page_id: &'a str,
-    /// Zero-based position within the Page.
-    pub index: usize,
-
-    /// Open category.
-    pub variant: &'a str,
-    /// Optional opaque layer path.
-    pub layer_path: Option<&'a str>,
-    /// Optional whole-page rectangle.
-    pub rect: Option<ArchivedIssueRectPayload>,
-
-    /// Original note text.
-    pub note: &'a str,
-}
-
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedPagePayload<'a> {
@@ -214,8 +185,6 @@ pub struct ArchivedPagePayload<'a> {
     pub updated_at: i64,
     /// Archived payloads for all translation units on this page.
     pub units: Vec<ArchivedUnitPayload<'a>>,
-    /// The current review details in ascending Page issue order.
-    pub issues: Vec<ArchivedIssuePayload<'a>>,
 }
 
 /// Immutable unit payload serialized into an archive entry.

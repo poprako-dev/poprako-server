@@ -110,9 +110,20 @@ pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
         .chapter_workflow_records
         .retain(|info| info.chapter_id != chapter_id);
 
+    let artwork_ids = state
+        .page_artworks
+        .iter()
+        .filter(|info| info.chapter_id == chapter_id)
+        .map(|info| info.id.clone())
+        .collect::<Vec<_>>();
+
     state
         .issues
-        .retain(|info| !page_ids.contains(&info.page_id));
+        .retain(|info| !artwork_ids.contains(&info.page_artwork_id));
+
+    state
+        .page_artworks
+        .retain(|info| info.chapter_id != chapter_id);
 
     state.units.retain(|info| !page_ids.contains(&info.page_id));
 

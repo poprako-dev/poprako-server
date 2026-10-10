@@ -2,16 +2,14 @@
 
 use poprako_orchestra::drive;
 
-use crate::part::repo::oper::issue::{
-    ClearChapterIssues, ListIssueInfos, ReplaceChapterIssues,
-};
+use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::result::BaseError;
 
-/// Read-only Page access and transactional chapter replacement or cleanup.
+/// Ordered Issue reads and transactional whole-Chapter review replacement.
 #[drive(
     context = C,
     error = BaseError,
     run(for<'a> ListIssueInfos<'a>),
-    step(for<'a> ReplaceChapterIssues<'a>, for<'a> ClearChapterIssues<'a>),
+    step(for<'a> ReplaceChapterIssues<'a>),
 )]
 pub trait IssueRepo<C> {}

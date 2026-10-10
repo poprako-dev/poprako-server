@@ -6,6 +6,7 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use crate::complex::issue::perm as issue_perm_complex;
 use crate::complex::{chapter as chapter_complex, issue as issue_complex};
 use crate::data::instr::issue::ImportChapterIssuesInstr;
 use crate::data::val::issue::ImportChapterIssuesVal;
@@ -22,16 +23,16 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
-use crate::part::repo::oper::page::{GetPageInfo, ListPageInfosExcluded};
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
+use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::list as page_list_usecase;
 use crate::util::next_snowflake_id;
 
 /// Atomically replaces all issues without changing workflow or Unit counters.
-#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id))]
-pub async fn import<N, C, R>(
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, page_count = instr.pages.len()))]
+pub async fn import_issue<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     chapter_id: String,
@@ -42,7 +43,7 @@ where
     C::Level: AtLeast<ReptRead>,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     R: ChapterRepo<C>
-        + PageRepo<C>
+        + PageArtworkRepo<C>
         + AssignmentRepo<C>
         + IssueRepo<C>
         + ComicRepo<C>
@@ -55,12 +56,6 @@ where
             let chapter_info = GetChapterInfoExcluded {
                 id: &chapter_id,
                 incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let page_infos = ListPageInfosExcluded {
-                chapter_id: &chapter_info.id,
             }
             .step_on(repo, context)
             .await?;
@@ -79,22 +74,30 @@ where
                 )
             })?;
 
-            issue_complex::ensure_user_can_import(&assignment_info)?;
+            issue_perm_complex::ensure_user_can_import_issue(&assignment_info)?;
 
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-            issue_complex::ensure_import(&instr, page_infos.len())?;
+            let page_artwork_infos = ListPageArtworkInfos {
+                chapter_id: &chapter_info.id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            let mut entries = Vec::new();
+            issue_complex::ensure_import_issue(&instr, &page_artwork_infos)?;
 
-            for (page_info, page_instr) in page_infos.iter().zip(instr.pages) {
+            let imported_page_count = instr.pages.len();
+
+            let mut issue_entries = Vec::new();
+
+            for page_instr in instr.pages {
                 //
                 for (index, issue_instr) in
                     page_instr.issues.into_iter().enumerate()
                 {
                     let issue_entry = IssueEntry {
                         id: next_snowflake_id(),
-                        page_id: page_info.id.clone(),
+                        page_artwork_id: page_instr.page_artwork_id.clone(),
                         index,
                         variant: issue_instr.variant,
                         layer_path: issue_instr.layer_path,
@@ -102,13 +105,13 @@ where
                         note: issue_instr.note,
                     };
 
-                    entries.push(issue_entry);
+                    issue_entries.push(issue_entry);
                 }
             }
 
             let chapter_issues_repl = ChapterIssuesRepl {
                 chapter_id: &chapter_info.id,
-                entries: &entries,
+                entries: &issue_entries,
             };
 
             ReplaceChapterIssues {
@@ -124,8 +127,8 @@ where
             .await?;
 
             accept(ImportChapterIssuesVal {
-                imported_page_count: page_infos.len(),
-                imported_issue_count: entries.len(),
+                imported_page_count,
+                imported_issue_count: issue_entries.len(),
             })
         })
         .await?;
@@ -133,33 +136,26 @@ where
     accept(imported)
 }
 
-/// Reads a Page's ordered issues using the same access rules as Page information.
+/// Reads a Chapter's issues ordered by composite page and issue position.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    page_id: String,
+    chapter_id: String,
 ) -> BaseRest<Vec<IssueInfoView>>
 where
     C: Context,
-    R: PageRepo<C>
-        + IssueRepo<C>
-        + TeamRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + Sync,
+    R: IssueRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
 {
-    let page_info = GetPageInfo { id: &page_id }.run_on(repo).await?;
-
     page_list_usecase::ensure_user_can_list_infos::<C, R>(
         repo,
         &token,
-        &page_info.chapter_id,
+        &chapter_id,
     )
     .await?;
 
     let issue_infos = ListIssueInfos {
-        page_id: &page_info.id,
+        chapter_id: &chapter_id,
     }
     .run_on(repo)
     .await?;

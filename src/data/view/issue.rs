@@ -41,9 +41,9 @@ pub struct IssueInfoView {
     /// Server-generated identity.
     pub id: String,
 
-    /// Owning Page identity.
-    pub page_id: String,
-    /// Zero-based position within the Page.
+    /// Owning composite page identity.
+    pub page_artwork_id: String,
+    /// Zero-based position within the review page.
     pub index: usize,
 
     /// Open category.
@@ -62,7 +62,7 @@ impl From<IssueInfo> for IssueInfoView {
     fn from(info: IssueInfo) -> Self {
         Self {
             id: info.id,
-            page_id: info.page_id,
+            page_artwork_id: info.page_artwork_id,
             index: info.index,
             variant: info.variant,
             layer_path: info.layer_path,

@@ -7,9 +7,9 @@ pub struct IssueEntry {
     /// New server-generated identity.
     pub id: String,
 
-    /// Page resolved from the chapter's ordered manifest.
-    pub page_id: String,
-    /// Contiguous zero-based position within the Page.
+    /// Owning composite page identity.
+    pub page_artwork_id: String,
+    /// Contiguous zero-based position within the review page.
     pub index: usize,
 
     /// Open issue category.
@@ -23,7 +23,7 @@ pub struct IssueEntry {
     pub note: String,
 }
 
-/// Atomic replacement of all issues in one Chapter, including empty Pages.
+/// Atomic replacement of all issues in one Chapter, including empty review pages.
 pub struct ChapterIssuesRepl<'a> {
     /// Chapter whose current review is replaced.
     pub chapter_id: &'a str,

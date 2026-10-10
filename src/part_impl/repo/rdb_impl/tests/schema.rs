@@ -24,6 +24,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
 use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
+use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
+use crate::part_impl::repo::rdb_impl::schema::t_page_artwork_image;
 use crate::part_impl::repo::rdb_impl::schema::t_page_image;
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
@@ -134,6 +136,8 @@ pub async fn all_application_table_columns_match_generated_schema(
         t_obj_prom_task,
         t_page,
         t_issue,
+        t_page_artwork,
+        t_page_artwork_image,
         t_page_image,
         t_page_raw_ident,
         t_system_mail,

@@ -20,7 +20,7 @@ use crate::result::{BaseError, BaseRest, accept};
 pub struct IssueRow {
     pub f_id: String,
 
-    pub f_page_id: String,
+    pub f_page_artwork_id: String,
     pub f_index: i32,
 
     pub f_variant: String,
@@ -40,7 +40,7 @@ impl TryFrom<&IssueEntry> for IssueRow {
         //
         accept(Self {
             f_id: entry.id.clone(),
-            f_page_id: entry.page_id.clone(),
+            f_page_artwork_id: entry.page_artwork_id.clone(),
             f_index: i32_from_usize(entry.index, "t_issue.f_index")?,
             f_variant: entry.variant.clone(),
             f_layer_path: entry.layer_path.clone(),
@@ -83,7 +83,7 @@ impl TryFrom<IssueRow> for IssueInfo {
 
         accept(Self {
             id: row.f_id,
-            page_id: row.f_page_id,
+            page_artwork_id: row.f_page_artwork_id,
             index: usize_from_i32(row.f_index, "t_issue.f_index")?,
             variant: row.f_variant,
             layer_path: row.f_layer_path,

@@ -26,6 +26,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page value DTOs.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Team value DTOs.
 pub mod team;
 /// Term value DTOs.

@@ -2,15 +2,15 @@
 
 use crate::model::shared::issue::IssueRect;
 
-/// One ordered issue belonging to a Page in the current chapter review.
+/// One ordered issue belonging to a composite page in the current chapter review.
 #[derive(Clone, Debug, PartialEq)]
 pub struct IssueInfo {
     /// Server-generated identity, renewed on every replacement.
     pub id: String,
 
-    /// Owning Page identity.
-    pub page_id: String,
-    /// Zero-based position within this Page.
+    /// Owning composite page identity.
+    pub page_artwork_id: String,
+    /// Zero-based position within this review page.
     pub index: usize,
 
     /// Open, nonblank issue category.

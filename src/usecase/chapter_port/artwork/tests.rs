@@ -232,9 +232,20 @@ fn seed_review(mock: &Mock) -> IssueInfo {
         updated_at: now,
     });
 
+    mock.state.lock().unwrap().page_artworks.push(
+        crate::model::read::proj::page_artwork::PageArtworkInfo {
+            id: "artwork-1".into(),
+            chapter_id: "chapter-1".into(),
+            index: 2,
+            raw_ident: None,
+            created_at: now,
+            updated_at: now,
+        },
+    );
+
     let issue_info = IssueInfo {
         id: "issue-1".into(),
-        page_id: "page-1".into(),
+        page_artwork_id: "artwork-1".into(),
         index: 0,
         variant: "custom".into(),
         layer_path: None,
@@ -336,9 +347,9 @@ async fn artwork_replacement_rejects_stale_confirmation() {
 
     mark(&mock, first.artwork_ver).await.unwrap();
 
-    assert!(mock.snapshot().issues.is_empty());
+    assert_eq!(mock.snapshot().issues.len(), 1);
 
-    mock.state.lock().unwrap().issues.push(issue_info);
+    assert_eq!(mock.snapshot().issues.first(), Some(&issue_info));
 
     mark(&mock, first.artwork_ver).await.unwrap();
 
@@ -366,7 +377,7 @@ async fn artwork_replacement_rejects_stale_confirmation() {
 
     mark(&mock, second.artwork_ver).await.unwrap();
 
-    assert!(mock.snapshot().issues.is_empty());
+    assert_eq!(mock.snapshot().issues.len(), 1);
 
     assert_eq!(
         mock.snapshot()

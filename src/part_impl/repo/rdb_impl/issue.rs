@@ -15,28 +15,28 @@ use poprako_rdb_core::RdbConn;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::write::issue::ChapterIssuesRepl;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::issue::{
-    ClearChapterIssues, ListIssueInfos, ReplaceChapterIssues,
-};
+use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueRow;
-use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page};
+use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
-// Delete all details for a Chapter using a typed Page subquery.
+// Delete all details for a Chapter using its Chapter identity.
 #[instrument(level = "info", skip_all)]
 async fn clear(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
     //
-    let page_ids = t_page::table
-        .filter(t_page::f_chapter_id.eq(chapter_id))
-        .select(t_page::f_id);
+    let ids = t_page_artwork::table
+        .filter(t_page_artwork::f_chapter_id.eq(chapter_id))
+        .select(t_page_artwork::f_id);
 
-    diesel::delete(t_issue::table.filter(t_issue::f_page_id.eq_any(page_ids)))
-        .execute(conn)
-        .await
-        .map_err(map_diesel)?;
+    diesel::delete(
+        t_issue::table.filter(t_issue::f_page_artwork_id.eq_any(ids)),
+    )
+    .execute(conn)
+    .await
+    .map_err(map_diesel)?;
 
     accept(())
 }
@@ -45,12 +45,13 @@ async fn clear(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
 #[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    page_id: &str,
+    chapter_id: &str,
 ) -> BaseRest<Vec<IssueInfo>> {
     //
     let rows = t_issue::table
-        .filter(t_issue::f_page_id.eq(page_id))
-        .order(t_issue::f_index.asc())
+        .inner_join(t_page_artwork::table)
+        .filter(t_page_artwork::f_chapter_id.eq(chapter_id))
+        .order((t_page_artwork::f_index.asc(), t_issue::f_index.asc()))
         .select(IssueRow::as_select())
         .load::<IssueRow>(conn)
         .await
@@ -92,7 +93,7 @@ impl Run<ListIssueInfos<'_>> for HybRepo {
     // Executes this repository operation.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListIssueInfos<'_>) -> BaseRest<Vec<IssueInfo>> {
-        submit_query!(self.rdb_core, list_infos, oper.page_id)
+        submit_query!(self.rdb_core, list_infos, oper.chapter_id)
     }
 }
 
@@ -114,26 +115,5 @@ where
         oper: &ReplaceChapterIssues<'_>,
     ) -> BaseRest<()> {
         replace(context.conn(), oper.repl).await
-    }
-}
-
-impl<L> Step<ClearChapterIssues<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Minimum transaction isolation required by this operation.
-    type Level = ReptRead;
-
-    // Application error returned by this operation.
-    type Error = BaseError;
-
-    // Executes this repository operation.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ClearChapterIssues<'_>,
-    ) -> BaseRest<()> {
-        clear(context.conn(), oper.chapter_id).await
     }
 }

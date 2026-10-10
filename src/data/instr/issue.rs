@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use crate::model::shared::issue::IssueRect;
 
-/// A finite rectangle contained within the normalized whole Page.
+/// A finite rectangle contained within the normalized whole composite.
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueRectInstr {
@@ -48,18 +48,20 @@ pub struct IssueInstr {
     pub note: String,
 }
 
-/// Issues for one position in the chapter's current Page manifest.
+/// Issues for one explicit composite page in the imported review file.
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageIssuesInstr {
+    /// Stable composite page ID within the target Chapter.
+    pub page_artwork_id: String,
     /// Array order determines the zero-based issue index.
     pub issues: Vec<IssueInstr>,
 }
 
-/// Replaces the single current review for a Chapter in current Page order.
+/// Replaces the single current review for a Chapter using explicit composite IDs.
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterIssuesInstr {
-    /// Exactly one item per current Page, including Pages without issues.
+    /// Composite page IDs with their issues; omitted pages have no issues.
     pub pages: Vec<PageIssuesInstr>,
 }

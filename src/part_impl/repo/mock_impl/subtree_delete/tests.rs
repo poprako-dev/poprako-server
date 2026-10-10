@@ -1,4 +1,4 @@
-// review_subtree_cleanup(delete_chapter)(positive): physical subtree cleanup removes Page-scoped current review details.
+// review_subtree_cleanup(delete_chapter)(positive): physical subtree cleanup removes Chapter-scoped current review details.
 #[test]
 fn subtree_cleanup_removes_current_review_issues() {
     use super::sweep;
@@ -22,9 +22,20 @@ fn subtree_cleanup_removes_current_review_issues() {
         updated_at: now,
     });
 
+    state.page_artworks.push(
+        crate::model::read::proj::page_artwork::PageArtworkInfo {
+            id: "artwork-review".into(),
+            chapter_id: "chapter-review".into(),
+            index: 5,
+            raw_ident: None,
+            created_at: now,
+            updated_at: now,
+        },
+    );
+
     state.issues.push(IssueInfo {
         id: "issue-review".into(),
-        page_id: "page-review".into(),
+        page_artwork_id: "artwork-review".into(),
         index: 0,
         variant: "custom".into(),
         layer_path: None,

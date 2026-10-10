@@ -24,6 +24,8 @@ pub mod member_invitation;
 pub mod online_user;
 /// Page repository operations.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Hierarchical subtree deletion operations.
 pub mod subtree_delete;
 /// System mail repository operations.

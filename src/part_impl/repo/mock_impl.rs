@@ -36,6 +36,8 @@ pub mod member_invitation;
 pub mod online_user;
 /// Mock implementations for page repository operations.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Mock hierarchy deletion repository operations.
 pub mod subtree_delete;
 /// Mock implementations for system mail repository operations.
@@ -98,6 +100,10 @@ use crate::result::{BaseError, ExpectedVariant};
 pub struct MockState {
     /// Current issues, replaced only as a complete chapter review.
     pub issues: Vec<IssueInfo>,
+
+    /// Independently ordered composite pages.
+    pub page_artworks:
+        Vec<crate::model::read::proj::page_artwork::PageArtworkInfo>,
 
     /// Durable receipts participating in mock transaction rollback.
     pub unit_saves: Vec<crate::model::read::proj::unit_save::UnitSaveInfo>,
@@ -169,6 +175,10 @@ pub struct MockSnapshot {
     /// Current issues captured for assertions.
     pub issues: Vec<IssueInfo>,
 
+    /// Independently ordered composite pages.
+    pub page_artworks:
+        Vec<crate::model::read::proj::page_artwork::PageArtworkInfo>,
+
     /// Original filenames keyed by page identity.
     pub page_raw_idents:
         HashMap<String, crate::model::read::proj::page::PageRawIdentInfo>,
@@ -236,6 +246,7 @@ impl From<MockState> for MockSnapshot {
     fn from(state: MockState) -> Self {
         Self {
             issues: state.issues,
+            page_artworks: state.page_artworks,
             users: state.users,
             credentials: state.credentials,
             announcements: state.announcements,

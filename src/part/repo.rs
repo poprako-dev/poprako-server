@@ -52,6 +52,8 @@ pub mod online_user;
 pub mod oper;
 /// Page repository port.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Hierarchical subtree deletion repository port.
 pub mod subtree_delete;
 /// System mail repository port.

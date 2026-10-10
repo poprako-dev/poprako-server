@@ -1,4 +1,4 @@
-//! Whole-chapter review import and read-only Page queries.
+//! Whole-chapter review import and read-only Chapter queries.
 
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
@@ -26,18 +26,18 @@ use crate::usecase::issue as issue_usecase;
     responses(
         (status = 200, description = "Current review replaced completely", body = HttpBody<ImportChapterIssuesVal>),
         (status = 403, description = "Current REVIEWER assignment required; administrator status alone does not authorize import"),
-        (status = 422, description = "Missing Chapter, published Chapter, mismatched Page count, or invalid issue input"),
+        (status = 422, description = "Missing Chapter, published Chapter, or invalid issue input"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn import(
+pub async fn import_issue(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
     Json(instr): Json<ImportChapterIssuesInstr>,
 ) -> HttpResult<ImportChapterIssuesVal> {
     //
-    issue_usecase::import::<_, RdbContext<ReptRead>, HybRepo>(
+    issue_usecase::import_issue::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         token,
         chapter_id,
@@ -47,27 +47,27 @@ pub async fn import(
     .accept(StatusCode::OK)
 }
 
-/// Reads the Page's issues in ascending index order; an empty review returns [].
+/// Reads the Chapter's issues ordered by composite page and issue position; an empty review returns [].
 #[cfg_attr(feature = "swagger", utoipa::path(
-    get, path = "/api/v1/pages/{page_id}/issues", tag = "issues",
-    params(("page_id" = String, Path, description = "Page ID")),
+    get, path = "/api/v1/chapters/{chapter_id}/issues", tag = "issues",
+    params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Ordered current Page issues", body = HttpBody<Vec<IssueInfoView>>),
+        (status = 200, description = "Ordered current Chapter issues", body = HttpBody<Vec<IssueInfoView>>),
         (status = 403, description = "Team membership or chapter assignment required"),
-        (status = 422, description = "Page or owning Chapter not found"),
+        (status = 422, description = "Chapter not found"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
-    Path(page_id): Path<String>,
+    Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<Vec<IssueInfoView>> {
     //
     issue_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         token,
-        page_id,
+        chapter_id,
     )
     .await?
     .accept(StatusCode::OK)

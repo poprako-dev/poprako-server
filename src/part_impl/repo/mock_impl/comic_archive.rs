@@ -7,7 +7,8 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::read::proj::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
+    ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot,
+    ComicArchivePageSnapshot, ComicArchiveSnapshot,
 };
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
@@ -166,20 +167,9 @@ fn page_snapshots(
 
             unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
-            let mut issue_infos = context
-                .state
-                .issues
-                .iter()
-                .filter(|issue| issue.page_id == page_info.id)
-                .cloned()
-                .collect::<Vec<_>>();
-
-            issue_infos.sort_by_key(|issue| issue.index);
-
             accept(ComicArchivePageSnapshot {
                 page_info,
                 unit_infos,
-                issue_infos,
             })
         })
         .collect::<BaseRest<Vec<_>>>()?;
@@ -272,11 +262,43 @@ fn get_snapshot_excluded(
                     .then_with(|| left.id.cmp(&right.id))
             });
 
+            let mut page_artworks = context
+                .state
+                .page_artworks
+                .iter()
+                .filter(|info| info.chapter_id == chapter_info.id)
+                .cloned()
+                .collect::<Vec<_>>();
+
+            page_artworks.sort_by_key(|info| info.index);
+
+            let page_artwork_snapshots = page_artworks
+                .into_iter()
+                .map(|info| {
+                    //
+                    let mut issue_infos = context
+                        .state
+                        .issues
+                        .iter()
+                        .filter(|issue| issue.page_artwork_id == info.id)
+                        .cloned()
+                        .collect::<Vec<_>>();
+
+                    issue_infos.sort_by_key(|issue| issue.index);
+
+                    ComicArchivePageArtworkSnapshot {
+                        page_artwork_info: info,
+                        issue_infos,
+                    }
+                })
+                .collect();
+
             accept(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 workflow_record_infos,
                 page_snapshots,
+                page_artwork_snapshots,
             })
         })
         .collect::<BaseRest<Vec<_>>>()?;
@@ -367,7 +389,17 @@ fn commit(
     });
 
     context.state.issues.retain(|issue| {
-        !comic_archive_entry.source_page_ids.contains(&issue.page_id)
+        //
+        !comic_archive_entry
+            .source_page_artwork_ids
+            .contains(&issue.page_artwork_id)
+    });
+
+    context.state.page_artworks.retain(|info| {
+        //
+        !comic_archive_entry
+            .source_page_artwork_ids
+            .contains(&info.id)
     });
 
     context.state.units.retain(|unit_info| {

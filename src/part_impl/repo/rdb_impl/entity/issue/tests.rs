@@ -13,7 +13,7 @@ use crate::result::BaseError;
 fn entry(index: usize) -> IssueEntry {
     IssueEntry {
         id: "issue".into(),
-        page_id: "page".into(),
+        page_artwork_id: "artwork".into(),
         index,
         variant: "text".into(),
         layer_path: None,

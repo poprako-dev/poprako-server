@@ -107,6 +107,10 @@ error-stale-artwork-upload = The artwork upload version is missing or stale.
 error-artwork-unavailable = No artwork is currently available for this chapter.
 
 error-issue-reviewer-required = Only an assigned chapter reviewer may import review issues.
-error-issue-page-count = The import must contain exactly one item per current page.
 error-issue-input = Issue categories and supplied layer paths must not be blank.
 error-issue-rect = The issue rectangle must be finite, positive, and contained within the page.
+
+error-page-artwork-not-found = Composite page not found.
+error-page-artwork-target = Composite page identities must be distinct and belong to this chapter.
+error-page-artwork-write-role-required = A typesetter, redrawer, reviewer assignment or team administration is required.
+error-stale-page-artwork-upload = The composite upload generation is no longer current.

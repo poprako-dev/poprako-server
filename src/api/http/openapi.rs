@@ -44,6 +44,10 @@ use crate::data::instr::page::{
     AllocChapterPagesInstr, AllocPageImageInstr, MarkPageImageUploadedInstr,
     PageImageInstr,
 };
+use crate::data::instr::page_artwork::{
+    AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
+    MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
+};
 use crate::data::instr::system_mail::MarkSystemMailReadInstr;
 use crate::data::instr::team::{
     AllocTeamAvatarInstr, CreateTeamInstr, MarkTeamAvatarUploadedInstr,
@@ -80,6 +84,9 @@ use crate::data::val::page::{
     AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
     PageUnitFlaggedStatsVal,
 };
+use crate::data::val::page_artwork::{
+    AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
+};
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
@@ -104,6 +111,7 @@ use crate::data::view::issue::{IssueInfoView, IssueRectView};
 use crate::data::view::member::MemberInfoView;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::data::view::page::PageInfoView;
+use crate::data::view::page_artwork::PageArtworkInfoView;
 use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::system_mail::SystemMailInfoView;
 use crate::data::view::team::TeamInfoView;
@@ -178,7 +186,11 @@ use crate::value::unit::UnitTextPart;
         handler::chapter_port::import_translation,
         handler::chapter_port::export_translation,
         handler::chapter_port::export_translation_download,
-        handler::issue::import,
+        handler::page_artwork::list_infos,
+        handler::page_artwork::alloc_chapter_page_artworks,
+        handler::page_artwork::alloc_image,
+        handler::page_artwork::mark_image_uploaded,
+        handler::issue::import_issue,
         handler::issue::list_infos,
         handler::page::list_infos,
         handler::page::list_unit_diff_stats,
@@ -234,7 +246,12 @@ use crate::value::unit::UnitTextPart;
         handler::member_invitation::update_roles,
         handler::member_invitation::delete,
     ),
-    components(schemas(ImportChapterIssuesInstr, PageIssuesInstr, IssueInstr, IssueRectInstr, ImportChapterIssuesVal, IssueInfoView, IssueRectView,
+    components(schemas(
+        ImportChapterIssuesInstr, PageIssuesInstr, IssueInstr, IssueRectInstr,
+        ImportChapterIssuesVal, IssueInfoView, IssueRectView,
+        AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
+        MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
+        AllocChapterPageArtworksVal, AllocatedPageArtworkVal, PageArtworkInfoView,
         HttpError,
         RegisterAuthInstr,
         RegisterAuthVal,
@@ -362,6 +379,8 @@ use crate::value::unit::UnitTextPart;
         (name = "comics", description = "Comic management endpoints"),
         (name = "chapters", description = "Chapter management endpoints"),
         (name = "chapter-port", description = "Chapter translation and artwork import/export endpoints"),
+        (name = "page-artworks", description = "Composite artwork page endpoints"),
+        (name = "issues", description = "Composite artwork review endpoints"),
         (name = "pages", description = "Page management endpoints"),
         (name = "units", description = "Page unit endpoints"),
         (name = "members", description = "Member management endpoints"),

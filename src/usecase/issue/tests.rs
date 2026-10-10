@@ -184,6 +184,17 @@ fn review_mock(role: RoleField) -> Mock {
     for index in [1, 0] {
         let now = OffsetDateTime::now_utc();
 
+        mock.state.lock().unwrap().page_artworks.push(
+            crate::model::read::proj::page_artwork::PageArtworkInfo {
+                id: format!("artwork-{index}"),
+                chapter_id: "chapter-1".into(),
+                index: index + 3,
+                raw_ident: None,
+                created_at: now,
+                updated_at: now,
+            },
+        );
+
         mock.seed_page(PageInfo {
             id: format!("page-{index}"),
             chapter_id: "chapter-1".into(),
@@ -203,6 +214,7 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
     ImportChapterIssuesInstr {
         pages: vec![
             PageIssuesInstr {
+                page_artwork_id: "artwork-0".into(),
                 issues: vec![IssueInstr {
                     variant: "custom issue".into(),
                     layer_path: Some("opaque path".into()),
@@ -215,7 +227,10 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
                     note: note.into(),
                 }],
             },
-            PageIssuesInstr { issues: vec![] },
+            PageIssuesInstr {
+                page_artwork_id: "artwork-1".into(),
+                issues: vec![],
+            },
         ],
     }
 }
@@ -224,10 +239,10 @@ async fn submit(
     mock: &Mock,
     instr: ImportChapterIssuesInstr,
 ) -> BaseRest<ImportChapterIssuesVal> {
-    import((mock, mock), token("user-1"), "chapter-1".into(), instr).await
+    import_issue((mock, mock), token("user-1"), "chapter-1".into(), instr).await
 }
 
-// review_replace(import)(positive): Page order maps every input, replacing the single review and renewing identities.
+// review_replace(import_issue)(positive): Explicit composite IDs map each input, replacing the single review and renewing identities.
 #[tokio::test]
 async fn import_replaces_whole_chapter_and_preserves_text() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -243,7 +258,7 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     let first = mock.snapshot().issues.first().unwrap().clone();
 
-    assert_eq!(first.page_id, "page-0");
+    assert_eq!(first.page_artwork_id, "artwork-0");
 
     assert_eq!(first.index, 0);
 
@@ -252,23 +267,12 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     let issues = list_infos::<MockContext, _>(
         (&mock,),
         token("user-1"),
-        "page-0".into(),
+        "chapter-1".into(),
     )
     .await
     .unwrap();
 
     assert_eq!(issues.len(), 1);
-
-    assert!(
-        list_infos::<MockContext, _>(
-            (&mock,),
-            token("user-1"),
-            "page-1".into()
-        )
-        .await
-        .unwrap()
-        .is_empty()
-    );
 
     submit(&mock, input("")).await.unwrap();
 
@@ -278,17 +282,9 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     assert_eq!(second.note, "");
 
-    submit(
-        &mock,
-        ImportChapterIssuesInstr {
-            pages: vec![
-                PageIssuesInstr { issues: vec![] },
-                PageIssuesInstr { issues: vec![] },
-            ],
-        },
-    )
-    .await
-    .unwrap();
+    submit(&mock, ImportChapterIssuesInstr { pages: vec![] })
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().issues.is_empty());
 
@@ -297,9 +293,22 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     assert_eq!(chapter.total_unit_count, 2);
 
     assert_eq!(chapter.stages.get_phase(Stage::Review), StagePhase::Pending);
+
+    mock.state.lock().unwrap().pages.clear();
+
+    let mut instr = input("independent review");
+
+    instr.pages.pop();
+
+    assert_eq!(submit(&mock, instr).await.unwrap().imported_page_count, 1);
+
+    assert_eq!(
+        mock.snapshot().issues.first().unwrap().page_artwork_id,
+        "artwork-0"
+    );
 }
 
-// review_geometry(import)(positive): layers and normalized whole-page rectangles are independent optional values.
+// review_geometry(import_issue)(positive): layers and normalized whole-page rectangles are independent optional values.
 #[tokio::test]
 async fn import_accepts_all_optional_geometry_combinations() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -340,7 +349,7 @@ async fn import_accepts_all_optional_geometry_combinations() {
     );
 }
 
-// review_validation(import)(negative): invalid geometry, blank fields and mismatched Page counts preserve the old review.
+// review_validation(import_issue)(negative): invalid geometry and blank fields preserve the old review.
 #[tokio::test]
 async fn rejected_input_preserves_current_review() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -380,12 +389,6 @@ async fn rejected_input_preserves_current_review() {
         assert_eq!(mock.snapshot().issues, baseline);
     }
 
-    let mut instr = input("invalid");
-
-    instr.pages.pop();
-
-    assert!(submit(&mock, instr).await.is_err());
-
     for field in ["variant", "layer"] {
         let mut instr = input("invalid");
 
@@ -403,7 +406,7 @@ async fn rejected_input_preserves_current_review() {
     assert_eq!(mock.snapshot().issues, baseline);
 }
 
-// review_permissions(import, list_infos)(negative): only an assigned REVIEWER may write; Page membership or assignment may read.
+// review_permissions(import_issue, list_infos)(negative): only an assigned REVIEWER may write; team membership or chapter assignment may read.
 #[tokio::test]
 async fn review_permissions_and_published_freeze() {
     for role in [
@@ -433,7 +436,7 @@ async fn review_permissions_and_published_freeze() {
         list_infos::<MockContext, _>(
             (&mock,),
             token("member"),
-            "page-0".into()
+            "chapter-1".into()
         )
         .await
         .is_ok()
@@ -443,7 +446,7 @@ async fn review_permissions_and_published_freeze() {
         list_infos::<MockContext, _>(
             (&mock,),
             token("outsider"),
-            "page-0".into()
+            "chapter-1".into()
         )
         .await
         .is_err()
@@ -475,7 +478,7 @@ async fn review_permissions_and_published_freeze() {
     assert_eq!(mock.snapshot().issues.first().unwrap().note, "current");
 }
 
-// review_atomicity(import)(negative): a failure after replacement rolls back the entire current review.
+// review_atomicity(import_issue)(negative): a failure after replacement rolls back the entire current review.
 #[tokio::test]
 async fn replacement_rolls_back_on_comic_touch_failure() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -491,7 +494,7 @@ async fn replacement_rolls_back_on_comic_touch_failure() {
     assert_eq!(mock.snapshot().issues, baseline);
 }
 
-// review_concurrency(import)(positive): concurrent replacements retain one complete batch without mixed review data.
+// review_concurrency(import_issue)(positive): concurrent replacements retain one complete batch without mixed review data.
 #[tokio::test]
 async fn concurrent_imports_keep_one_complete_review() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -515,20 +518,12 @@ async fn concurrent_imports_keep_one_complete_review() {
     ));
 }
 
-// review_lifecycle(DeletePages, archive)(positive): Page deletion cleans details; successful archive preserves the current review and removes active issues.
+// review_lifecycle(DeletePages, archive)(positive): Page deletion preserves details; successful archive preserves the current review and removes active issues.
 #[tokio::test]
 async fn archive_snapshot_and_page_delete_include_review() {
     let mock = review_mock(RoleField::REVIEWER);
 
     submit(&mock, input("archived note")).await.unwrap();
-
-    let page = mock
-        .snapshot()
-        .pages
-        .iter()
-        .find(|page| page.id == "page-0")
-        .unwrap()
-        .clone();
 
     mock.coord(async |context| {
         DeletePages::Ids {
@@ -540,11 +535,7 @@ async fn archive_snapshot_and_page_delete_include_review() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().issues.is_empty());
-
-    mock.seed_page(page);
-
-    submit(&mock, input("archived note")).await.unwrap();
+    assert_eq!(mock.snapshot().issues.len(), 1);
 
     let mut admin = member("user-1");
 
@@ -586,7 +577,9 @@ async fn archive_snapshot_and_page_delete_include_review() {
         .as_array()
         .unwrap()
         .iter()
-        .flat_map(|chapter| chapter.get("pages").unwrap().as_array().unwrap())
+        .flat_map(|chapter| {
+            chapter.get("page_artworks").unwrap().as_array().unwrap()
+        })
         .flat_map(|page| page.get("issues").unwrap().as_array().unwrap())
         .map(|issue| issue.get("note").unwrap().as_str().unwrap())
         .collect::<Vec<_>>();

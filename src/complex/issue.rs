@@ -1,12 +1,16 @@
 //! Pure validation for complete chapter review imports.
 
+/// Review import permission rules.
+pub mod perm;
+
+use std::collections::HashSet;
+
 use poprako_util::i18n::trl;
 
 use crate::data::instr::issue::ImportChapterIssuesInstr;
-use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::model::shared::issue::IssueRect;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::role::RoleField;
 
 /// Constructs one localized issue validation or permission error.
 pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
@@ -18,7 +22,7 @@ pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
     BaseError::Expected { variant, msg }
 }
 
-/// Ensures finite, positive geometry entirely contained within the Page.
+/// Ensures finite, positive geometry entirely contained within the composite.
 pub fn ensure_rect(rect: IssueRect) -> BaseRest<()> {
     //
     if [rect.x_coord, rect.y_coord, rect.width, rect.height]
@@ -37,32 +41,27 @@ pub fn ensure_rect(rect: IssueRect) -> BaseRest<()> {
     Err(error(ExpectedVariant::Args, "error-issue-rect"))
 }
 
-/// Rejects imports without a current REVIEWER assignment.
-pub fn ensure_user_can_import(
-    assignment_info: &AssignmentInfo,
-) -> BaseRest<()> {
-    //
-    if assignment_info.roles.has_any_role(&[RoleField::REVIEWER]) {
-        return accept(());
-    }
-
-    Err(error(
-        ExpectedVariant::Perm,
-        "error-issue-reviewer-required",
-    ))
-}
-
-/// Validates every Page and issue before replacement starts.
-pub fn ensure_import(
+/// Validates every composite target and issue before replacement starts.
+pub fn ensure_import_issue(
     instr: &ImportChapterIssuesInstr,
-    page_count: usize,
+    page_artwork_infos: &[PageArtworkInfo],
 ) -> BaseRest<()> {
     //
-    if instr.pages.len() != page_count {
-        return Err(error(ExpectedVariant::Args, "error-issue-page-count"));
-    }
+    let mut ids = HashSet::new();
 
     for page_instr in &instr.pages {
+        //
+        if !ids.insert(&page_instr.page_artwork_id)
+            || !page_artwork_infos
+                .iter()
+                .any(|info| info.id == page_instr.page_artwork_id)
+        {
+            return Err(error(
+                ExpectedVariant::Args,
+                "error-page-artwork-target",
+            ));
+        }
+
         //
         for issue_instr in &page_instr.issues {
             //

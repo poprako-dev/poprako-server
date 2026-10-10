@@ -25,7 +25,6 @@ use crate::data::val::chapter_port::{
     AllocChapterArtworkVal, ExportChapterArtworkVal,
 };
 use crate::data::view::chapter_port::ChapterArtworkUploadSlotView;
-use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
@@ -38,7 +37,6 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::issue::IssueRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
@@ -47,7 +45,6 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::issue::ClearChapterIssues;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
@@ -169,7 +166,6 @@ where
         + MemberRepo<C>
         + TeamRepo<C>
         + ChapterWorkflowRecordRepo<C>
-        + IssueRepo<C>
         + ComicRepo<C>
         + Send
         + Sync,
@@ -217,13 +213,15 @@ where
             let is_new_confirmation =
                 chapter_info.confirmed_artwork_ver != Some(instr.artwork_ver);
 
-            clear_review_for_new_artwork(
-                repo,
-                context,
-                &chapter_info,
-                instr.artwork_ver,
-            )
-            .await?;
+            if is_new_confirmation {
+                //
+                SetChapterConfirmedArtworkVersion {
+                    id: &chapter_info.id,
+                    version: instr.artwork_ver,
+                }
+                .step_on(repo, context)
+                .await?;
+            }
 
             let previous_phase =
                 chapter_info.stages.get_phase(Stage::TypesetRedraw);
@@ -433,35 +431,4 @@ where
     })?;
 
     chapter_artwork_complex::ensure_user_can_upload(&assignment_info)
-}
-
-// Clear the single current review exactly once for a successfully marked generation.
-async fn clear_review_for_new_artwork<C, R>(
-    repo: &R,
-    context: &mut C,
-    chapter_info: &ChapterInfo,
-    ver: u32,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: ChapterRepo<C> + IssueRepo<C> + Sync,
-{
-    if chapter_info.confirmed_artwork_ver == Some(ver) {
-        return accept(());
-    }
-
-    ClearChapterIssues {
-        chapter_id: &chapter_info.id,
-    }
-    .step_on(repo, context)
-    .await?;
-
-    SetChapterConfirmedArtworkVersion {
-        id: &chapter_info.id,
-        version: ver,
-    }
-    .step_on(repo, context)
-    .await?;
-
-    accept(())
 }

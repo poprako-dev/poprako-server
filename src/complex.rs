@@ -28,6 +28,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page business rules and perm checks.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail business rules and perm checks.
 pub mod system_mail;
 /// Team business rules and perm checks.

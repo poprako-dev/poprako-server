@@ -8,6 +8,7 @@ use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 
@@ -31,6 +32,9 @@ pub struct ComicArchiveChapterSnapshot {
     pub workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
     /// All pages under this chapter, each containing its text units.
     pub page_snapshots: Vec<ComicArchivePageSnapshot>,
+
+    /// Independently ordered composite pages and their current issues.
+    pub page_artwork_snapshots: Vec<ComicArchivePageArtworkSnapshot>,
 }
 
 /// Active page data and its ordered text units.
@@ -39,8 +43,6 @@ pub struct ComicArchivePageSnapshot {
     pub page_info: PageInfo,
     /// Ordered text units belonging to this page at the time of archiving.
     pub unit_infos: Vec<UnitInfo>,
-    /// Ordered issues from the Chapter's current review.
-    pub issue_infos: Vec<IssueInfo>,
 }
 
 /// One compressed row to persist in an archive table.
@@ -60,4 +62,12 @@ pub struct ComicArchiveRecord {
 
     /// When this archive record was created.
     pub created_at: OffsetDateTime,
+}
+
+/// Composite page metadata with its ordered current review details.
+pub struct ComicArchivePageArtworkSnapshot {
+    /// Independent composite page.
+    pub page_artwork_info: PageArtworkInfo,
+    /// Current review issues on this page.
+    pub issue_infos: Vec<IssueInfo>,
 }

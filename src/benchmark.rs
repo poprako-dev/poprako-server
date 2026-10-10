@@ -214,7 +214,6 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             }
 
             page_snapshots.push(ComicArchivePageSnapshot {
-                issue_infos: Vec::new(),
                 page_info: PageInfo {
                     id: page_id,
                     chapter_id: chapter_id.clone(),
@@ -230,6 +229,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
         }
 
         chapter_snapshots.push(ComicArchiveChapterSnapshot {
+            page_artwork_snapshots: Vec::new(),
             chapter_info: ChapterInfo {
                 confirmed_artwork_ver: None,
                 id: chapter_id,

@@ -1,4 +1,7 @@
-# Chapter issue confirmation baseline upgrade
+# ChapterArtwork confirmation baseline upgrade
+
+The confirmation baseline makes ChapterArtwork ZIP confirmation and typesetting
+completion idempotent. It does not clear Issues or manage composite artwork pages.
 
 Fresh databases receive `f_confirmed_artwork_version` from the single-table
 Chapter baseline and `t_issue` from its own single-table migration. Replaying

@@ -28,6 +28,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page-specific values.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Bounded ordinary-list pagination values.
 pub mod pagination;
 /// Role and perm value types.

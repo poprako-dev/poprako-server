@@ -4,8 +4,10 @@
 mod commit;
 // Permanent archive payload query.
 mod payload;
-// Ordered Page, Unit and current review snapshot loading and assembly.
+// Ordered Page and Unit snapshot loading and assembly.
 mod pages;
+// Independent composite page snapshots.
+mod artwork;
 
 /// Comic archive RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -25,13 +27,12 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::issue::IssueInfo;
 use crate::part::nucl::ReptRead;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchiveSnapshot};
+use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchiveSnapshot};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -238,8 +239,9 @@ struct ArchiveChapterParts {
     page_infos: Vec<PageInfo>,
     // Units belonging to the selected Pages.
     unit_infos: Vec<UnitInfo>,
-    // Current review details belonging to the selected Pages.
-    issue_infos: Vec<IssueInfo>,
+    // Current review details belonging to the selected Chapters.
+    page_artwork_snapshots:
+        HashMap<String, Vec<ComicArchivePageArtworkSnapshot>>,
 }
 
 // Assemble loaded archive descendants into Chapter snapshots.
@@ -255,7 +257,7 @@ fn assemble_chapter_snapshots(
         users_by_id,
         page_infos,
         unit_infos,
-        issue_infos,
+        mut page_artwork_snapshots,
     } = coord_fields;
 
     let mut assignment_infos_by_chapter =
@@ -303,7 +305,7 @@ fn assemble_chapter_snapshots(
     }
 
     let mut page_snapshots_by_chapter =
-        pages::assemble_page_snapshots(page_infos, unit_infos, issue_infos)?;
+        pages::assemble_page_snapshots(page_infos, unit_infos)?;
 
     let chapter_snapshots = chapter_infos
         .into_iter()
@@ -322,6 +324,9 @@ fn assemble_chapter_snapshots(
             );
 
             ComicArchiveChapterSnapshot {
+                page_artwork_snapshots: page_artwork_snapshots
+                    .remove(&chapter_info.id)
+                    .unwrap_or_default(),
                 chapter_info,
                 assignment_infos,
                 workflow_record_infos,
@@ -354,8 +359,11 @@ async fn get_snapshot_excluded(
     let (workflow_record_infos, assignment_infos, user_infos) =
         load_archive_chapter_relations(conn, &source_chapter_ids).await?;
 
-    let (page_infos, unit_infos, issue_infos) =
+    let (page_infos, unit_infos) =
         pages::load_archive_pages(conn, &source_chapter_ids).await?;
+
+    let page_artwork_snapshots =
+        artwork::load_archive_page_artworks(conn, &source_chapter_ids).await?;
 
     let chapter_snapshots = assemble_chapter_snapshots(
         source_comic_id,
@@ -366,7 +374,7 @@ async fn get_snapshot_excluded(
             users_by_id: user_infos,
             page_infos,
             unit_infos,
-            issue_infos,
+            page_artwork_snapshots,
         },
     )?;
 

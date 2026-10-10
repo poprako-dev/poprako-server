@@ -30,6 +30,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page request handlers.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail request handlers.
 pub mod system_mail;
 /// Team request handlers.

@@ -26,6 +26,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page instruction DTOs.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System-mail instruction DTOs.
 pub mod system_mail;
 /// Team instruction DTOs.
