@@ -9,7 +9,9 @@ use super::*;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::value::chapter::mask::StageMask;
@@ -75,6 +77,7 @@ fn chapter(id: &str) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
+        confirmed_artwork_ver: None,
         id: id.into(),
 
         comic_id: "comic-1".into(),
@@ -214,6 +217,47 @@ async fn export(mock: &Mock, user: &str) -> BaseRest<ExportChapterArtworkVal> {
     .await
 }
 
+// Seed a current review for artwork cleanup and rollback assertions.
+fn seed_review(mock: &Mock) -> IssueInfo {
+    let now = OffsetDateTime::now_utc();
+
+    mock.seed_page(PageInfo {
+        id: "page-1".into(),
+        chapter_id: "chapter-1".into(),
+        index: 0,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        created_at: now,
+        updated_at: now,
+    });
+
+    mock.state.lock().unwrap().page_artworks.push(
+        crate::model::read::proj::page_artwork::PageArtworkInfo {
+            id: "artwork-1".into(),
+            chapter_id: "chapter-1".into(),
+            index: 2,
+            raw_ident: None,
+            created_at: now,
+            updated_at: now,
+        },
+    );
+
+    let issue_info = IssueInfo {
+        id: "issue-1".into(),
+        page_artwork_id: "artwork-1".into(),
+        index: 0,
+        variant: "custom".into(),
+        layer_name: None,
+        rect: None,
+        note: "review".into(),
+    };
+
+    mock.state.lock().unwrap().issues.push(issue_info.clone());
+
+    issue_info
+}
+
 // artwork_completes_once(mark_artwork_uploaded)(positive): confirmation is atomic and idempotent from pending and active phases.
 #[tokio::test]
 async fn artwork_completes_once_from_pending_and_active() {
@@ -295,15 +339,29 @@ async fn artwork_completes_once_from_pending_and_active() {
 async fn artwork_replacement_rejects_stale_confirmation() {
     let mock = seed(RoleField::REDRAWER);
 
+    let issue_info = seed_review(&mock);
+
     let first = allocate(&mock, 1).await.unwrap();
 
+    assert_eq!(mock.snapshot().issues.len(), 1);
+
     mark(&mock, first.artwork_ver).await.unwrap();
+
+    assert_eq!(mock.snapshot().issues.len(), 1);
+
+    assert_eq!(mock.snapshot().issues.first(), Some(&issue_info));
+
+    mark(&mock, first.artwork_ver).await.unwrap();
+
+    assert_eq!(mock.snapshot().issues.len(), 1);
 
     let second = allocate(&mock, 2).await.unwrap();
 
     assert!(second.artwork_ver > first.artwork_ver);
 
     assert!(mark(&mock, first.artwork_ver).await.is_err());
+
+    assert_eq!(mock.snapshot().issues.len(), 1);
 
     assert!(export(&mock, "user-1").await.is_err());
 
@@ -318,6 +376,17 @@ async fn artwork_replacement_rejects_stale_confirmation() {
     );
 
     mark(&mock, second.artwork_ver).await.unwrap();
+
+    assert_eq!(mock.snapshot().issues.len(), 1);
+
+    assert_eq!(
+        mock.snapshot()
+            .chapters
+            .first()
+            .unwrap()
+            .confirmed_artwork_ver,
+        Some(second.artwork_ver)
+    );
 
     assert_eq!(mock.event_count(), 1);
 
@@ -394,6 +463,8 @@ async fn artwork_permissions_match_submission_and_export_roles() {
 async fn artwork_completion_rolls_back_when_comic_touch_fails() {
     let mock = seed(RoleField::ADMIN);
 
+    let issue_info = seed_review(&mock);
+
     let allocation = allocate(&mock, 1).await.unwrap();
 
     mock.state.lock().unwrap().comics.clear();
@@ -426,6 +497,13 @@ async fn artwork_completion_rolls_back_when_comic_touch_fails() {
     );
 
     assert!(snapshot.chapter_workflow_records.is_empty());
+
+    assert_eq!(snapshot.issues, vec![issue_info]);
+
+    assert_eq!(
+        snapshot.chapters.first().unwrap().confirmed_artwork_ver,
+        None
+    );
 
     assert_eq!(mock.event_count(), 0);
 }

@@ -14,6 +14,8 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment repository operations.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member repository operations.
 pub mod member;
 /// Member invitation repository operations.
@@ -22,6 +24,8 @@ pub mod member_invitation;
 pub mod online_user;
 /// Page repository operations.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Hierarchical subtree deletion operations.
 pub mod subtree_delete;
 /// System mail repository operations.

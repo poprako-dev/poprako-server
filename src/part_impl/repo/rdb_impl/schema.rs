@@ -66,6 +66,7 @@ diesel::table! {
         f_deleted_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_confirmed_artwork_version -> Nullable<Int8>,
     }
 }
 
@@ -148,14 +149,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_issue (f_id) {
+        f_id -> Text,
+        f_page_artwork_id -> Text,
+        f_index -> Int4,
+        f_variant -> Text,
+        f_layer_name -> Nullable<Text>,
+        f_x_coord -> Nullable<Float8>,
+        f_y_coord -> Nullable<Float8>,
+        f_width -> Nullable<Float8>,
+        f_height -> Nullable<Float8>,
+        f_note -> Text,
+    }
+}
+
+diesel::table! {
     t_local_message (f_id) {
         f_id -> Text,
         f_topic -> Text,
-        f_status -> Text,
         f_payload -> Jsonb,
+        f_status -> Text,
+        f_claim_token -> Nullable<Uuid>,
         f_last_error -> Nullable<Text>,
         f_retried_count -> Int8,
-        f_claim_token -> Nullable<Uuid>,
         f_visible_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
@@ -207,10 +223,10 @@ diesel::table! {
         f_key -> Text,
         f_generation -> Int8,
         f_status -> Text,
-        f_visible_at -> Timestamptz,
-        f_retried_count -> Int8,
         f_claim_token -> Nullable<Uuid>,
+        f_retried_count -> Int8,
         f_error -> Nullable<Text>,
+        f_visible_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -224,6 +240,30 @@ diesel::table! {
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_page_artwork (f_id) {
+        f_id -> Text,
+        f_chapter_id -> Text,
+        f_index -> Int4,
+        f_raw_ident -> Nullable<Text>,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_page_artwork_image (f_id) {
+        f_id -> Text,
+        f_version -> Int8,
+        f_key -> Nullable<Text>,
+        f_is_uploaded -> Nullable<Bool>,
+        f_hash -> Nullable<Bytea>,
+        f_ext -> Nullable<Text>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -400,11 +440,13 @@ diesel::joinable!(t_comic -> t_workset (f_workset_id));
 diesel::joinable!(t_comic_archive -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_user (f_user_id));
+diesel::joinable!(t_issue -> t_page_artwork (f_page_artwork_id));
 diesel::joinable!(t_member -> t_team (f_team_id));
 diesel::joinable!(t_member -> t_user (f_user_id));
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
 diesel::joinable!(t_page -> t_chapter (f_chapter_id));
+diesel::joinable!(t_page_artwork -> t_chapter (f_chapter_id));
 diesel::joinable!(t_page_raw_ident -> t_page (f_page_id));
 diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
 diesel::joinable!(t_term -> t_termbase (f_termbase_id));
@@ -428,11 +470,14 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_comic_archive,
     t_comic_cover,
     t_comment,
+    t_issue,
     t_local_message,
     t_member,
     t_member_invitation,
     t_obj_prom_task,
     t_page,
+    t_page_artwork,
+    t_page_artwork_image,
     t_page_image,
     t_page_raw_ident,
     t_system_mail,

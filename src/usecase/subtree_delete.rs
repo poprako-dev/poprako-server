@@ -9,11 +9,13 @@ use poprako_obj_dept::oper::DeleteObjs;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
 };
+use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::oper::subtree_delete::{
     ClaimSubtreeSweep, ListSubtreePageIds, SweepSubtree,
 };
+use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::subtree_delete::SubtreeSweepLevel;
@@ -28,8 +30,9 @@ where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
-    R: SubtreeRepo<C> + Send + Sync,
-    O: ObjDept<ChapterArtwork, C>
+    R: SubtreeRepo<C> + PageArtworkRepo<C> + Send + Sync,
+    O: ObjDept<PageArtworkImage, C>
+        + ObjDept<ChapterArtwork, C>
         + ObjDept<PageImage, C>
         + ObjDept<ComicCover, C>
         + ObjDept<TeamAvatar, C>
@@ -50,6 +53,20 @@ where
                 //
                 SubtreeDeleteSweepTarget::Chapter { id } => {
                     //
+                    let artworks = ListPageArtworkInfos { chapter_id: id }
+                        .step_on(repo, context)
+                        .await?;
+
+                    let artwork_ids = artworks
+                        .into_iter()
+                        .map(|info| info.id)
+                        .collect::<Vec<_>>();
+
+                    DeleteObjs::<PageArtworkImage>::new(&artwork_ids)
+                        .step_on(obj_dept, context)
+                        .await
+                        .map_err(BaseError::from)?;
+
                     DeleteObjs::<ChapterArtwork>::new(std::slice::from_ref(id))
                         .step_on(obj_dept, context)
                         .await

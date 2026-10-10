@@ -30,6 +30,9 @@ use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{Stage, StagePhase};
+use crate::value::comic_archive::artwork::{
+    ArchivedIssuePayload, ArchivedIssueRectPayload, ArchivedPageArtworkPayload,
+};
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload,
@@ -176,9 +179,18 @@ fn build_entry(
     let (mut source_chapter_ids, mut source_page_ids) =
         (Vec::new(), Vec::new());
 
+    let mut source_page_artwork_ids = Vec::new();
+
     for chapter_snapshot in chapter_snapshots {
         //
         source_chapter_ids.push(chapter_snapshot.chapter_info.id);
+
+        source_page_artwork_ids.extend(
+            chapter_snapshot
+                .page_artwork_snapshots
+                .into_iter()
+                .map(|snapshot| snapshot.page_artwork_info.id),
+        );
 
         source_page_ids.extend(
             chapter_snapshot
@@ -192,6 +204,7 @@ fn build_entry(
         record,
         source_chapter_ids,
         source_page_ids,
+        source_page_artwork_ids,
     })
 }
 
@@ -354,6 +367,42 @@ fn build_chapter_payload(
                     &record_info.payload,
                 ),
                 created_at: record_info.created_at.to_unix_milli(),
+            })
+            .collect(),
+        page_artworks: chapter_snapshot
+            .page_artwork_snapshots
+            .iter()
+            .map(|snapshot| {
+                //
+                let info = &snapshot.page_artwork_info;
+
+                ArchivedPageArtworkPayload {
+                    source_page_artwork_id: &info.id,
+                    index: info.index,
+                    raw_ident: info.raw_ident.as_deref(),
+                    created_at: info.created_at.to_unix_milli(),
+                    updated_at: info.updated_at.to_unix_milli(),
+                    issues: snapshot
+                        .issue_infos
+                        .iter()
+                        .map(|issue| ArchivedIssuePayload {
+                            id: &issue.id,
+                            page_artwork_id: &issue.page_artwork_id,
+                            index: issue.index,
+                            variant: &issue.variant,
+                            layer_name: issue.layer_name.as_deref(),
+                            rect: issue.rect.map(|rect| {
+                                ArchivedIssueRectPayload {
+                                    x_coord: rect.x_coord,
+                                    y_coord: rect.y_coord,
+                                    width: rect.width,
+                                    height: rect.height,
+                                }
+                            }),
+                            note: &issue.note,
+                        })
+                        .collect(),
+                }
             })
             .collect(),
         pages: build_page_payloads(chapter_snapshot),

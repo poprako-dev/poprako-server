@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS "t_user" (
-    "f_id" TEXT PRIMARY KEY,
+    "f_id"             TEXT        PRIMARY KEY,
 
-    "f_nickname" TEXT NOT NULL UNIQUE,
-    "f_qid" TEXT NOT NULL UNIQUE,
+    "f_nickname"       TEXT        NOT NULL UNIQUE,
+    "f_qid"            TEXT        NOT NULL UNIQUE,
 
-    "f_is_sadmin" BOOLEAN NOT NULL DEFAULT FALSE,
+    "f_is_sadmin"      BOOLEAN     NOT NULL DEFAULT FALSE,
 
-    "f_password_hash" TEXT NOT NULL,
+    "f_password_hash"  TEXT        NOT NULL,
 
     "f_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "f_created_at"     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "f_updated_at"     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

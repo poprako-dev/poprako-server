@@ -18,6 +18,8 @@ pub mod comic;
 pub mod comment;
 /// Image response views.
 pub mod image;
+/// Current chapter review issues.
+pub mod issue;
 /// Member response views.
 pub mod member;
 /// Member-invitation response views.
@@ -26,6 +28,8 @@ pub mod member_invitation;
 pub mod obj_url;
 /// Page response views.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Page-port response views.
 pub mod page_port;
 /// System-mail response views.

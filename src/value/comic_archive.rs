@@ -1,5 +1,7 @@
 //! Calendar-month values used by comic archive export.
 
+/// Composite page archive payloads.
+pub mod artwork;
 /// Archived chapter workflow-record payload values.
 pub mod workflow_record;
 
@@ -15,6 +17,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
+use crate::value::comic_archive::artwork::ArchivedPageArtworkPayload;
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
@@ -107,6 +110,9 @@ pub struct ArchivedChapterPayload<'a> {
     pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload<'a>>,
     /// Archived payloads for all pages in this chapter.
     pub pages: Vec<ArchivedPagePayload<'a>>,
+
+    /// Ordered composite pages and their review issues.
+    pub page_artworks: Vec<ArchivedPageArtworkPayload<'a>>,
 }
 
 /// Immutable workflow record payload retained inside an archived chapter.

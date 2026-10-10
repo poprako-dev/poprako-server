@@ -171,10 +171,12 @@ async fn main() -> anyhow::Result<()> {
 
             async move {
                 //
-                NormObjDept::<R2ObjDeptPool, RdbObjDeptProm>::dispatch(
-                    rdb_core,
-                    obj_dept_pool,
-                    task,
+                Box::pin(
+                    NormObjDept::<R2ObjDeptPool, RdbObjDeptProm>::dispatch(
+                        rdb_core,
+                        obj_dept_pool,
+                        task,
+                    ),
                 )
                 .await
             }

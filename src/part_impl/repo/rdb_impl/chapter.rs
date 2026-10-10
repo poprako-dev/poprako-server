@@ -17,8 +17,8 @@ use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfos,
     ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
-    SetChapterPageCountMetrics, StartChapterStage, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    SetChapterConfirmedArtworkVersion, SetChapterPageCountMetrics,
+    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
@@ -28,8 +28,9 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     list_pinned_infos_by_comic_ids, lock_chapters, set_page_counts,
     start_stage, unpin_others, update_info, update_stage,
 };
-use crate::result::{BaseError, BaseRest};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
+use crate::shared::result::diesel as map_diesel;
 
 impl Run<GetChapterInfo<'_, '_>> for HybRepo {
     // Map failed query execution for chapter lookup into repository-level base error.
@@ -424,5 +425,42 @@ where
         oper: &UnpinOtherChapters<'_>,
     ) -> BaseRest<()> {
         unpin_others(context.conn(), oper.comic_id, oper.excluded_id).await
+    }
+}
+
+impl<L> Step<SetChapterConfirmedArtworkVersion<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Minimum transaction isolation required by this operation.
+    type Level = ReptRead;
+
+    // Application error returned by this operation.
+    type Error = BaseError;
+
+    // Executes this repository operation.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &SetChapterConfirmedArtworkVersion<'_>,
+    ) -> BaseRest<()> {
+        //
+        use crate::part_impl::repo::rdb_impl::schema::t_chapter;
+
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+
+        use diesel_async::RunQueryDsl as _;
+
+        diesel::update(t_chapter::table.find(oper.id))
+            .set(
+                t_chapter::f_confirmed_artwork_version
+                    .eq(i64::from(oper.version)),
+            )
+            .execute(context.conn())
+            .await
+            .map_err(map_diesel)?;
+
+        accept(())
     }
 }

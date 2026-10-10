@@ -14,12 +14,16 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment mutation models.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member mutation models.
 pub mod member;
 /// Member invitation mutation models.
 pub mod member_invitation;
 /// Page mutation models.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail mutation models.
 pub mod system_mail;
 /// Team mutation models.

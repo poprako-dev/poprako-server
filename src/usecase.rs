@@ -56,12 +56,16 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment use cases.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member management use cases.
 pub mod member;
 /// Member invitation use cases.
 pub mod member_invitation;
 /// Page management use cases.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Background relational garbage-collection orchestration.
 pub mod subtree_delete;
 /// System mail use cases.

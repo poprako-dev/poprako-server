@@ -105,3 +105,12 @@ error-invalid-page-raw-ident = Original page filename must be nonblank and conta
 error-artwork-upload-role-required = A chapter typesetter or redrawer assignment, or owning-team administrator role, is required.
 error-stale-artwork-upload = The artwork upload version is missing or stale.
 error-artwork-unavailable = No artwork is currently available for this chapter.
+
+error-issue-reviewer-required = Only an assigned chapter reviewer may import review issues.
+error-issue-input = Issue categories and supplied layer names must not be blank.
+error-issue-rect = The issue rectangle must be finite, positive, and contained within the page.
+
+error-page-artwork-not-found = Composite page not found.
+error-page-artwork-target = Composite page identities must be distinct and belong to this chapter.
+error-page-artwork-write-role-required = A typesetter, redrawer, reviewer assignment or team administration is required.
+error-stale-page-artwork-upload = The composite upload generation is no longer current.

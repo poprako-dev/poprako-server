@@ -15,11 +15,12 @@ import { IMPLEMENTED as IT10_IMPLEMENTED, runIt10Module } from "./suites/it_10_c
 import { IMPLEMENTED as IT11_IMPLEMENTED, runIt11Module } from "./suites/it_11_comic_archive.ts";
 import { IMPLEMENTED as IT12_IMPLEMENTED, runIt12Module } from "./suites/it_12_termbase_term.ts";
 import { IMPLEMENTED as IT13_IMPLEMENTED, runIt13Module } from "./suites/it_13_chapter_artwork.ts";
+import { IMPLEMENTED as IT14_IMPLEMENTED, runIt14Module } from "./suites/it_14_chapter_issues.ts";
 import type { RunCtx } from "./state/runCtx.ts";
 
 // Progressive integration test orchestration.
 //
-// The suite runs 14 modules in dependency order. Each module reads its
+// The suite runs 15 modules in dependency order. Each module reads its
 // preconditions from `RunCtx` and publishes what it creates back into
 // `RunCtx` for the next module. Modules whose `IMPLEMENTED` flag is `false`
 // are skipped (visible in the test output as skipped subtests), so the suite
@@ -44,6 +45,7 @@ import type { RunCtx } from "./state/runCtx.ts";
 //   it_11 immutable comic archive and image cleanup records
 //   it_12 termbase / term lifecycle, perms, search, and cascades
 //   it_13 chapter artwork allocation, completion, export, and cleanup
+//   it_14 whole-chapter review replacement and read-only Page queries
 //
 // Cleanup: `cleanupToSeed()` runs in the `finally` block BEFORE
 // `assertDatabaseIsSeedOnly()` so the assert verifies the suite self-cleans
@@ -74,6 +76,7 @@ const modules: ModuleEntry[] = [
     { name: "it_11 comic archive", implemented: IT11_IMPLEMENTED, run: runIt11Module },
     { name: "it_12 termbase term", implemented: IT12_IMPLEMENTED, run: runIt12Module },
     { name: "it_13 chapter artwork", implemented: IT13_IMPLEMENTED, run: runIt13Module },
+    { name: "it_14 chapter issues", implemented: IT14_IMPLEMENTED, run: runIt14Module },
 ];
 
 Deno.test("poprako HTTP API integration (progressive)", async (outerT) => {

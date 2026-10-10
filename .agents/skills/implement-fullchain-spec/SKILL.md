@@ -34,13 +34,11 @@ Convert timestamps to Unix milliseconds at the response boundary.
    mock adapters. Keep Orchestra implementations beside focused SQL helpers.
 4. Keep server Diesel entities under `src/part_impl/repo/rdb_impl/entity`.
    Follow [error-handling-spec](../error-handling-spec/SKILL.md) for conversion.
-5. For schema changes, update matching migration `up.sql` and `down.sql`,
-   apply to the intended development database, regenerate using
-   `just mgr-schema`, then compile. Follow root authorization rules for
-   destructive operations and the generated schema guardrail.
-6. Validate migrations through `sh scripts/ci-migration-check.sh` against
-   the dedicated CI database; `sh scripts/ci-local.sh` prepares that target.
-   Production migrations run only through Actions using
+5. For schema changes, follow
+   [migration-sql-conventions](../migration-sql-conventions/SKILL.md) for
+   paired definitions, validation boundaries, rollback, schema regeneration,
+   and migration checks, then compile.
+6. Production migrations run only through Actions using
    `scripts/ga-apply-migrations.sh`: all up files in one transaction against
    an independently managed, already-running PostgreSQL 18 container.
 

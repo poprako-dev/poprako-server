@@ -148,6 +148,7 @@ async fn chapter_task_waits_for_every_page_image() {
     };
 
     mock.seed_chapter(ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         comic: None,
@@ -261,6 +262,7 @@ async fn completed_raw_provide_ignores_missing_and_cleared_images() {
             .unwrap();
 
         mock.seed_chapter(ChapterInfo {
+            confirmed_artwork_ver: None,
             id: "chapter-1".into(),
             comic_id: "comic-1".into(),
             comic: None,
@@ -324,6 +326,7 @@ async fn empty_raw_provide_does_not_wait_or_complete_the_stage() {
     let time = OffsetDateTime::now_utc();
 
     mock.seed_chapter(ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-empty".into(),
         comic_id: "comic-1".into(),
         comic: None,

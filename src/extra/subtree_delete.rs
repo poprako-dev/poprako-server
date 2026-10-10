@@ -14,8 +14,9 @@ use poprako_obj_dept::ObjDept;
 use crate::config::sched::SchedTaskConfig;
 use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
 };
+use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::result::{BaseRest, accept};
@@ -55,8 +56,14 @@ impl<R, O> SubtreeDeleteTask<R, O> {
 
 impl<R, O> SchedTask for SubtreeDeleteTask<R, O>
 where
-    R: SubtreeRepo<RdbContext> + Clone + Send + Sync + 'static,
-    O: ObjDept<ChapterArtwork, RdbContext>
+    R: SubtreeRepo<RdbContext>
+        + PageArtworkRepo<RdbContext>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    O: ObjDept<PageArtworkImage, RdbContext>
+        + ObjDept<ChapterArtwork, RdbContext>
         + ObjDept<PageImage, RdbContext>
         + ObjDept<ComicCover, RdbContext>
         + ObjDept<TeamAvatar, RdbContext>
@@ -98,8 +105,9 @@ struct SubtreeDeleteTaskRunner<R, O> {
 #[async_trait]
 impl<R, O> SchedTaskRunner for SubtreeDeleteTaskRunner<R, O>
 where
-    R: SubtreeRepo<RdbContext> + Send + Sync,
-    O: ObjDept<ChapterArtwork, RdbContext>
+    R: SubtreeRepo<RdbContext> + PageArtworkRepo<RdbContext> + Send + Sync,
+    O: ObjDept<PageArtworkImage, RdbContext>
+        + ObjDept<ChapterArtwork, RdbContext>
         + ObjDept<PageImage, RdbContext>
         + ObjDept<ComicCover, RdbContext>
         + ObjDept<TeamAvatar, RdbContext>

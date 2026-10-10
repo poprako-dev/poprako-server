@@ -333,6 +333,7 @@ pub fn assignment_info() -> AssignmentInfo {
     };
 
     let chapter_info = ChapterInfo {
+        confirmed_artwork_ver: None,
         id: "chapter-1".into(),
         comic_id: comic_info.id.clone(),
         comic: Some(comic_info),

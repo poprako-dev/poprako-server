@@ -22,12 +22,16 @@ pub mod comic;
 pub mod comment;
 /// Health check request handlers.
 pub mod health;
+/// Current chapter review issues.
+pub mod issue;
 /// Member request handlers.
 pub mod member;
 /// Member invitation request handlers.
 pub mod member_invitation;
 /// Page request handlers.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail request handlers.
 pub mod system_mail;
 /// Team request handlers.

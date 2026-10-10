@@ -107,6 +107,7 @@ pub fn create_chapter(
     let time = now();
 
     let chapter_info = ChapterInfo {
+        confirmed_artwork_ver: None,
         id: chapter_entry.id.clone(),
         comic_id: chapter_entry.comic_id.to_string(),
         comic: None,

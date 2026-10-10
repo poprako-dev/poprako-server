@@ -18,12 +18,16 @@ pub mod comic_archive;
 pub mod comic_list;
 /// Comment value DTOs.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member value DTOs.
 pub mod member;
 /// Member-invitation value DTOs.
 pub mod member_invitation;
 /// Page value DTOs.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Team value DTOs.
 pub mod team;
 /// Term value DTOs.

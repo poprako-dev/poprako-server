@@ -11,7 +11,7 @@ use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
 use crate::part::nucl::Serial;
-use crate::part::obj_dept::{ChapterArtwork, PageImage};
+use crate::part::obj_dept::{ChapterArtwork, PageArtworkImage, PageImage};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
@@ -25,6 +25,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::subtree_delete::{
     DeleteSubtree, LockSubtreeDeleteScope, SubtreeRoot,
 };
+use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::subtree_delete::delete_chapter_objs;
@@ -41,12 +42,17 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: SubtreeRepo<C>
+        + PageArtworkRepo<C>
         + ChapterRepo<C>
         + ComicRepo<C>
         + MemberRepo<C>
         + Send
         + Sync,
-    O: ObjDept<ChapterArtwork, C> + ObjDept<PageImage, C> + Send + Sync,
+    O: ObjDept<ChapterArtwork, C>
+        + ObjDept<PageArtworkImage, C>
+        + ObjDept<PageImage, C>
+        + Send
+        + Sync,
 {
     nucl.coord(async move |context| {
         //

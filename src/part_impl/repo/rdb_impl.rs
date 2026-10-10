@@ -32,6 +32,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page repository operations.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Diesel-generated schema.
 pub mod schema;
 /// Hierarchical subtree deletion operations.
@@ -49,6 +51,8 @@ pub mod termbase;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod test_shared;
 
+/// Current chapter review issues.
+pub mod issue;
 /// Unit repository operations.
 pub mod unit;
 /// Durable Unit save identities and receipts.

@@ -69,6 +69,8 @@ pub struct ChapterInfo {
 
     /// Bitmask tracking the completion phase of each workflow stage.
     pub stages: StageMask,
+    /// Last artwork generation successfully confirmed; internal cleanup baseline.
+    pub confirmed_artwork_ver: Option<u32>,
 
     /// Foreign key to the user who created this chapter record.
     pub creator_id: String,

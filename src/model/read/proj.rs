@@ -14,12 +14,16 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment read projection.
 pub mod comment;
+/// Current review issue projections.
+pub mod issue;
 /// Member read projection.
 pub mod member;
 /// Member invitation read projection.
 pub mod member_invitation;
 /// Page read projection.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// Hierarchical deletion scope projections.
 pub mod subtree_delete;
 /// System mail read projection.

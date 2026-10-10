@@ -20,12 +20,16 @@ pub mod comic_archive;
 pub mod comment;
 /// Image handling business rules and signed URL generation.
 pub mod image;
+/// Current chapter review issues.
+pub mod issue;
 /// Member business rules and perm checks.
 pub mod member;
 /// Member invitation business rules and perm checks.
 pub mod member_invitation;
 /// Page business rules and perm checks.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System mail business rules and perm checks.
 pub mod system_mail;
 /// Team business rules and perm checks.

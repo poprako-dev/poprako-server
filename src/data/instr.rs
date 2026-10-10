@@ -18,12 +18,16 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment instruction DTOs.
 pub mod comment;
+/// Current chapter review issues.
+pub mod issue;
 /// Member instruction DTOs.
 pub mod member;
 /// Member-invitation instruction DTOs.
 pub mod member_invitation;
 /// Page instruction DTOs.
 pub mod page;
+/// Composite artwork pages.
+pub mod page_artwork;
 /// System-mail instruction DTOs.
 pub mod system_mail;
 /// Team instruction DTOs.

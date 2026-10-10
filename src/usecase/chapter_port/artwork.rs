@@ -40,7 +40,8 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, UpdateChapterStage,
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterConfirmedArtworkVersion,
+    UpdateChapterStage,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
@@ -209,10 +210,33 @@ where
                 ));
             }
 
+            let is_new_confirmation =
+                chapter_info.confirmed_artwork_ver != Some(instr.artwork_ver);
+
+            if is_new_confirmation {
+                //
+                SetChapterConfirmedArtworkVersion {
+                    id: &chapter_info.id,
+                    version: instr.artwork_ver,
+                }
+                .step_on(repo, context)
+                .await?;
+            }
+
             let previous_phase =
                 chapter_info.stages.get_phase(Stage::TypesetRedraw);
 
             if previous_phase == StagePhase::Completed {
+                //
+                if is_new_confirmation {
+                    //
+                    TouchComicLastActive {
+                        id: &chapter_info.comic_id,
+                    }
+                    .step_on(repo, context)
+                    .await?;
+                }
+
                 return accept(None);
             }
 

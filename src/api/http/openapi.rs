@@ -31,6 +31,9 @@ use crate::data::instr::comic::{
     UpdateComicInfoInstr,
 };
 use crate::data::instr::comment::CreateCommentInstr;
+use crate::data::instr::issue::{
+    ImportChapterIssuesInstr, IssueInstr, IssueRectInstr, PageIssuesInstr,
+};
 use crate::data::instr::member::{
     CreateMemberInstr, JoinTeamInstr, UpdateMemberRolesInstr,
 };
@@ -40,6 +43,10 @@ use crate::data::instr::member_invitation::{
 use crate::data::instr::page::{
     AllocChapterPagesInstr, AllocPageImageInstr, MarkPageImageUploadedInstr,
     PageImageInstr,
+};
+use crate::data::instr::page_artwork::{
+    AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
+    MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
 };
 use crate::data::instr::system_mail::MarkSystemMailReadInstr;
 use crate::data::instr::team::{
@@ -70,11 +77,15 @@ use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
 use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::val::comment::CreateCommentVal;
+use crate::data::val::issue::ImportChapterIssuesVal;
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
 use crate::data::val::page::{
     AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
     PageUnitFlaggedStatsVal,
+};
+use crate::data::val::page_artwork::{
+    AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
 };
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
@@ -96,9 +107,11 @@ use crate::data::view::chapter_workflow_record::{
 use crate::data::view::comic::ComicInfoView;
 use crate::data::view::comment::CommentInfoView;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::issue::{IssueInfoView, IssueRectView};
 use crate::data::view::member::MemberInfoView;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::data::view::page::PageInfoView;
+use crate::data::view::page_artwork::PageArtworkInfoView;
 use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::system_mail::SystemMailInfoView;
 use crate::data::view::team::TeamInfoView;
@@ -173,6 +186,12 @@ use crate::value::unit::UnitTextPart;
         handler::chapter_port::import_translation,
         handler::chapter_port::export_translation,
         handler::chapter_port::export_translation_download,
+        handler::page_artwork::list_infos,
+        handler::page_artwork::alloc_chapter_page_artworks,
+        handler::page_artwork::alloc_image,
+        handler::page_artwork::mark_image_uploaded,
+        handler::issue::import_issue,
+        handler::issue::list_infos,
         handler::page::list_infos,
         handler::page::list_unit_diff_stats,
         handler::page::list_unit_flagged_stats,
@@ -228,6 +247,11 @@ use crate::value::unit::UnitTextPart;
         handler::member_invitation::delete,
     ),
     components(schemas(
+        ImportChapterIssuesInstr, PageIssuesInstr, IssueInstr, IssueRectInstr,
+        ImportChapterIssuesVal, IssueInfoView, IssueRectView,
+        AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
+        MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
+        AllocChapterPageArtworksVal, AllocatedPageArtworkVal, PageArtworkInfoView,
         HttpError,
         RegisterAuthInstr,
         RegisterAuthVal,
@@ -355,6 +379,8 @@ use crate::value::unit::UnitTextPart;
         (name = "comics", description = "Comic management endpoints"),
         (name = "chapters", description = "Chapter management endpoints"),
         (name = "chapter-port", description = "Chapter translation and artwork import/export endpoints"),
+        (name = "page-artworks", description = "Composite artwork page endpoints"),
+        (name = "issues", description = "Composite artwork review endpoints"),
         (name = "pages", description = "Page management endpoints"),
         (name = "units", description = "Page unit endpoints"),
         (name = "members", description = "Member management endpoints"),

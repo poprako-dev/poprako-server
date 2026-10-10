@@ -229,7 +229,9 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
         }
 
         chapter_snapshots.push(ComicArchiveChapterSnapshot {
+            page_artwork_snapshots: Vec::new(),
             chapter_info: ChapterInfo {
+                confirmed_artwork_ver: None,
                 id: chapter_id,
                 comic_id: "comic-1".into(),
                 comic: None,

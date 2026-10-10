@@ -1,5 +1,7 @@
 //! Total ObjDept composition.
 
+// Composite image storage-key mapping.
+mod page_artwork;
 // Chapter artwork storage-key mapping.
 mod artwork;
 
@@ -24,12 +26,13 @@ use crate::implement_mock_obj_dept;
 
 use crate::complex::image as image_complex;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageImage, TeamAvatar, UserAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    UserAvatar,
 };
 use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;
 use crate::part_impl::repo::rdb_impl::schema::{
-    t_chapter_artwork, t_comic_cover, t_obj_prom_task, t_page_image,
-    t_team_avatar, t_user_avatar,
+    t_chapter_artwork, t_comic_cover, t_obj_prom_task, t_page_artwork_image,
+    t_page_image, t_team_avatar, t_user_avatar,
 };
 use crate::value::image::{
     ComicCoverKey, PageImageKey, TeamAvatarKey, UserAvatarKey,
@@ -107,6 +110,10 @@ objs_def! {
     ChapterArtwork {
         table: t_chapter_artwork,
         topic: "chapter_artwork",
+    },
+    PageArtworkImage {
+        table: t_page_artwork_image,
+        topic: "page_artwork_image",
     },
     PageImage {
         table: t_page_image,

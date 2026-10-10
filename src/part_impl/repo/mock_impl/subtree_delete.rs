@@ -3,6 +3,9 @@
 // Claims tombstones and physically removes their direct dependants.
 mod sweep;
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use poprako_orchestra::Step;

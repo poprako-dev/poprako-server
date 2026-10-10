@@ -107,3 +107,12 @@ error-invalid-page-raw-ident = 原始页面文件名不能为空白，且不能�
 error-artwork-upload-role-required = 需要本章嵌字、修图分工或所属团队管理员权限。
 error-stale-artwork-upload = 嵌字产物上传版本不存在或已过期。
 error-artwork-unavailable = 当前章节没有可用的嵌字产物。
+
+error-issue-reviewer-required = 只有当前章节的监稿分配者可以导入监稿。
+error-issue-input = 监稿类型和提供的图层名称不能为空白。
+error-issue-rect = 监稿矩形必须为有限数值、尺寸为正且位于页面内。
+
+error-page-artwork-not-found = 成稿页不存在。
+error-page-artwork-target = 成稿页 ID 必须互不重复且属于当前章节。
+error-page-artwork-write-role-required = 需要章节嵌字、修图、监稿分配或团队管理员权限。
+error-stale-page-artwork-upload = 成稿图片上传版本已过期。
