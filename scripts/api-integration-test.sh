@@ -114,4 +114,4 @@ fi
 
 cd "$project_root/tests/integration-tests"
 
-deno task api
+pnpm run api

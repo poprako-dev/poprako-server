@@ -178,8 +178,8 @@ sh fmt/run-check.sh
 
 ```sh
 cd tests/integration-tests
-deno ci
-deno task check
+pnpm install --frozen-lockfile
+pnpm run check
 ```
 
 - [x] Add a scheduled or manually triggered full HTTP integration-test job.

@@ -10,7 +10,7 @@
 // full replacement, target order, counters, native import/export and merge,
 // perm isolation, path/body identity, duplicate normalization, and cascades.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { expectError, expectNoContent, expectSuccessData, expectSuccessList } from "../http/assertions.ts";
 import type { ErrorBody, SuccessBody } from "../http/apiClient.ts";
@@ -83,9 +83,9 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     const proofreader = ctx.users.get("proof_01");
     const translator = ctx.users.get("trans_01");
 
-    assert.assert(mainComicId, "it_02 must have created the main comic");
-    assert.assert(proofreader, "proof_01 must exist");
-    assert.assert(translator, "trans_01 must exist");
+    assert.ok(mainComicId, "it_02 must have created the main comic");
+    assert.ok(proofreader, "proof_01 must exist");
+    assert.ok(translator, "trans_01 must exist");
 
     const teamTermbase = await createTermbase(
         proofreader.api,
@@ -102,10 +102,10 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     const teamInfo = await getTermbase(translator.api, teamTermbase.id);
 
-    assert.assertEquals(teamInfo.name, "Shared Glossary");
-    assert.assertEquals(teamInfo.team_id, ctx.ids.defaultTeamId);
-    assert.assertEquals(teamInfo.comic_id, undefined);
-    assert.assertEquals(teamInfo.term_count, 0);
+    assert.deepEqual(teamInfo.name, "Shared Glossary");
+    assert.deepEqual(teamInfo.team_id, ctx.ids.defaultTeamId);
+    assert.deepEqual(teamInfo.comic_id, undefined);
+    assert.deepEqual(teamInfo.term_count, 0);
 
     expectNoContent(
         await translator.api.put<null>(`/api/v1/termbases/${comicTermbase.id}`, {
@@ -117,8 +117,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     const updatedComicInfo = await getTermbase(translator.api, comicTermbase.id);
 
-    assert.assertEquals(updatedComicInfo.name, "Main Comic Glossary Updated");
-    assert.assertEquals(updatedComicInfo.description, undefined);
+    assert.deepEqual(updatedComicInfo.name, "Main Comic Glossary Updated");
+    assert.deepEqual(updatedComicInfo.description, undefined);
 
     const visibleFromComic = expectSuccessList<TermbaseInfoView>(
         await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
@@ -127,7 +127,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         200,
     );
 
-    assert.assertEquals(
+    assert.deepEqual(
         new Set(visibleFromComic.map((termbase) => termbase.id)),
         new Set([teamTermbase.id, comicTermbase.id]),
     );
@@ -139,7 +139,10 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         200,
     );
 
-    assert.assertEquals(fuzzyByName.map((termbase) => termbase.id), [comicTermbase.id]);
+    assert.deepEqual(
+        fuzzyByName.map((termbase) => termbase.id),
+        [comicTermbase.id],
+    );
 
     const fuzzyByDescription = expectSuccessList<TermbaseInfoView>(
         await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
@@ -148,21 +151,15 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         200,
     );
 
-    assert.assertEquals(fuzzyByDescription.length, 0);
+    assert.deepEqual(fuzzyByDescription.length, 0);
 
-    const term = await createTerm(
-        translator.api,
-        comicTermbase.id,
-        " Hero ",
-        [" 勇者 ", "英雄"],
-        " main character ",
-    );
+    const term = await createTerm(translator.api, comicTermbase.id, " Hero ", [" 勇者 ", "英雄"], " main character ");
     const termInfo = await getTerm(translator.api, term.id);
 
-    assert.assertEquals(termInfo.source, "Hero");
-    assert.assertEquals(termInfo.targets, ["勇者", "英雄"]);
-    assert.assertEquals(termInfo.comment, "main character");
-    assert.assertEquals((await getTermbase(translator.api, comicTermbase.id)).term_count, 1);
+    assert.deepEqual(termInfo.source, "Hero");
+    assert.deepEqual(termInfo.targets, ["勇者", "英雄"]);
+    assert.deepEqual(termInfo.comment, "main character");
+    assert.deepEqual((await getTermbase(translator.api, comicTermbase.id)).term_count, 1);
 
     expectError(
         await proofreader.api.post<ErrorBody>("/api/v1/terms", {
@@ -197,9 +194,9 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     const updatedTerm = await getTerm(translator.api, term.id);
 
-    assert.assertEquals(updatedTerm.source, "Heroine");
-    assert.assertEquals(updatedTerm.targets, ["女主角", "主角"]);
-    assert.assertEquals(updatedTerm.comment, undefined);
+    assert.deepEqual(updatedTerm.source, "Heroine");
+    assert.deepEqual(updatedTerm.targets, ["女主角", "主角"]);
+    assert.deepEqual(updatedTerm.comment, undefined);
 
     const termFuzzy = expectSuccessList<TermInfoView>(
         await translator.api.get<SuccessBody<TermInfoView[]>>(
@@ -208,18 +205,21 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         200,
     );
 
-    assert.assertEquals(termFuzzy.map((listedTerm) => listedTerm.id), [term.id]);
+    assert.deepEqual(
+        termFuzzy.map((listedTerm) => listedTerm.id),
+        [term.id],
+    );
 
     const targetFuzzy = expectSuccessList<TermInfoView>(
         await translator.api.get<SuccessBody<TermInfoView[]>>(
-            `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=${
-                encodeURIComponent("女主角")
-            }&offset=0&limit=20`,
+            `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=${encodeURIComponent(
+                "女主角",
+            )}&offset=0&limit=20`,
         ),
         200,
     );
 
-    assert.assertEquals(targetFuzzy.length, 0);
+    assert.deepEqual(targetFuzzy.length, 0);
 
     const nativeDocument: ImportTermbaseInstr = {
         name: "Native Port Glossary",
@@ -246,26 +246,26 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         201,
     );
 
-    assert.assertEquals(importedTermbase.created, true);
-    assert.assertEquals(importedTermbase.created_term_count, 2);
-    assert.assertEquals(importedTermbase.merged_term_count, 0);
+    assert.deepEqual(importedTermbase.created, true);
+    assert.deepEqual(importedTermbase.created_term_count, 2);
+    assert.deepEqual(importedTermbase.merged_term_count, 0);
 
     const exportedResponse = await translator.api.get<ExportTermbaseVal>(
         `/api/v1/termbases/${importedTermbase.id}/export`,
     );
 
-    assert.assertEquals(exportedResponse.status, 200);
-    assert.assertEquals(exportedResponse.headers.get("content-type"), "application/json");
+    assert.deepEqual(exportedResponse.status, 200);
+    assert.deepEqual(exportedResponse.headers.get("content-type"), "application/json");
 
     const exportedDocument = JSON.parse(exportedResponse.rawText) as ExportTermbaseVal;
 
-    assert.assertEquals(exportedDocument.terms.map((entry) => entry.source), ["Alpha", "Beta"]);
+    assert.deepEqual(
+        exportedDocument.terms.map((entry) => entry.source),
+        ["Alpha", "Beta"],
+    );
 
     expectError(
-        await translator.api.post<ErrorBody>(
-            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`,
-            nativeDocument,
-        ),
+        await translator.api.post<ErrorBody>(`/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`, nativeDocument),
         422,
         2,
     );
@@ -295,17 +295,17 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         200,
     );
 
-    assert.assertEquals(mergedTermbase.id, importedTermbase.id);
-    assert.assertEquals(mergedTermbase.created, false);
-    assert.assertEquals(mergedTermbase.created_term_count, 1);
-    assert.assertEquals(mergedTermbase.merged_term_count, 1);
+    assert.deepEqual(mergedTermbase.id, importedTermbase.id);
+    assert.deepEqual(mergedTermbase.created, false);
+    assert.deepEqual(mergedTermbase.created_term_count, 1);
+    assert.deepEqual(mergedTermbase.merged_term_count, 1);
 
     const mergedExportResponse = await translator.api.get<ExportTermbaseVal>(
         `/api/v1/termbases/${importedTermbase.id}/export/download`,
     );
 
-    assert.assertEquals(mergedExportResponse.status, 200);
-    assert.assertEquals(
+    assert.deepEqual(mergedExportResponse.status, 200);
+    assert.deepEqual(
         mergedExportResponse.headers.get("content-disposition"),
         `attachment; filename="termbase_${importedTermbase.id}.json"`,
     );
@@ -313,40 +313,31 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     const mergedExport = JSON.parse(mergedExportResponse.rawText) as ExportTermbaseVal;
     const alpha = mergedExport.terms.find((entry) => entry.source === "alpha");
 
-    assert.assert(alpha);
-    assert.assertEquals(alpha.targets, ["甲", "第一"]);
-    assert.assertEquals(alpha.comment, "merged");
-    assert.assertEquals(mergedExport.description, null);
+    assert.ok(alpha);
+    assert.deepEqual(alpha.targets, ["甲", "第一"]);
+    assert.deepEqual(alpha.comment, "merged");
+    assert.deepEqual(mergedExport.description, null);
 
     expectError(
-        await translator.api.post<ErrorBody>(
-            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`,
-            {
-                name: "Oversized Native Glossary",
-                description: null,
-                terms: Array.from({ length: 201 }, (_, index) => ({
-                    source: `Source ${index}`,
-                    targets: [`Target ${index}`],
-                    comment: null,
-                })),
-            },
-        ),
+        await translator.api.post<ErrorBody>(`/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`, {
+            name: "Oversized Native Glossary",
+            description: null,
+            terms: Array.from({ length: 201 }, (_, index) => ({
+                source: `Source ${index}`,
+                targets: [`Target ${index}`],
+                comment: null,
+            })),
+        }),
         422,
         2,
     );
 
-    expectNoContent(
-        await translator.api.delete<null>(`/api/v1/termbases/${importedTermbase.id}`),
-    );
+    expectNoContent(await translator.api.delete<null>(`/api/v1/termbases/${importedTermbase.id}`));
 
     expectNoContent(await translator.api.delete<null>(`/api/v1/terms/${term.id}`));
-    assert.assertEquals((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);
+    assert.deepEqual((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);
 
-    const cascadeWorkset = await createWorkset(
-        ctx.sadmin,
-        ctx.ids.defaultTeamId,
-        titled("termbase-cascade-workset"),
-    );
+    const cascadeWorkset = await createWorkset(ctx.sadmin, ctx.ids.defaultTeamId, titled("termbase-cascade-workset"));
     const cascadeComic = await createComic(
         ctx.sadmin,
         cascadeWorkset.id,
@@ -359,13 +350,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         "Cascade Comic Glossary",
         null,
     );
-    const cascadeTerm = await createTerm(
-        proofreader.api,
-        cascadeTermbase.id,
-        "Cascade",
-        ["级联"],
-        null,
-    );
+    const cascadeTerm = await createTerm(proofreader.api, cascadeTermbase.id, "Cascade", ["级联"], null);
 
     expectNoContent(await ctx.sadmin.delete<null>(`/api/v1/comics/${cascadeComic.id}`));
     expectError(await translator.api.get<ErrorBody>(`/api/v1/termbases/${cascadeTermbase.id}`), 422, 2);
@@ -388,13 +373,9 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     const memberships = await listMyMembers(ctx.sadmin);
     const cascadeMembership = memberships.find((member) => member.team_id === cascadeTeam.id);
 
-    assert.assert(cascadeMembership, "team creator membership must exist");
+    assert.ok(cascadeMembership, "team creator membership must exist");
 
-    await updateMemberRoles(
-        ctx.sadmin,
-        cascadeMembership.id,
-        ROLE.ADMIN | ROLE.PROOFREADER,
-    );
+    await updateMemberRoles(ctx.sadmin, cascadeMembership.id, ROLE.ADMIN | ROLE.PROOFREADER);
 
     const cascadeTeamTermbase = await createTermbase(
         ctx.sadmin,
@@ -402,24 +383,13 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         "Cascade Team Glossary",
         null,
     );
-    const cascadeTeamTerm = await createTerm(
-        ctx.sadmin,
-        cascadeTeamTermbase.id,
-        "Team Cascade",
-        ["团队级联"],
-        null,
-    );
+    const cascadeTeamTerm = await createTerm(ctx.sadmin, cascadeTeamTermbase.id, "Team Cascade", ["团队级联"], null);
 
     expectNoContent(await ctx.sadmin.delete<null>(`/api/v1/teams/${cascadeTeam.id}`));
 
     // Team deletion hides membership immediately; background cleanup removes
     // terminology rows later. Neither state may expose the deleted team's data.
-    for (
-        const path of [
-            `/api/v1/termbases/${cascadeTeamTermbase.id}`,
-            `/api/v1/terms/${cascadeTeamTerm.id}`,
-        ]
-    ) {
+    for (const path of [`/api/v1/termbases/${cascadeTeamTermbase.id}`, `/api/v1/terms/${cascadeTeamTerm.id}`]) {
         const response = await ctx.sadmin.get<ErrorBody>(path);
 
         if (response.status === 403) {

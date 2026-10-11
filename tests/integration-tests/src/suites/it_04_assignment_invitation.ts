@@ -31,7 +31,7 @@
 //
 // Status: IMPLEMENTED.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { expectError, expectStatus } from "../http/assertions.ts";
 import type { ErrorBody } from "../http/apiClient.ts";
@@ -54,7 +54,7 @@ import type { RunCtx } from "../state/runCtx.ts";
 export const IMPLEMENTED = true as const;
 
 export async function runIt04Module(ctx: RunCtx): Promise<void> {
-    assert.assert(ctx.main, "it_02 must have set ctx.main");
+    assert.ok(ctx.main, "it_02 must have set ctx.main");
 
     const mainChapterId = ctx.main.chapterId;
     const trans01 = ctx.users.get("trans_01");
@@ -67,7 +67,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     const publish01 = ctx.users.get("publish_01");
     const guest01 = ctx.users.get("guest_01");
 
-    assert.assert(
+    assert.ok(
         trans01 && trans02 && trans03 && proof01 && proof02 && type01 && review01 && publish01 && guest01,
         "it_01 must have registered all 14 personas",
     );
@@ -86,9 +86,9 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     for (const spec of joinSpecs) {
         const assignment = await joinChapterAssignment(spec.user.api, mainChapterId, spec.roles);
 
-        assert.assertEquals(assignment.chapter_id, mainChapterId);
-        assert.assertEquals(assignment.user_id, spec.user.userId);
-        assert.assert((assignment.roles & spec.roles) !== 0, `${spec.label} roles must contain requested bit`);
+        assert.deepEqual(assignment.chapter_id, mainChapterId);
+        assert.deepEqual(assignment.user_id, spec.user.userId);
+        assert.ok((assignment.roles & spec.roles) !== 0, `${spec.label} roles must contain requested bit`);
 
         ctx.main.assignmentIds[spec.label] = assignment.id;
     }
@@ -97,7 +97,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     // Re-list and assert (chapter_id, user_id) uniqueness.
     const dupJoin = await joinChapterAssignment(trans01.api, mainChapterId, ROLE.TRANSLATOR);
 
-    assert.assertEquals(dupJoin.user_id, trans01.userId);
+    assert.deepEqual(dupJoin.user_id, trans01.userId);
 
     const assignments = await listChapterAssignments(ctx.sadmin, mainChapterId, "&incl=user");
 
@@ -106,11 +106,11 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     for (const a of assignments) {
         const key = `${a.chapter_id}:${a.user_id}`;
 
-        assert.assert(!userKeys.has(key), `duplicate assignment key ${key}`);
+        assert.ok(!userKeys.has(key), `duplicate assignment key ${key}`);
         userKeys.add(key);
 
-        assert.assert(a.user, "incl=user embeds user");
-        assert.assertEquals(a.user?.id, a.user_id);
+        assert.ok(a.user, "incl=user embeds user");
+        assert.deepEqual(a.user?.id, a.user_id);
     }
 
     // E1.4: guest_01 (member roles RAW|TRANSLATOR|PROOFREADER) joining with
@@ -136,68 +136,56 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
 
     // E1.4c: role update preserves the assignment while allowing the caller
     // to leave one of their roles.
-    const guestAssignment = await joinChapterAssignment(
-        guest01.api,
-        mainChapterId,
-        ROLE_MASK.TRANS_PROOF,
-    );
+    const guestAssignment = await joinChapterAssignment(guest01.api, mainChapterId, ROLE_MASK.TRANS_PROOF);
 
-    await updateAssignmentRoles(
-        guest01.api,
-        mainChapterId,
-        guest01.userId,
-        ROLE.PROOFREADER,
-    );
+    await updateAssignmentRoles(guest01.api, mainChapterId, guest01.userId, ROLE.PROOFREADER);
 
-    const guestAssignments = await listOwnerAssignments(
-        guest01.api,
-        guest01.userId,
-    );
+    const guestAssignments = await listOwnerAssignments(guest01.api, guest01.userId);
 
-    const guestAssignmentAfterRoleExit = guestAssignments.find(
-        (assignment) => assignment.id === guestAssignment.id,
-    );
+    const guestAssignmentAfterRoleExit = guestAssignments.find((assignment) => assignment.id === guestAssignment.id);
 
-    assert.assert(guestAssignmentAfterRoleExit, "guest assignment must remain");
-    assert.assertEquals(guestAssignmentAfterRoleExit.roles, ROLE.PROOFREADER);
+    assert.ok(guestAssignmentAfterRoleExit, "guest assignment must remain");
+    assert.deepEqual(guestAssignmentAfterRoleExit.roles, ROLE.PROOFREADER);
 
     await deleteAssignment(guest01.api, guestAssignment.id);
 
     // E1.4d: the team admin can join review and leave it while retaining the original worker roles.
     const adminAssignment = assignments.find((assignment) => assignment.user_id === ctx.ids.defaultUserId);
 
-    assert.assert(adminAssignment, "chapter creator must have an assignment");
-    assert.assertEquals(adminAssignment.roles & ROLE.ADMIN, 0);
+    assert.ok(adminAssignment, "chapter creator must have an assignment");
+    assert.deepEqual(adminAssignment.roles & ROLE.ADMIN, 0);
 
     const adminJoinedReview = await joinChapterAssignment(ctx.sadmin, mainChapterId, ROLE.REVIEWER);
 
-    assert.assertEquals(adminJoinedReview.id, adminAssignment.id);
-    assert.assertEquals(adminJoinedReview.roles, adminAssignment.roles | ROLE.REVIEWER);
+    assert.deepEqual(adminJoinedReview.id, adminAssignment.id);
+    assert.deepEqual(adminJoinedReview.roles, adminAssignment.roles | ROLE.REVIEWER);
 
     await updateAssignmentRoles(ctx.sadmin, mainChapterId, ctx.ids.defaultUserId, adminAssignment.roles);
 
     const adminAssignmentsAfterExit = await listOwnerAssignments(ctx.sadmin, ctx.ids.defaultUserId);
     const adminAfterExit = adminAssignmentsAfterExit.find((assignment) => assignment.id === adminAssignment.id);
 
-    assert.assert(adminAfterExit, "leaving review must preserve the original worker assignment");
-    assert.assertEquals(adminAfterExit.roles, adminAssignment.roles);
+    assert.ok(adminAfterExit, "leaving review must preserve the original worker assignment");
+    assert.deepEqual(adminAfterExit.roles, adminAssignment.roles);
 
     // E1.4e: an ordinary assignee cannot acquire ADMIN through a self-update.
     expectError(
-        await review01.api.put<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
-            { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
-        ),
+        await review01.api.put<ErrorBody>(`/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`, {
+            chapter_id: mainChapterId,
+            user_id: review01.userId,
+            roles: ROLE.ADMIN | ROLE.REVIEWER,
+        }),
         422,
         2,
     );
 
     // E1.4f: team administration never permits assigning ADMIN on a chapter.
     expectError(
-        await ctx.sadmin.put<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`,
-            { chapter_id: mainChapterId, user_id: review01.userId, roles: ROLE.ADMIN | ROLE.REVIEWER },
-        ),
+        await ctx.sadmin.put<ErrorBody>(`/api/v1/chapters/${mainChapterId}/assignments/${review01.userId}/roles`, {
+            chapter_id: mainChapterId,
+            user_id: review01.userId,
+            roles: ROLE.ADMIN | ROLE.REVIEWER,
+        }),
         422,
         2,
     );
@@ -228,40 +216,34 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
         "&incl=chapter.comic.workset.team",
     );
 
-    const trans01MainAssignment = ownerAssignments.find(
-        (a) => a.chapter_id === mainChapterId,
-    );
+    const trans01MainAssignment = ownerAssignments.find((a) => a.chapter_id === mainChapterId);
 
-    assert.assert(trans01MainAssignment, "trans_01 owner list must include main chapter assignment");
-    assert.assert(trans01MainAssignment?.chapter, "chapter embedded");
-    assert.assertEquals(trans01MainAssignment?.chapter?.id, mainChapterId);
-    assert.assert(trans01MainAssignment?.chapter?.comic, "comic embedded");
-    assert.assertEquals(trans01MainAssignment?.chapter?.comic?.id, ctx.main.comicId);
-    assert.assert(trans01MainAssignment?.chapter?.comic?.workset, "workset embedded");
-    assert.assertEquals(trans01MainAssignment?.chapter?.comic?.workset?.id, ctx.main.worksetId);
+    assert.ok(trans01MainAssignment, "trans_01 owner list must include main chapter assignment");
+    assert.ok(trans01MainAssignment?.chapter, "chapter embedded");
+    assert.deepEqual(trans01MainAssignment?.chapter?.id, mainChapterId);
+    assert.ok(trans01MainAssignment?.chapter?.comic, "comic embedded");
+    assert.deepEqual(trans01MainAssignment?.chapter?.comic?.id, ctx.main.comicId);
+    assert.ok(trans01MainAssignment?.chapter?.comic?.workset, "workset embedded");
+    assert.deepEqual(trans01MainAssignment?.chapter?.comic?.workset?.id, ctx.main.worksetId);
 
     const directComic = await getComic(ctx.sadmin, ctx.main.comicId);
 
-    assert.assertEquals(
+    assert.deepEqual(
         trans01MainAssignment?.chapter?.comic?.cover_url,
         directComic.cover_url,
         "assignment nested comic must preserve the page-image cover fallback",
     );
-    assert.assertEquals(
+    assert.deepEqual(
         trans01MainAssignment?.chapter?.comic?.cover_thumbnail_url,
         directComic.cover_thumbnail_url,
         "assignment nested comic must preserve the fallback thumbnail",
     );
 
     // E1.8: role=TRANSLATOR filter returns only translator-bit assignments.
-    const translatorAssignments = await listChapterAssignments(
-        ctx.sadmin,
-        mainChapterId,
-        `&role=${ROLE.TRANSLATOR}`,
-    );
+    const translatorAssignments = await listChapterAssignments(ctx.sadmin, mainChapterId, `&role=${ROLE.TRANSLATOR}`);
 
     for (const a of translatorAssignments) {
-        assert.assert((a.roles & ROLE.TRANSLATOR) !== 0, "role=TRANSLATOR filter must return only translator-bit");
+        assert.ok((a.roles & ROLE.TRANSLATOR) !== 0, "role=TRANSLATOR filter must return only translator-bit");
     }
 
     // E1.9: composite role filter -> 400 (axum query deserialization rejection)
@@ -282,64 +264,50 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     );
 
     // E1.11: neither chapter_id nor owner_id -> 422/2.
-    expectError(
-        await ctx.sadmin.get<ErrorBody>("/api/v1/assignments?offset=0&limit=20"),
-        422,
-        2,
-    );
+    expectError(await ctx.sadmin.get<ErrorBody>("/api/v1/assignments?offset=0&limit=20"), 422, 2);
 
     // ---------- E2. admin creates assignment invitation ----------
 
     // E2.1: sadmin creates translator invitation for trans_03.
-    const trans03Inv = await createAssignmentInvitation(
-        ctx.sadmin,
-        mainChapterId,
-        trans03.qid,
-        ROLE.TRANSLATOR,
-    );
+    const trans03Inv = await createAssignmentInvitation(ctx.sadmin, mainChapterId, trans03.qid, ROLE.TRANSLATOR);
 
-    assert.assert(trans03Inv.id);
-    assert.assert(trans03Inv.code);
+    assert.ok(trans03Inv.id);
+    assert.ok(trans03Inv.code);
 
     // E2.2: pending list includes it.
     const pendingBefore = await listChapterAssignmentInvitations(ctx.sadmin, mainChapterId, true);
 
     const foundTrans03 = pendingBefore.find((inv) => inv.id === trans03Inv.id);
 
-    assert.assert(foundTrans03, "pending list must include trans_03 invitation");
-    assert.assertEquals(foundTrans03?.invitee_qid, trans03.qid);
-    assert.assertEquals(foundTrans03?.roles, ROLE.TRANSLATOR);
-    assert.assertEquals(foundTrans03?.is_pending, true);
+    assert.ok(foundTrans03, "pending list must include trans_03 invitation");
+    assert.deepEqual(foundTrans03?.invitee_qid, trans03.qid);
+    assert.deepEqual(foundTrans03?.roles, ROLE.TRANSLATOR);
+    assert.deepEqual(foundTrans03?.is_pending, true);
 
     // E2.3: trans_03 consumes -> 201, assignment roles == TRANSLATOR.
     const trans03Assignment = await joinAssignmentInvitation(trans03.api, trans03Inv.code);
 
-    assert.assertEquals(trans03Assignment.chapter_id, mainChapterId);
-    assert.assertEquals(trans03Assignment.user_id, trans03.userId);
-    assert.assert((trans03Assignment.roles & ROLE.TRANSLATOR) !== 0);
+    assert.deepEqual(trans03Assignment.chapter_id, mainChapterId);
+    assert.deepEqual(trans03Assignment.user_id, trans03.userId);
+    assert.ok((trans03Assignment.roles & ROLE.TRANSLATOR) !== 0);
 
     ctx.main.assignmentIds["trans_03"] = trans03Assignment.id;
 
     // E2.4: pending list no longer includes it; consumed list includes it.
     const pendingAfter = await listChapterAssignmentInvitations(ctx.sadmin, mainChapterId, true);
 
-    assert.assert(!pendingAfter.find((inv) => inv.id === trans03Inv.id), "consumed invitation must not be pending");
+    assert.ok(!pendingAfter.find((inv) => inv.id === trans03Inv.id), "consumed invitation must not be pending");
 
     const consumedList = await listChapterAssignmentInvitations(ctx.sadmin, mainChapterId, false);
 
-    assert.assert(
+    assert.ok(
         consumedList.find((inv) => inv.id === trans03Inv.id),
         "consumed list must include trans_03 invitation",
     );
 
     // E2.5: sadmin creates proofread invitation for proof_02; trans_01 tries
     // to consume -> 422/2 (qid mismatch).
-    const proof02Inv = await createAssignmentInvitation(
-        ctx.sadmin,
-        mainChapterId,
-        proof02.qid,
-        ROLE.PROOFREADER,
-    );
+    const proof02Inv = await createAssignmentInvitation(ctx.sadmin, mainChapterId, proof02.qid, ROLE.PROOFREADER);
 
     expectError(
         await trans01.api.post<ErrorBody>("/api/v1/assignment-invitations/join", {
@@ -410,7 +378,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     const raw01 = ctx.users.get("raw_01");
     const raw02 = ctx.users.get("raw_02");
 
-    assert.assert(raw01 && raw02);
+    assert.ok(raw01 && raw02);
 
     const raw01Assignment = await joinChapterAssignment(raw01.api, mainChapterId, ROLE.RAW_PROVIDER);
 
@@ -430,35 +398,38 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
 
     const trans03After = afterUpdate.find((a) => a.id === trans03Assignment.id);
 
-    assert.assert(trans03After, "trans_03 assignment must exist");
-    assert.assert((trans03After!.roles & ROLE.TRANSLATOR) !== 0, "trans_03 roles must contain TRANSLATOR");
+    assert.ok(trans03After, "trans_03 assignment must exist");
+    assert.ok((trans03After!.roles & ROLE.TRANSLATOR) !== 0, "trans_03 roles must contain TRANSLATOR");
 
     // E3.2: path/body chapter_id mismatch -> 422 code 7.
     expectError(
-        await ctx.sadmin.put<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/assignments/${trans03.userId}/roles`,
-            { chapter_id: "not-the-path-id", roles: ROLE.TRANSLATOR, user_id: trans03.userId },
-        ),
+        await ctx.sadmin.put<ErrorBody>(`/api/v1/chapters/${mainChapterId}/assignments/${trans03.userId}/roles`, {
+            chapter_id: "not-the-path-id",
+            roles: ROLE.TRANSLATOR,
+            user_id: trans03.userId,
+        }),
         422,
         7,
     );
 
     // E3.3: path/body user_id mismatch -> 422 code 7.
     expectError(
-        await ctx.sadmin.put<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/assignments/${trans03.userId}/roles`,
-            { chapter_id: mainChapterId, roles: ROLE.TRANSLATOR, user_id: "not-the-path-id" },
-        ),
+        await ctx.sadmin.put<ErrorBody>(`/api/v1/chapters/${mainChapterId}/assignments/${trans03.userId}/roles`, {
+            chapter_id: mainChapterId,
+            roles: ROLE.TRANSLATOR,
+            user_id: "not-the-path-id",
+        }),
         422,
         7,
     );
 
     // E3.4: non-admin (trans_01) updating proof_01's assignment -> 403/4.
     expectError(
-        await trans01.api.put<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/assignments/${proof01.userId}/roles`,
-            { chapter_id: mainChapterId, roles: ROLE.PROOFREADER, user_id: proof01.userId },
-        ),
+        await trans01.api.put<ErrorBody>(`/api/v1/chapters/${mainChapterId}/assignments/${proof01.userId}/roles`, {
+            chapter_id: mainChapterId,
+            roles: ROLE.PROOFREADER,
+            user_id: proof01.userId,
+        }),
         403,
         4,
     );
@@ -469,22 +440,18 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     // E3.6: chapter assignment list no longer includes trans_03.
     const afterDelete = await listChapterAssignments(ctx.sadmin, mainChapterId);
 
-    assert.assert(!afterDelete.find((a) => a.id === trans03Assignment.id), "trans_03 assignment must be gone");
+    assert.ok(!afterDelete.find((a) => a.id === trans03Assignment.id), "trans_03 assignment must be gone");
 
     // E3.7: trans_03 owner list no longer includes this chapter.
     const trans03OwnerAfter = await listOwnerAssignments(trans03.api, trans03.userId);
 
-    assert.assert(
+    assert.ok(
         !trans03OwnerAfter.find((a) => a.chapter_id === mainChapterId),
         "trans_03 owner list must not include main chapter after deletion",
     );
 
     // E3.8: delete same assignment id again -> 422/2.
-    expectError(
-        await ctx.sadmin.delete<ErrorBody>(`/api/v1/assignments/${trans03Assignment.id}`),
-        422,
-        2,
-    );
+    expectError(await ctx.sadmin.delete<ErrorBody>(`/api/v1/assignments/${trans03Assignment.id}`), 422, 2);
 
     // E3.9: deleted-assignment user (trans_03, no longer assigned) tries to
     // save a unit on a main page -> 403/4. Requires it_03 to have reserved

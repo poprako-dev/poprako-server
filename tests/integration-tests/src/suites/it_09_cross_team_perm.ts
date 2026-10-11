@@ -23,7 +23,7 @@
 //
 // Status: IMPLEMENTED.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { testEnv } from "../config/env.ts";
 import { expectError, expectNoContent, expectSuccessList } from "../http/assertions.ts";
@@ -57,12 +57,7 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
     // ---------- I1.2 invite outsider_01 to the second team ----------
 
     const outsiderPersona = { ...OUTSIDER_PERSONA, qid: qid(OUTSIDER_PERSONA.persona) };
-    const outsiderInv = await createMemberInvitation(
-        ctx.sadmin,
-        secondTeam.id,
-        outsiderPersona.qid,
-        ROLE.RAW_PROVIDER,
-    );
+    const outsiderInv = await createMemberInvitation(ctx.sadmin, secondTeam.id, outsiderPersona.qid, ROLE.RAW_PROVIDER);
 
     // ---------- I1.3 outsider registers + logs in ----------
 
@@ -75,9 +70,9 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
 
     const outsiderMembers = await listMyMembers(outsiderApi);
 
-    assert.assertEquals(outsiderMembers.length, 1, "outsider must have exactly one membership (second team)");
-    assert.assertEquals(outsiderMembers[0]!.team_id, secondTeam.id, "outsider must be in the second team");
-    assert.assertEquals(outsiderMembers[0]!.roles, ROLE.RAW_PROVIDER);
+    assert.deepEqual(outsiderMembers.length, 1, "outsider must have exactly one membership (second team)");
+    assert.deepEqual(outsiderMembers[0]!.team_id, secondTeam.id, "outsider must be in the second team");
+    assert.deepEqual(outsiderMembers[0]!.roles, ROLE.RAW_PROVIDER);
 
     const outsiderClient: UserClient = {
         persona: outsiderPersona.persona,
@@ -98,28 +93,23 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
     // user-scoped team list returns only the second team
     const outsiderTeams = await listTeams(outsiderApi, outsiderUserId);
 
-    assert.assert(
+    assert.ok(
         !outsiderTeams.find((t) => t.id === defaultTeamId),
         "outsider must not see default team in user-scoped list",
     );
-    assert.assert(outsiderTeams.find((t) => t.id === secondTeam.id), "outsider must see the second team");
+    assert.ok(
+        outsiderTeams.find((t) => t.id === secondTeam.id),
+        "outsider must see the second team",
+    );
 
     // outsider list default-team worksets -> 403/4
-    expectError(
-        await outsiderApi.get<ErrorBody>(`/api/v1/teams/${defaultTeamId}/worksets?offset=0&limit=20`),
-        403,
-        4,
-    );
+    expectError(await outsiderApi.get<ErrorBody>(`/api/v1/teams/${defaultTeamId}/worksets?offset=0&limit=20`), 403, 4);
 
     // outsider get a default-team workset -> 403/4 (if it_02 created any)
     const defaultWorksetId = ctx.ids.worksetIds["连载池"];
 
     if (defaultWorksetId) {
-        expectError(
-            await outsiderApi.get<ErrorBody>(`/api/v1/worksets/${defaultWorksetId}`),
-            403,
-            4,
-        );
+        expectError(await outsiderApi.get<ErrorBody>(`/api/v1/worksets/${defaultWorksetId}`), 403, 4);
 
         // outsider list comics / chapters / pages / units on default-team descendants
         expectError(
@@ -131,11 +121,7 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
         const defaultComicId = ctx.ids.comicIds["星尘旅人"];
 
         if (defaultComicId) {
-            expectError(
-                await outsiderApi.get<ErrorBody>(`/api/v1/comics/${defaultComicId}?incl=workset.team`),
-                403,
-                4,
-            );
+            expectError(await outsiderApi.get<ErrorBody>(`/api/v1/comics/${defaultComicId}?incl=workset.team`), 403, 4);
 
             expectError(
                 await outsiderApi.get<ErrorBody>(`/api/v1/comics/${defaultComicId}/chapters?offset=0&limit=20`),
@@ -144,11 +130,7 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
             );
 
             if (ctx.main) {
-                expectError(
-                    await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}`),
-                    403,
-                    4,
-                );
+                expectError(await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}`), 403, 4);
 
                 expectError(
                     await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}/pages?offset=0&limit=20`),
@@ -202,16 +184,12 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
     // addressed mails to outsider; the mail list must be empty).
     const outsiderMails = await (await import("../http/fixtures.ts")).listSystemMails(outsiderApi);
 
-    assert.assertEquals(outsiderMails.length, 0, "outsider must have no system mails");
+    assert.deepEqual(outsiderMails.length, 0, "outsider must have no system mails");
 
     // ---------- I1.9 default-team members have no second-team powers ----------
 
     // trans_01 list second-team worksets -> 403/4
-    expectError(
-        await trans01.api.get<ErrorBody>(`/api/v1/teams/${secondTeam.id}/worksets?offset=0&limit=20`),
-        403,
-        4,
-    );
+    expectError(await trans01.api.get<ErrorBody>(`/api/v1/teams/${secondTeam.id}/worksets?offset=0&limit=20`), 403, 4);
 
     // trans_01 create workset in the second team -> 403/4
     expectError(
@@ -230,57 +208,43 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    assert.assertEquals((await getMyInfo(trans01.api)).last_active_at, inactiveUser.last_active_at);
-    assert.assertEquals((await getUserInfo(trans01.api, trans01.userId)).last_active_at, inactiveUser.last_active_at);
+    assert.deepEqual((await getMyInfo(trans01.api)).last_active_at, inactiveUser.last_active_at);
+    assert.deepEqual((await getUserInfo(trans01.api, trans01.userId)).last_active_at, inactiveUser.last_active_at);
 
-    expectNoContent(
-        await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
-    );
+    expectNoContent(await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`));
 
     const activeUser = await getMyInfo(trans01.api);
     const activeMembers = await listMyMembers(trans01.api);
 
-    assert.assertGreater(activeUser.last_active_at, inactiveUser.last_active_at);
-    assert.assert(activeMembers.every((member) => member.last_active_at === activeUser.last_active_at));
+    assert.ok(activeUser.last_active_at > inactiveUser.last_active_at);
+    assert.ok(activeMembers.every((member) => member.last_active_at === activeUser.last_active_at));
 
     // Repeated marks renew the same lease and remain idempotent.
-    expectNoContent(
-        await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
-    );
+    expectNoContent(await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`));
 
-    expectNoContent(
-        await ctx.sadmin.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
-    );
+    expectNoContent(await ctx.sadmin.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`));
 
-    expectNoContent(
-        await outsiderApi.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`),
-    );
+    expectNoContent(await outsiderApi.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`));
 
-    expectNoContent(
-        await ctx.sadmin.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`),
-    );
+    expectNoContent(await ctx.sadmin.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`));
 
     const defaultOnlineUserIds = expectSuccessList<string>(
-        await ctx.sadmin.get<SuccessBody<string[]>>(
-            `/api/v1/teams/${defaultTeamId}/online-users`,
-        ),
+        await ctx.sadmin.get<SuccessBody<string[]>>(`/api/v1/teams/${defaultTeamId}/online-users`),
         200,
     );
 
-    assert.assertEquals(
+    assert.deepEqual(
         defaultOnlineUserIds,
         [ctx.ids.defaultUserId, trans01.userId].sort(),
         "default team online users must be sorted and team-scoped",
     );
 
     const secondOnlineUserIds = expectSuccessList<string>(
-        await outsiderApi.get<SuccessBody<string[]>>(
-            `/api/v1/teams/${secondTeam.id}/online-users`,
-        ),
+        await outsiderApi.get<SuccessBody<string[]>>(`/api/v1/teams/${secondTeam.id}/online-users`),
         200,
     );
 
-    assert.assertEquals(
+    assert.deepEqual(
         secondOnlineUserIds,
         [ctx.ids.defaultUserId, outsiderUserId].sort(),
         "second team online users must not include default-team-only users",
@@ -288,65 +252,32 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
 
     const outsiderBeforeRejectedMark = await getMyInfo(outsiderApi);
 
-    expectError(
-        await outsiderApi.put<ErrorBody>(
-            `/api/v1/teams/${defaultTeamId}/mark-self-online`,
-        ),
-        403,
-        4,
-    );
+    expectError(await outsiderApi.put<ErrorBody>(`/api/v1/teams/${defaultTeamId}/mark-self-online`), 403, 4);
 
-    assert.assertEquals(
-        (await getMyInfo(outsiderApi)).last_active_at,
-        outsiderBeforeRejectedMark.last_active_at,
-    );
+    assert.deepEqual((await getMyInfo(outsiderApi)).last_active_at, outsiderBeforeRejectedMark.last_active_at);
 
-    expectError(
-        await outsiderApi.get<ErrorBody>(
-            `/api/v1/teams/${defaultTeamId}/online-users`,
-        ),
-        403,
-        4,
-    );
+    expectError(await outsiderApi.get<ErrorBody>(`/api/v1/teams/${defaultTeamId}/online-users`), 403, 4);
 
-    expectError(
-        await trans01.api.put<ErrorBody>(
-            `/api/v1/teams/${secondTeam.id}/mark-self-online`,
-        ),
-        403,
-        4,
-    );
+    expectError(await trans01.api.put<ErrorBody>(`/api/v1/teams/${secondTeam.id}/mark-self-online`), 403, 4);
 
-    expectError(
-        await trans01.api.get<ErrorBody>(
-            `/api/v1/teams/${secondTeam.id}/online-users`,
-        ),
-        403,
-        4,
-    );
+    expectError(await trans01.api.get<ErrorBody>(`/api/v1/teams/${secondTeam.id}/online-users`), 403, 4);
 
     const anon = new ApiClient(testEnv.apiBaseUrl);
 
-    expectError(
-        await anon.put<ErrorBody>(
-            `/api/v1/teams/${defaultTeamId}/mark-self-online`,
-        ),
-        401,
-        3,
-    );
+    expectError(await anon.put<ErrorBody>(`/api/v1/teams/${defaultTeamId}/mark-self-online`), 401, 3);
 
-    expectError(
-        await anon.get<ErrorBody>(
-            `/api/v1/teams/${defaultTeamId}/online-users`,
-        ),
-        401,
-        3,
-    );
+    expectError(await anon.get<ErrorBody>(`/api/v1/teams/${defaultTeamId}/online-users`), 401, 3);
 
     // ---------- I1.11 sadmin can list all teams ----------
 
     const allTeams = await listTeams(ctx.sadmin);
 
-    assert.assert(allTeams.find((t) => t.id === defaultTeamId), "sadmin sees default team");
-    assert.assert(allTeams.find((t) => t.id === secondTeam.id), "sadmin sees second team");
+    assert.ok(
+        allTeams.find((t) => t.id === defaultTeamId),
+        "sadmin sees default team",
+    );
+    assert.ok(
+        allTeams.find((t) => t.id === secondTeam.id),
+        "sadmin sees second team",
+    );
 }

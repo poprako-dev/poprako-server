@@ -1,7 +1,7 @@
 // it_13 — Single-slot chapter artwork allocation, optimistic completion, and cleanup.
 // Runs after bootstrap/member suites; creates its own independent chapter fixtures.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 import { withDatabaseClient } from "../db/seed.ts";
 import { expectError, expectNoContent, expectSuccessData } from "../http/assertions.ts";
 import type { ErrorBody, SuccessBody } from "../http/apiClient.ts";
@@ -37,7 +37,7 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
     const guest = ctx.users.get("guest_01")!;
 
     await withDatabaseClient(async (client) => {
-        await client.queryObject(
+        await client.query(
             `UPDATE t_assignment SET f_assigned_publisher_at = NOW() WHERE f_chapter_id = $1 AND f_user_id = $2`,
             [chapterId, ctx.ids.defaultUserId],
         );
@@ -59,13 +59,13 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
         await ctx.sadmin.post<SuccessBody<ArtworkAllocation>>(`${base}/alloc`, allocationBody(1)),
         200,
     );
-    assert.assert(allocated.slot);
+    assert.ok(allocated.slot);
     const putUrl = new URL(allocated.slot.put_url);
-    assert.assertEquals(putUrl.protocol, "https:");
-    assert.assertEquals(allocated.slot.headers["content-length"], "1024");
-    assert.assertEquals(allocated.slot.headers["content-type"], "application/octet-stream");
+    assert.deepEqual(putUrl.protocol, "https:");
+    assert.deepEqual(allocated.slot.headers["content-length"], "1024");
+    assert.deepEqual(allocated.slot.headers["content-type"], "application/octet-stream");
     const signedHeaders = putUrl.searchParams.get("X-Amz-SignedHeaders") ?? "";
-    assert.assert(signedHeaders.includes("content-length"), "upload signature must bind the exact size");
+    assert.ok(signedHeaders.includes("content-length"), "upload signature must bind the exact size");
     expectError(await ctx.sadmin.get<ErrorBody>(`${base}/export`), 422, 2);
 
     for (let repeat = 0; repeat < 2; repeat++) {
@@ -76,10 +76,10 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
         await guest.api.get<SuccessBody<ArtworkExport>>(`${base}/export`),
         200,
     );
-    assert.assertEquals(exported.artwork_version, allocated.artwork_version);
-    assert.assertEquals(exported.artwork_hash, artworkHash(1));
-    assert.assert(exported.download_url.includes("chapter_artwork/"));
-    assert.assert(!exported.download_url.includes("cdn-cgi/image"));
+    assert.deepEqual(exported.artwork_version, allocated.artwork_version);
+    assert.deepEqual(exported.artwork_hash, artworkHash(1));
+    assert.ok(exported.download_url.includes("chapter_artwork/"));
+    assert.ok(!exported.download_url.includes("cdn-cgi/image"));
 
     await assertExportedOnce(chapterId, allocated.artwork_version);
 
@@ -89,15 +89,15 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
         await ctx.sadmin.post<SuccessBody<ArtworkAllocation>>(`${base}/alloc`, allocationBody(1)),
         200,
     );
-    assert.assertEquals(duplicate.slot, null);
-    assert.assertEquals(duplicate.artwork_version, allocated.artwork_version);
+    assert.deepEqual(duplicate.slot, null);
+    assert.deepEqual(duplicate.artwork_version, allocated.artwork_version);
 
     // AW3: old confirmations cannot confirm a replacement generation.
     const replacement = expectSuccessData<ArtworkAllocation>(
         await ctx.sadmin.post<SuccessBody<ArtworkAllocation>>(`${base}/alloc`, allocationBody(2)),
         200,
     );
-    assert.assert(replacement.artwork_version > allocated.artwork_version);
+    assert.ok(replacement.artwork_version > allocated.artwork_version);
     expectError(
         await ctx.sadmin.post<ErrorBody>(`${base}/mark-uploaded`, { artwork_version: allocated.artwork_version }),
         422,
@@ -127,9 +127,7 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
     );
     // Seed a published chapter with a retained object to exercise archive cleanup independently of publication cleanup.
     await withDatabaseClient(async (client) => {
-        await client.queryObject(`UPDATE t_chapter SET f_published_at = NOW() WHERE f_id = $1`, [
-            archivedComic.chapter_id,
-        ]);
+        await client.query(`UPDATE t_chapter SET f_published_at = NOW() WHERE f_id = $1`, [archivedComic.chapter_id]);
     });
     await archiveComic(ctx.sadmin, archivedComic.id);
     await assertRetired(archivedComic.chapter_id, archivedSlot.artwork_version, true);
@@ -153,33 +151,33 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
 
 async function assertExportedOnce(chapterId: string, artworkVersion: number): Promise<void> {
     await withDatabaseClient(async (client) => {
-        const records = await client.queryObject<{ count: string }>(
+        const records = await client.query<{ count: string }>(
             `SELECT count(*)::text AS count FROM t_chapter_workflow_record WHERE f_chapter_id = $1 AND f_kind = 'artwork-exported' AND f_payload->>'artwork_version' = $2`,
             [chapterId, artworkVersion.toString()],
         );
-        assert.assertEquals(records.rows[0]?.count, "1");
+        assert.deepEqual(records.rows[0]?.count, "1");
     });
 }
 
 async function assertCompletedOnce(chapterId: string): Promise<void> {
     await withDatabaseClient(async (client) => {
-        const stages = await client.queryObject<{ completed: boolean }>(
+        const stages = await client.query<{ completed: boolean }>(
             `SELECT f_typeset_at IS NOT NULL AS completed FROM t_chapter WHERE f_id = $1`,
             [chapterId],
         );
-        assert.assertEquals(stages.rows[0]?.completed, true);
-        const records = await client.queryObject<{ count: string }>(
+        assert.deepEqual(stages.rows[0]?.completed, true);
+        const records = await client.query<{ count: string }>(
             `SELECT count(*)::text AS count FROM t_chapter_workflow_record WHERE f_chapter_id = $1 AND f_payload->>'origin' = 'artwork-upload'`,
             [chapterId],
         );
-        assert.assertEquals(records.rows[0]?.count, "1");
+        assert.deepEqual(records.rows[0]?.count, "1");
     });
 }
 
 async function assertRetired(chapterId: string, version: number, removed: boolean): Promise<void> {
     for (let attempt = 0; attempt < 60; attempt++) {
         const retired = await withDatabaseClient(async (client) => {
-            const rows = await client.queryObject<{ f_key: string | null }>(
+            const rows = await client.query<{ f_key: string | null }>(
                 `SELECT f_key FROM t_chapter_artwork WHERE f_id = $1`,
                 [chapterId],
             );
@@ -187,11 +185,11 @@ async function assertRetired(chapterId: string, version: number, removed: boolea
         });
         if (retired) {
             await withDatabaseClient(async (client) => {
-                const tasks = await client.queryObject<{ count: string }>(
+                const tasks = await client.query<{ count: string }>(
                     `SELECT count(*)::text AS count FROM t_obj_prom_task WHERE f_topic = 'chapter_artwork' AND f_obj_id = $1 AND f_version = $2 AND f_oper = 'obj_prom_oper:delete'`,
                     [chapterId, version],
                 );
-                assert.assert(Number(tasks.rows[0]?.count) >= 1);
+                assert.ok(Number(tasks.rows[0]?.count) >= 1);
             });
             return;
         }

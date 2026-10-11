@@ -15,13 +15,7 @@
 //   - raw-provide / review revert Completed -> Pending.
 //   - three-phase stages revert Completed -> Active -> Pending.
 
-export type StageName =
-    | "raw-provide"
-    | "translate"
-    | "proofread"
-    | "typeset-redraw"
-    | "review"
-    | "publish";
+export type StageName = "raw-provide" | "translate" | "proofread" | "typeset-redraw" | "review" | "publish";
 
 export const STAGE: Record<StageName, StageName> = {
     "raw-provide": "raw-provide",
@@ -53,21 +47,11 @@ export const ADVANCES_TO_COMPLETE: Record<StageName, number> = {
 };
 
 // Stages that accept an `Active` phase (three-phase). Others are one-shot.
-export const THREE_PHASE_STAGES: readonly StageName[] = [
-    "translate",
-    "proofread",
-    "typeset-redraw",
-];
+export const THREE_PHASE_STAGES: readonly StageName[] = ["translate", "proofread", "typeset-redraw"];
 
 export type StageOper = "advance" | "revert";
 
-export type ChapterStageInstr =
-    | "raw_provide"
-    | "translate"
-    | "proofread"
-    | "typeset_redraw"
-    | "review"
-    | "publish";
+export type ChapterStageInstr = "raw_provide" | "translate" | "proofread" | "typeset_redraw" | "review" | "publish";
 
 const CHAPTER_STAGE_INSTR: Record<StageName, ChapterStageInstr> = {
     "raw-provide": "raw_provide",
@@ -108,7 +92,10 @@ export function stagePhase(stagesMask: number, stage: StageName): number {
 }
 
 // Build a stage-advance request body for `POST /chapters/{id}/stage/advance`.
-export function stageAdvanceBody(chapterId: string, stage: StageName): {
+export function stageAdvanceBody(
+    chapterId: string,
+    stage: StageName,
+): {
     id: string;
     oper: "advance";
     stage: ChapterStageInstr;
@@ -116,7 +103,10 @@ export function stageAdvanceBody(chapterId: string, stage: StageName): {
     return { id: chapterId, oper: "advance", stage: chapterStageInstr(stage) };
 }
 
-export function stageRevertBody(chapterId: string, stage: StageName): {
+export function stageRevertBody(
+    chapterId: string,
+    stage: StageName,
+): {
     id: string;
     oper: "revert";
     stage: ChapterStageInstr;

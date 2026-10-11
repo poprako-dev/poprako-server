@@ -33,7 +33,7 @@
 //
 // Status: IMPLEMENTED.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { expectError, expectStatus } from "../http/assertions.ts";
 import type { ErrorBody } from "../http/apiClient.ts";
@@ -60,7 +60,7 @@ export const IMPLEMENTED = true as const;
 export async function runIt10Module(ctx: RunCtx): Promise<void> {
     const cascadeRefs = ctx.auxChapters.get("cascade");
 
-    assert.assert(cascadeRefs, "it_02 must have set the cascade aux subtree");
+    assert.ok(cascadeRefs, "it_02 must have set the cascade aux subtree");
 
     const archiveWsId = cascadeRefs.worksetId;
     const comicAId = cascadeExtraIds.cascadeComicAId;
@@ -69,7 +69,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     const comicBId = cascadeExtraIds.cascadeComicBId;
     const comicBCh1 = cascadeExtraIds.cascadeComicBCh1;
 
-    assert.assert(comicAId && comicACh1 && comicBId && comicBCh1, "cascade extra ids must be populated");
+    assert.ok(comicAId && comicACh1 && comicBId && comicBCh1, "cascade extra ids must be populated");
 
     // ---------- C9.1 delete a chapter (comicACh2) ----------
 
@@ -84,7 +84,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // comic.chapter_count -1
     const comicAAfterChDelete = await getComic(ctx.sadmin, comicAId);
 
-    assert.assertEquals(comicAAfterChDelete.chapter_count, comicAChCountBefore - 1);
+    assert.deepEqual(comicAAfterChDelete.chapter_count, comicAChCountBefore - 1);
 
     // ---------- C9.2 delete a comic (comicB) ----------
 
@@ -99,7 +99,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // workset.comic_count -1
     const archiveWsAfterComicDelete = await getWorkset(ctx.sadmin, archiveWsId);
 
-    assert.assertEquals(archiveWsAfterComicDelete.comic_count, wsComicCountBefore - 1);
+    assert.deepEqual(archiveWsAfterComicDelete.comic_count, wsComicCountBefore - 1);
 
     // comicB's chapter (comicBCh1) -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}`), 422, 2);
@@ -107,11 +107,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // comicB's page units -> 422/2 (page gone with chapter)
     // (pages were reserved on comicBCh1 by it_03; pick the first page id we
     // don't have stored, so just assert a chapter-pages list -> 422/2)
-    expectError(
-        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}/pages?offset=0&limit=20`),
-        422,
-        2,
-    );
+    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}/pages?offset=0&limit=20`), 422, 2);
 
     // ---------- C9.3 delete the workset (归档池) ----------
 
@@ -123,7 +119,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // team workset list excludes it
     const teamWorksetsAfter = await listTeamWorksets(ctx.sadmin, ctx.ids.defaultTeamId);
 
-    assert.assert(!teamWorksetsAfter.find((ws) => ws.id === archiveWsId), "deleted workset must not list");
+    assert.ok(!teamWorksetsAfter.find((ws) => ws.id === archiveWsId), "deleted workset must not list");
 
     // comicA (under the deleted workset) -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/comics/${comicAId}`), 422, 2);
@@ -132,11 +128,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}`), 422, 2);
 
     // a page under comicACh1 -> list pages 422/2
-    expectError(
-        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}/pages?offset=0&limit=20`),
-        422,
-        2,
-    );
+    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}/pages?offset=0&limit=20`), 422, 2);
 
     // ---------- C9.4 delete the second team (created by it_09) ----------
 
@@ -147,37 +139,27 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
         // retention and deleting the complete team.
         if (ctx.secondTeam.outsiderInvitationId) {
             expectStatus(
-                await ctx.sadmin.delete<null>(
-                    `/api/v1/member-invitations/${ctx.secondTeam.outsiderInvitationId}`,
-                ),
+                await ctx.sadmin.delete<null>(`/api/v1/member-invitations/${ctx.secondTeam.outsiderInvitationId}`),
                 204,
             );
         }
 
         const outsider = ctx.secondTeam.outsider;
 
-        assert.assert(outsider, "second-team outsider must exist");
+        assert.ok(outsider, "second-team outsider must exist");
 
         const secondTeamMembers = await listTeamMembers(ctx.sadmin, secondTeamId);
 
-        const sadminMember = secondTeamMembers.find(
-            (member) => member.user_id === ctx.ids.defaultUserId,
-        );
+        const sadminMember = secondTeamMembers.find((member) => member.user_id === ctx.ids.defaultUserId);
 
-        const outsiderMember = secondTeamMembers.find(
-            (member) => member.user_id === outsider.userId,
-        );
+        const outsiderMember = secondTeamMembers.find((member) => member.user_id === outsider.userId);
 
-        assert.assert(sadminMember, "sadmin second-team member must exist");
-        assert.assert(outsiderMember, "outsider second-team member must exist");
+        assert.ok(sadminMember, "sadmin second-team member must exist");
+        assert.ok(outsiderMember, "outsider second-team member must exist");
 
         // Give both members admin, then concurrently have them remove the
         // other's admin role from the same initial state.
-        await updateMemberRoles(
-            ctx.sadmin,
-            outsiderMember.id,
-            outsiderMember.roles | ROLE.ADMIN,
-        );
+        await updateMemberRoles(ctx.sadmin, outsiderMember.id, outsiderMember.roles | ROLE.ADMIN);
 
         const [removeOutsiderAdmin, removeSadminAdmin] = await Promise.all([
             ctx.sadmin.put<ErrorBody>(`/api/v1/members/${outsiderMember.id}/roles`, {
@@ -192,27 +174,21 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
 
         const adminRemovalResponses = [removeOutsiderAdmin, removeSadminAdmin];
 
-        assert.assertEquals(
+        assert.deepEqual(
             adminRemovalResponses.filter((response) => response.status === 204).length,
             1,
             "exactly one concurrent admin removal must commit",
         );
 
-        const rejectedAdminRemoval = adminRemovalResponses.find(
-            (response) => response.status !== 204,
-        );
+        const rejectedAdminRemoval = adminRemovalResponses.find((response) => response.status !== 204);
 
-        assert.assert(rejectedAdminRemoval, "one concurrent admin removal must be rejected");
-        assert.assert(
+        assert.ok(rejectedAdminRemoval, "one concurrent admin removal must be rejected");
+        assert.ok(
             rejectedAdminRemoval.status === 403 || rejectedAdminRemoval.status === 409,
             `rejected admin removal must be 403 or 409, got ${rejectedAdminRemoval.status}`,
         );
 
-        expectError(
-            rejectedAdminRemoval,
-            rejectedAdminRemoval.status,
-            rejectedAdminRemoval.status === 409 ? 8 : 4,
-        );
+        expectError(rejectedAdminRemoval, rejectedAdminRemoval.status, rejectedAdminRemoval.status === 409 ? 8 : 4);
 
         const membersAfterConcurrentRemoval = await listTeamMembers(ctx.sadmin, secondTeamId);
 
@@ -220,7 +196,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
             (member) => (member.roles & ROLE.ADMIN) !== 0,
         );
 
-        assert.assertEquals(
+        assert.deepEqual(
             adminMembersAfterConcurrentRemoval.length,
             1,
             "concurrent role removals must retain exactly one admin",
@@ -230,40 +206,22 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
         // user deletion can exercise last-admin retention without touching the
         // default seed account.
         if (adminMembersAfterConcurrentRemoval[0]!.user_id === ctx.ids.defaultUserId) {
-            await updateMemberRoles(
-                ctx.sadmin,
-                outsiderMember.id,
-                ROLE.RAW_PROVIDER | ROLE.ADMIN,
-            );
+            await updateMemberRoles(ctx.sadmin, outsiderMember.id, ROLE.RAW_PROVIDER | ROLE.ADMIN);
 
-            await updateMemberRoles(
-                outsider.api,
-                sadminMember.id,
-                ROLE.RAW_PROVIDER,
-            );
+            await updateMemberRoles(outsider.api, sadminMember.id, ROLE.RAW_PROVIDER);
         }
 
         const normalizedMembers = await listTeamMembers(outsider.api, secondTeamId);
 
-        assert.assertEquals(
-            normalizedMembers
-                .filter((member) => (member.roles & ROLE.ADMIN) !== 0)
-                .map((member) => member.user_id),
+        assert.deepEqual(
+            normalizedMembers.filter((member) => (member.roles & ROLE.ADMIN) !== 0).map((member) => member.user_id),
             [outsider.userId],
             "outsider must be the sole admin before retention checks",
         );
 
-        expectError(
-            await outsider.api.delete<ErrorBody>(`/api/v1/users/${outsider.userId}`),
-            403,
-            4,
-        );
+        expectError(await outsider.api.delete<ErrorBody>(`/api/v1/users/${outsider.userId}`), 403, 4);
 
-        expectError(
-            await outsider.api.delete<ErrorBody>(`/api/v1/members/${outsiderMember.id}`),
-            403,
-            4,
-        );
+        expectError(await outsider.api.delete<ErrorBody>(`/api/v1/members/${outsiderMember.id}`), 403, 4);
 
         // Team deletion intentionally removes every member, including the
         // last admin, because the protected team no longer exists afterward.
@@ -273,11 +231,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
 
         const outsiderMembers = await listMyMembers(outsider.api);
 
-        assert.assertEquals(
-            outsiderMembers.length,
-            0,
-            "outsider must have no memberships after second-team delete",
-        );
+        assert.deepEqual(outsiderMembers.length, 0, "outsider must have no memberships after second-team delete");
 
         ctx.secondTeam = null;
     }
@@ -295,7 +249,7 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     if (ctx.main) {
         const mainChapter = await getChapter(ctx.sadmin, ctx.main.chapterId);
 
-        assert.assert(mainChapter, "main chapter must still be accessible after cascade deletes");
+        assert.ok(mainChapter, "main chapter must still be accessible after cascade deletes");
     }
 
     // sanity: list workset comics / chapter pages / page units helpers still
@@ -305,17 +259,17 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     if (serialWsId) {
         const serialComics = await listWorksetComics(ctx.sadmin, serialWsId);
 
-        assert.assert(serialComics.length >= 1, "连载池 still has its comics");
+        assert.ok(serialComics.length >= 1, "连载池 still has its comics");
 
         if (ctx.main) {
             const mainPages = await listChapterPages(ctx.sadmin, ctx.main.chapterId);
 
-            assert.assert(mainPages.length > 0, "main chapter still has its pages");
+            assert.ok(mainPages.length > 0, "main chapter still has its pages");
 
             if (mainPages[0]) {
                 const mainUnits = await listPageUnits(ctx.sadmin, mainPages[0].id);
 
-                assert.assert(mainUnits.total_unit_count >= 0, "main page units still queryable");
+                assert.ok(mainUnits.total_unit_count >= 0, "main page units still queryable");
             }
         }
     }
@@ -323,5 +277,5 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // sanity: default team profile still the seed-restored name (it_08 restored it)
     const defaultTeam = await getTeam(ctx.sadmin, ctx.ids.defaultTeamId);
 
-    assert.assert(defaultTeam.id === ctx.ids.defaultTeamId);
+    assert.ok(defaultTeam.id === ctx.ids.defaultTeamId);
 }

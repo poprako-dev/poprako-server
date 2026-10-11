@@ -10,7 +10,8 @@ function generatePrefix(): string {
 
     const pad = (n: number): string => n.toString().padStart(2, "0");
 
-    const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}` +
+    const stamp =
+        `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}` +
         `_${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
 
     return `it_${stamp}_`;

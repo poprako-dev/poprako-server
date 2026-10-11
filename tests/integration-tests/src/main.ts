@@ -1,3 +1,4 @@
+import { afterAll, beforeAll, describe, test } from "vitest";
 import { testEnv } from "./config/env.ts";
 import { assertDatabaseIsSeedOnly, cleanupToSeed, resetDatabase, seedIds } from "./db/seed.ts";
 import { ApiClient } from "./http/apiClient.ts";
@@ -47,7 +48,7 @@ import type { RunCtx } from "./state/runCtx.ts";
 //   it_13 chapter artwork allocation, completion, export, and cleanup
 //   it_14 whole-chapter review replacement and read-only Page queries
 //
-// Cleanup: `cleanupToSeed()` runs in the `finally` block BEFORE
+// Cleanup: `cleanupToSeed()` runs in the `afterAll` hook BEFORE
 // `assertDatabaseIsSeedOnly()` so the assert verifies the suite self-cleans
 // rather than verifying that `resetDatabase` works. `cleanupToSeed` is robust
 // to partial runs (it deletes everything non-seed in FK-safe order), so a
@@ -79,10 +80,8 @@ const modules: ModuleEntry[] = [
     { name: "it_14 chapter issues", implemented: IT14_IMPLEMENTED, run: runIt14Module },
 ];
 
-Deno.test("poprako HTTP API integration (progressive)", async (outerT) => {
-    await outerT.step("reset database to seed", async () => {
-        await resetDatabase();
-    });
+describe("poprako HTTP API integration (progressive)", { concurrent: false }, () => {
+    beforeAll(resetDatabase);
 
     const ctx: RunCtx = {
         sadmin: new ApiClient(testEnv.apiBaseUrl),
@@ -104,29 +103,25 @@ Deno.test("poprako HTTP API integration (progressive)", async (outerT) => {
         moduleStatus: {},
     };
 
-    try {
-        for (const module of modules) {
-            ctx.moduleStatus[module.name] = module.implemented ? "running" : "skipped";
+    for (const module of modules) {
+        test.skipIf(!module.implemented)(module.name, async () => {
+            ctx.moduleStatus[module.name] = "running";
 
-            // `ignore` makes the stub appear as a skipped subtest in the output
-            // rather than a failure, so the progressive handoff stays green.
-            await outerT.step({
-                name: module.name,
-                ignore: !module.implemented,
-                fn: async () => {
-                    await module.run(ctx);
-                },
-            });
+            await module.run(ctx);
 
-            ctx.moduleStatus[module.name] = module.implemented ? "done" : "skipped";
+            ctx.moduleStatus[module.name] = "done";
+        });
+
+        if (!module.implemented) {
+            ctx.moduleStatus[module.name] = "skipped";
         }
-    } finally {
-        await outerT.step("cleanup to seed state", async () => {
-            await cleanupToSeed();
-        });
-
-        await outerT.step("assert database is seed-only", async () => {
-            await assertDatabaseIsSeedOnly();
-        });
     }
+
+    afterAll(async () => {
+        try {
+            await cleanupToSeed();
+        } finally {
+            await assertDatabaseIsSeedOnly();
+        }
+    });
 });

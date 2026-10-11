@@ -1,10 +1,10 @@
 # Integration tests
 
-- `integration-tests/` is a standalone Deno/TypeScript workspace. Run
-  `deno task check` there for formatting, lint, and type checks; run
-  `deno task api` there against an already-running API server.
+- `integration-tests/` is a standalone Node.js/TypeScript workspace. Run
+  `pnpm run check` there for formatting, lint, and type checks; run
+  `pnpm run api` there against an already-running API server.
 - When required variables exist only in the project `.env`, run
-  `deno task --env-file=../../.env api` from `integration-tests/`.
+  `pnpm run api:env` from `integration-tests/`.
 - Changes to integration test cases under `integration-tests/src/` must be
   reflected in `integration-tests/TESTCASES.md` in the same change. Preserve
   stable case IDs unless removing a case; update additions, removals, renames,

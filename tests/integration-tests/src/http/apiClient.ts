@@ -63,11 +63,7 @@ export class ApiClient {
         return this.retryRequest<T>("DELETE", path);
     }
 
-    private async retryRequest<T>(
-        method: string,
-        path: string,
-        body?: JsonBody,
-    ): Promise<ApiResponse<T>> {
+    private async retryRequest<T>(method: string, path: string, body?: JsonBody): Promise<ApiResponse<T>> {
         let lastResponse: ApiResponse<T> | null = null;
 
         for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
@@ -87,11 +83,7 @@ export class ApiClient {
         return lastResponse!;
     }
 
-    private async request<T>(
-        method: string,
-        path: string,
-        body?: JsonBody,
-    ): Promise<ApiResponse<T>> {
+    private async request<T>(method: string, path: string, body?: JsonBody): Promise<ApiResponse<T>> {
         const headers = new Headers();
 
         if (body !== undefined) {

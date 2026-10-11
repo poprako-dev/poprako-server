@@ -13,8 +13,21 @@ development.
 - PostgreSQL and `diesel_cli`
 - Cloudflare R2 credentials
 
-Docker is additionally required for container builds. Deno 2.9 is required for
-the TypeScript HTTP integration tests.
+Docker is additionally required for container builds. Node.js 26 and standalone pnpm 12.11.2 are required for
+the TypeScript HTTP integration tests. Install both independently (without npm):
+
+```sh
+sh scripts/setup-js.sh
+. "$HOME/.local/share/poprako-js/env"
+cd tests/integration-tests
+pnpm install --frozen-lockfile
+pnpm run check
+```
+
+The runtime is pinned in `.node-version`; pnpm is pinned in the test package and
+installer. Node.js 26 is currently Current, with LTS targeted for 2026-10-28.
+CI uses the same installer. Add the activation command to your shell startup
+file for persistent use. See the test inventory for API execution commands.
 
 ## Run locally
 

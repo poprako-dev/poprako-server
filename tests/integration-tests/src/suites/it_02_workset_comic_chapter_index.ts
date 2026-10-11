@@ -28,7 +28,7 @@
 //
 // Status: IMPLEMENTED.
 
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { testEnv } from "../config/env.ts";
 import { expectError, expectStatus, expectSuccessData } from "../http/assertions.ts";
@@ -66,7 +66,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const teamId = ctx.ids.defaultTeamId;
     const trans01 = ctx.users.get("trans_01");
 
-    assert.assert(trans01, "it_01 must have registered trans_01");
+    assert.ok(trans01, "it_01 must have registered trans_01");
 
     // ---------- C1. create 4 worksets, verify index monotonic ----------
 
@@ -85,7 +85,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         createdWorksets.push(wsInfo);
 
         // index strictly increasing and matches creation order (0-based)
-        assert.assertEquals(wsInfo.index, i);
+        assert.deepEqual(wsInfo.index, i);
     }
 
     // list contains the 4 new worksets; indexes unique and increasing
@@ -94,12 +94,12 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     for (const ws of createdWorksets) {
         const found = listed.find((item) => item.id === ws.id);
 
-        assert.assert(found, `list must include workset ${ws.id}`);
+        assert.ok(found, `list must include workset ${ws.id}`);
     }
 
     const createdIndexes = createdWorksets.map((ws) => ws.index);
 
-    assert.assertEquals(new Set(createdIndexes).size, createdIndexes.length, "workset indexes unique");
+    assert.deepEqual(new Set(createdIndexes).size, createdIndexes.length, "workset indexes unique");
 
     await assertTeamInvariant(ctx.sadmin, teamId);
 
@@ -137,7 +137,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // list no longer contains old id
     const listedAfterDelete = await listTeamWorksets(ctx.sadmin, teamId);
 
-    assert.assert(!listedAfterDelete.find((ws) => ws.id === shortWsId), "deleted workset must not list");
+    assert.ok(!listedAfterDelete.find((ws) => ws.id === shortWsId), "deleted workset must not list");
 
     // recreate 短篇池-重建; new index must not backfill (should be > any existing index)
     const listedAfterDeleteWss = await listTeamWorksets(ctx.sadmin, teamId);
@@ -149,12 +149,12 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const rebuiltInfo = await getWorkset(ctx.sadmin, rebuilt.id);
 
-    assert.assert(rebuiltInfo.index > maxExistingWsIndex, "rebuilt index must not backfill");
+    assert.ok(rebuiltInfo.index > maxExistingWsIndex, "rebuilt index must not backfill");
 
     // active count back to 4
     const listedAfterRebuild = await listTeamWorksets(ctx.sadmin, teamId);
 
-    assert.assertEquals(listedAfterRebuild.length, 4);
+    assert.deepEqual(listedAfterRebuild.length, 4);
 
     // ---------- C3. create 3 comics under 连载池, verify first chapter ----------
 
@@ -186,13 +186,13 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
         const comicInfo = await getComic(ctx.sadmin, comic.id);
 
-        assert.assertEquals(comicInfo.workset_id, serialWsId);
-        assert.assertEquals(comicInfo.index, i, `comic ${spec.label} index monotonic`);
-        assert.assertEquals(comicInfo.chapter_count, 1);
-        assert.assertEquals(comicInfo.cover_url ?? null, null);
+        assert.deepEqual(comicInfo.workset_id, serialWsId);
+        assert.deepEqual(comicInfo.index, i, `comic ${spec.label} index monotonic`);
+        assert.deepEqual(comicInfo.chapter_count, 1);
+        assert.deepEqual(comicInfo.cover_url ?? null, null);
 
-        assert.assertEquals(comicInfo.workset ?? null, null);
-        assert.assertEquals(comicInfo.team ?? null, null);
+        assert.deepEqual(comicInfo.workset ?? null, null);
+        assert.deepEqual(comicInfo.team ?? null, null);
 
         const included = expectSuccessData(
             await ctx.sadmin.get<SuccessBody<ComicInfoView>>(
@@ -201,27 +201,27 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
             200,
         );
 
-        assert.assertEquals(included.workset?.id, serialWsId);
-        assert.assertEquals(included.workset?.team_id, teamId);
-        assert.assertEquals(included.team?.id, teamId);
-        assert.assertEquals(included.creator?.id, ctx.ids.defaultUserId);
+        assert.deepEqual(included.workset?.id, serialWsId);
+        assert.deepEqual(included.workset?.team_id, teamId);
+        assert.deepEqual(included.team?.id, teamId);
+        assert.deepEqual(included.creator?.id, ctx.ids.defaultUserId);
 
         expectStatus(await ctx.sadmin.get(`/api/v1/comics/${comic.id}?incl=unknown`), 400);
 
         const chapterInfo = await getChapter(ctx.sadmin, comic.chapter_id);
 
-        assert.assertEquals(chapterInfo.comic_id, comic.id);
-        assert.assertEquals(chapterInfo.index, 0);
-        assert.assertEquals(chapterInfo.page_count, 0);
-        assert.assertEquals(chapterInfo.total_unit_count, 0);
-        assert.assertEquals(chapterInfo.translated_unit_count, 0);
-        assert.assertEquals(chapterInfo.proofread_unit_count, 0);
-        assert.assertEquals(chapterInfo.creator_id, ctx.ids.defaultUserId);
+        assert.deepEqual(chapterInfo.comic_id, comic.id);
+        assert.deepEqual(chapterInfo.index, 0);
+        assert.deepEqual(chapterInfo.page_count, 0);
+        assert.deepEqual(chapterInfo.total_unit_count, 0);
+        assert.deepEqual(chapterInfo.translated_unit_count, 0);
+        assert.deepEqual(chapterInfo.proofread_unit_count, 0);
+        assert.deepEqual(chapterInfo.creator_id, ctx.ids.defaultUserId);
 
         if (spec.firstSubtitle !== null) {
-            assert.assertEquals(chapterInfo.subtitle, spec.firstSubtitle);
+            assert.deepEqual(chapterInfo.subtitle, spec.firstSubtitle);
         } else {
-            assert.assert(chapterInfo.subtitle.length > 0, "default subtitle must be non-empty");
+            assert.ok(chapterInfo.subtitle.length > 0, "default subtitle must be non-empty");
         }
     }
 
@@ -231,8 +231,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
         const chapters = await listComicChapters(ctx.sadmin, comicId);
 
-        assert.assertEquals(chapters.length, 1);
-        assert.assertEquals(chapters[0]!.id, ctx.ids.firstChapterIds[spec.label]);
+        assert.deepEqual(chapters.length, 1);
+        assert.deepEqual(chapters[0]!.id, ctx.ids.firstChapterIds[spec.label]);
     }
 
     // workset comics list with with=pinned_chapter & incl=workset.team
@@ -244,29 +244,24 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const { comics: serialComics, pinned_chapters: pinnedChapters } = serialComicPayload;
 
-    assert.assertEquals(serialComics.length, 3);
+    assert.deepEqual(serialComics.length, 3);
 
-    assert.assertEquals(pinnedChapters.length, serialComics.length);
+    assert.deepEqual(pinnedChapters.length, serialComics.length);
 
     for (const [index, comic] of serialComics.entries()) {
-        assert.assert(comic.workset, "incl=workset.team must embed workset");
-        assert.assertEquals(comic.workset?.id, serialWsId, "workset.id must be the parent workset");
-        assert.assertEquals(comic.workset?.team_id, teamId, "workset.team_id must be the default team");
-        assert.assert(comic.team, "workset.team incl must populate comic.team");
-        assert.assertEquals(comic.team?.id, teamId, "comic.team.id must be the default team");
+        assert.ok(comic.workset, "incl=workset.team must embed workset");
+        assert.deepEqual(comic.workset?.id, serialWsId, "workset.id must be the parent workset");
+        assert.deepEqual(comic.workset?.team_id, teamId, "workset.team_id must be the default team");
+        assert.ok(comic.team, "workset.team incl must populate comic.team");
+        assert.deepEqual(comic.team?.id, teamId, "comic.team.id must be the default team");
         const pinnedChapter = pinnedChapters[index];
 
-        assert.assert(pinnedChapter, "with=pinned_chapter must return a pinned chapter");
+        assert.ok(pinnedChapter, "with=pinned_chapter must return a pinned chapter");
 
-        const firstChId = ctx.ids.firstChapterIds[
-            comicSpecs.find((spec) => ctx.ids.comicIds[spec.label] === comic.id)!.label
-        ];
+        const firstChId =
+            ctx.ids.firstChapterIds[comicSpecs.find((spec) => ctx.ids.comicIds[spec.label] === comic.id)!.label];
 
-        assert.assertEquals(
-            pinnedChapter.id,
-            firstChId,
-            "auto-pinned chapter must be the comic's first chapter",
-        );
+        assert.deepEqual(pinnedChapter.id, firstChId, "auto-pinned chapter must be the comic's first chapter");
     }
 
     // C3.6: non-admin create comic -> 403/4
@@ -310,36 +305,30 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // list excludes deleted comic
     const serialComicsAfterDelete = await listWorksetComics(ctx.sadmin, serialWsId);
 
-    assert.assert(!serialComicsAfterDelete.find((comic) => comic.id === yuyeId));
+    assert.ok(!serialComicsAfterDelete.find((comic) => comic.id === yuyeId));
 
     // workset comic_count == 2 (active)
     const serialWsAfterDelete = await getWorkset(ctx.sadmin, serialWsId);
 
-    assert.assertEquals(serialWsAfterDelete.comic_count, 2);
+    assert.deepEqual(serialWsAfterDelete.comic_count, 2);
 
     // deleted comic's first chapter -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${yuyeFirstChId}`), 422, 2);
 
     // recreate 雨夜便利店-重制版; new index must not backfill (> any existing)
-    const yuyeReborn = await createComic(
-        ctx.sadmin,
-        serialWsId,
-        titled("雨夜便利店-重制版"),
-        "作者B2",
-        "第 1 话 重制",
-    );
+    const yuyeReborn = await createComic(ctx.sadmin, serialWsId, titled("雨夜便利店-重制版"), "作者B2", "第 1 话 重制");
 
     ctx.ids.comicIds["雨夜便利店-重制版"] = yuyeReborn.id;
     ctx.ids.firstChapterIds["雨夜便利店-重制版"] = yuyeReborn.chapter_id;
 
     const yuyeRebornInfo = await getComic(ctx.sadmin, yuyeReborn.id);
 
-    assert.assert(yuyeRebornInfo.index > maxExistingComicIndex, "rebuilt comic index no backfill");
+    assert.ok(yuyeRebornInfo.index > maxExistingComicIndex, "rebuilt comic index no backfill");
 
     // workset comic_count back to 3
     const serialWsAfterRebuild = await getWorkset(ctx.sadmin, serialWsId);
 
-    assert.assertEquals(serialWsAfterRebuild.comic_count, 3);
+    assert.deepEqual(serialWsAfterRebuild.comic_count, 3);
 
     // fuzzy_title=雨夜 finds 重制版, not the deleted original
     const fuzzyYuye = await listWorksetComics(
@@ -348,8 +337,11 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         `&fuzzy_title=${encodeURIComponent(titled("雨夜"))}`,
     );
 
-    assert.assert(fuzzyYuye.find((comic) => comic.id === yuyeReborn.id), "fuzzy must find 重制版");
-    assert.assert(!fuzzyYuye.find((comic) => comic.id === yuyeId), "fuzzy must not find deleted original");
+    assert.ok(
+        fuzzyYuye.find((comic) => comic.id === yuyeReborn.id),
+        "fuzzy must find 重制版",
+    );
+    assert.ok(!fuzzyYuye.find((comic) => comic.id === yuyeId), "fuzzy must not find deleted original");
 
     // ---------- C5. multi-chapter on 星尘旅人, verify chapter index ----------
 
@@ -371,7 +363,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
         const xingchenAfter = await getComic(ctx.sadmin, xingchenId);
 
-        assert.assertEquals(xingchenAfter.chapter_count, 2 + i, "chapter_count == active count");
+        assert.deepEqual(xingchenAfter.chapter_count, 2 + i, "chapter_count == active count");
     }
 
     // delete 第 3 话 (ch3)
@@ -386,7 +378,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // chapter_count -1
     const xingchenAfterChDelete = await getComic(ctx.sadmin, xingchenId);
 
-    assert.assertEquals(xingchenAfterChDelete.chapter_count, 3);
+    assert.deepEqual(xingchenAfterChDelete.chapter_count, 3);
 
     // create 第 5 话 断层回声; new index must not backfill (> any existing)
     const ch5 = await createChapter(ctx.sadmin, xingchenId, titled("第 5 话 断层回声"));
@@ -395,31 +387,27 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const ch5Info = await getChapter(ctx.sadmin, ch5.id);
 
-    assert.assert(ch5Info.index > maxChIndexBeforeDelete, "new chapter index no backfill");
+    assert.ok(ch5Info.index > maxChIndexBeforeDelete, "new chapter index no backfill");
 
     // active indexes are [0,1,3,4] (ch1=0, ch2=1, ch4=3, ch5=4) — no backfill
     const activeChapters = await listComicChapters(ctx.sadmin, xingchenId);
 
     const activeIndexes = activeChapters.map((ch) => ch.index).sort((a, b) => a - b);
 
-    assert.assertEquals(activeIndexes, [0, 1, 3, 4], "chapter indexes no backfill");
+    assert.deepEqual(activeIndexes, [0, 1, 3, 4], "chapter indexes no backfill");
 
     // incl=comic.workset.team: nested id chain correct
-    const withIncl = await listComicChapters(
-        ctx.sadmin,
-        xingchenId,
-        "&incl=comic.workset.team",
-    );
+    const withIncl = await listComicChapters(ctx.sadmin, xingchenId, "&incl=comic.workset.team");
 
     for (const ch of withIncl) {
-        assert.assert(ch.comic, "comic embedded");
-        assert.assertEquals(ch.comic?.id, xingchenId);
-        assert.assert(ch.comic?.workset, "workset embedded");
-        assert.assertEquals(ch.comic?.workset?.id, serialWsId);
-        assert.assert(ch.comic?.team, "workset.team incl populates comic.team");
-        assert.assertEquals(ch.comic?.team?.id, teamId);
+        assert.ok(ch.comic, "comic embedded");
+        assert.deepEqual(ch.comic?.id, xingchenId);
+        assert.ok(ch.comic?.workset, "workset embedded");
+        assert.deepEqual(ch.comic?.workset?.id, serialWsId);
+        assert.ok(ch.comic?.team, "workset.team incl populates comic.team");
+        assert.deepEqual(ch.comic?.team?.id, teamId);
         // creator not requested — must be omitted
-        assert.assertEquals(ch.creator, undefined, "creator not included");
+        assert.deepEqual(ch.creator, undefined, "creator not included");
     }
 
     // C5.8: non-admin create chapter -> 403/4
@@ -461,18 +449,18 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     let pinned = await getPinnedChapter(ctx.sadmin, xingchenId);
 
-    assert.assertEquals(pinned?.id ?? null, ch2Id, "pinned endpoint returns ch2");
+    assert.deepEqual(pinned?.id ?? null, ch2Id, "pinned endpoint returns ch2");
 
     // pin ch4 -> pin moves to ch4, ch2 unpins
     await markChapterPinned(ctx.sadmin, ch4Id);
 
     pinned = await getPinnedChapter(ctx.sadmin, xingchenId);
 
-    assert.assertEquals(pinned?.id ?? null, ch4Id, "pin moves to ch4");
+    assert.deepEqual(pinned?.id ?? null, ch4Id, "pin moves to ch4");
 
     const ch2After = await getChapter(ctx.sadmin, ch2Id);
 
-    assert.assertEquals(ch2After.is_pinned, false, "ch2 unpinned after ch4 pinned");
+    assert.deepEqual(ch2After.is_pinned, false, "ch2 unpinned after ch4 pinned");
 
     // C6.5: path/body id mismatch -> 422 code 7
     expectError(
@@ -485,13 +473,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     );
 
     // C6.6: non-authorized user patch -> 403/4 (trans_01 has no admin assignment)
-    expectError(
-        await trans01.api.post<ErrorBody>(
-            `/api/v1/chapters/${ch2Id}/mark-pinned`,
-        ),
-        403,
-        4,
-    );
+    expectError(await trans01.api.post<ErrorBody>(`/api/v1/chapters/${ch2Id}/mark-pinned`), 403, 4);
 
     // C6.7: subtitle patch leaves pin unchanged; pin action leaves subtitle unchanged.
     const ch2Before = await getChapter(ctx.sadmin, ch2Id);
@@ -501,8 +483,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const ch2AfterSub = await getChapter(ctx.sadmin, ch2Id);
 
-    assert.assertEquals(ch2AfterSub.subtitle, titled("第 2 话 改名"));
-    assert.assertEquals(ch2AfterSub.is_pinned, ch2Before.is_pinned, "subtitle patch must not change pin");
+    assert.deepEqual(ch2AfterSub.subtitle, titled("第 2 话 改名"));
+    assert.deepEqual(ch2AfterSub.is_pinned, ch2Before.is_pinned, "subtitle patch must not change pin");
 
     // restore subtitle for downstream modules
     await patchChapter(ctx.sadmin, ch2Id, { subtitle: ch2OriginalSubtitle });
@@ -511,8 +493,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const ch2AfterPin = await getChapter(ctx.sadmin, ch2Id);
 
-    assert.assertEquals(ch2AfterPin.is_pinned, true);
-    assert.assertEquals(ch2AfterPin.subtitle, ch2OriginalSubtitle, "pin patch must not change subtitle");
+    assert.deepEqual(ch2AfterPin.is_pinned, true);
+    assert.deepEqual(ch2AfterPin.subtitle, ch2OriginalSubtitle, "pin patch must not change subtitle");
 
     // ---------- C7. info update full coverage ----------
 
@@ -526,9 +508,9 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const teamUpdated = await getTeam(ctx.sadmin, teamId);
 
-    assert.assertEquals(teamUpdated.name, titled("team-renamed"));
-    assert.assertEquals(teamUpdated.description, "updated desc");
-    assert.assert(teamUpdated.updated_at >= teamOriginalUpdated, "updated_at must not decrease");
+    assert.deepEqual(teamUpdated.name, titled("team-renamed"));
+    assert.deepEqual(teamUpdated.description, "updated desc");
+    assert.ok(teamUpdated.updated_at >= teamOriginalUpdated, "updated_at must not decrease");
 
     // restore team profile (downstream modules / cleanup assume seed name)
     await updateTeam(ctx.sadmin, teamId, teamOriginalName, teamOriginalDesc);
@@ -553,10 +535,10 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const wsUpdated = await getWorkset(ctx.sadmin, serialWsId);
 
-    assert.assertEquals(wsUpdated.name, titled("ws-renamed"));
-    assert.assertEquals(wsUpdated.description, "ws updated");
-    assert.assertEquals(wsUpdated.index, wsForUpdate.index, "index unchanged");
-    assert.assertEquals(wsUpdated.comic_count, wsForUpdate.comic_count, "comic_count unchanged");
+    assert.deepEqual(wsUpdated.name, titled("ws-renamed"));
+    assert.deepEqual(wsUpdated.description, "ws updated");
+    assert.deepEqual(wsUpdated.index, wsForUpdate.index, "index unchanged");
+    assert.deepEqual(wsUpdated.comic_count, wsForUpdate.comic_count, "comic_count unchanged");
 
     // restore workset name
     await updateWorkset(ctx.sadmin, serialWsId, wsOriginalName, wsOriginalDesc || undefined);
@@ -570,11 +552,11 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const comicUpdated = await getComic(ctx.sadmin, xingchenId);
 
-    assert.assertEquals(comicUpdated.title, titled("comic-renamed"));
-    assert.assertEquals(comicUpdated.author, "new author");
-    assert.assertEquals(comicUpdated.description, "new desc");
-    assert.assertEquals(comicUpdated.index, comicForUpdate.index, "index unchanged");
-    assert.assertEquals(comicUpdated.chapter_count, comicForUpdate.chapter_count, "chapter_count unchanged");
+    assert.deepEqual(comicUpdated.title, titled("comic-renamed"));
+    assert.deepEqual(comicUpdated.author, "new author");
+    assert.deepEqual(comicUpdated.description, "new desc");
+    assert.deepEqual(comicUpdated.index, comicForUpdate.index, "index unchanged");
+    assert.deepEqual(comicUpdated.chapter_count, comicForUpdate.chapter_count, "chapter_count unchanged");
 
     // restore comic profile
     await updateComic(ctx.sadmin, xingchenId, comicOriginalTitle, comicOriginalAuthor);
@@ -587,13 +569,13 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const chUpdated = await getChapter(ctx.sadmin, ch2Id);
 
-    assert.assertEquals(chUpdated.subtitle, titled("ch-renamed"));
-    assert.assertEquals(chUpdated.index, chForUpdate.index);
-    assert.assertEquals(chUpdated.page_count, chForUpdate.page_count);
-    assert.assertEquals(chUpdated.total_unit_count, chForUpdate.total_unit_count);
-    assert.assertEquals(chUpdated.translated_unit_count, chForUpdate.translated_unit_count);
-    assert.assertEquals(chUpdated.proofread_unit_count, chForUpdate.proofread_unit_count);
-    assert.assertEquals(chUpdated.stages, chForUpdate.stages, "stages unchanged by subtitle patch");
+    assert.deepEqual(chUpdated.subtitle, titled("ch-renamed"));
+    assert.deepEqual(chUpdated.index, chForUpdate.index);
+    assert.deepEqual(chUpdated.page_count, chForUpdate.page_count);
+    assert.deepEqual(chUpdated.total_unit_count, chForUpdate.total_unit_count);
+    assert.deepEqual(chUpdated.translated_unit_count, chForUpdate.translated_unit_count);
+    assert.deepEqual(chUpdated.proofread_unit_count, chForUpdate.proofread_unit_count);
+    assert.deepEqual(chUpdated.stages, chForUpdate.stages, "stages unchanged by subtitle patch");
 
     // restore chapter subtitle
     await patchChapter(ctx.sadmin, ch2Id, { subtitle: chOriginalSubtitle });
@@ -675,24 +657,12 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const archiveWsId = ctx.ids.worksetIds["归档池"]!;
 
-    const cascadeComicA = await createComic(
-        ctx.sadmin,
-        archiveWsId,
-        titled("归档漫画A"),
-        "authA",
-        "归档A第1话",
-    );
+    const cascadeComicA = await createComic(ctx.sadmin, archiveWsId, titled("归档漫画A"), "authA", "归档A第1话");
 
     const cascadeComicACh1 = cascadeComicA.chapter_id;
     const cascadeComicACh2 = (await createChapter(ctx.sadmin, cascadeComicA.id, titled("归档A第2话"))).id;
 
-    const cascadeComicB = await createComic(
-        ctx.sadmin,
-        archiveWsId,
-        titled("归档漫画B"),
-        "authB",
-        "归档B第1话",
-    );
+    const cascadeComicB = await createComic(ctx.sadmin, archiveWsId, titled("归档漫画B"), "authB", "归档B第1话");
 
     const cascadeComicBCh1 = cascadeComicB.chapter_id;
 
@@ -720,7 +690,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // sanity: main chapter is at workflow baseline
     const mainChapter = await getChapter(ctx.sadmin, ctx.main.chapterId);
 
-    assert.assertEquals(mainChapter.stages, 0, "main chapter must start at workflow baseline");
+    assert.deepEqual(mainChapter.stages, 0, "main chapter must start at workflow baseline");
     void stagePhase; // referenced for downstream modules' convenience
 }
 

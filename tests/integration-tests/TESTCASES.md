@@ -11,7 +11,8 @@ are the source of truth; do not keep separate implementation plans or status tra
 
 ```text
 cd tests/integration-tests
-deno task check
+pnpm install --frozen-lockfile
+pnpm run check
 ```
 
 For an isolated end-to-end run, configure `INTEGRATION_DATABASE_URL` and run:
@@ -26,18 +27,27 @@ need to preserve.
 When running against an API server that is already available, use:
 
 ```text
-deno task api
+pnpm run api
 ```
 
 If the required variables only exist in the project `.env`, use:
 
 ```text
-deno task --env-file=../../.env api
+pnpm run api:env
 ```
+
+Vitest runs the 15 modules sequentially with a shared context, without retries.
+Each module has a five-minute timeout; reset and cleanup hooks have two minutes.
+Cleanup and the seed-only assertion run in `afterAll`, including after a failed module.
+Assertions use Node.js strict assertions and database fixtures use `pg`.
+The IS1 fixture grants REVIEWER through the assignment join API before successful
+imports. Cleanup includes detached composite-page image metadata in `t_page_artwork_image`.
+Node.js has no Deno-style environment or network permission flags; run this suite
+only with the intended test environment and disposable database.
 
 ## Suite order
 
-`src/main.ts` resets the database, runs these modules in order, then restores the seed-only state in its `finally`
+`src/main.ts` resets the database, runs these modules in order, then restores the seed-only state in its `afterAll`
 block. Every current module exports `IMPLEMENTED = true`.
 
 | Module | File                                        | Coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |

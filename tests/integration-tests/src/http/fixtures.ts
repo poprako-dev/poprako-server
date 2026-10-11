@@ -1,4 +1,4 @@
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import { testEnv } from "../config/env.ts";
 import { expectError, expectNoContent, expectSuccessData, expectSuccessList } from "./assertions.ts";
@@ -47,25 +47,18 @@ import type { StageName, StageOper } from "../state/stages.ts";
 
 // Assert a value is a Unix-millisecond integer (the API's timestamp format).
 export function assertTimestampMs(value: unknown): asserts value is number {
-    assert.assert(typeof value === "number", "timestamp must be a number");
-    assert.assert(Number.isInteger(value), "timestamp must be an integer");
+    assert.ok(typeof value === "number", "timestamp must be a number");
+    assert.ok(Number.isInteger(value), "timestamp must be an integer");
 }
 
 // Assert `created_at <= updated_at` for a record carrying both fields.
 export function assertCreatedBeforeUpdated(created: number, updated: number): void {
-    assert.assert(
-        created <= updated,
-        `created_at (${created}) must be <= updated_at (${updated})`,
-    );
+    assert.ok(created <= updated, `created_at (${created}) must be <= updated_at (${updated})`);
 }
 
 // ---------- auth ----------
 
-export async function login(
-    api: ApiClient,
-    qid: string,
-    password: string,
-): Promise<LoginVal> {
+export async function login(api: ApiClient, qid: string, password: string): Promise<LoginVal> {
     const response = await api.post<SuccessBody<LoginVal>>("/api/v1/auth/login", {
         password,
         qid,
@@ -73,7 +66,7 @@ export async function login(
 
     const val = expectSuccessData(response, 200);
 
-    assert.assert(val.token.length > 20, "login token must be > 20 chars");
+    assert.ok(val.token.length > 20, "login token must be > 20 chars");
 
     api.setToken(val.token);
 
@@ -99,7 +92,7 @@ export async function registerInvitee(
 
     const val = expectSuccessData(response, 201);
 
-    assert.assert(val.token.length > 20, "register token must be > 20 chars");
+    assert.ok(val.token.length > 20, "register token must be > 20 chars");
 
     fresh.setToken(val.token);
 
@@ -107,7 +100,10 @@ export async function registerInvitee(
 }
 
 // Build an authenticated client for an already-registered user.
-export async function userClient(qidValue: string, passwordValue: string): Promise<{
+export async function userClient(
+    qidValue: string,
+    passwordValue: string,
+): Promise<{
     api: ApiClient;
     userId: string;
     token: string;
@@ -136,11 +132,7 @@ export async function getUserInfo(api: ApiClient, userId: string): Promise<UserI
 
 // ---------- team ----------
 
-export async function createTeam(
-    api: ApiClient,
-    name: string,
-    description: string,
-): Promise<TeamInfoView> {
+export async function createTeam(api: ApiClient, name: string, description: string): Promise<TeamInfoView> {
     return expectSuccessData(
         await api.post<SuccessBody<TeamInfoView>>("/api/v1/teams", {
             description,
@@ -160,12 +152,7 @@ export async function listTeams(api: ApiClient, userId?: string): Promise<TeamIn
     return expectSuccessList(await api.get<SuccessBody<TeamInfoView[]>>(`/api/v1/teams${query}`), 200);
 }
 
-export async function updateTeam(
-    api: ApiClient,
-    teamId: string,
-    name: string,
-    description: string,
-): Promise<void> {
+export async function updateTeam(api: ApiClient, teamId: string, name: string, description: string): Promise<void> {
     expectNoContent(
         await api.put<null>(`/api/v1/teams/${teamId}`, {
             description,
@@ -175,11 +162,7 @@ export async function updateTeam(
     );
 }
 
-export function reserveTeamAvatar(
-    api: ApiClient,
-    teamId: string,
-    ext: ImageExtension,
-): Promise<ReserveImageVal> {
+export function reserveTeamAvatar(api: ApiClient, teamId: string, ext: ImageExtension): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/teams/${teamId}/avatar/alloc`,
@@ -214,17 +197,13 @@ async function reserveAndUploadImage(
             body: imageBytes,
         });
 
-        assert.assert(response.ok, `image upload failed with status ${response.status}`);
+        assert.ok(response.ok, `image upload failed with status ${response.status}`);
     }
 
     return reserved;
 }
 
-export async function markTeamAvatarUploaded(
-    api: ApiClient,
-    teamId: string,
-    avatarVersion: number,
-): Promise<void> {
+export async function markTeamAvatarUploaded(api: ApiClient, teamId: string, avatarVersion: number): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/teams/${teamId}/avatar/mark-uploaded`, {
             image_version: avatarVersion,
@@ -234,11 +213,7 @@ export async function markTeamAvatarUploaded(
 
 // ---------- user avatar ----------
 
-export function reserveUserAvatar(
-    api: ApiClient,
-    userId: string,
-    ext: ImageExtension,
-): Promise<ReserveImageVal> {
+export function reserveUserAvatar(api: ApiClient, userId: string, ext: ImageExtension): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/users/${userId}/avatar/alloc`,
@@ -247,11 +222,7 @@ export function reserveUserAvatar(
     );
 }
 
-export async function markUserAvatarUploaded(
-    api: ApiClient,
-    userId: string,
-    avatarVersion: number,
-): Promise<void> {
+export async function markUserAvatarUploaded(api: ApiClient, userId: string, avatarVersion: number): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/users/${userId}/avatar/mark-uploaded`, {
             image_version: avatarVersion,
@@ -268,24 +239,13 @@ export async function listMyMembers(api: ApiClient, incl = ""): Promise<MemberIn
     );
 }
 
-export async function listTeamMembers(
-    api: ApiClient,
-    teamId: string,
-    extraQuery = "",
-): Promise<MemberInfoView[]> {
+export async function listTeamMembers(api: ApiClient, teamId: string, extraQuery = ""): Promise<MemberInfoView[]> {
     const query = `?team_id=${encodeURIComponent(teamId)}&offset=0&limit=50${extraQuery}`;
 
-    return expectSuccessList(
-        await api.get<SuccessBody<MemberInfoView[]>>(`/api/v1/members${query}`),
-        200,
-    );
+    return expectSuccessList(await api.get<SuccessBody<MemberInfoView[]>>(`/api/v1/members${query}`), 200);
 }
 
-export async function updateMemberRoles(
-    api: ApiClient,
-    memberId: string,
-    roles: number,
-): Promise<void> {
+export async function updateMemberRoles(api: ApiClient, memberId: string, roles: number): Promise<void> {
     expectNoContent(
         await api.put<null>(`/api/v1/members/${memberId}/roles`, {
             id: memberId,
@@ -320,18 +280,12 @@ export async function listMemberInvitations(
     const query = `?is_pending=${isPending}&offset=0&limit=100`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<MemberInvitationInfoView[]>>(
-            `/api/v1/teams/${teamId}/member-invitations${query}`,
-        ),
+        await api.get<SuccessBody<MemberInvitationInfoView[]>>(`/api/v1/teams/${teamId}/member-invitations${query}`),
         200,
     );
 }
 
-export async function updateMemberInvitationRoles(
-    api: ApiClient,
-    invitationId: string,
-    roles: number,
-): Promise<void> {
+export async function updateMemberInvitationRoles(api: ApiClient, invitationId: string, roles: number): Promise<void> {
     expectNoContent(
         await api.put<null>(`/api/v1/member-invitations/${invitationId}/roles`, {
             id: invitationId,
@@ -418,17 +372,10 @@ export async function getComic(api: ApiClient, comicId: string): Promise<ComicIn
 }
 
 export async function archiveComic(api: ApiClient, comicId: string): Promise<ArchiveComicVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<ArchiveComicVal>>(`/api/v1/comics/${comicId}/archive`),
-        201,
-    );
+    return expectSuccessData(await api.post<SuccessBody<ArchiveComicVal>>(`/api/v1/comics/${comicId}/archive`), 201);
 }
 
-export async function listWorksetComics(
-    api: ApiClient,
-    worksetId: string,
-    extraQuery = "",
-): Promise<ComicInfoView[]> {
+export async function listWorksetComics(api: ApiClient, worksetId: string, extraQuery = ""): Promise<ComicInfoView[]> {
     const payload = await listWorksetComicInfos(api, worksetId, extraQuery);
 
     return payload.comics;
@@ -464,11 +411,7 @@ export async function updateComic(
     );
 }
 
-export function reserveComicCover(
-    api: ApiClient,
-    comicId: string,
-    ext: ImageExtension,
-): Promise<ReserveImageVal> {
+export function reserveComicCover(api: ApiClient, comicId: string, ext: ImageExtension): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/comics/${comicId}/cover/alloc`,
@@ -477,11 +420,7 @@ export function reserveComicCover(
     );
 }
 
-export async function markComicCoverUploaded(
-    api: ApiClient,
-    comicId: string,
-    coverVersion: number,
-): Promise<void> {
+export async function markComicCoverUploaded(api: ApiClient, comicId: string, coverVersion: number): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/comics/${comicId}/cover/mark-uploaded`, {
             image_version: coverVersion,
@@ -491,11 +430,7 @@ export async function markComicCoverUploaded(
 
 // ---------- chapter ----------
 
-export async function createChapter(
-    api: ApiClient,
-    comicId: string,
-    subtitle?: string,
-): Promise<IdVal> {
+export async function createChapter(api: ApiClient, comicId: string, subtitle?: string): Promise<IdVal> {
     return expectSuccessData(
         await api.post<SuccessBody<IdVal>>("/api/v1/chapters", {
             comic_id: comicId,
@@ -523,11 +458,7 @@ export async function listChapterWorkflowRecords(
     );
 }
 
-export async function listComicChapters(
-    api: ApiClient,
-    comicId: string,
-    extraQuery = "",
-): Promise<ChapterInfoView[]> {
+export async function listComicChapters(api: ApiClient, comicId: string, extraQuery = ""): Promise<ChapterInfoView[]> {
     const query = `?offset=0&limit=100${extraQuery}`;
 
     return expectSuccessList(
@@ -536,10 +467,7 @@ export async function listComicChapters(
     );
 }
 
-export async function getPinnedChapter(
-    api: ApiClient,
-    comicId: string,
-): Promise<ChapterInfoView | null> {
+export async function getPinnedChapter(api: ApiClient, comicId: string): Promise<ChapterInfoView | null> {
     const data = expectSuccessData(
         await api.get<SuccessBody<ChapterInfoView | null>>(`/api/v1/comics/${comicId}/chapters/pinned`),
         200,
@@ -548,11 +476,7 @@ export async function getPinnedChapter(
     return data;
 }
 
-export async function patchChapter(
-    api: ApiClient,
-    chapterId: string,
-    patch: { subtitle?: string },
-): Promise<void> {
+export async function patchChapter(api: ApiClient, chapterId: string, patch: { subtitle?: string }): Promise<void> {
     const body: Record<string, unknown> = { id: chapterId };
 
     if (patch.subtitle !== undefined) {
@@ -563,16 +487,10 @@ export async function patchChapter(
 }
 
 export async function markChapterPinned(api: ApiClient, chapterId: string): Promise<void> {
-    expectNoContent(
-        await api.post<null>(`/api/v1/chapters/${chapterId}/mark-pinned`),
-    );
+    expectNoContent(await api.post<null>(`/api/v1/chapters/${chapterId}/mark-pinned`));
 }
 
-export async function advanceStage(
-    api: ApiClient,
-    chapterId: string,
-    stage: StageName,
-): Promise<void> {
+export async function advanceStage(api: ApiClient, chapterId: string, stage: StageName): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/chapters/${chapterId}/stage/advance`, {
             id: chapterId,
@@ -582,11 +500,7 @@ export async function advanceStage(
     );
 }
 
-export async function revertStage(
-    api: ApiClient,
-    chapterId: string,
-    stage: StageName,
-): Promise<void> {
+export async function revertStage(api: ApiClient, chapterId: string, stage: StageName): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/chapters/${chapterId}/stage/advance`, {
             id: chapterId,
@@ -621,7 +535,7 @@ async function uploadReservedPages(reservedPages: ReservedPageVal[]): Promise<vo
             body: TEST_PAGE_BYTES,
         });
 
-        assert.assert(response.ok, `page upload failed with status ${response.status}`);
+        assert.ok(response.ok, `page upload failed with status ${response.status}`);
     }
 }
 
@@ -631,13 +545,10 @@ export async function reserveChapterPages(
     pages: PageImageInput[],
 ): Promise<ReserveChapterPagesVal> {
     const reserved = expectSuccessData(
-        await api.post<SuccessBody<ReserveChapterPagesVal>>(
-            `/api/v1/chapters/${chapterId}/pages/alloc`,
-            {
-                chapter_id: chapterId,
-                pages,
-            },
-        ),
+        await api.post<SuccessBody<ReserveChapterPagesVal>>(`/api/v1/chapters/${chapterId}/pages/alloc`, {
+            chapter_id: chapterId,
+            pages,
+        }),
         200,
     );
 
@@ -680,17 +591,13 @@ export async function reservePageImage(
             body: imageBytes,
         });
 
-        assert.assert(response.ok, `page upload failed with status ${response.status}`);
+        assert.ok(response.ok, `page upload failed with status ${response.status}`);
     }
 
     return reserved;
 }
 
-export async function markPageImageUploaded(
-    api: ApiClient,
-    pageId: string,
-    imageVersion: number,
-): Promise<void> {
+export async function markPageImageUploaded(api: ApiClient, pageId: string, imageVersion: number): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/pages/${pageId}/image/mark-uploaded`, {
             image_version: imageVersion,
@@ -718,9 +625,7 @@ export interface UnitRevisionInput {
     proofread_text?: string | null;
 }
 
-export type PatchInput<T> =
-    | { type: "assign"; value: T }
-    | { type: "clear" };
+export type PatchInput<T> = { type: "assign"; value: T } | { type: "clear" };
 
 export interface UnitCreateEdit {
     edit: "create";
@@ -752,11 +657,7 @@ export interface UnitDeleteEdit {
 export type UnitEdit = UnitCreateEdit | UnitPatchEdit | UnitDeleteEdit;
 
 // Build a Create edit for a brand-new bubble Unit with no translation yet.
-export function newBubbleUnit(
-    localId: string,
-    xCoord: number,
-    yCoord: number,
-): UnitCreateEdit {
+export function newBubbleUnit(localId: string, xCoord: number, yCoord: number): UnitCreateEdit {
     return {
         edit: "create",
         local_id: localId,
@@ -806,10 +707,13 @@ export function updateUnit(unitId: string, patch: UnitPatchFixture): UnitPatchEd
     }
 
     if ("translated_text" in patch) {
-        edit.translation = patch.translated_text == null ? { type: "clear" } : {
-            type: "assign",
-            value: { translated_text: patch.translated_text },
-        };
+        edit.translation =
+            patch.translated_text == null
+                ? { type: "clear" }
+                : {
+                      type: "assign",
+                      value: { translated_text: patch.translated_text },
+                  };
     }
 
     if ("proofread_text" in patch || patch.is_proofread === true) {
@@ -829,11 +733,7 @@ export function deleteUnit(unitId: string): UnitDeleteEdit {
     return { edit: "delete", id: unitId };
 }
 
-export async function savePageUnits(
-    api: ApiClient,
-    pageId: string,
-    edits: UnitEdit[],
-): Promise<ListPageUnitInfosVal> {
+export async function savePageUnits(api: ApiClient, pageId: string, edits: UnitEdit[]): Promise<ListPageUnitInfosVal> {
     const saveId = crypto.randomUUID();
     const maxConflictRetries = 5;
 
@@ -850,8 +750,8 @@ export async function savePageUnits(
         }
 
         const saved = expectSuccessData<SavePageUnitEditsVal>(response, 200);
-        assert.assert(Array.isArray(saved.created_unit_ids));
-        assert.assertEquals(saved.created_unit_ids.length, edits.filter((edit) => edit.edit === "create").length);
+        assert.ok(Array.isArray(saved.created_unit_ids));
+        assert.deepEqual(saved.created_unit_ids.length, edits.filter((edit) => edit.edit === "create").length);
 
         return listPageUnits(api, pageId);
     }
@@ -866,26 +766,16 @@ export async function listPageUnits(api: ApiClient, pageId: string): Promise<Lis
     );
 }
 
-export async function listPageUnitDiffStats(
-    api: ApiClient,
-    chapterId: string,
-): Promise<PageUnitDiffStatsVal[]> {
+export async function listPageUnitDiffStats(api: ApiClient, chapterId: string): Promise<PageUnitDiffStatsVal[]> {
     return expectSuccessData(
-        await api.get<SuccessBody<PageUnitDiffStatsVal[]>>(
-            `/api/v1/chapters/${chapterId}/pages/unit-diff-stats`,
-        ),
+        await api.get<SuccessBody<PageUnitDiffStatsVal[]>>(`/api/v1/chapters/${chapterId}/pages/unit-diff-stats`),
         200,
     );
 }
 
-export async function listPageUnitFlaggedStats(
-    api: ApiClient,
-    chapterId: string,
-): Promise<PageUnitFlaggedStatsVal[]> {
+export async function listPageUnitFlaggedStats(api: ApiClient, chapterId: string): Promise<PageUnitFlaggedStatsVal[]> {
     return expectSuccessData(
-        await api.get<SuccessBody<PageUnitFlaggedStatsVal[]>>(
-            `/api/v1/chapters/${chapterId}/pages/unit-flagged-stats`,
-        ),
+        await api.get<SuccessBody<PageUnitFlaggedStatsVal[]>>(`/api/v1/chapters/${chapterId}/pages/unit-flagged-stats`),
         200,
     );
 }
@@ -899,9 +789,7 @@ export async function searchChapterUnits(
     const query = new URLSearchParams({ part, phrase });
 
     return expectSuccessData(
-        await api.get<SuccessBody<UnitInfoView[]>>(
-            `/api/v1/chapters/${chapterId}/units/search?${query.toString()}`,
-        ),
+        await api.get<SuccessBody<UnitInfoView[]>>(`/api/v1/chapters/${chapterId}/units/search?${query.toString()}`),
         200,
     );
 }
@@ -912,10 +800,7 @@ export async function transformChapterUnits(
     part: UnitTextPart,
     units: UnitTransformInput[],
 ): Promise<void> {
-    const response = await api.post<ErrorBody>(
-        `/api/v1/chapters/${chapterId}/units/transform`,
-        { part, units },
-    );
+    const response = await api.post<ErrorBody>(`/api/v1/chapters/${chapterId}/units/transform`, { part, units });
 
     expectNoContent(response);
 }
@@ -929,10 +814,7 @@ export async function listChapterAssignments(
 ): Promise<AssignmentInfoView[]> {
     const query = `?chapter_id=${encodeURIComponent(chapterId)}&offset=0&limit=100${extraQuery}`;
 
-    return expectSuccessList(
-        await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`),
-        200,
-    );
+    return expectSuccessList(await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`), 200);
 }
 
 export async function listOwnerAssignments(
@@ -942,10 +824,7 @@ export async function listOwnerAssignments(
 ): Promise<AssignmentInfoView[]> {
     const query = `?owner_id=${encodeURIComponent(ownerId)}&offset=0&limit=100${extraQuery}`;
 
-    return expectSuccessList(
-        await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`),
-        200,
-    );
+    return expectSuccessList(await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`), 200);
 }
 
 export async function joinChapterAssignment(
@@ -1014,10 +893,7 @@ export async function listChapterAssignmentInvitations(
     );
 }
 
-export async function joinAssignmentInvitation(
-    api: ApiClient,
-    code: string,
-): Promise<AssignmentInfoView> {
+export async function joinAssignmentInvitation(api: ApiClient, code: string): Promise<AssignmentInfoView> {
     return expectSuccessData(
         await api.post<SuccessBody<AssignmentInfoView>>("/api/v1/assignment-invitations/join", {
             code,
@@ -1026,19 +902,13 @@ export async function joinAssignmentInvitation(
     );
 }
 
-export async function deleteAssignmentInvitation(
-    api: ApiClient,
-    invitationId: string,
-): Promise<void> {
+export async function deleteAssignmentInvitation(api: ApiClient, invitationId: string): Promise<void> {
     expectNoContent(await api.delete<null>(`/api/v1/assignment-invitations/${invitationId}`));
 }
 
 // ---------- system mail ----------
 
-export async function listSystemMails(
-    api: ApiClient,
-    extraQuery = "",
-): Promise<SystemMailInfoView[]> {
+export async function listSystemMails(api: ApiClient, extraQuery = ""): Promise<SystemMailInfoView[]> {
     return expectSuccessList(
         await api.get<SuccessBody<SystemMailInfoView[]>>(`/api/v1/system-mails?offset=0&limit=100${extraQuery}`),
         200,
@@ -1046,9 +916,7 @@ export async function listSystemMails(
 }
 
 export async function markSystemMailsRead(api: ApiClient, ids: string[]): Promise<void> {
-    expectNoContent(
-        await api.post<null>("/api/v1/system-mails/mark-read", { ids }),
-    );
+    expectNoContent(await api.post<null>("/api/v1/system-mails/mark-read", { ids }));
 }
 
 // Poll `listSystemMails` until `predicate(mailCount)` is true, or `timeoutMs`
@@ -1070,9 +938,7 @@ export async function waitForMails(
         }
 
         if (Date.now() - start >= timeoutMs) {
-            throw new Error(
-                `waitForMails timed out after ${timeoutMs}ms; last count=${mails.length}`,
-            );
+            throw new Error(`waitForMails timed out after ${timeoutMs}ms; last count=${mails.length}`);
         }
 
         await sleep(50);
@@ -1122,19 +988,11 @@ export async function updateAnnouncement(
     );
 }
 
-export async function deleteAnnouncement(
-    api: ApiClient,
-    announcementId: string,
-): Promise<void> {
-    expectNoContent(
-        await api.delete<null>(`/api/v1/announcements/${announcementId}`),
-    );
+export async function deleteAnnouncement(api: ApiClient, announcementId: string): Promise<void> {
+    expectNoContent(await api.delete<null>(`/api/v1/announcements/${announcementId}`));
 }
 
-export async function listTeamAnnouncements(
-    api: ApiClient,
-    teamId: string,
-): Promise<AnnouncementInfoView[]> {
+export async function listTeamAnnouncements(api: ApiClient, teamId: string): Promise<AnnouncementInfoView[]> {
     return expectSuccessList(
         await api.get<SuccessBody<AnnouncementInfoView[]>>(`/api/v1/teams/${teamId}/announcements?offset=0&limit=100`),
         200,
@@ -1156,11 +1014,7 @@ export async function listTeamAnnouncementsPaged(
     );
 }
 
-export async function createComment(
-    api: ApiClient,
-    teamId: string,
-    content: string,
-): Promise<IdVal> {
+export async function createComment(api: ApiClient, teamId: string, content: string): Promise<IdVal> {
     return expectSuccessData(
         await api.post<SuccessBody<IdVal>>("/api/v1/comments", {
             content,
@@ -1201,7 +1055,7 @@ export async function exportTranslations(
 export async function exportPoprako(api: ApiClient, chapterId: string): Promise<ChapterTranslationPortView> {
     const exported = await exportTranslations(api, chapterId, ["poprako"]);
 
-    assert.assert(exported.poprako, "poprako export must be present");
+    assert.ok(exported.poprako, "poprako export must be present");
 
     return exported.poprako;
 }
@@ -1210,7 +1064,7 @@ export async function exportPoprako(api: ApiClient, chapterId: string): Promise<
 export async function exportLabelPlus(api: ApiClient, chapterId: string): Promise<string> {
     const exported = await exportTranslations(api, chapterId, ["label_plus"]);
 
-    assert.assert(exported.label_plus, "label-plus export must be present");
+    assert.ok(exported.label_plus, "label-plus export must be present");
 
     return exported.label_plus;
 }
