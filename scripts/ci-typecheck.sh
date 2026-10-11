@@ -6,5 +6,5 @@ integration_root="$project_root/tests/integration-tests"
 
 cd "$integration_root"
 
-deno ci
-deno task check
+pnpm install --frozen-lockfile
+pnpm run check

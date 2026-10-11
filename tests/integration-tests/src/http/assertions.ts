@@ -1,29 +1,26 @@
-import * as assert from "@std/assert";
+import assert from "node:assert/strict";
 
 import type { ApiResponse, ErrorBody, SuccessBody } from "./apiClient.ts";
 
 // Status-only check (no body shape assertion).
 export function expectStatus<T>(response: ApiResponse<T>, status: number): void {
-    assert.assertEquals(response.status, status, responseText(response));
+    assert.deepEqual(response.status, status, responseText(response));
 }
 
 // 204 No Content: status + empty body.
 export function expectNoContent<T>(response: ApiResponse<T>): void {
-    assert.assertEquals(response.status, 204, responseText(response));
-    assert.assert(response.body === null || response.rawText === "", "204 should have empty body");
+    assert.deepEqual(response.status, 204, responseText(response));
+    assert.ok(response.body === null || response.rawText === "", "204 should have empty body");
 }
 
 // Success envelope: `{ code: 0, data: T }`. Returns the unwrapped data.
-export function expectSuccessData<T>(
-    response: ApiResponse<SuccessBody<T>> | ApiResponse<unknown>,
-    status: number,
-): T {
+export function expectSuccessData<T>(response: ApiResponse<SuccessBody<T>> | ApiResponse<unknown>, status: number): T {
     expectStatus(response, status);
 
     const body = response.body as SuccessBody<T> | null;
 
-    assert.assert(body, "response should contain a success body");
-    assert.assertEquals(body.code, 0);
+    assert.ok(body, "response should contain a success body");
+    assert.deepEqual(body.code, 0);
 
     return body.data;
 }
@@ -35,25 +32,21 @@ export function expectSuccessList<T>(
 ): T[] {
     const data = expectSuccessData<T[]>(response, status);
 
-    assert.assert(Array.isArray(data), "expected success data to be an array");
+    assert.ok(Array.isArray(data), "expected success data to be an array");
 
     return data;
 }
 
 // Error envelope: `{ code: <n>, message?: "..." }`. Asserts status and,
 // when `code` is provided, the exact error code.
-export function expectError(
-    response: ApiResponse<ErrorBody>,
-    status: number,
-    code?: number,
-): ErrorBody {
+export function expectError(response: ApiResponse<ErrorBody>, status: number, code?: number): ErrorBody {
     expectStatus(response, status);
 
-    assert.assert(response.body, "response should contain an error body");
-    assert.assert(isErrorBody(response.body), "response error body should be JSON with code");
+    assert.ok(response.body, "response should contain an error body");
+    assert.ok(isErrorBody(response.body), "response error body should be JSON with code");
 
     if (code !== undefined) {
-        assert.assertEquals(response.body.code, code, `expected error code ${code}`);
+        assert.deepEqual(response.body.code, code, `expected error code ${code}`);
     }
 
     return response.body;
@@ -69,7 +62,7 @@ export function expectRawBody<T>(response: ApiResponse<T>, status: number): stri
 
 // Assert status is one of a set (used for "404 or 403, but not 200" cases).
 export function expectStatusIn<T>(response: ApiResponse<T>, statuses: number[]): void {
-    assert.assert(
+    assert.ok(
         statuses.includes(response.status),
         `expected status in ${statuses.join(", ")}, got ${response.status}: ${responseText(response)}`,
     );
@@ -77,7 +70,7 @@ export function expectStatusIn<T>(response: ApiResponse<T>, statuses: number[]):
 
 // Reject any 5xx: no client request may produce a server error.
 export function expectNoServerError<T>(response: ApiResponse<T>): void {
-    assert.assert(
+    assert.ok(
         response.status < 500,
         `unexpected 5xx (${response.status}) — client request must not trigger server error: ${responseText(response)}`,
     );

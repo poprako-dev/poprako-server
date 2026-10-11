@@ -7,5 +7,5 @@
 - Regenerate `swagger.json` from the repository root with
   `cargo run -p poprako-swagger > docs/swagger.json` when the API contract
   changes. Verify it with `sh scripts/ci-openapi-check.sh`.
-- Integration-test documentation lives beside its Deno suite under
+- Integration-test documentation lives beside its Vitest suite under
   `tests/integration-tests/`; follow `tests/AGENTS.md` for synchronization.

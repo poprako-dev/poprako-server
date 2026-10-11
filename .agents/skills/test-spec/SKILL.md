@@ -15,7 +15,7 @@ description: Apply PopRaKo Rust, PostgreSQL, and HTTP integration test conventio
 - Cover success and relevant failure classes: invalid input, missing data,
   permission denial, stale state, concurrency, and rollback.
 - Use descriptive names and the checked source-comment and layout rules.
-- For changed HTTP behavior, update the affected Deno suite and its case
+- For changed HTTP behavior, update the affected Vitest suite and its case
   documentation under [tests/AGENTS.md](../../../tests/AGENTS.md).
 - For changed API contracts, regenerate and verify OpenAPI under
   [docs/AGENTS.md](../../../docs/AGENTS.md).
@@ -33,7 +33,7 @@ Root AGENTS specifies mandatory Rust checks and the full pre-commit gate.
 | Other crate tests | `cargo test -p <affected-crate>` |
 | Workspace tests | `sh scripts/ci-test.sh` |
 | Workspace compilation | `cargo check --workspace --all-targets --all-features` |
-| Deno static checks | `deno task check` from `tests/integration-tests/` |
+| TypeScript static checks | `pnpm run check` from `tests/integration-tests/` |
 | OpenAPI consistency | `sh scripts/ci-openapi-check.sh` |
 
 Feature-gated RDB tests require their relevant features and database fixtures;
