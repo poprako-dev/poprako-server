@@ -1,5 +1,8 @@
 # HTTP Integration Test Inventory
 
+- A3 (`it_00`): health, authenticated profile, unauthorized profile, and missing-route responses
+  return `Cache-Control: no-store` to prevent HTTP response storage.
+
 The `it_09` suite also verifies that self/profile reads preserve activity, online heartbeats synchronously refresh user
 and membership activity, and unauthorized heartbeats leave activity unchanged.
 

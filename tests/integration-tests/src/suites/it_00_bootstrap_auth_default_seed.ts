@@ -39,11 +39,31 @@ import type { RunCtx } from "../state/runCtx.ts";
 export const IMPLEMENTED = true as const;
 
 export async function runIt00Module(ctx: RunCtx): Promise<void> {
+    // ---- A3. public and rejected responses must not be stored in HTTP caches ----
+
+    const cacheProbe = new ApiClient(testEnv.apiBaseUrl);
+
+    for (const [path, status] of [
+        ["/api/health", 200],
+        ["/api/v1/users/me", 401],
+        ["/api/missing-cache-probe", 404],
+    ] as const) {
+        const response = await cacheProbe.get(path);
+
+        assert.deepEqual(response.status, status);
+        assert.deepEqual(response.headers.get("cache-control"), "no-store");
+    }
+
     // ---- A1. sadmin login and default-data discovery ----
 
     const loginVal = await login(ctx.sadmin, "123456", "123456");
 
     assert.deepEqual(loginVal.user_id, seedIds.defaultUserId);
+
+    const authenticatedResponse = await ctx.sadmin.get("/api/v1/users/me");
+
+    assert.deepEqual(authenticatedResponse.status, 200);
+    assert.deepEqual(authenticatedResponse.headers.get("cache-control"), "no-store");
 
     const me = await getMyInfo(ctx.sadmin);
 

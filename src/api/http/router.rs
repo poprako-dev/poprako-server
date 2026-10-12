@@ -13,12 +13,13 @@ mod tests;
 
 use axum::Router;
 use axum::http::StatusCode;
-use axum::middleware::{from_fn, from_fn_with_state};
+use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::routing::get;
 use tower_http::compression::CompressionLayer;
 
 use crate::api::http::handler::health;
 use crate::api::http::middleware::auth::authorize;
+use crate::api::http::middleware::cache::disable_cache;
 use crate::api::http::middleware::cors::cors;
 use crate::api::http::middleware::metric::record_response_metric;
 use crate::api::http::middleware::rate_limit::rate_limit;
@@ -86,6 +87,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(from_fn(record_response_metric))
         .layer(cors())
         .layer(CompressionLayer::new())
+        .layer(map_response(disable_cache))
 }
 
 // Records the source of a method mismatch; Axum retains its Allow header.

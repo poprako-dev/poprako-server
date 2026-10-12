@@ -3,6 +3,8 @@
 
 /// Authorization token middleware.
 pub mod auth;
+/// Response cache prevention middleware.
+pub mod cache;
 /// Cross-origin API access middleware.
 pub mod cors;
 /// Sliding-window metrics middleware helper module.
