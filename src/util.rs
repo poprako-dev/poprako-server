@@ -12,7 +12,7 @@ mod tests;
 use std::env::var;
 use std::sync::OnceLock;
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::util::patch_input::PatchInput;
 
@@ -77,8 +77,7 @@ fn load_snowflake_node_id() -> u16 {
 ///
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
-#[derive(Clone, Default, PartialEq, Eq, serde::Serialize)]
-#[cfg_attr(test, derive(Debug))]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub enum Patch<T> {
     /// Resets the stored field.
     Clear,

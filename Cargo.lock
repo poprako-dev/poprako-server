@@ -2878,6 +2878,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-sensitive"
+version = "0.1.0"
+dependencies = [
+ "poprako-sensitive-macro",
+]
+
+[[package]]
+name = "poprako-sensitive-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
 name = "poprako-server"
 version = "0.1.0"
 dependencies = [
@@ -2911,6 +2927,7 @@ dependencies = [
  "poprako-orchestra-extra",
  "poprako-prom",
  "poprako-rdb-core",
+ "poprako-sensitive",
  "poprako-util",
  "serde",
  "serde_json",

@@ -128,16 +128,7 @@ struct TransformScope {
     unit_infos: Vec<UnitInfo>,
 }
 
-#[instrument(
-    level = "info",
-    skip(nucl, repo, token, instr),
-    fields(
-        actor_user_id = %token.user_id,
-        chapter_id = %chapter_id,
-        part = ?instr.part,
-        unit_count = instr.units.len(),
-    ),
-)]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 /// Transforms one Unit text field across selected Units in a Chapter.
 pub async fn transform<N, C, R>(
     (nucl, repo): (&N, &R),

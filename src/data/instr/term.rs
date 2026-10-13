@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use crate::value::pagination::PubListLimit;
 
 /// Input parameters for creating a terminology entry.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermInstr {
     /// Parent terminology base identifier.
@@ -25,7 +25,7 @@ pub struct CreateTermInstr {
 }
 
 /// Input parameters for replacing terminology-entry fields.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermInfoInstr {
     /// Identifier of the terminology entry to update.
@@ -40,6 +40,7 @@ pub struct UpdateTermInfoInstr {
 }
 
 /// Input parameters for listing terms inside one terminology base.
+#[derive(Debug)]
 pub struct ListTermInfosInstr {
     /// Parent terminology base identifier.
     pub termbase_id: String,

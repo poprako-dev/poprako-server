@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// One item in an authoritative composite manifest.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageArtworkImageInstr {
     /// Existing composite page identity; omission creates a new page.
@@ -25,7 +25,7 @@ pub struct PageArtworkImageInstr {
 }
 
 /// Complete independently ordered composite page manifest.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPageArtworksInstr {
     /// Final page sequence; omitted old pages are deleted.
@@ -33,7 +33,7 @@ pub struct AllocChapterPageArtworksInstr {
 }
 
 /// Single composite image replacement.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocPageArtworkImageInstr {
     /// Original PSD filename or relative path.
@@ -47,7 +47,7 @@ pub struct AllocPageArtworkImageInstr {
 }
 
 /// Exact-generation composite upload confirmation.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkPageArtworkImageUploadedInstr {
     /// Allocated image version.

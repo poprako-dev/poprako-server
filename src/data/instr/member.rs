@@ -4,6 +4,8 @@
 
 use serde::Deserialize;
 
+use poprako_sensitive::SensitiveDebug;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
@@ -29,10 +31,11 @@ pub struct CreateMemberInstr {
 }
 
 /// Input parameters for joining a team through a member invitation.
-#[derive(Deserialize)]
+#[derive(SensitiveDebug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamInstr {
     /// Invitation code to join the team.
+    #[sensitive]
     pub code: String,
 }
 

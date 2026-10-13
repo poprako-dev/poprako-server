@@ -52,16 +52,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
 /// * `D: EffectDevelop` — Processes the signup event.
-#[instrument(
-    level = "info",
-    skip(nucl, repo, auth, develop, instr),
-    fields(
-        qid = %instr.qid,
-        nickname = %instr.nickname,
-        password = "[REDACTED]",
-        code = "[REDACTED]",
-    ),
-)]
+#[instrument(level = "info", skip(nucl, repo, auth, develop))]
 pub async fn register<N, C, R, A, D>(
     (nucl, repo, auth, develop): (&N, &R, &A, &D),
     instr: RegisterAuthInstr,
@@ -179,11 +170,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
-#[instrument(
-    level = "info",
-    skip(repo, auth, instr),
-    fields(qid = %instr.qid, password = "[REDACTED]"),
-)]
+#[instrument(level = "info", skip(repo, auth))]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"

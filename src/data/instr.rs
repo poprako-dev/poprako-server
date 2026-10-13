@@ -46,3 +46,6 @@ pub mod unit_save;
 pub mod user;
 /// Workset instruction DTOs.
 pub mod workset;
+
+#[cfg(test)]
+mod tests;

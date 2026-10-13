@@ -4,6 +4,8 @@
 
 use serde::Deserialize;
 
+use poprako_sensitive::SensitiveDebug;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
@@ -44,11 +46,13 @@ pub struct UpdateUserInfoInstr {
 }
 
 /// Input parameters for replacing the authenticated user's password.
-#[derive(Deserialize)]
+#[derive(SensitiveDebug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordInstr {
     /// Current password for verification before change.
+    #[sensitive]
     pub current_password: String,
     /// Desired new password.
+    #[sensitive]
     pub new_password: String,
 }

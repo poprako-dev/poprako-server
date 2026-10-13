@@ -4,6 +4,8 @@
 
 use serde::Deserialize;
 
+use poprako_sensitive::SensitiveDebug;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
@@ -43,9 +45,10 @@ pub struct CreateAssignmentInvitationInstr {
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(Deserialize)]
+#[derive(SensitiveDebug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationInstr {
     /// Secret invitation code to join with.
+    #[sensitive]
     pub code: String,
 }

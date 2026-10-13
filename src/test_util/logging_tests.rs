@@ -4,7 +4,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-//! Regression coverage for private payloads at use-case tracing boundaries.
+//! Regression coverage for ordinary instruction payloads in use-case spans.
 
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -70,15 +70,15 @@ where
     }
 }
 
-// Sensitive inputs must remain absent even when failed operations emit events.
+// Use cases record the complete instruction through its declared Debug policy.
 #[tokio::test]
-async fn private_payload_spans_record_metadata_without_content() {
+async fn ordinary_instruction_spans_keep_business_content() {
     //
     let capture = Capture::default();
 
     let subscriber = tracing_subscriber::registry().with(capture.clone());
 
-    let secret = "private-payload-sentinel";
+    let content = "business-content-sentinel";
 
     let mock = Mock::new();
 
@@ -91,7 +91,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         let instr = ImportChapterTranslationInstr {
             format: ChapterTranslationFormatInstr::LabelPlus,
             mode: ChapterTranslationImportModeInstr::Keep,
-            content: secret.into(),
+            content: content.into(),
         };
 
         assert!(
@@ -106,12 +106,12 @@ async fn private_payload_spans_record_metadata_without_content() {
         );
 
         let instr = ImportTermbaseInstr {
-            name: secret.into(),
-            description: Some(secret.into()),
+            name: content.into(),
+            description: Some(content.into()),
             terms: vec![ImportTermInstr {
-                source: secret.into(),
-                targets: vec![secret.into()],
-                comment: Some(secret.into()),
+                source: content.into(),
+                targets: vec![content.into()],
+                comment: Some(content.into()),
             }],
         };
 
@@ -134,7 +134,7 @@ async fn private_payload_spans_record_metadata_without_content() {
         let instr = SearchChapterUnitInfosInstr {
             chapter_id: "chapter-1".into(),
             part: UnitTextPart::TranslatedText,
-            phrase: secret.into(),
+            phrase: content.into(),
         };
 
         assert!(
@@ -148,8 +148,8 @@ async fn private_payload_spans_record_metadata_without_content() {
             units: vec![UnitTransformInstr {
                 unit_id: "unit-1".into(),
                 transforms: vec![UnitTextTransformInstr {
-                    origin: secret.into(),
-                    target: secret.into(),
+                    origin: content.into(),
+                    target: content.into(),
                 }],
             }],
         };
@@ -170,22 +170,17 @@ async fn private_payload_spans_record_metadata_without_content() {
 
     let spans = capture.spans.lock().unwrap();
 
-    for (name, metadata) in [
-        ("import_translation", "content_bytes"),
-        ("import", "term_count"),
-        ("search_infos", "phrase_bytes"),
-        ("transform", "unit_count"),
-    ] {
+    for name in ["import_translation", "import", "search_infos", "transform"] {
         //
         let fields = spans.get(name).expect("use-case span must be recorded");
 
         assert!(fields.contains_key("actor_user_id"));
 
-        assert!(fields.contains_key(metadata));
+        let instr = fields.get("instr").expect("instruction must be recorded");
 
-        assert!(!fields.contains_key("instr"));
+        assert!(instr.contains(content));
 
-        assert!(fields.values().all(|value| !value.contains(secret)));
+        assert!(!instr.contains("[REDACTED]"));
     }
 
     drop(spans);

@@ -33,7 +33,7 @@ use crate::usecase::page_artwork::upload::alloc_image_slot;
 use crate::util::next_snowflake_id;
 
 /// Applies only explicit identities; names and hashes never infer page ownership.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token, instr), fields(actor_user_id = %token.user_id, page_count = instr.pages.len()))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_chapter_page_artworks<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
