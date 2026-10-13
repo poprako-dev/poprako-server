@@ -24,7 +24,7 @@ pub struct ListSystemMailInfosInstr {
 }
 
 /// Input parameters for marking a batch of system mails as read.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkSystemMailReadInstr {
     /// Identifiers of the system mails to mark as read.

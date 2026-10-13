@@ -37,6 +37,7 @@ pub struct ListPageUnitInfosInstr {
 }
 
 /// Input parameters for searching visible Units under one Chapter.
+#[derive(Debug)]
 pub struct SearchChapterUnitInfosInstr {
     /// Chapter whose visible Units are searched.
     pub chapter_id: String,

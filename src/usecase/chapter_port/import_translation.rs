@@ -52,16 +52,7 @@ use crate::value::chapter_workflow_record::{
 use crate::value::unit::UnitEditPerm;
 
 /// Imports chapter translation content through the Unit edit pipeline.
-#[instrument(
-    level = "info",
-    skip(nucl, repo, token, instr),
-    fields(
-        actor_user_id = %token.user_id,
-        format = ?instr.format,
-        mode = ?instr.mode,
-        content_bytes = instr.content.len(),
-    ),
-)]
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, format = ?instr.format, mode = ?instr.mode, content_byte_len = instr.content.len()))]
 pub async fn import_translation<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

@@ -2,6 +2,7 @@
 
 //! Data transfer objects for assignment invitation use cases.
 
+use poprako_sensitive::SensitiveDebug;
 use serde::Deserialize;
 
 #[cfg(feature = "swagger")]
@@ -43,9 +44,10 @@ pub struct CreateAssignmentInvitationInstr {
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(Deserialize)]
+#[derive(SensitiveDebug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationInstr {
     /// Secret invitation code to join with.
+    #[sensitive]
     pub code: String,
 }

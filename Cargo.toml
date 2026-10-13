@@ -117,6 +117,7 @@ base62 = "2.2.4"
 base64 = "0.22"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
+poprako-sensitive = "0.1.0"
 poprako-obj-dept = { path = "poprako-obj-dept", features = ["rdb_impl"] }
 poprako-rdb-core = { path = "poprako-rdb-core" }
 poprako-orchestra-extra = { version = "0.3.0", features = ["promise"] }

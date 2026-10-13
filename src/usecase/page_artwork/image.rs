@@ -35,7 +35,7 @@ use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
 
 /// Replaces one composite image without changing its identity or review issues.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token, instr), fields(actor_user_id = %token.user_id, image_hash = ?instr.image_hash, ext = ?instr.ext, new_byte_len = instr.new_byte_len))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_image<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
@@ -135,7 +135,7 @@ where
 }
 
 /// Confirms the current image generation while preserving all review issues.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token, instr), fields(actor_user_id = %token.user_id, image_ver = instr.image_ver))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn mark_image_uploaded<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

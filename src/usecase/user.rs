@@ -146,15 +146,7 @@ where
 }
 
 /// Replaces a user's password after verifying their current password.
-#[instrument(
-    level = "info",
-    skip(repo, token, instr),
-    fields(
-        actor_user_id = %token.user_id,
-        current_password = "[REDACTED]",
-        new_password = "[REDACTED]",
-    )
-)]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_password<C, R>(
     (repo,): (&R,),
     token: UserToken,

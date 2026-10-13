@@ -46,14 +46,7 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Joins a chapter assignment with a pending invitation code.
-#[instrument(
-    level = "info",
-    skip(nucl, repo, obj_dept, token, instr),
-    fields(
-        actor_user_id = %token.user_id,
-        code = "[REDACTED]",
-    )
-)]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn join<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

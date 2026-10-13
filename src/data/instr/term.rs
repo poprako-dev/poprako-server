@@ -40,6 +40,7 @@ pub struct UpdateTermInfoInstr {
 }
 
 /// Input parameters for listing terms inside one terminology base.
+#[derive(Debug)]
 pub struct ListTermInfosInstr {
     /// Parent terminology base identifier.
     pub termbase_id: String,

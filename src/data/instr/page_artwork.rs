@@ -33,7 +33,7 @@ pub struct AllocChapterPageArtworksInstr {
 }
 
 /// Single composite image replacement.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocPageArtworkImageInstr {
     /// Original PSD filename or relative path.
@@ -47,7 +47,7 @@ pub struct AllocPageArtworkImageInstr {
 }
 
 /// Exact-generation composite upload confirmation.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkPageArtworkImageUploadedInstr {
     /// Allocated image version.

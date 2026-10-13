@@ -142,14 +142,7 @@ where
 }
 
 /// Joins the current user to a team with a pending invitation code.
-#[instrument(
-    level = "info",
-    skip(nucl, repo, obj_dept, token, instr),
-    fields(
-        actor_user_id = %token.user_id,
-        code = "[REDACTED]",
-    )
-)]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"
