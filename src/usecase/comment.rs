@@ -72,7 +72,7 @@ where
 }
 
 /// Creates a comment under a team.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(repo, token, instr), fields(actor_user_id = %token.user_id, team_id = %instr.team_id, content_byte_len = instr.content.len()))]
 pub async fn create<C, R>(
     repo: &R,
     token: UserToken,

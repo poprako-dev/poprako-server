@@ -216,7 +216,7 @@ where
 }
 
 /// Saves or replays one authorized immutable batch of Unit edits.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, save_id = %instr.save_id, page_id = %instr.page_id, edit_count = instr.edits.len()))]
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

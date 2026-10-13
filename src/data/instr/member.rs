@@ -2,9 +2,8 @@
 
 //! Data transfer objects for member use cases.
 
-use serde::Deserialize;
-
 use poprako_sensitive::SensitiveDebug;
+use serde::Deserialize;
 
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};

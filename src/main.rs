@@ -4,12 +4,12 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::num::NonZeroUsize;
 
 use anyhow::Context as _;
+use poprako_sensitive::Sensitive;
 use tokio::task::JoinError;
 
 use poprako_obj_dept::actor::{ObjDeptActor, ObjDeptActorDesc};
 use poprako_prom::general::actor::{PromActor, PromActorDesc};
 use poprako_prom::general::handler::Dispatcher;
-use poprako_sensitive::Sensitive;
 use poprako_server::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;
 use poprako_server::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use poprako_server::part_impl::prom::rdb_impl::writer::RdbProm;

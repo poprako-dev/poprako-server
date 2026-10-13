@@ -2880,6 +2880,8 @@ dependencies = [
 [[package]]
 name = "poprako-sensitive"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ea1caeb395988f8d18e4be6f4e88ffcd51c58e2755b6e0383462650b0411df0"
 dependencies = [
  "poprako-sensitive-macro",
 ]
@@ -2887,6 +2889,8 @@ dependencies = [
 [[package]]
 name = "poprako-sensitive-macro"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c5f75ba8f2785e075b4625f142e08ead9fff40f9552f81236f814e41306c377"
 dependencies = [
  "proc-macro2",
  "quote",

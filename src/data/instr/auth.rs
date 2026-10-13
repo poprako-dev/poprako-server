@@ -2,9 +2,8 @@
 
 //! Data transfer objects for authentication use cases.
 
-use serde::Deserialize;
-
 use poprako_sensitive::SensitiveDebug;
+use serde::Deserialize;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;

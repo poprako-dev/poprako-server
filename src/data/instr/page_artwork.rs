@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// One item in an authoritative composite manifest.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageArtworkImageInstr {
     /// Existing composite page identity; omission creates a new page.
@@ -25,7 +25,7 @@ pub struct PageArtworkImageInstr {
 }
 
 /// Complete independently ordered composite page manifest.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPageArtworksInstr {
     /// Final page sequence; omitted old pages are deleted.

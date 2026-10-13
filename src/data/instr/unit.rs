@@ -48,7 +48,7 @@ pub struct SearchChapterUnitInfosInstr {
 }
 
 /// Input parameters for saving a batch of Unit edits.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct SavePageUnitEditsInstr {
     /// Client-generated identity of this immutable save batch.
     pub save_id: String,
@@ -61,7 +61,7 @@ pub struct SavePageUnitEditsInstr {
 }
 
 /// One literal text transform supplied by the client.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTextTransformInstr {
@@ -87,7 +87,7 @@ impl UnitTextTransformInstr {
 }
 
 /// Text transforms supplied for one permanent Unit.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTransformInstr {
@@ -132,7 +132,7 @@ impl UnitTransformInstr {
 }
 
 /// Input parameters for transforming selected Units under one Chapter.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct TransformChapterUnitsInstr {
@@ -186,7 +186,7 @@ pub fn into_unit_transforms(
 }
 
 /// One transport-facing Unit edit.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "edit", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitEditInstr {
@@ -262,7 +262,7 @@ pub enum UnitEditInstr {
 }
 
 /// Page-relative Unit coordinates.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitCoordInstr {
@@ -283,7 +283,7 @@ impl From<UnitCoordInstr> for UnitCoord {
 }
 
 /// Translation assignment accepted from the client.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTranslationInstr {
@@ -292,7 +292,7 @@ pub struct UnitTranslationInstr {
 }
 
 /// Revision assignment accepted from the client.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitRevisionInstr {

@@ -151,7 +151,7 @@ impl From<ChapterTranslationImportMode> for ChapterTranslationImportModeInstr {
 }
 
 /// Request body for importing chapter translations.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationInstr {
     /// The translation format (e.g., JSON, SRT).

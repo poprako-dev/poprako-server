@@ -19,8 +19,6 @@ RUN apk add --no-cache \
 # and resources must not invalidate third-party compilation.
 COPY Cargo.toml Cargo.lock ./
 COPY poprako-util/Cargo.toml ./poprako-util/Cargo.toml
-COPY poprako-sensitive/Cargo.toml ./poprako-sensitive/Cargo.toml
-COPY poprako-sensitive-macro/Cargo.toml ./poprako-sensitive-macro/Cargo.toml
 COPY poprako-swagger/Cargo.toml ./poprako-swagger/Cargo.toml
 COPY poprako-obj-dept/Cargo.toml ./poprako-obj-dept/Cargo.toml
 COPY poprako-obj-dept-macro/Cargo.toml ./poprako-obj-dept-macro/Cargo.toml
@@ -32,7 +30,7 @@ RUN mkdir -p src benches poprako-swagger/src && \
     printf '\n' > src/lib.rs && \
     printf 'fn main() {}\n' > benches/test_benchmark.rs && \
     printf 'fn main() {}\n' > poprako-swagger/src/main.rs && \
-    for package in poprako-util poprako-sensitive poprako-sensitive-macro poprako-obj-dept poprako-obj-dept-macro poprako-rdb-core poprako-prom; do \
+    for package in poprako-util poprako-obj-dept poprako-obj-dept-macro poprako-rdb-core poprako-prom; do \
         mkdir -p "$package/src" && printf '\n' > "$package/src/lib.rs" || exit 1; \
     done
 
@@ -42,8 +40,6 @@ RUN cargo build --locked --release --bin poprako-server && \
     cargo clean --release \
         --package poprako-server \
         --package poprako-util \
-        --package poprako-sensitive \
-        --package poprako-sensitive-macro \
         --package poprako-swagger \
         --package poprako-obj-dept \
         --package poprako-obj-dept-macro \
@@ -53,8 +49,6 @@ RUN cargo build --locked --release --bin poprako-server && \
 # All stub artifacts were removed before this cached layer was exported.
 # Real workspace code must compile even when checkout timestamps are older.
 COPY poprako-util ./poprako-util
-COPY poprako-sensitive ./poprako-sensitive
-COPY poprako-sensitive-macro ./poprako-sensitive-macro
 COPY poprako-swagger ./poprako-swagger
 COPY poprako-obj-dept ./poprako-obj-dept
 COPY poprako-obj-dept-macro ./poprako-obj-dept-macro

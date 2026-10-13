@@ -4,7 +4,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-//! Regression coverage for ordinary instruction payloads in use-case spans.
+//! Regression coverage for payload exclusion and ordinary use-case fields.
 
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -70,9 +70,9 @@ where
     }
 }
 
-// Use cases record the complete instruction through its declared Debug policy.
+// Bulk payloads stay out of spans while ordinary search fields remain visible.
 #[tokio::test]
-async fn ordinary_instruction_spans_keep_business_content() {
+async fn instruction_spans_exclude_bulk_payloads() {
     //
     let capture = Capture::default();
 
@@ -170,18 +170,34 @@ async fn ordinary_instruction_spans_keep_business_content() {
 
     let spans = capture.spans.lock().unwrap();
 
-    for name in ["import_translation", "import", "search_infos", "transform"] {
+    for (name, summary, expected) in [
+        (
+            "import_translation",
+            "content_byte_len",
+            content.len().to_string(),
+        ),
+        ("import", "term_count", "1".to_owned()),
+        ("transform", "unit_count", "1".to_owned()),
+    ] {
         //
         let fields = spans.get(name).expect("use-case span must be recorded");
 
         assert!(fields.contains_key("actor_user_id"));
 
-        let instr = fields.get("instr").expect("instruction must be recorded");
+        assert!(!fields.contains_key("instr"));
 
-        assert!(instr.contains(content));
+        assert_eq!(fields.get(summary), Some(&expected));
 
-        assert!(!instr.contains("[REDACTED]"));
+        assert!(fields.values().all(|value| !value.contains(content)));
+
+        assert!(fields.values().all(|value| !value.contains("[REDACTED]")));
     }
+
+    let search = spans.get("search_infos").expect("search span must exist");
+
+    let instr = search.get("instr").expect("search must be recorded");
+
+    assert!(instr.contains(content));
 
     drop(spans);
 }

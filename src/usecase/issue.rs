@@ -31,7 +31,7 @@ use crate::usecase::page::list as page_list_usecase;
 use crate::util::next_snowflake_id;
 
 /// Atomically replaces all issues without changing workflow or Unit counters.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, page_count = instr.pages.len()))]
 pub async fn import_issue<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
