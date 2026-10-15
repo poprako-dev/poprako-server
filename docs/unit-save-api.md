@@ -93,3 +93,21 @@ does not expose `index`, `next_id`, or tombstone state.
 Translator may change translation content; proofreader may change revision
 content. Either edit role may create, delete, move, or patch structural fields.
 Sending a content field outside the authenticated role returns 403.
+
+## Sparse persistence
+
+After computing the final sequence, the server writes changed successor links,
+visibility transitions, and explicitly submitted content fields. An empty Patch
+on a visible Unit, a move with no final link changes, or a repeated Delete of a
+tombstone does not update that Unit or its `updated_at`. An empty Patch on a
+hidden Unit still restores it. Neighbor links affected by a move are updated.
+
+Create and Patch targeting the same new Unit are folded into one final insert
+after sequence planning. Existing-row writes remain batched; columns unused by
+the whole batch are omitted. Submitted content values are not compared with
+stored content, so explicitly assigning the same value still counts as a write.
+
+Skipped targets still undergo existence/page validation. Successful saves still
+record their immutable save receipt and retain the existing counters, activity,
+and submitted-content workflow behavior. This optimization does not make an
+empty Unit write plan an empty save transaction.

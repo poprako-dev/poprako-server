@@ -26,10 +26,10 @@ use poprako_server::{
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 fn report_shutdown(
-    results: [(&str, Result<(), JoinError>); 4],
+    rests: [(&str, Result<(), JoinError>); 4],
 ) -> anyhow::Result<()> {
     //
-    results
+    rests
         .into_iter()
         .map(|(actor, rest)| {
             //

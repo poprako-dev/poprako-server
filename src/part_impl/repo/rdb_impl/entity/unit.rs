@@ -198,22 +198,6 @@ impl<'a> UnitAspectRow<'a> {
     }
 
     #[must_use]
-    pub const fn order(mut self, next_id: Option<&'a str>) -> Self {
-        //
-        self.f_next_id = Some(next_id);
-
-        self
-    }
-
-    #[must_use]
-    pub fn hide(mut self) -> Self {
-        //
-        self.f_hidden_at = Some(Some(OffsetDateTime::now_utc()));
-
-        self
-    }
-
-    #[must_use]
     pub fn apply_edit(mut self, edit: &'a UnitEdit) -> Self {
         //
         let UnitEdit::Save {
@@ -227,8 +211,6 @@ impl<'a> UnitAspectRow<'a> {
         else {
             return self;
         };
-
-        self.f_hidden_at = Some(None);
 
         self.f_is_bubble = *is_bubble;
 
