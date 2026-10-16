@@ -117,7 +117,6 @@ base62 = "2.2.4"
 base64 = "0.22"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
-poprako-sensitive = "0.1.0"
 poprako-obj-dept = { path = "poprako-obj-dept", features = ["rdb_impl"] }
 poprako-rdb-core = { path = "poprako-rdb-core" }
 poprako-orchestra-extra = { version = "0.3.0", features = ["promise"] }
@@ -134,6 +133,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid.workspace = true
 url = "2.5.8"
 uuid.workspace = true
+veil = "0.3.0"
 utoipa = { workspace = true, features = ["axum_extras"], optional = true }
 utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"

@@ -4,7 +4,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::num::NonZeroUsize;
 
 use anyhow::Context as _;
-use poprako_sensitive::Sensitive;
 use tokio::task::JoinError;
 
 use poprako_obj_dept::actor::{ObjDeptActor, ObjDeptActorDesc};
@@ -53,9 +52,20 @@ fn load_dotenv() {
     //
     if let Err(err) = dotenvy::dotenv() {
         //
+        #[cfg(debug_assertions)]
+        let sdk_err = tracing::field::debug(&err);
+
+        #[cfg(not(debug_assertions))]
+        let sdk_err = {
+            // Consume parsing diagnostics without formatting private payloads.
+            let _ = err;
+
+            tracing::field::display("[REDACTED]")
+        };
+
         tracing::warn!(
             operation = "load_dotenv",
-            sdk_err = ?Sensitive::new(&err),
+            sdk_err,
             ".env loading failed; continuing with process environment",
         );
     }

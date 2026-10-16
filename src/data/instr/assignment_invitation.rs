@@ -2,8 +2,10 @@
 
 //! Data transfer objects for assignment invitation use cases.
 
-use poprako_sensitive::SensitiveDebug;
 use serde::Deserialize;
+
+#[cfg(not(debug_assertions))]
+use veil::Redact;
 
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
@@ -44,10 +46,12 @@ pub struct CreateAssignmentInvitationInstr {
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(SensitiveDebug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(not(debug_assertions), derive(Redact))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationInstr {
     /// Secret invitation code to join with.
-    #[sensitive]
+    #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]
     pub code: String,
 }
