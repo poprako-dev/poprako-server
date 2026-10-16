@@ -179,3 +179,61 @@ fn reads_and_edit_counts_reject_corrupt_hidden_links() {
         Err(BaseError::Unrecoverable { .. }),
     ));
 }
+
+// Structural no-ops preserve timestamps while an empty hidden patch restores.
+#[test]
+fn sparse_writes_preserve_noop_timestamps_and_validate_skipped_targets() {
+    let mut state = MockState::default();
+
+    apply_edits(&mut state, "page", &[], &[create_edit("a", "text")]).unwrap();
+
+    let empty = UnitEdit::Save {
+        id: "a".into(),
+        next_id: Patch::Skip,
+        is_bubble: None,
+        is_flagged: None,
+        coord: None,
+        translation: Patch::Skip,
+        revision: Patch::Skip,
+    };
+
+    let original = time::OffsetDateTime::UNIX_EPOCH;
+
+    state.units.first_mut().unwrap().updated_at = original;
+
+    let orders = list_orders(&state, "page").unwrap();
+
+    apply_edits(&mut state, "page", &orders, std::slice::from_ref(&empty))
+        .unwrap();
+
+    assert_eq!(state.units.first().unwrap().updated_at, original);
+
+    state.units.first_mut().unwrap().hidden_at = Some(original);
+
+    let orders = list_orders(&state, "page").unwrap();
+
+    apply_edits(
+        &mut state,
+        "page",
+        &orders,
+        &[UnitEdit::Delete { id: "a".into() }],
+    )
+    .unwrap();
+
+    assert_eq!(state.units.first().unwrap().updated_at, original);
+
+    assert_eq!(state.units.first().unwrap().hidden_at, Some(original));
+
+    apply_edits(&mut state, "page", &orders, std::slice::from_ref(&empty))
+        .unwrap();
+
+    assert!(state.units.first().unwrap().hidden_at.is_none());
+
+    assert_ne!(state.units.first().unwrap().updated_at, original);
+
+    let orders = list_orders(&state, "page").unwrap();
+
+    state.units.clear();
+
+    assert!(apply_edits(&mut state, "page", &orders, &[empty]).is_err());
+}

@@ -2,8 +2,10 @@
 
 //! Data transfer objects for member use cases.
 
-use poprako_sensitive::SensitiveDebug;
 use serde::Deserialize;
+
+#[cfg(not(debug_assertions))]
+use veil::Redact;
 
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
@@ -30,11 +32,13 @@ pub struct CreateMemberInstr {
 }
 
 /// Input parameters for joining a team through a member invitation.
-#[derive(SensitiveDebug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(not(debug_assertions), derive(Redact))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamInstr {
     /// Invitation code to join the team.
-    #[sensitive]
+    #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]
     pub code: String,
 }
 

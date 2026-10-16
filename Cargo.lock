@@ -2878,26 +2878,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "poprako-sensitive"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea1caeb395988f8d18e4be6f4e88ffcd51c58e2755b6e0383462650b0411df0"
-dependencies = [
- "poprako-sensitive-macro",
-]
-
-[[package]]
-name = "poprako-sensitive-macro"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c5f75ba8f2785e075b4625f142e08ead9fff40f9552f81236f814e41306c377"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.118",
-]
-
-[[package]]
 name = "poprako-server"
 version = "0.1.0"
 dependencies = [
@@ -2931,7 +2911,6 @@ dependencies = [
  "poprako-orchestra-extra",
  "poprako-prom",
  "poprako-rdb-core",
- "poprako-sensitive",
  "poprako-util",
  "serde",
  "serde_json",
@@ -2951,6 +2930,7 @@ dependencies = [
  "utoipa",
  "utoipa-swagger-ui",
  "uuid",
+ "veil",
 ]
 
 [[package]]
@@ -3400,9 +3380,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.45"
+version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
+checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "aws-lc-rs",
  "log",
@@ -4592,6 +4572,27 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+
+[[package]]
+name = "veil"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7352f0bbf3ab98911b0c0277065094c1b1ec79bbc85fa3b7d16bf1859c3d96f"
+dependencies = [
+ "once_cell",
+ "veil-macros",
+]
+
+[[package]]
+name = "veil-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47a3f4f06d904eb789b935253752ba6bcc1dfa61349f8d5341c66abe070b44e5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
 
 [[package]]
 name = "version_check"

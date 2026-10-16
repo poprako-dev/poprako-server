@@ -17,7 +17,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::complex::unit as unit_complex;
+use crate::complex::unit_save as unit_save_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
@@ -33,6 +33,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
+use crate::util::Patch;
 
 #[declare_sql_function]
 extern "SQL" {
@@ -60,23 +61,38 @@ pub async fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
     //
-    let edit_plan = unit_complex::plan_edit_sequence(orders, edits)?;
+    let write_plan = unit_save_complex::plan_writes(orders, edits)?;
+
+    if !write_plan.skipped_ids.is_empty() {
+        //
+        let matched = unit_table
+            .filter(f_page_id.eq(page_id))
+            .filter(f_id.eq_any(&write_plan.skipped_ids))
+            .count()
+            .get_result::<i64>(conn)
+            .await
+            .map_err(diesel)?;
+
+        ensure_affected(
+            page_id,
+            "batch",
+            "validate skipped targets",
+            usize_from_i64(matched, "count skipped Unit targets")?,
+            write_plan.skipped_ids.len(),
+        )?;
+    }
 
     let mut create_entries = Vec::new();
 
-    for edit in edits {
+    for edit in &write_plan.creates {
         //
-        let UnitEdit::Create { id, .. } = edit else {
-            continue;
-        };
-
-        let next_id = edit_plan.next_id(id)?;
-
-        let Some(create_entry) =
-            UnitEntryRow::from_edit(page_id, edit, next_id)
-        else {
+        let UnitEdit::Create { next_id, .. } = edit else {
             return Err(invalid_unit_edit_plan_err());
         };
+
+        let create_entry =
+            UnitEntryRow::from_edit(page_id, edit, next_id.as_deref())
+                .ok_or_else(invalid_unit_edit_plan_err)?;
 
         create_entries.push(create_entry);
     }
@@ -85,49 +101,61 @@ pub async fn apply_edits(
 
     let mut changes = UnitChanges::new();
 
-    for edit in edits {
+    for (id, mutation) in &write_plan.changes {
         //
-        let (id, change) = match edit {
+        let mut change = UnitAspectRow::new();
+
+        if let Some(edit) = mutation.edit {
+            change = change.apply_edit(edit);
+        }
+
+        change.f_next_id = match &mutation.next_id {
             //
-            UnitEdit::Save { id, .. } => {
-                //
-                let next_id = edit_plan.next_id(id)?;
+            Patch::Skip => None,
 
-                (
-                    id.as_str(),
-                    UnitAspectRow::new().order(next_id).apply_edit(edit),
-                )
-            }
+            Patch::Clear => Some(None),
 
-            UnitEdit::Delete { id } => {
-                (id.as_str(), UnitAspectRow::new().hide())
-            }
-
-            UnitEdit::Create { .. } => continue,
+            Patch::Assign { value } => Some(Some(*value)),
         };
 
-        if changes.insert(id, change).is_some() {
-            return Err(invalid_unit_edit_plan_err());
-        }
-    }
+        change.f_hidden_at = mutation
+            .is_hidden
+            .map(|hidden| hidden.then(OffsetDateTime::now_utc));
 
-    for successor_change in edit_plan.changed_successors() {
-        //
-        if let Some(change) = changes.get_mut(successor_change.id()) {
-            //
-            change.f_next_id = Some(successor_change.next_id());
-
-            continue;
-        }
-
-        let change = UnitAspectRow::new().order(successor_change.next_id());
-
-        changes.insert(successor_change.id(), change);
+        changes.insert(*id, change);
     }
 
     apply_update_rows(conn, page_id, &changes).await?;
 
     count_visible_units(conn, page_id).await
+}
+
+// Reject an invariant-breaking affected-row count.
+fn ensure_affected(
+    page_id: &str,
+    unit_id: &str,
+    operation: &str,
+    affected: usize,
+    expected: usize,
+) -> BaseRest<()> {
+    //
+    if affected == expected {
+        return accept(());
+    }
+
+    tracing::error!(
+        page_id,
+        unit_id,
+        operation,
+        affected,
+        expected,
+        stage = "apply_edits",
+        "unrecoverable error: Unit batch affected an unexpected row count",
+    );
+
+    Err(BaseError::Unrecoverable {
+        msg: "Unit batch affected an unexpected row count".into(),
+    })
 }
 
 // Reports an impossible mismatch between normalized edits and their plan.
@@ -233,17 +261,17 @@ async fn apply_update_rows(
             .filter(f_id.eq_any(&ids)),
     )
     .set((
-        f_next_id.eq(next_id_case),
-        f_hidden_at.eq(hidden_at_case),
-        f_is_bubble.eq(is_bubble_case),
-        f_is_flagged.eq(is_flagged_case),
-        f_is_proofread.eq(is_proofread_case),
-        f_x_coord.eq(x_coord_case),
-        f_y_coord.eq(y_coord_case),
-        f_translated_text.eq(translated_text_case),
-        f_last_translator_id.eq(translator_id_case),
-        f_proofread_text.eq(proofread_text_case),
-        f_last_proofreader_id.eq(proofreader_id_case),
+        next_id_case.map(|expr| f_next_id.eq(expr)),
+        hidden_at_case.map(|expr| f_hidden_at.eq(expr)),
+        is_bubble_case.map(|expr| f_is_bubble.eq(expr)),
+        is_flagged_case.map(|expr| f_is_flagged.eq(expr)),
+        is_proofread_case.map(|expr| f_is_proofread.eq(expr)),
+        x_coord_case.map(|expr| f_x_coord.eq(expr)),
+        y_coord_case.map(|expr| f_y_coord.eq(expr)),
+        translated_text_case.map(|expr| f_translated_text.eq(expr)),
+        translator_id_case.map(|expr| f_last_translator_id.eq(expr)),
+        proofread_text_case.map(|expr| f_proofread_text.eq(expr)),
+        proofreader_id_case.map(|expr| f_last_proofreader_id.eq(expr)),
         f_updated_at.eq(updated_at),
     ))
     .execute(conn)
@@ -287,48 +315,24 @@ async fn count_visible_units(
     })
 }
 
-// Reject an invariant-breaking affected-row count.
-fn ensure_affected(
-    page_id: &str,
-    unit_id: &str,
-    operation: &str,
-    affected: usize,
-    expected: usize,
-) -> BaseRest<()> {
-    //
-    if affected == expected {
-        return accept(());
-    }
-
-    tracing::error!(
-        page_id,
-        unit_id,
-        operation,
-        affected,
-        expected,
-        stage = "apply_edits",
-        "unrecoverable error: Unit batch affected an unexpected row count",
-    );
-
-    Err(BaseError::Unrecoverable {
-        msg: "Unit batch affected an unexpected row count".into(),
-    })
-}
-
 // Builds a typed nullable-text CASE expression for one column.
 fn nullable_text_case<'a, F>(
     changes: &'a UnitChanges<'a>,
     mut expr: UnitExpr<'a, Nullable<Text>>,
     field: F,
-) -> UnitExpr<'a, Nullable<Text>>
+) -> Option<UnitExpr<'a, Nullable<Text>>>
 where
     F: Fn(&UnitAspectRow<'a>) -> Option<Option<&'a str>>,
 {
+    let mut has_values = false;
+
     for (id, change) in changes {
         //
         let Some(value) = field(change) else {
             continue;
         };
+
+        has_values = true;
 
         expr = Box::new(
             diesel::dsl::case_when::<_, _, Nullable<Text>>(f_id.eq(*id), value)
@@ -336,7 +340,7 @@ where
         );
     }
 
-    expr
+    has_values.then_some(expr)
 }
 
 // Builds a typed nullable-timestamp CASE expression for one column.
@@ -344,15 +348,19 @@ fn nullable_timestamp_case<'a, F>(
     changes: &'a UnitChanges<'a>,
     mut expr: UnitExpr<'a, Nullable<Timestamptz>>,
     field: F,
-) -> UnitExpr<'a, Nullable<Timestamptz>>
+) -> Option<UnitExpr<'a, Nullable<Timestamptz>>>
 where
     F: Fn(&UnitAspectRow<'a>) -> Option<Option<OffsetDateTime>>,
 {
+    let mut has_values = false;
+
     for (id, change) in changes {
         //
         let Some(value) = field(change) else {
             continue;
         };
+
+        has_values = true;
 
         expr = Box::new(
             diesel::dsl::case_when::<_, _, Nullable<Timestamptz>>(
@@ -363,7 +371,7 @@ where
         );
     }
 
-    expr
+    has_values.then_some(expr)
 }
 
 // Builds a typed boolean CASE expression for one column.
@@ -371,15 +379,19 @@ fn bool_case<'a, F>(
     changes: &'a UnitChanges<'a>,
     mut expr: UnitExpr<'a, Bool>,
     field: F,
-) -> UnitExpr<'a, Bool>
+) -> Option<UnitExpr<'a, Bool>>
 where
     F: Fn(&UnitAspectRow<'a>) -> Option<bool>,
 {
+    let mut has_values = false;
+
     for (id, change) in changes {
         //
         let Some(value) = field(change) else {
             continue;
         };
+
+        has_values = true;
 
         expr = Box::new(
             diesel::dsl::case_when::<_, _, Bool>(f_id.eq(*id), value)
@@ -387,7 +399,7 @@ where
         );
     }
 
-    expr
+    has_values.then_some(expr)
 }
 
 // Builds a typed double-precision CASE expression for one column.
@@ -395,15 +407,19 @@ fn double_case<'a, F>(
     changes: &'a UnitChanges<'a>,
     mut expr: UnitExpr<'a, Double>,
     field: F,
-) -> UnitExpr<'a, Double>
+) -> Option<UnitExpr<'a, Double>>
 where
     F: Fn(&UnitAspectRow<'a>) -> Option<f64>,
 {
+    let mut has_values = false;
+
     for (id, change) in changes {
         //
         let Some(value) = field(change) else {
             continue;
         };
+
+        has_values = true;
 
         expr = Box::new(
             diesel::dsl::case_when::<_, _, Double>(f_id.eq(*id), value)
@@ -411,5 +427,5 @@ where
         );
     }
 
-    expr
+    has_values.then_some(expr)
 }

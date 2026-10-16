@@ -85,6 +85,7 @@ block. Every current module exports `IMPLEMENTED = true`.
 - E1.4g: assignment listing rejects ADMIN filters (422/code 2).
 - G1.admin: a new chapter without presets has no assignments; team admin can advance and revert without a worker role
   holder.
+- F1.sparse: omitted/null-only patches preserve all Unit timestamps while empty patches still restore tombstones.
 - F10.roles: team-admin and translator exports leave typeset/redraw pending; typesetter exports start it idempotently.
 - F6–F9 final state: concurrent translation edits activate translation, while exports without typesetter/redrawer
   assignments leave typeset/redraw pending.

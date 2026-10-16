@@ -7,8 +7,8 @@ mod orchestra;
 // Internal organization of the `tests` module.
 mod tests;
 
-use crate::complex::unit as unit_complex;
 use crate::complex::unit::sequence as unit_sequence_complex;
+use crate::complex::unit_save as unit_save_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
@@ -35,6 +35,20 @@ fn list_infos<'a>(
     )?;
 
     accept(unit_infos)
+}
+
+// Resolve a single mutable unit by page and id for edit application.
+fn find_unit_mut<'a>(
+    state: &'a mut MockState,
+    page_id: &str,
+    id: &str,
+) -> BaseRest<&'a mut UnitInfo> {
+    //
+    state
+        .units
+        .iter_mut()
+        .find(|unit_info| unit_info.page_id == page_id && unit_info.id == id)
+        .ok_or_else(|| expected("error-invalid-unit-oper"))
 }
 
 // Build a unit payload for create edits.
@@ -97,20 +111,6 @@ fn unit_from_edit(
     })
 }
 
-// Resolve a single mutable unit by page and id for edit application.
-fn find_unit_mut<'a>(
-    state: &'a mut MockState,
-    page_id: &str,
-    id: &str,
-) -> BaseRest<&'a mut UnitInfo> {
-    //
-    state
-        .units
-        .iter_mut()
-        .find(|unit_info| unit_info.page_id == page_id && unit_info.id == id)
-        .ok_or_else(|| expected("error-invalid-unit-oper"))
-}
-
 // Apply patch values from save edit onto an existing unit model.
 fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
     //
@@ -126,8 +126,6 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
     else {
         return;
     };
-
-    unit_info.hidden_at = None;
 
     if let Some(is_bubble) = is_bubble {
         unit_info.is_bubble = *is_bubble;
@@ -266,52 +264,49 @@ fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
     //
-    // Derive the final sequence once through the shared pure business planner.
-    let sequence_plan = unit_complex::plan_edit_sequence(orders, edits)?;
+    let write_plan = unit_save_complex::plan_writes(orders, edits)?;
 
-    for edit in edits {
-        //
-        match edit {
-            //
-            // Insert new unit or change existing unit state.
-            UnitEdit::Create { id, .. } => {
-                //
-                let next_id = sequence_plan.next_id(id)?;
-
-                let unit_info = unit_from_edit(page_id, edit, next_id)?;
-
-                if state.units.iter().any(|unit_info| unit_info.id == *id) {
-                    return Err(expected("error-unit-duplicate"));
-                }
-
-                state.units.push(unit_info);
-            }
-
-            // Mark visible delete by timestamp but keep ordering slot.
-            UnitEdit::Delete { id } => {
-                //
-                let unit_info = find_unit_mut(state, page_id, id)?;
-
-                unit_info.hidden_at = Some(now());
-
-                unit_info.updated_at = now();
-            }
-
-            // Update fields and keep node visible for traversal.
-            UnitEdit::Save { id, .. } => {
-                //
-                let unit_info = find_unit_mut(state, page_id, id)?;
-
-                write_edit(unit_info, edit);
-            }
-        }
+    for id in &write_plan.skipped_ids {
+        find_unit_mut(state, page_id, id)?;
     }
 
-    for successor_change in sequence_plan.changed_successors() {
+    for edit in &write_plan.creates {
         //
-        let unit_info = find_unit_mut(state, page_id, successor_change.id())?;
+        let UnitEdit::Create { id, next_id, .. } = edit else {
+            return Err(expected("error-invalid-unit-oper"));
+        };
 
-        unit_info.next_id = successor_change.next_id().map(str::to_string);
+        let unit_info = unit_from_edit(page_id, edit, next_id.as_deref())?;
+
+        if state.units.iter().any(|unit_info| unit_info.id == *id) {
+            return Err(expected("error-unit-duplicate"));
+        }
+
+        state.units.push(unit_info);
+    }
+
+    for (id, change) in &write_plan.changes {
+        //
+        let unit_info = find_unit_mut(state, page_id, id)?;
+
+        if let Some(edit) = change.edit {
+            write_edit(unit_info, edit);
+        }
+
+        match &change.next_id {
+            //
+            Patch::Skip => {}
+
+            Patch::Clear => unit_info.next_id = None,
+
+            Patch::Assign { value } => {
+                unit_info.next_id = Some((*value).to_owned());
+            }
+        }
+
+        if let Some(hidden) = change.is_hidden {
+            unit_info.hidden_at = hidden.then(now);
+        }
 
         unit_info.updated_at = now();
     }

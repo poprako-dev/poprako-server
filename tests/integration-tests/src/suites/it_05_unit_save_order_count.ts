@@ -85,6 +85,10 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     const unchangedFlag = await savePageUnits(trans01.api, p0Id, [{ edit: "patch", id: flaggedId, is_flagged: null }]);
     assert.ok(unchangedFlag.unit_infos[0]!.is_flagged);
+    assert.deepEqual(
+        unchangedFlag.unit_infos.map((unit) => unit.updated_at),
+        f1Save.unit_infos.map((unit) => unit.updated_at),
+    );
     assert.deepEqual(unchangedFlag.translated_unit_count, 0);
     assert.deepEqual(unchangedFlag.proofread_unit_count, 0);
 

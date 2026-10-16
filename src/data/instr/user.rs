@@ -2,8 +2,10 @@
 
 //! Data transfer objects for user profile use cases.
 
-use poprako_sensitive::SensitiveDebug;
 use serde::Deserialize;
+
+#[cfg(not(debug_assertions))]
+use veil::Redact;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
@@ -45,13 +47,15 @@ pub struct UpdateUserInfoInstr {
 }
 
 /// Input parameters for replacing the authenticated user's password.
-#[derive(SensitiveDebug, Deserialize)]
+#[derive(Deserialize)]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[cfg_attr(not(debug_assertions), derive(Redact))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordInstr {
     /// Current password for verification before change.
-    #[sensitive]
+    #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]
     pub current_password: String,
     /// Desired new password.
-    #[sensitive]
+    #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]
     pub new_password: String,
 }

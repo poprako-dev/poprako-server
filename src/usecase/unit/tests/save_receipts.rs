@@ -149,3 +149,55 @@ async fn delete_returns_an_empty_struct_array() {
         serde_json::json!({"created_unit_ids": []})
     );
 }
+
+// A structural no-op still records its receipt and replays without touching Units.
+#[tokio::test]
+async fn empty_patch_records_receipt_without_refreshing_unit_timestamp() {
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        batch(&uuid::Uuid::new_v4().to_string(), "saved"),
+    )
+    .await
+    .unwrap();
+
+    let unit_id = mock.snapshot().units.first().unwrap().id.clone();
+
+    let original = time::OffsetDateTime::UNIX_EPOCH;
+
+    mock.state
+        .lock()
+        .unwrap()
+        .units
+        .first_mut()
+        .unwrap()
+        .updated_at = original;
+
+    let save_id = uuid::Uuid::new_v4().to_string();
+
+    for _ in 0..2 {
+        let mut instr = save_instr(vec![UnitEditInstr::Patch {
+            id: unit_id.clone(),
+            next_id: Patch::Skip,
+            is_bubble: None,
+            is_flagged: None,
+            coord: None,
+            translation: Patch::Skip,
+            revision: Patch::Skip,
+        }]);
+
+        instr.save_id.clone_from(&save_id);
+
+        let result = save_edits((&mock, &mock), token("translator-1"), instr)
+            .await
+            .unwrap();
+
+        assert!(result.created_unit_ids.is_empty());
+
+        assert_eq!(mock.snapshot().units.first().unwrap().updated_at, original);
+
+        assert_eq!(mock.state.lock().unwrap().unit_saves.len(), 2);
+    }
+}

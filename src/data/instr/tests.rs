@@ -23,6 +23,8 @@ fn check_sensitive<T: Debug + DeserializeOwned>(
         assert_eq!(output.contains("private-sentinel"), cfg!(debug_assertions));
 
         assert_eq!(output.contains("[REDACTED]"), !cfg!(debug_assertions));
+
+        assert!(!output.contains("\"[REDACTED]\""));
     }
 
     Ok(instr)

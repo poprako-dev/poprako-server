@@ -6,6 +6,8 @@
 // unit_roundtrip_uses_testcontainer(UnitRepo)(positive): batch apply creates, hides, restores, orders, and counts Units.
 
 mod regression;
+// Sparse write shape and timestamp regressions.
+mod sparse;
 // Review flag persistence and page aggregation.
 mod flagged;
 
