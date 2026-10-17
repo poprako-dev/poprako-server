@@ -55,8 +55,6 @@ pub mod test_shared;
 pub mod issue;
 /// Unit repository operations.
 pub mod unit;
-/// Durable Unit save identities and receipts.
-pub mod unit_save;
 /// User repository operations.
 pub mod user;
 /// Workset repository operations.

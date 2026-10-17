@@ -3,8 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// unit_save_receipts_are_atomic(UnitSaveRepo)(positive): concurrent replays commit one Unit and one receipt.
-// unit_save_receipts_are_atomic(UnitSaveRepo)(negative): rollback leaves neither edits nor receipt.
+// save_tokens(UnitSaveRepo)(positive): concurrent replays commit one Unit and share a memory token.
+// save_tokens(UnitSaveRepo)(negative): rollback publishes no successful token.
 use crate::data::instr::unit::{
     SavePageUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
 };
@@ -14,11 +14,11 @@ use crate::part::nucl::Serial;
 use crate::part::repo::oper::assignment::CreateAssignment;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::schema::t_unit_save;
+use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::accept;
 use crate::shared::test_rdb::start;
-use crate::usecase::unit::save_edits;
+use crate::usecase::unit as unit_usecase;
 use crate::value::role::{RoleField, RoleMask};
 use diesel::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
@@ -44,12 +44,12 @@ fn batch(page_id: &str, save_id: &str) -> SavePageUnitEditsInstr {
 }
 
 #[tokio::test]
-async fn unit_save_receipts_are_atomic() {
+async fn concurrent_saves_publish_tokens_only_after_commit() {
     let database = start().await;
 
     let shared = database.core();
 
-    let fixture = test_shared::seed_page(&shared, "save-receipt-").await;
+    let fixture = test_shared::seed_page(&shared, "save-token-").await;
 
     let repo = HybRepo::new(shared.clone());
 
@@ -60,7 +60,7 @@ async fn unit_save_receipts_are_atomic() {
     let page_id = fixture.page_entry.id.clone();
 
     let entry = AssignmentEntry {
-        id: "save-receipt-assignment".into(),
+        id: "save-token-assignment".into(),
         chapter_id: fixture.chapter_entry.id.as_str().into(),
         user_id: user_id.as_str().into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
@@ -78,16 +78,18 @@ async fn unit_save_receipts_are_atomic() {
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
+    let cloned_repo = repo.clone();
+
     let (first, simultaneous) = tokio::join!(
-        save_edits(
+        unit_usecase::save_edits(
             (&nucl, &repo),
             UserToken {
                 user_id: user_id.clone()
             },
             batch(&page_id, &save_id)
         ),
-        save_edits(
-            (&nucl, &repo),
+        unit_usecase::save_edits(
+            (&nucl, &cloned_repo),
             UserToken {
                 user_id: user_id.clone()
             },
@@ -95,9 +97,11 @@ async fn unit_save_receipts_are_atomic() {
         )
     );
 
-    assert!(first.is_ok() || simultaneous.is_ok());
+    let first = first.unwrap();
 
-    let replay = save_edits(
+    assert_eq!(first, simultaneous.unwrap());
+
+    let replay = unit_usecase::save_edits(
         (&nucl, &repo),
         UserToken {
             user_id: user_id.clone(),
@@ -107,24 +111,12 @@ async fn unit_save_receipts_are_atomic() {
     .await
     .unwrap();
 
-    assert_eq!(replay.created_unit_ids.len(), 1);
-
-    for successful in [first, simultaneous].into_iter().flatten() {
-        assert_eq!(
-            successful
-                .created_unit_ids
-                .as_slice()
-                .first()
-                .unwrap()
-                .unit_id,
-            replay.created_unit_ids.as_slice().first().unwrap().unit_id
-        );
-    }
+    assert_eq!(first, replay);
 
     let mut conn = shared.get().await.unwrap();
 
-    let count = t_unit_save::table
-        .filter(t_unit_save::f_page_id.eq(&page_id))
+    let count = t_unit::table
+        .filter(t_unit::f_page_id.eq(&page_id))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -141,7 +133,7 @@ async fn unit_save_receipts_are_atomic() {
     });
 
     assert!(
-        save_edits(
+        unit_usecase::save_edits(
             (&nucl, &repo),
             UserToken {
                 user_id: user_id.clone()
@@ -152,17 +144,10 @@ async fn unit_save_receipts_are_atomic() {
         .is_err()
     );
 
-    let count = t_unit_save::table
-        .filter(t_unit_save::f_save_id.eq(&rejected_id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(count, 0);
+    assert_eq!(repo.unit_saves.token_count(), 1);
 
     assert!(
-        save_edits(
+        unit_usecase::save_edits(
             (&nucl, &repo),
             UserToken { user_id },
             batch(&page_id, &rejected_id)

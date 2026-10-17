@@ -15,10 +15,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl_kv;
 
 use crate::complex::unit::perm as unit_perm_complex;
-use crate::complex::{
-    chapter as chapter_complex, unit as unit_complex,
-    unit_save as unit_save_complex,
-};
+use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr, SearchChapterUnitInfosInstr,
 };
@@ -45,10 +42,10 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosInChapterOrder,
     ListUnitOrders, SearchChapterUnitIds,
 };
-use crate::part::repo::oper::unit_save::{FindUnitSave, InsertUnitSave};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::part::repo::unit::{UnitRepo, UnitSaveRepo};
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::unit_save::{UnitSaveGuard as _, UnitSaveRepo};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
@@ -215,7 +212,7 @@ where
     accept(found_infos)
 }
 
-/// Saves or replays one authorized immutable batch of Unit edits.
+/// Saves one authorized Unit batch unless its token already completed.
 #[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, save_id = %instr.save_id, page_id = %instr.page_id, edit_count = instr.edits.len()))]
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
@@ -228,17 +225,23 @@ where
     C::Level: AtLeast<Serial>,
     R: PageRepo<C>
         + UnitRepo<C>
-        + UnitSaveRepo<C>
+        + UnitSaveRepo
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
+    for<'save> R::Guard<'save>: Send + Sync,
 {
-    let (edits, save_entry) = prepare_save(instr, &token.user_id)?;
+    let page_id = instr.page_id.clone();
 
-    let page_id = save_entry.page_id.clone();
+    let (edits, save_id, created_unit_ids) =
+        prepare_save(instr, &token.user_id)?;
+
+    let save_guard = repo.lock_save(save_id).await;
+
+    let retained_save = &save_guard;
 
     let stages = unit_complex::submitted_stage_advances(&edits);
 
@@ -277,18 +280,8 @@ where
                 });
             }
 
-            if let Some(receipt) = (FindUnitSave {
-                user_id: &token.user_id,
-                page_id: &page_id,
-                save_id: &save_entry.save_id,
-            })
-            .step_on(repo, context)
-            .await?
-            {
-                return unit_save_complex::replay_saved_units(
-                    receipt,
-                    &save_entry.payload_digest,
-                );
+            if let Some(created_unit_ids) = retained_save.created_unit_ids() {
+                return accept(created_unit_ids);
             }
 
             let orders = ListUnitOrders { page_id: &page_id }
@@ -345,15 +338,13 @@ where
             )
             .await?;
 
-            InsertUnitSave { entry: &save_entry }
-                .step_on(repo, context)
-                .await?;
-
-            accept(save_entry.created_unit_ids)
+            accept(created_unit_ids)
         })
         .await?;
 
-    accept(SavePageUnitEditsVal::from(created_unit_ids))
+    save_guard.record(created_unit_ids.clone());
+
+    accept(SavePageUnitEditsVal::from(created_unit_ids.as_ref()))
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.

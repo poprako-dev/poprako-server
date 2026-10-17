@@ -66,6 +66,8 @@ pub mod term;
 pub mod termbase;
 /// Unit repository port.
 pub mod unit;
+/// Process-local Unit save coordination.
+pub mod unit_save;
 /// User repository port.
 pub mod user;
 /// Workset repository port.

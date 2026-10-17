@@ -50,7 +50,7 @@ pub mod term;
 pub mod termbase;
 /// Mock implementations for unit repository operations.
 pub mod unit;
-/// Transactional mock storage for immutable Unit save receipts.
+/// Process-local Unit save coordination shared with the production adapter.
 pub mod unit_save;
 /// Mock implementations for user repository operations.
 pub mod user;
@@ -63,7 +63,6 @@ mod tests;
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use time::OffsetDateTime;
 
@@ -93,6 +92,8 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::effect::event::Event;
 use crate::part::nucl::Serial;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::part_impl::repo::mem_impl::online_user::OnlineUserCache;
+use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 use crate::result::{BaseError, ExpectedVariant};
 
 /// In-memory state holding all mock repository records.
@@ -104,9 +105,6 @@ pub struct MockState {
     /// Independently ordered composite pages.
     pub page_artworks:
         Vec<crate::model::read::proj::page_artwork::PageArtworkInfo>,
-
-    /// Durable receipts participating in mock transaction rollback.
-    pub unit_saves: Vec<crate::model::read::proj::unit_save::UnitSaveInfo>,
 
     /// Original filenames keyed by the owning page identity.
     pub page_raw_idents:
@@ -315,12 +313,16 @@ pub struct MockFlags {
     //
     /// Simulates a token authentication failure.
     pub token_failure: bool,
+
+    /// Simulates a transaction commit failure after all steps succeed.
+    pub commit_failure: bool,
     /// Simulates a failure in archive persistence within a transaction.
     pub archive_commit_failure: bool,
     /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
     /// Simulates a failure while recording object deletion tasks.
     pub obj_delete_failure: bool,
+
     /// Disables thumbnail URL capability in the object-pool mock.
     pub obj_thumbnail_disabled: bool,
 }
@@ -333,15 +335,19 @@ pub struct Mock {
     //
     /// Shared mutable mock repository state for concurrent test access.
     pub state: Arc<Mutex<MockState>>,
+    /// Successful save tokens outside transactional mock snapshots.
+    pub unit_saves: UnitSaveCache,
+
     // Serialize coordinated snapshots so concurrent replacements cannot lose state.
     transaction_lock: Arc<tokio::sync::Mutex<()>>,
     /// Shared mutable mock failure flags for testing error paths.
     pub flags: Arc<Mutex<MockFlags>>,
+
     /// Shared event buffer collecting emitted domain events during tests.
     pub events: Arc<Mutex<Vec<Event>>>,
+
     // Team-partitioned online-user lease deadlines.
-    online_user_deadlines:
-        Arc<Mutex<HashMap<String, HashMap<String, Instant>>>>,
+    online_users: OnlineUserCache,
 }
 
 impl Mock {

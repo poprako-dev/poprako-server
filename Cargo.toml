@@ -112,6 +112,7 @@ jsonwebtoken = { version = "10.4.0", default-features = false, features = [
     "aws_lc_rs",
 ] }
 metrics.workspace = true
+moka = { version = "0.12.16", features = ["sync"] }
 metrics-exporter-prometheus = "0.18.3"
 base62 = "2.2.4"
 base64 = "0.22"
