@@ -13,7 +13,7 @@ mod search;
 // Unit list consistency and tombstone-chain tests.
 mod list;
 // Save receipt replay, identity, and rollback contracts.
-mod save_receipts;
+mod save_tokens;
 // Shared review flag lifecycle and save compatibility.
 mod flagged;
 

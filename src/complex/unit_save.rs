@@ -1,4 +1,4 @@
-//! Pure Unit persistence planning and save receipt validation.
+//! Pure Unit persistence planning and save token validation.
 
 #[cfg(test)]
 // Sparse persistence plan regression tests.
@@ -10,13 +10,11 @@ use poprako_util::i18n::trl;
 
 use crate::complex::unit as unit_complex;
 use crate::model::read::proj::unit::UnitOrder;
-use crate::model::read::proj::unit_save::UnitSaveInfo;
-use crate::model::shared::unit_save::UnitSaveCreatedUnitId;
 use crate::model::write::unit::{UnitEdit, UnitWriteChange, UnitWritePlan};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
 
-/// Reports an invalid or reused save identity without exposing payloads.
+/// Reports an invalid save identity without exposing payloads.
 pub fn invalid_save() -> BaseError {
     //
     let msg = trl("error-invalid-unit-oper");
@@ -28,19 +26,6 @@ pub fn invalid_save() -> BaseError {
         variant: ExpectedVariant::Args,
         msg,
     }
-}
-
-/// Returns the original identities only when the replay has identical edits.
-pub fn replay_saved_units(
-    receipt: UnitSaveInfo,
-    payload_digest: &[u8],
-) -> BaseRest<Vec<UnitSaveCreatedUnitId>> {
-    //
-    if receipt.payload_digest != payload_digest {
-        return Err(invalid_save());
-    }
-
-    accept(receipt.created_unit_ids)
 }
 
 /// Plans final inserts and sparse writes without loading persisted Unit content.

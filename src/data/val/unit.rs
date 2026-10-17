@@ -13,7 +13,7 @@ use utoipa::ToSchema;
 
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo};
-use crate::model::shared::unit_save::UnitSaveCreatedUnitId;
+use crate::value::unit_save::UnitSaveCreatedUnitId;
 
 /// Return value for listing visible Units under one Page.
 #[derive(Serialize)]
@@ -52,7 +52,7 @@ impl ListPageUnitInfosVal {
 
 /// One explicit identity pair returned for a newly created Unit.
 #[derive(Serialize)]
-#[cfg_attr(test, derive(Debug))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreatedUnitIdVal {
     /// Client identity from the create operation.
@@ -63,22 +63,22 @@ pub struct CreatedUnitIdVal {
 
 /// Result of every successful Unit save, including replayed saves.
 #[derive(Serialize)]
-#[cfg_attr(test, derive(Debug))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitEditsVal {
     /// Explicit identity pairs; empty when the batch creates no Units.
     pub created_unit_ids: Vec<CreatedUnitIdVal>,
 }
 
-impl From<Vec<UnitSaveCreatedUnitId>> for SavePageUnitEditsVal {
+impl From<&[UnitSaveCreatedUnitId]> for SavePageUnitEditsVal {
     // Convert shared identities into the transport response shape.
-    fn from(ids: Vec<UnitSaveCreatedUnitId>) -> Self {
+    fn from(ids: &[UnitSaveCreatedUnitId]) -> Self {
         Self {
             created_unit_ids: ids
-                .into_iter()
+                .iter()
                 .map(|pair| CreatedUnitIdVal {
-                    local_id: pair.local_id,
-                    unit_id: pair.unit_id,
+                    local_id: pair.local_id.clone(),
+                    unit_id: pair.unit_id.clone(),
                 })
                 .collect(),
         }

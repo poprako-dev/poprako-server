@@ -1,12 +1,9 @@
 // save_edits(flagged)(positive): either editor can flag, clear, and restore without changing workflow.
-// save_edits(flagged)(negative): unauthorized or invalid batches leave flags and receipts unchanged.
+// save_edits(flagged)(negative): unauthorized or invalid batches leave flags and tokens unchanged.
 
 use super::*;
 
 use serde_json::json;
-use sha2::{Digest as _, Sha256};
-
-use crate::data::instr::unit_save::prepare_save;
 
 // Decode a transport edit without coupling tests to every unrelated field.
 fn edit(payload: serde_json::Value) -> UnitEditInstr {
@@ -18,7 +15,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
     for role in [RoleField::TRANSLATOR, RoleField::PROOFREADER] {
         let mock = save_scope(RoleMask::from(role));
 
-        let created = save_edits(
+        save_edits(
             (&mock, &mock),
             token("translator-1"),
             save_instr(vec![edit(json!({
@@ -29,7 +26,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
         .await
         .unwrap();
 
-        let id = &created.created_unit_ids.first().unwrap().unit_id;
+        let id = mock.snapshot().units.first().unwrap().id.clone();
 
         assert!(mock.snapshot().units.first().unwrap().is_flagged);
 
@@ -86,7 +83,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
 async fn flagged_survives_text_changes_and_failed_batches() {
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    let created = save_edits(
+    save_edits(
         (&mock, &mock),
         token("translator-1"),
         save_instr(vec![create("local", None, Some("translated"))]),
@@ -94,7 +91,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     .await
     .unwrap();
 
-    let id = &created.created_unit_ids.first().unwrap().unit_id;
+    let id = mock.snapshot().units.first().unwrap().id.clone();
 
     save_edits(
         (&mock, &mock),
@@ -133,7 +130,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
         assert!(mock.snapshot().units.first().unwrap().is_flagged);
     }
 
-    let save_count = mock.state.lock().unwrap().unit_saves.len();
+    let save_count = mock.unit_saves.token_count();
 
     let rejected = save_edits(
         (&mock, &mock),
@@ -164,81 +161,36 @@ async fn flagged_survives_text_changes_and_failed_batches() {
 
     assert!(rejected.is_err());
     assert!(mock.snapshot().units.first().unwrap().is_flagged);
-    assert_eq!(mock.state.lock().unwrap().unit_saves.len(), save_count);
+    assert_eq!(mock.unit_saves.token_count(), save_count);
 }
 
+// Reusing a completed token skips even a changed flag payload.
 #[tokio::test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
-async fn flagged_receipts_preserve_legacy_digest_and_reject_changed_flag() {
+async fn retained_token_does_not_reapply_changed_flag() {
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
-    let request = || SavePageUnitEditsInstr {
-        save_id: save_id.clone(),
-        page_id: "page-1".into(),
-        edits: vec![create("local", None, None)],
-    };
+    let mut instr = save_instr(vec![create("local", None, None)]);
 
-    let legacy_payload = br#"[{"edit":"create","local_id":"local","next_id":null,"is_bubble":true,"coord":{"x_coord":1.0,"y_coord":2.0},"translation":null,"revision":null}]"#;
+    instr.save_id.clone_from(&save_id);
 
-    let (_, prepared) = prepare_save(request(), "translator-1").unwrap();
-
-    assert_eq!(
-        prepared.payload_digest,
-        Sha256::digest(legacy_payload).to_vec()
-    );
-
-    let saved = save_edits((&mock, &mock), token("translator-1"), request())
+    save_edits((&mock, &mock), token("translator-1"), instr)
         .await
         .unwrap();
 
-    let replay = save_edits((&mock, &mock), token("translator-1"), request())
+    let mut changed = save_instr(vec![edit(json!({
+        "edit": "create", "local_id": "local", "is_bubble": true,
+        "coord": {"x_coord": 1.0, "y_coord": 2.0}, "is_flagged": true
+    }))]);
+
+    changed.save_id = save_id;
+
+    save_edits((&mock, &mock), token("translator-1"), changed)
         .await
         .unwrap();
 
-    assert_eq!(
-        saved.created_unit_ids.first().unwrap().unit_id,
-        replay.created_unit_ids.first().unwrap().unit_id
-    );
+    assert_eq!(mock.snapshot().units.len(), 1);
 
-    let mut changed = request();
-
-    let UnitEditInstr::Create { is_flagged, .. } =
-        &mut (*changed.edits.get_mut(0).unwrap())
-    else {
-        panic!("expected create");
-    };
-
-    *is_flagged = true;
-
-    assert!(
-        save_edits((&mock, &mock), token("translator-1"), changed)
-            .await
-            .is_err()
-    );
     assert!(!mock.snapshot().units.first().unwrap().is_flagged);
-
-    let legacy_patch = br#"[{"edit":"patch","id":"unit-1","next_id":"Skip","is_bubble":null,"coord":null,"translation":"Skip","revision":"Skip"}]"#;
-
-    let mut patch =
-        save_instr(vec![edit(json!({"edit":"patch","id":"unit-1"}))]);
-
-    let (_, prepared) = prepare_save(patch, "translator-1").unwrap();
-
-    assert_eq!(
-        prepared.payload_digest,
-        Sha256::digest(legacy_patch).to_vec()
-    );
-
-    patch = save_instr(vec![edit(
-        json!({"edit":"patch","id":"unit-1","is_flagged":false}),
-    )]);
-
-    let (_, changed) = prepare_save(patch, "translator-1").unwrap();
-
-    assert_ne!(prepared.payload_digest, changed.payload_digest);
 }

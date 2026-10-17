@@ -87,6 +87,14 @@ impl Nucl for Mock {
             // Internal implementation detail.
             Ok(value) => {
                 //
+                if flags.commit_failure {
+                    //
+                    return Err(NuclError::Backend(BaseError::Unrecoverable {
+                        msg: "injected transaction commit failure".into(),
+                    }));
+                }
+
+                //
                 // Internal implementation detail.
                 *self.state.lock().unwrap() = context.state;
 

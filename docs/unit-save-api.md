@@ -2,10 +2,11 @@
 
 `POST /api/v1/pages/{page_id}/units/save` applies one ordered batch of Unit
 edits. Every request requires a `save_id` UUID query parameter. A successful save
-returns `200 OK` with `data.created_unit_ids`, an array of `{ local_id, unit_id }`
-structs (empty when nothing was created). The client then calls
-`GET /api/v1/pages/{page_id}/units` to obtain the latest visible sequence and
-counters.
+returns `200 OK` with `data.created_unit_ids`, containing the `local_id` and `unit_id`
+pairs for newly created Units (an empty array for batches without creates).
+The client applies this mapping to pending local edits, then calls
+`GET /api/v1/pages/{page_id}/units` to obtain the latest identities, visible
+sequence, and counters.
 
 The save runs in a Serializable transaction. A concurrent write can return
 `409 Conflict` with error `code: 8`; the server does not retry it. The client
@@ -65,14 +66,42 @@ fields are rejected.
 
 Each batch contains 1–100 edits. `local_id` exists only within the current
 batch so Create edits and their `next_id` references can be resolved together.
-The server generates permanent IDs and returns explicit identity pairs.
+The server generates permanent IDs and returns their mapping in the save response.
 
-`t_unit_save` records the authenticated user, page, save ID, typed-payload SHA-256
-and created identities atomically with the edits. Retry an uncertain result with
-the same save ID and identical edits. Successful replays return the original
-identity pairs without applying edits or workflow effects again. A changed payload
-with the same save ID returns 422; rolled-back batches consume no save identity.
-Authorization is checked on replay. Receipts cascade with their page or user.
+Completed save tokens live in a process-local Moka segmented TinyLFU cache.
+Each key is a parsed UUID (16 bytes); the value is an immutable, shared array of
+created Unit identity pairs. No request digest, edit payload, user ID, or page ID
+is retained in the cache. Clients must generate a globally unique save ID for
+every new batch and reuse it only when retrying that batch.
+
+The cache has a 256 MiB estimated-memory budget across 16 segments, with no TTL.
+Each entry is charged for its mapping array, allocated string capacities, and
+an allowance for cache and allocator overhead. A minimum charge of 537 bytes
+also keeps the retained entry count below 500,000. Batches with many creates
+consume more budget and shorten retention; batches without creates cache an
+empty mapping. This budget estimates retained memory, not a hard process RSS
+limit. Moka enforces weighted capacity on a best-effort basis, and temporary
+overshoot, in-flight requests, response copies, and allocator retention can add
+memory outside that estimate. There is no guaranteed retention period.
+
+A retained token makes an authorized, valid retry a no-op returning the
+original identity mapping. Payload equality is not checked: reusing a completed
+token with different edits also skips those edits. Authorization and writable-state
+checks still run. Fixed asynchronous lock stripes coordinate retries across
+lookup, transaction completion, and token publication. Locks are independent of
+cache eviction, and all clones of a repository share them.
+
+Tokens are recorded only after a successful transaction; failed or rolled-back
+batches consume no token. Database commit and cache publication are not atomic.
+Restart, eviction, interruption after commit, or routing a retry to another
+process can lose deduplication and execute an old batch again. This is
+intentionally best-effort process-local retry protection. Archival is not
+required to bound token count.
+
+The legacy `t_unit_save` migration and table remain for migration-history
+compatibility, but application saves no longer read or write that table. Existing
+database receipts are not loaded into memory; their cleanup is separate from
+deploying this application change.
 
 `last_translator_id` and `last_proofreader_id` are always derived from the
 authenticated token and are not accepted from the client.
@@ -108,6 +137,6 @@ the whole batch are omitted. Submitted content values are not compared with
 stored content, so explicitly assigning the same value still counts as a write.
 
 Skipped targets still undergo existence/page validation. Successful saves still
-record their immutable save receipt and retain the existing counters, activity,
-and submitted-content workflow behavior. This optimization does not make an
+cache their completed save token and mapping and retain the existing counters,
+activity, and submitted-content workflow behavior. This optimization does not make an
 empty Unit write plan an empty save transaction.

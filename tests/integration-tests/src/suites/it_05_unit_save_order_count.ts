@@ -28,6 +28,7 @@ import { titled } from "../state/prefix.ts";
 import { ROLE } from "../state/roles.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 import { PHASE, stagePhase } from "../state/stages.ts";
+import { saveWithConcurrentReplay } from "./unit_save_tokens.ts";
 
 export const IMPLEMENTED = true as const;
 
@@ -50,7 +51,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     f1Edits[0]!.is_flagged = true;
 
-    const f1Save = await savePageUnits(trans01.api, p0Id, f1Edits);
+    const f1Save = await saveWithConcurrentReplay(trans01.api, p0Id, f1Edits);
 
     assert.deepEqual(f1Save.total_unit_count, 5);
     assert.deepEqual(f1Save.translated_unit_count, 0);
