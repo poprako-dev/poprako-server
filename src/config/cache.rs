@@ -16,6 +16,12 @@ pub struct CacheConfig {
     pub unit_save_limit_mib: NonZeroU32,
     /// Token-count budget enforced through each entry's minimum weight.
     pub unit_save_token_budget: NonZeroU64,
+    /// Maximum retention after a successful Unit save; replay does not renew it.
+    #[serde(
+        rename = "unit_save_ttl_secs",
+        deserialize_with = "duration::deserialize"
+    )]
+    pub unit_save_ttl: Duration,
 
     /// Lease duration after a successful online-user refresh.
     #[serde(
@@ -40,15 +46,21 @@ impl CacheConfig {
             .div_ceil(self.unit_save_token_budget.get())
     }
 
-    /// Rejects unrepresentable cache weights and immediately expired leases.
+    /// Rejects unrepresentable cache weights and invalid retention durations.
     ///
     /// # Errors
-    /// Returns an error for an invalid weight or a zero lease duration.
+    /// Returns an error for an invalid weight or an unsupported duration.
     pub fn validate(self) -> anyhow::Result<()> {
         //
         ensure!(
             u32::try_from(self.unit_save_min_entry_weight()).is_ok(),
             "cache Unit save minimum entry weight exceeds the cache weight range"
+        );
+
+        ensure!(
+            !self.unit_save_ttl.is_zero()
+                && self.unit_save_ttl <= Duration::from_hours(1000 * 365 * 24),
+            "cache.unit_save_ttl_secs must be positive and at most 31536000000 (Moka's 1000-year limit)"
         );
 
         ensure!(
@@ -66,6 +78,7 @@ impl Default for CacheConfig {
         Self {
             unit_save_limit_mib: NonZeroU32::MIN.saturating_add(255),
             unit_save_token_budget: NonZeroU64::MIN.saturating_add(499_999),
+            unit_save_ttl: Duration::from_hours(30 * 24),
             online_user_ttl: Duration::from_mins(10),
         }
     }

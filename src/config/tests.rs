@@ -32,6 +32,8 @@ fn assert_defaults(config: &AppConfig) {
 
     assert_eq!(config.cache.unit_save_token_budget.get(), 500_000);
 
+    assert_eq!(config.cache.unit_save_ttl, Duration::from_hours(30 * 24));
+
     assert_eq!(config.cache.online_user_ttl, Duration::from_mins(10));
 
     assert_eq!(config.repo.subtree_sweep_batch_size.get(), 64);
@@ -83,6 +85,7 @@ fn partial_overrides_reach_runtime_policy() {
         [cache]
         unit_save_limit_mib = 2
         unit_save_token_budget = 32
+        unit_save_ttl_secs = 23
         online_user_ttl_secs = 11
         [repo]
         subtree_sweep_batch_size = 3
@@ -116,6 +119,8 @@ fn partial_overrides_reach_runtime_policy() {
     assert_eq!(config.cache.unit_save_limit_bytes(), 2 * 1024 * 1024);
 
     assert_eq!(config.cache.unit_save_min_entry_weight(), 65_536);
+
+    assert_eq!(config.cache.unit_save_ttl, Duration::from_secs(23));
 
     assert_eq!(config.cache.online_user_ttl, Duration::from_secs(11));
 
@@ -151,6 +156,9 @@ fn invalid_runtime_settings_are_rejected() {
         "[cache]\nunit_save_limit_mib = 0",
         "[cache]\nunit_save_limit_mib = 4294967296",
         "[cache]\nunit_save_token_budget = 0",
+        "[cache]\nunit_save_ttl_secs = 0",
+        "[cache]\nunit_save_ttl_secs = -1",
+        "[cache]\nunit_save_ttl_secs = 31536000001",
         "[cache]\nunit_save_limit_mib = 4096\nunit_save_token_budget = 1",
         "[cache]\nonline_user_ttl_secs = 0",
         "[cache]\nonline_user_ttl_secs = -1",

@@ -21,6 +21,49 @@ fn key(value: u128) -> Uuid {
     Uuid::from_u128(value)
 }
 
+// save_cache(UnitSaveCache)(negative): expiration hides mappings without releasing in-flight exclusion.
+#[tokio::test]
+async fn expired_token_is_unavailable_while_its_guard_remains_held() {
+    let config = CacheConfig {
+        unit_save_ttl: Duration::from_millis(100),
+        ..CacheConfig::default()
+    };
+
+    let cache = UnitSaveCache::new(config);
+
+    let guard = cache.lock_save(key(999)).await;
+
+    guard.record(Arc::from([]));
+
+    assert!(guard.created_unit_ids().is_some());
+
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    // Lookup must reject expiration before explicit maintenance is requested.
+    assert!(guard.created_unit_ids().is_none());
+
+    assert!(
+        tokio::time::timeout(
+            Duration::from_millis(20),
+            cache.lock_save(key(999)),
+        )
+        .await
+        .is_err()
+    );
+
+    assert_eq!(cache.token_count(), 0);
+
+    drop(guard);
+
+    let next = cache.lock_save(key(999)).await;
+
+    next.record(Arc::from([]));
+
+    assert!(next.created_unit_ids().is_some());
+
+    drop(next);
+}
+
 #[tokio::test]
 async fn cloned_cache_waits_for_publication() {
     let cache = UnitSaveCache::default();

@@ -245,7 +245,7 @@ where
 
     let stages = unit_complex::submitted_stage_advances(&edits);
 
-    let created_unit_ids = nucl
+    let (created_unit_ids, saved) = nucl
         .coord(async move |context| {
             //
             let chapter_scope =
@@ -281,7 +281,7 @@ where
             }
 
             if let Some(created_unit_ids) = retained_save.created_unit_ids() {
-                return accept(created_unit_ids);
+                return accept((created_unit_ids, false));
             }
 
             let orders = ListUnitOrders { page_id: &page_id }
@@ -338,11 +338,13 @@ where
             )
             .await?;
 
-            accept(created_unit_ids)
+            accept((created_unit_ids, true))
         })
         .await?;
 
-    save_guard.record(created_unit_ids.clone());
+    if saved {
+        save_guard.record(created_unit_ids.clone());
+    }
 
     accept(SavePageUnitEditsVal::from(created_unit_ids.as_ref()))
 }

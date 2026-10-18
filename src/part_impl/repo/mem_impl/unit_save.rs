@@ -92,6 +92,7 @@ impl UnitSaveCache {
         Self {
             tokens: SegmentedCache::builder(16)
                 .max_capacity(max_capacity)
+                .time_to_live(config.unit_save_ttl)
                 .weigher(move |_, ids: &Arc<[UnitSaveCreatedUnitId]>| {
                     entry_weight(ids, min_entry_weight)
                 })

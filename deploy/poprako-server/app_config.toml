@@ -49,6 +49,8 @@ retry_interval_secs = 5
 unit_save_limit_mib = 256
 # Retained Unit-save token budget, enforced through entry weights. Default: 500000; must be positive.
 unit_save_token_budget = 500000
+# Maximum Unit-save token age in seconds; retries do not renew it. Default: 2592000 (30 days); range: 1..31536000000.
+unit_save_ttl_secs = 2592000
 # Online-user lease after each refresh, in seconds. Default: 600; must be positive.
 online_user_ttl_secs = 600
 
