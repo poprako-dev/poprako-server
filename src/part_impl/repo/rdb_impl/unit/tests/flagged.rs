@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::ListPageUnitFlaggedStats;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
@@ -99,7 +101,11 @@ pub async fn verify_flags(shared: RdbCore) {
     let fixture =
         test_shared::seed_page(&shared, "rdb-test-unit-domain-flagged-").await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared);
 

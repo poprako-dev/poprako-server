@@ -8,8 +8,6 @@ pub mod join;
 #[cfg(test)]
 mod tests;
 
-use std::time::Duration;
-
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
@@ -19,6 +17,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::chapter as chapter_complex;
 use crate::complex::chapter::perm as chapter_perm_complex;
+use crate::config::invitation::InvitationConfig;
 use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, ListAssignmentInvitationInfosInstr,
 };
@@ -110,9 +109,9 @@ where
 }
 
 /// Creates a pending assignment invitation.
-#[instrument(level = "info", skip(nucl, repo, prom, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(nucl, repo, prom, invitation_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+    (nucl, repo, prom, invitation_config): (&N, &R, &P, &InvitationConfig),
     token: UserToken,
     instr: CreateAssignmentInvitationInstr,
 ) -> BaseRest<CreateAssignmentInvitationVal>
@@ -209,7 +208,7 @@ where
             let purge_task = Task {
                 id: &purge_task_id,
                 payload: &purge_payload,
-                delay: Some(EXPIRY_DELAY),
+                delay: Some(invitation_config.assignment_ttl),
             };
 
             Defer::new(purge_task).step_on(prom, context).await?;
@@ -276,9 +275,6 @@ where
 
     accept(())
 }
-
-// Assignment invitation code expiration window.
-const EXPIRY_DELAY: Duration = Duration::from_hours(72);
 
 // Verifies that the caller administers the chapter's owning team.
 #[instrument(level = "info", skip(repo))]

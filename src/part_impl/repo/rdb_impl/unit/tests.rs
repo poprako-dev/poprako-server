@@ -15,6 +15,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
@@ -482,7 +483,12 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let config = crate::config::repo::RepoConfig {
+        unit_order_query_batch_size: std::num::NonZeroU32::new(2).unwrap(),
+        ..Default::default()
+    };
+
+    let repo = HybRepo::new(shared.clone(), CacheConfig::default(), config);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

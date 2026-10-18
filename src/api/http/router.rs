@@ -22,7 +22,7 @@ use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::cache::disable_cache;
 use crate::api::http::middleware::cors::cors;
 use crate::api::http::middleware::metric::record_response_metric;
-use crate::api::http::middleware::rate_limit::rate_limit;
+use crate::api::http::middleware::rate_limit;
 use crate::api::http::middleware::trace::{
     propagate_request_id, set_request_id, trace_request,
 };
@@ -35,6 +35,11 @@ use crate::api::http::state::AppHarn;
 /// Builds the application router from the production harness.
 pub fn new(harn: AppHarn) -> Router<AppHarn> {
     //
+    let (limiter, cors_layer) = (
+        rate_limit::new(harn.config().http.rate_limit),
+        cors(harn.config().http.cors_origin.header()),
+    );
+
     let v1_protected = v1::v1_user_router()
         .merge(v1::v1_team_router())
         .merge(v1::v1_member_router())
@@ -80,12 +85,12 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     router
         .fallback(not_found)
         .method_not_allowed_fallback(method_not_allowed)
-        .layer(from_fn(rate_limit))
+        .layer(from_fn_with_state(limiter, rate_limit::rate_limit))
         .layer(propagate_request_id())
         .layer(trace_request())
         .layer(set_request_id())
         .layer(from_fn(record_response_metric))
-        .layer(cors())
+        .layer(cors_layer)
         .layer(CompressionLayer::new())
         .layer(map_response(disable_cache))
 }

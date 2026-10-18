@@ -42,6 +42,19 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 ## Work and validation
 
+- Every `AppConfig` configuration type and field must have a complete default.
+  The optional TOML file overrides those defaults: missing files, sections,
+  and fields use defaults; explicit invalid values and other read errors fail
+  startup. Define defaults in the owning config type and inject runtime policy
+  from the composition root. Environment-variable configuration is separate.
+- Document every TOML configuration item with an English comment explaining
+  its purpose, unit where applicable, default, and any deliberate override.
+- Include units consistently in numeric configuration keys: `_mib` for MiB,
+  `_secs` for seconds, and `_per_second` for rates. Rust `Duration` fields
+  carry their unit in the type and use explicitly unit-bearing TOML names.
+- Keep configuration names canonical. Do not add legacy aliases; reject
+  unknown fields so obsolete keys cannot silently fall back to defaults.
+
 - For non-trivial work: plan → implement → review with targeted validation.
   Read nearby active code and business references before choosing contracts.
 - Load the relevant skills below before editing their areas. Keep changes

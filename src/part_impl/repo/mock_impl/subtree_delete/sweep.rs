@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 
+use crate::config::repo::RepoConfig;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::part_impl::repo::mock_impl::MockState;
 use crate::part_impl::repo::mock_impl::subtree_delete::page_ids;
@@ -235,7 +236,7 @@ pub fn sweep_target(state: &mut MockState, target: &SubtreeDeleteSweepTarget) {
 // Restrict comic claims to one bounded batch.
 fn claim_comics(mut ids: Vec<String>) -> Option<SubtreeDeleteSweepTarget> {
     //
-    ids.truncate(64);
+    ids.truncate(RepoConfig::default().subtree_sweep_batch_size.get() as usize);
 
     //
     (!ids.is_empty()).then_some(SubtreeDeleteSweepTarget::Comics { ids })
@@ -244,7 +245,7 @@ fn claim_comics(mut ids: Vec<String>) -> Option<SubtreeDeleteSweepTarget> {
 // Restrict workset claims to one bounded batch.
 fn claim_worksets(mut ids: Vec<String>) -> Option<SubtreeDeleteSweepTarget> {
     //
-    ids.truncate(64);
+    ids.truncate(RepoConfig::default().subtree_sweep_batch_size.get() as usize);
 
     //
     (!ids.is_empty()).then_some(SubtreeDeleteSweepTarget::Worksets { ids })

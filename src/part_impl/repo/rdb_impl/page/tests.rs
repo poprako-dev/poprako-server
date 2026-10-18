@@ -12,6 +12,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::AppConfig;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
@@ -407,7 +408,9 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let config = AppConfig::default();
+
+    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -461,7 +464,9 @@ pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let fixture = test_shared::seed_page(&shared, RAW_PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let config = AppConfig::default();
+
+    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

@@ -6,7 +6,17 @@ use diesel::expression::AsExpression;
 use diesel::sql_types::Text;
 use tokio::sync::oneshot;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
+
+// Use a non-default batch size to exercise configured claims and locking.
+fn repo_config() -> RepoConfig {
+    RepoConfig {
+        subtree_sweep_batch_size: std::num::NonZeroU32::new(3).unwrap(),
+        ..RepoConfig::default()
+    }
+}
 
 pub async fn run(shared: RdbCore) {
     removes_a_complete_workset_subtree(&shared).await;
@@ -21,7 +31,8 @@ async fn claim(
     shared: &RdbCore,
     level: SubtreeSweepLevel,
 ) -> Option<SubtreeDeleteSweepTarget> {
-    let repo = HybRepo::new(shared.clone());
+    let repo =
+        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -35,7 +46,8 @@ async fn claim_and_sweep(
     shared: &RdbCore,
     level: SubtreeSweepLevel,
 ) -> Option<SubtreeDeleteSweepTarget> {
-    let repo = HybRepo::new(shared.clone());
+    let repo =
+        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -144,7 +156,8 @@ async fn explicit_comic_claim_does_not_short_circuit_on_chapter(
 
     mark_workset(shared, &workset_id).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo =
+        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -196,7 +209,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
         shared,
         PREFIX,
         Scale {
-            comics: 65,
+            comics: 4,
             chapters_per_comic: 0,
             pages_per_chapter: 0,
             units_per_page: 0,
@@ -210,7 +223,11 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     let (release_send, release_recv) = oneshot::channel();
     let claim_core = shared.clone();
     let claim_task = tokio::spawn(async move {
-        let repo = HybRepo::new(claim_core.clone());
+        let repo = HybRepo::new(
+            claim_core.clone(),
+            CacheConfig::default(),
+            repo_config(),
+        );
         let nucl = RdbNucl::<Serial>::new(claim_core);
 
         nucl.coord(async move |context| {
@@ -237,11 +254,11 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
         panic!("comic level returned a non-comic claim");
     };
 
-    assert_eq!(locked_ids.len(), 64);
+    assert_eq!(locked_ids.len(), 3);
     assert_eq!(
         concurrent_target,
         Some(SubtreeDeleteSweepTarget::Comics {
-            ids: vec![format!("{PREFIX}comic-0064")],
+            ids: vec![format!("{PREFIX}comic-0003")],
         })
     );
 
@@ -256,7 +273,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
         panic!("comic level returned a non-comic claim");
     };
 
-    let expected_ids = (0..64)
+    let expected_ids = (0..3)
         .map(|index| format!("{PREFIX}comic-{index:04}"))
         .collect::<Vec<_>>();
 
@@ -265,7 +282,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     assert_eq!(
         claim_and_sweep(shared, SubtreeSweepLevel::Comic).await,
         Some(SubtreeDeleteSweepTarget::Comics {
-            ids: vec![format!("{PREFIX}comic-0064")],
+            ids: vec![format!("{PREFIX}comic-0003")],
         })
     );
     assert_eq!(claim(shared, SubtreeSweepLevel::Comic).await, None);
@@ -291,7 +308,7 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
     test_shared::reset(shared, PREFIX).await;
 
     let fixture = test_shared::seed_workset(shared, PREFIX).await;
-    let entries = (1..=65)
+    let entries = (1..=4)
         .map(|index| WorksetEntry {
             id: format!("{PREFIX}workset-{index:04}"),
             team_id: fixture.team_entry.id.clone(),
@@ -349,7 +366,7 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
         panic!("workset level returned a non-workset claim");
     };
 
-    assert_eq!(ids.len(), 64);
+    assert_eq!(ids.len(), 3);
     assert!(
         ids.windows(2)
             .all(|pair| (*pair.first().unwrap()) < (*pair.get(1).unwrap()))
@@ -358,7 +375,7 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
     assert_eq!(
         claim_and_sweep(shared, SubtreeSweepLevel::Workset).await,
         Some(SubtreeDeleteSweepTarget::Worksets {
-            ids: vec![format!("{PREFIX}workset-0065")],
+            ids: vec![format!("{PREFIX}workset-0004")],
         })
     );
     assert_eq!(claim(shared, SubtreeSweepLevel::Workset).await, None);
@@ -455,7 +472,8 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
 
     mark_workset(shared, &workset_id).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo =
+        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {

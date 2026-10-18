@@ -48,6 +48,41 @@ cargo run -p poprako-server --bin poprako-server
 The API is served under `/api/v1` and listens on the address configured in
 `app_config.toml`.
 
+Application configuration is loaded once at startup. Every `AppConfig` field
+has a default: a missing file, empty file, missing section, or omitted field
+uses that default. Explicit values override defaults; invalid values, malformed
+TOML, and read failures other than a missing file prevent startup. Restart the
+server after changing configuration. Existing environment variables remain
+required where applicable and are loaded independently.
+
+Defaults are `127.0.0.1:8888`, CORS origin `https://poprako.com`, and one shared
+HTTP quota of 20 requests/second with a burst of 80 per application instance.
+`http.cors_origin` is a single canonical HTTP(S) origin without a trailing slash,
+credentials, path, query, or fragment. Allowed methods and headers stay fixed.
+Image limits in MiB are 1 for either avatar, 2 for comic covers, 25 for page
+images, and 512 for chapter artwork. The local file overrides page images to
+30 MiB; the deployment file overrides the listener to `0.0.0.0`.
+Image and artwork limit keys consistently use the explicit `_mib` suffix.
+Unknown configuration keys, including obsolete names, are rejected.
+
+`effect.queue_capacity` defaults to 1024 events. `sched.shutdown_grace_secs`
+defaults to 30 seconds and permits zero for immediate cancellation of pending
+workers. `subtree_delete` defaults to concurrency 2, `timeout_secs = 300`,
+`idle_interval_secs = 5`, and `retry_interval_secs = 5`. These task durations,
+queue capacity, concurrency, and rate-limit values must be positive and fit
+their runtime representation. See the checked-in TOML for all configuration
+keys. Defaults are maintained in the corresponding Rust configuration types.
+
+`cache` defaults to a 256 MiB estimated Unit-save budget, 500000 retained
+save tokens, and `online_user_ttl_secs = 600`. The token budget is translated
+into a minimum cache-entry weight; it is not a separate token store. `repo`
+defaults to `subtree_sweep_batch_size = 64` eligible Comics or Worksets and
+`unit_order_query_batch_size = 512` Unit links, with one derived sentinel row.
+`invitation.member_ttl_secs = 432000` and `assignment_ttl_secs = 259200`
+control cleanup delays for newly created pending invitations. Changing them
+does not reschedule existing tasks; cleanup may run later according to worker
+availability. All these budgets, batch sizes, and durations must be positive.
+
 ## Common commands
 
 ```sh

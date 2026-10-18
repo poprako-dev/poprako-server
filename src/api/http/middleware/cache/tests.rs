@@ -12,6 +12,7 @@ use tower::ServiceExt as _;
 
 use super::*;
 use crate::api::http::middleware::cors::cors;
+use crate::config::http::CorsOrigin;
 
 #[tokio::test]
 async fn cache_policy_overrides_existing_headers_and_preserves_response() {
@@ -64,7 +65,7 @@ async fn cache_policy_covers_routing_rejections_and_cors_preflight() {
     ] {
         let router = Router::new()
             .route("/known", get(|| async { StatusCode::OK }))
-            .layer(cors())
+            .layer(cors(CorsOrigin::default().header()))
             .layer(map_response(disable_cache));
 
         let request = Request::builder()

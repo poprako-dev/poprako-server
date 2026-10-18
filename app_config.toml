@@ -1,13 +1,67 @@
 [http]
+# Listener address. Default: 127.0.0.1 (loopback only).
 host = "127.0.0.1"
+# Listener TCP port. Default: 8888.
 port = 8888
+# Allowed browser origin without a trailing slash. Default: https://poprako.com.
+cors_origin = "https://poprako.com"
+
+[http.rate_limit]
+# Sustained requests per second shared by all routes. Default: 20; must be positive.
+requests_per_second = 20
+# Maximum requests accepted in one burst. Default: 80; must be positive.
+burst = 80
 
 [image]
-user_avatar_limit = 1
-team_avatar_limit = 1
-comic_cover_limit = 2
-page_image_limit = 30
+# Maximum user-avatar upload size in MiB. Default: 1; must be positive.
+user_avatar_limit_mib = 1
+# Maximum team-avatar upload size in MiB. Default: 1; must be positive.
+team_avatar_limit_mib = 1
+# Maximum comic-cover upload size in MiB. Default: 2; must be positive.
+comic_cover_limit_mib = 2
+# Maximum page-image upload size in MiB. Default: 25; local override: 30.
+page_image_limit_mib = 30
 
 [artwork]
-# Maximum chapter artwork upload size in MiB.
-chapter_artwork_limit = 512
+# Maximum chapter-artwork upload size in MiB. Default: 512; must be positive.
+chapter_artwork_limit_mib = 512
+
+[effect]
+# Maximum queued best-effort events. Default: 1024; must be positive.
+queue_capacity = 1024
+
+[sched]
+# Shared shutdown grace in seconds. Default: 30; zero aborts pending work immediately.
+shutdown_grace_secs = 30
+
+[subtree_delete]
+# Independent hierarchy-cleanup workers. Default: 2; must be positive.
+concurrency = 2
+# Maximum cleanup attempt duration in seconds. Default: 300; must be positive.
+timeout_secs = 300
+# Delay after an idle cleanup attempt in seconds. Default: 5; must be positive.
+idle_interval_secs = 5
+# Delay after a failed attempt or worker exit in seconds. Default: 5; must be positive.
+retry_interval_secs = 5
+
+[cache]
+# Estimated completed Unit-save cache budget in MiB. Default: 256; must be positive.
+unit_save_limit_mib = 256
+# Retained Unit-save token budget, enforced through entry weights. Default: 500000; must be positive.
+unit_save_token_budget = 500000
+# Maximum Unit-save token age in seconds; retries do not renew it. Default: 2592000 (30 days); range: 1..31536000000.
+unit_save_ttl_secs = 2592000
+# Online-user lease after each refresh, in seconds. Default: 600; must be positive.
+online_user_ttl_secs = 600
+
+[repo]
+# Maximum eligible Comics or Worksets claimed per sweep. Default: 64; must be positive.
+subtree_sweep_batch_size = 64
+# Unit links per query, excluding the derived sentinel row. Default: 512; must be positive.
+unit_order_query_batch_size = 512
+
+[invitation]
+# Pending member invitation cleanup delay in seconds. Default: 432000 (120 hours); must be positive.
+member_ttl_secs = 432000
+# Pending assignment invitation cleanup delay in seconds. Default: 259200 (72 hours); must be positive.
+assignment_ttl_secs = 259200

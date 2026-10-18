@@ -130,7 +130,13 @@ where
         context: &mut RdbContext<L>,
         oper: &ListUnitOrders<'_>,
     ) -> BaseRest<Vec<UnitOrder>> {
-        list_orders(context.conn(), oper.page_id).await
+        //
+        list_orders(
+            context.conn(),
+            oper.page_id,
+            self.config.unit_order_query_batch_size,
+        )
+        .await
     }
 }
 

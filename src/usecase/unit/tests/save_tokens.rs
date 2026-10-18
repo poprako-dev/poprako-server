@@ -2,7 +2,9 @@
 // save_edits(save_tokens)(negative): invalid tokens and unauthorized replays are rejected.
 // save_edits(save_tokens)(negative): rollback does not retain a successful token.
 use super::*;
+use crate::config::cache::CacheConfig;
 use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
+use std::time::{Duration, Instant};
 
 fn batch(save_id: &str, text: &str) -> SavePageUnitEditsInstr {
     let mut instr = save_instr(vec![create("local-save", None, Some(text))]);
@@ -10,6 +12,62 @@ fn batch(save_id: &str, text: &str) -> SavePageUnitEditsInstr {
     instr.save_id = save_id.into();
 
     instr
+}
+
+// save_edits(save_tokens)(positive): retries do not renew retention and expired tokens allow execution.
+#[tokio::test]
+async fn replay_does_not_extend_token_lifetime() {
+    let mut mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    let config = CacheConfig {
+        unit_save_ttl: Duration::from_secs(2),
+        ..CacheConfig::default()
+    };
+
+    mock.unit_saves = UnitSaveCache::new(config);
+
+    let save_id = uuid::Uuid::new_v4().to_string();
+
+    let original = save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        batch(&save_id, "saved"),
+    )
+    .await
+    .unwrap();
+
+    let recorded_at = Instant::now();
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    let replay = save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        batch(&save_id, "saved"),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(replay, original);
+
+    assert_eq!(mock.snapshot().units.len(), 1);
+
+    tokio::time::sleep_until(
+        (recorded_at + Duration::from_millis(2200)).into(),
+    )
+    .await;
+
+    let repeated = save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        batch(&save_id, "saved"),
+    )
+    .await
+    .unwrap();
+
+    assert_ne!(repeated, original);
+
+    assert_eq!(mock.snapshot().units.len(), 2);
 }
 
 #[tokio::test]

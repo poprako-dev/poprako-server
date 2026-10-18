@@ -3,6 +3,10 @@
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
+use serde::Deserialize;
+
+use crate::config::duration;
+
 /// Immutable scheduling policy, read once when the scheduler starts.
 #[derive(Clone, Copy, Debug)]
 pub struct SchedTaskConfig {
@@ -33,9 +37,14 @@ impl Default for SchedTaskConfig {
 }
 
 /// Shutdown policy shared by every registered task and worker.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct SchedConfig {
     /// Shared grace period measured from cancellation, not from each join.
+    #[serde(
+        rename = "shutdown_grace_secs",
+        deserialize_with = "duration::deserialize"
+    )]
     pub shutdown_grace: Duration,
 }
 

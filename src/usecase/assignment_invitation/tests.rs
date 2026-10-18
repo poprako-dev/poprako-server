@@ -341,7 +341,7 @@ async fn create_existing_assignment_is_rejected() {
     ));
 
     let err = create(
-        (&mock, &mock, &mock),
+        (&mock, &mock, &mock, &InvitationConfig::default()),
         token("admin-user"),
         create_data("target-qid"),
     )

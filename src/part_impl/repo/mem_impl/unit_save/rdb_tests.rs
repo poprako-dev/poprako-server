@@ -5,6 +5,8 @@
 
 // save_tokens(UnitSaveRepo)(positive): concurrent replays commit one Unit and share a memory token.
 // save_tokens(UnitSaveRepo)(negative): rollback publishes no successful token.
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::data::instr::unit::{
     SavePageUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
 };
@@ -51,7 +53,11 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     let fixture = test_shared::seed_page(&shared, "save-token-").await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 

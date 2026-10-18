@@ -18,24 +18,16 @@ use moka::sync::SegmentedCache;
 use tokio::sync::{Mutex, MutexGuard};
 use uuid::Uuid;
 
+use crate::config::cache::CacheConfig;
 use crate::part::repo::unit_save::{UnitSaveGuard, UnitSaveRepo};
 use crate::part_impl::repo::HybRepo;
 use crate::value::unit_save::UnitSaveCreatedUnitId;
-
-// Weight estimates retained memory, including an allowance for cache metadata.
-const MAX_CACHE_WEIGHT: u64 = 256 * 1024 * 1024;
-
-// Maximum retained save identities under the weighted budget.
-const MAX_TOKENS: u64 = 500_000;
-
-// The minimum charge also limits entry count under the same weighted policy.
-const MIN_ENTRY_WEIGHT: u64 = MAX_CACHE_WEIGHT.div_ceil(MAX_TOKENS);
 
 // Covers UUID, Arc, allocation headers, and amortized Moka metadata.
 const ENTRY_OVERHEAD: usize = 320;
 
 // Charges string capacities, pair storage, and two allocation headers per pair.
-fn entry_weight(ids: &[UnitSaveCreatedUnitId]) -> u32 {
+fn entry_weight(ids: &[UnitSaveCreatedUnitId], min_entry_weight: u64) -> u32 {
     //
     let bytes = ids.iter().fold(ENTRY_OVERHEAD, |total, pair| {
         //
@@ -48,7 +40,7 @@ fn entry_weight(ids: &[UnitSaveCreatedUnitId]) -> u32 {
 
     let bytes = u64::try_from(bytes).unwrap_or(u64::MAX);
 
-    u32::try_from(bytes.max(MIN_ENTRY_WEIGHT)).unwrap_or(u32::MAX)
+    u32::try_from(bytes.max(min_entry_weight)).unwrap_or(u32::MAX)
 }
 
 // Locks are separate from evictable entries and stay bounded under load.
@@ -91,12 +83,18 @@ pub struct UnitSaveCache {
 impl UnitSaveCache {
     /// Builds an empty process-local cache with the requested estimated-byte budget.
     #[must_use]
-    pub fn new(max_capacity: u64) -> Self {
+    pub fn new(config: CacheConfig) -> Self {
+        //
+        let max_capacity = config.unit_save_limit_bytes();
+
+        let min_entry_weight = config.unit_save_min_entry_weight();
+
         Self {
             tokens: SegmentedCache::builder(16)
                 .max_capacity(max_capacity)
-                .weigher(|_, ids: &Arc<[UnitSaveCreatedUnitId]>| {
-                    entry_weight(ids)
+                .time_to_live(config.unit_save_ttl)
+                .weigher(move |_, ids: &Arc<[UnitSaveCreatedUnitId]>| {
+                    entry_weight(ids, min_entry_weight)
                 })
                 .build(),
             locks: Arc::new(from_fn(|_| Mutex::new(()))),
@@ -137,7 +135,7 @@ impl UnitSaveCache {
 impl Default for UnitSaveCache {
     // Use the production estimated-memory budget.
     fn default() -> Self {
-        Self::new(MAX_CACHE_WEIGHT)
+        Self::new(CacheConfig::default())
     }
 }
 

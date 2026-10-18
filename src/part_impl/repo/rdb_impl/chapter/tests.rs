@@ -9,6 +9,8 @@ use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::nucl::ReptRead;
@@ -115,7 +117,11 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

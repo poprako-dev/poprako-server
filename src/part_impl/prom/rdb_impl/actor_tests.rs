@@ -15,6 +15,8 @@ use poprako_prom::general::delivery::ClaimedTask;
 use poprako_prom::general::dispatch_flow::DispatchFlow;
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -502,7 +504,11 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
 
     let mut conn = shared.get().await.unwrap();
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let dept = NormObjDept::new(
         shared.clone(),
@@ -564,7 +570,12 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
         .unwrap()
         .unwrap();
 
-    let task = Box::new(SubtreeDeleteTask::new(nucl, repo, dept));
+    let task = Box::new(SubtreeDeleteTask::new(
+        nucl,
+        repo,
+        dept,
+        crate::SubtreeDeleteConfig::default(),
+    ));
 
     let sched = Sched::new(vec![task], SchedConfig::default()).run_detached();
 

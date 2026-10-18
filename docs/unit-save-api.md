@@ -74,7 +74,11 @@ created Unit identity pairs. No request digest, edit payload, user ID, or page I
 is retained in the cache. Clients must generate a globally unique save ID for
 every new batch and reuse it only when retrying that batch.
 
-The cache has a 256 MiB estimated-memory budget across 16 segments, with no TTL.
+The cache defaults to a 256 MiB estimated-memory budget across 16 segments and
+a 30-day TTL (`cache.unit_save_ttl_secs = 2592000`). The TTL starts when the
+completed save is recorded after commit; successful retries do not renew it.
+Expired tokens are unavailable to lookups even before maintenance reclaims
+their storage. Idle caches may retain expired allocations until later activity.
 Each entry is charged for its mapping array, allocated string capacities, and
 an allowance for cache and allocator overhead. A minimum charge of 537 bytes
 also keeps the retained entry count below 500,000. Batches with many creates
@@ -93,15 +97,18 @@ cache eviction, and all clones of a repository share them.
 
 Tokens are recorded only after a successful transaction; failed or rolled-back
 batches consume no token. Database commit and cache publication are not atomic.
-Restart, eviction, interruption after commit, or routing a retry to another
+Restart, expiration, capacity eviction, interruption after commit, or routing a retry to another
 process can lose deduplication and execute an old batch again. This is
 intentionally best-effort process-local retry protection. Archival is not
 required to bound token count.
 
-The legacy `t_unit_save` migration and table remain for migration-history
-compatibility, but application saves no longer read or write that table. Existing
-database receipts are not loaded into memory; their cleanup is separate from
-deploying this application change.
+The migration baseline no longer includes the legacy `t_unit_save` table or
+its index. Existing database receipts are not loaded into memory. For databases
+that applied those migrations, retain the original migration sources until an
+authorized rollback has completed. Back up and verify restoration before a full
+reset, then apply the current baseline and restore business data without the
+legacy receipts or old Diesel migration records. Applying the current forward
+migrations alone does not remove an existing legacy table.
 
 `last_translator_id` and `last_proofreader_id` are always derived from the
 authenticated token and are not accepted from the client.

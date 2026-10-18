@@ -134,7 +134,7 @@ async fn alloc_avatar_rejects_byte_length_above_team_limit() {
     seed_alloc_scope(&mock);
 
     let image_config = crate::config::image::ImageConfig {
-        team_avatar_limit: 1,
+        team_avatar_limit_mib: 1,
         ..IMAGE_CONFIG
     };
     let mut instr = alloc_instr(1, ImageExt::Png);

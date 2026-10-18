@@ -14,6 +14,8 @@ use time::OffsetDateTime;
 use poprako_rdb_core::RdbCore;
 
 use crate::complex::comic_archive as comic_archive_complex;
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::part::nucl::ReptRead;
@@ -276,7 +278,11 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     let fixture = test_shared::seed_page(&shared, "rdb-test-review-").await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

@@ -9,6 +9,8 @@ use super::*;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
@@ -27,7 +29,11 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let workset_fixture = test_shared::seed_workset(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let workset_infos = repo
         .run(&ListWorksetInfos {

@@ -4,7 +4,6 @@
 mod tests;
 
 use std::future::Future;
-use std::num::NonZeroUsize;
 
 use async_trait::async_trait;
 use tokio_util::sync::CancellationToken;
@@ -12,6 +11,7 @@ use tokio_util::sync::CancellationToken;
 use poprako_obj_dept::ObjDept;
 
 use crate::config::sched::SchedTaskConfig;
+use crate::config::subtree_delete::SubtreeDeleteConfig;
 use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
 use crate::part::obj_dept::{
     ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
@@ -34,6 +34,9 @@ const SWEEP_LEVELS: [SubtreeSweepLevel; 4] = [
 
 /// Creates independent sweep runners using explicitly injected business ports.
 pub struct SubtreeDeleteTask<R, O> {
+    /// Immutable scheduling policy injected at composition time.
+    config: SubtreeDeleteConfig,
+
     /// Transaction coordinator shared through its connection pool.
     nucl: RdbNucl,
     /// Business repository shared by the application.
@@ -45,8 +48,14 @@ pub struct SubtreeDeleteTask<R, O> {
 impl<R, O> SubtreeDeleteTask<R, O> {
     /// Constructs a task without starting background work.
     #[must_use]
-    pub const fn new(nucl: RdbNucl, repo: R, obj_dept: O) -> Self {
+    pub const fn new(
+        nucl: RdbNucl,
+        repo: R,
+        obj_dept: O,
+        config: SubtreeDeleteConfig,
+    ) -> Self {
         Self {
+            config,
             nucl,
             repo,
             obj_dept,
@@ -72,13 +81,9 @@ where
         + Sync
         + 'static,
 {
-    // Retain two concurrent sweep workers with the scheduler's default timing.
+    // Expose the injected policy while retaining the stable task identity.
     fn config(&self) -> SchedTaskConfig {
-        SchedTaskConfig {
-            name: "subtree_delete",
-            concurrency: NonZeroUsize::MIN.saturating_add(1),
-            ..SchedTaskConfig::default()
-        }
+        self.config.task_config()
     }
 
     // Clone ports once per runner rather than once per hierarchy level.

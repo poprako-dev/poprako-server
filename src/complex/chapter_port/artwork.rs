@@ -34,7 +34,7 @@ pub fn ensure_allocation(
     ext: &str,
 ) -> BaseRest<()> {
     //
-    let limit = config.chapter_artwork_limit.checked_mul(1024 * 1024);
+    let limit = config.chapter_artwork_limit_mib.checked_mul(1024 * 1024);
 
     if byte_len == 0
         || limit.is_none_or(|limit| byte_len > limit)

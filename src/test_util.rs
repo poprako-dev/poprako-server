@@ -15,10 +15,10 @@ use crate::result::{BaseError, ExpectedVariant};
 
 /// Image limits matching the default runtime configuration.
 pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
-    user_avatar_limit: 1,
-    team_avatar_limit: 1,
-    comic_cover_limit: 2,
-    page_image_limit: 25,
+    user_avatar_limit_mib: 1,
+    team_avatar_limit_mib: 1,
+    comic_cover_limit_mib: 2,
+    page_image_limit_mib: 25,
 };
 
 /// Asserts that `err` is a [`BaseError::Expected`] whose variant matches `expected`.

@@ -22,6 +22,8 @@ use poprako_obj_dept::oper::{
 use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
 use poprako_obj_dept::rest::ObjDeptRest;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::model::write::page_artwork::{PageArtworkEntry, PageArtworkPatch};
 use crate::part::nucl::ReptRead;
@@ -93,7 +95,11 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let chapter_id = &fixture.chapter_entry.id;
 
-    let repo = HybRepo::new(core.clone());
+    let repo = HybRepo::new(
+        core.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(core.clone());
 

@@ -10,6 +10,8 @@ use super::*;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::repo::oper::announcement::{
@@ -37,7 +39,11 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),

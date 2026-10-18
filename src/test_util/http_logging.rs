@@ -6,16 +6,33 @@
 //! Captures real HTTP responses and correlated logs with the production filter.
 
 use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use axum::Router;
 use axum::body::{Body, to_bytes};
 use axum::http::{Request, StatusCode};
 use tower::ServiceExt as _;
 use tracing::instrument::WithSubscriber as _;
+use tracing::subscriber::NoSubscriber;
+use tracing::{Dispatch, Subscriber};
 
 use crate::api::http::middleware::trace;
 use crate::log::{RequestLogFormat, request_log_filter};
+
+/// Keeps scoped captures independent of the thread that first emits an event.
+pub fn capture_dispatch<S>(subscriber: S) -> Dispatch
+where
+    S: Subscriber + Send + Sync + 'static,
+{
+    // tracing-core's single-dispatch fast path registers new callsites against
+    // the current thread, which may have no subscriber in parallel tests.
+    // Retain a second dispatch so registration considers every live subscriber.
+    static REGISTRATION_ANCHOR: OnceLock<Dispatch> = OnceLock::new();
+
+    REGISTRATION_ANCHOR.get_or_init(|| Dispatch::new(NoSubscriber::default()));
+
+    Dispatch::new(subscriber)
+}
 
 #[derive(Clone, Default)]
 pub struct LogBuffer(Arc<Mutex<Vec<u8>>>);
@@ -70,7 +87,7 @@ pub async fn capture_request(
 
         (status, String::from_utf8(body.to_vec()).unwrap())
     }
-    .with_subscriber(subscriber)
+    .with_subscriber(capture_dispatch(subscriber))
     .await;
 
     let logs = buffer.contents();

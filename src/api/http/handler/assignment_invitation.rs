@@ -75,7 +75,12 @@ pub async fn create(
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl().rept_read(), harn.repo(), harn.prom()),
+        (
+            harn.nucl().rept_read(),
+            harn.repo(),
+            harn.prom(),
+            &harn.config().invitation,
+        ),
         user_token,
         instr,
     )

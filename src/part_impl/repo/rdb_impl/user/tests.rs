@@ -9,6 +9,8 @@ use poprako_orchestra::Run;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::part::repo::oper::user::{
     FindUserInfo, GetUserCredential, GetUserInfo,
 };
@@ -26,7 +28,11 @@ pub async fn user_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let user_info = repo
         .run(&GetUserInfo {

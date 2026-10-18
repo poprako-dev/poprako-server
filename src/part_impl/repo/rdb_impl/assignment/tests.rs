@@ -11,6 +11,7 @@ use poprako_orchestra::Nucl as _;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::AppConfig;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::nucl::ReptRead;
@@ -74,7 +75,9 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let config = AppConfig::default();
+
+    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -82,15 +85,13 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     test_shared::create_user(&shared, &assignee_form).await;
 
-    let translator_role = RoleMask::from(RoleField::TRANSLATOR);
-
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
     let assignment_entry = AssignmentEntry {
         id: format!("{}assignment", PREFIX),
         chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
         user_id: assignee_form.id.clone().into(),
-        roles: translator_role,
+        roles: RoleMask::from(RoleField::TRANSLATOR),
     };
 
     nucl.coord(async |context| {
@@ -129,9 +130,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         assignment_infos
             .as_slice()
             .first()
-            .unwrap()
-            .user
-            .as_ref()
+            .and_then(|info| info.user.as_ref())
             .unwrap()
             .id,
         assignee_form.id

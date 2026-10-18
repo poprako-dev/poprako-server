@@ -16,10 +16,15 @@ async fn create_reviewer_creates_pending_invitation() {
         credential("target-user"),
     );
 
+    let config = InvitationConfig {
+        assignment_ttl: std::time::Duration::from_secs(37),
+        ..InvitationConfig::default()
+    };
+
     let before = now();
 
     let val = create(
-        (&mock, &mock, &mock),
+        (&mock, &mock, &mock, &config),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -67,11 +72,11 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            >= before + EXPIRY_DELAY
+            >= before + config.assignment_ttl
     );
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            <= now() + EXPIRY_DELAY
+            <= now() + config.assignment_ttl
     );
 }

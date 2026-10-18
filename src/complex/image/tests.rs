@@ -10,10 +10,10 @@ use crate::result::BaseError;
 use crate::value::image::ImageKind;
 
 const IMAGE_CONFIG: ImageConfig = ImageConfig {
-    user_avatar_limit: 1,
-    team_avatar_limit: 2,
-    comic_cover_limit: 3,
-    page_image_limit: 4,
+    user_avatar_limit_mib: 1,
+    team_avatar_limit_mib: 2,
+    comic_cover_limit_mib: 3,
+    page_image_limit_mib: 4,
 };
 
 #[test]

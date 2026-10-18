@@ -11,6 +11,8 @@ use poprako_orchestra::{Nucl as _, Run, Step};
 use poprako_rdb_core::RdbCore;
 use poprako_util::i18n::trl;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::team::TeamListSpec;
 use crate::model::write::team::TeamRepl;
 use crate::part::nucl::ReptRead;
@@ -49,7 +51,11 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let team_info_list_spec = TeamListSpec {
         user_id: None,
@@ -104,7 +110,11 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
     let chapter_fixture =
         test_shared::seed_chapter(&shared, RESOLVE_PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let comic_team_id = repo
         .run(&ResolveTeamId::Comic {

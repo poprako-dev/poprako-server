@@ -9,6 +9,7 @@ use time::OffsetDateTime;
 
 use super::*;
 
+use crate::config::cache::CacheConfig;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 
 // Construct an empty patch that may restore a hidden Unit.
@@ -45,7 +46,12 @@ async fn sparse_unit_writes_use_testcontainer() {
 
     let fixture = test_shared::seed_page(&shared, "sparse-unit-").await;
 
-    let repo = HybRepo::new(shared.clone());
+    let config = crate::config::repo::RepoConfig {
+        unit_order_query_batch_size: std::num::NonZeroU32::MIN,
+        ..Default::default()
+    };
+
+    let repo = HybRepo::new(shared.clone(), CacheConfig::default(), config);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -116,7 +122,14 @@ async fn sparse_unit_writes_use_testcontainer() {
 
         assert!(unit.is_flagged);
 
+        queries.lock().unwrap().clear();
+
         let orders = repo.step(context, &ListUnitOrders { page_id }).await?;
+
+        // Two links require two queries with a configured batch size of one.
+        assert_eq!(orders.len(), 2);
+
+        assert_eq!(queries.lock().unwrap().len(), 2);
 
         diesel::update(t_unit::table.filter(t_unit::f_page_id.eq(page_id)))
             .set(t_unit::f_updated_at.eq(OffsetDateTime::UNIX_EPOCH))

@@ -9,6 +9,8 @@ use super::*;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
@@ -31,7 +33,11 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let comment_entry = CommentEntry {
         id: format!("{}comment", PREFIX),

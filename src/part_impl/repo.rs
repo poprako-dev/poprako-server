@@ -10,6 +10,8 @@ pub mod rdb_impl;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::part_impl::repo::mem_impl::online_user::OnlineUserCache;
 use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 
@@ -18,6 +20,9 @@ use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 pub struct HybRepo {
     /// Shared database connection pool.
     rdb_core: RdbCore,
+    /// Query and cleanup batch sizes shared by repository clones.
+    config: RepoConfig,
+
     /// Team-partitioned online-user lease deadlines.
     online_users: OnlineUserCache,
     /// Process-local save coordination and bounded successful tokens.
@@ -27,11 +32,12 @@ pub struct HybRepo {
 impl HybRepo {
     /// Builds a new hybrid repository from an [`RdbCore`] connection pool.
     #[must_use]
-    pub fn new(core: RdbCore) -> Self {
+    pub fn new(core: RdbCore, cache: CacheConfig, config: RepoConfig) -> Self {
         Self {
             rdb_core: core,
-            online_users: OnlineUserCache::default(),
-            unit_saves: UnitSaveCache::default(),
+            config,
+            online_users: OnlineUserCache::new(cache.online_user_ttl),
+            unit_saves: UnitSaveCache::new(cache),
         }
     }
 }

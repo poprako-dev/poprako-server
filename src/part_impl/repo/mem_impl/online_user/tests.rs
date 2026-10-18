@@ -4,10 +4,11 @@
 )]
 
 use super::*;
+use crate::config::repo::RepoConfig;
 
 #[test]
 fn first_mark_adds_user_and_list_sorts_ids() {
-    let online_users = OnlineUserCache::default();
+    let online_users = OnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -23,7 +24,7 @@ fn first_mark_adds_user_and_list_sorts_ids() {
 
 #[test]
 fn repeated_mark_renews_existing_lease() {
-    let online_users = OnlineUserCache::default();
+    let online_users = OnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -40,7 +41,7 @@ fn repeated_mark_renews_existing_lease() {
     assert_eq!(
         online_users.list_online_user_ids_at(
             "online-mem-renew-team",
-            now + ONLINE_USER_TTL,
+            now + Duration::from_secs(90),
         ),
         ["user-1"],
     );
@@ -49,7 +50,7 @@ fn repeated_mark_renews_existing_lease() {
         online_users
             .list_online_user_ids_at(
                 "online-mem-renew-team",
-                renewed_at + ONLINE_USER_TTL,
+                renewed_at + Duration::from_secs(90),
             )
             .is_empty(),
     );
@@ -57,7 +58,7 @@ fn repeated_mark_renews_existing_lease() {
 
 #[test]
 fn list_removes_expired_user_and_empty_team() {
-    let online_users = OnlineUserCache::default();
+    let online_users = OnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -67,7 +68,7 @@ fn list_removes_expired_user_and_empty_team() {
         online_users
             .list_online_user_ids_at(
                 "online-mem-expire-team",
-                now + ONLINE_USER_TTL,
+                now + Duration::from_secs(90),
             )
             .is_empty(),
     );
@@ -81,7 +82,7 @@ fn list_removes_expired_user_and_empty_team() {
 
 #[test]
 fn online_users_remain_isolated_by_team() {
-    let online_users = OnlineUserCache::default();
+    let online_users = OnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -108,7 +109,8 @@ async fn cloned_repo_shares_online_users() {
     )
     .unwrap();
 
-    let repo = HybRepo::new(core);
+    let repo =
+        HybRepo::new(core, CacheConfig::default(), RepoConfig::default());
 
     let worker_repo = repo.clone();
 

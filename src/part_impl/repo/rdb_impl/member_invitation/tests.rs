@@ -11,6 +11,8 @@ use poprako_orchestra::Nucl as _;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::nucl::ReptRead;
@@ -39,7 +41,11 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

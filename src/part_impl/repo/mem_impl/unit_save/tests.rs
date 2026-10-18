@@ -7,11 +7,11 @@
 // save_cache(UnitSaveCache)(negative): cancellation releases exclusion without a token.
 // save_cache(UnitSaveCache)(negative): eviction never removes in-flight exclusion.
 
+use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 
-use super::{
-    MAX_CACHE_WEIGHT, MAX_TOKENS, MIN_ENTRY_WEIGHT, UnitSaveCache, entry_weight,
-};
+use super::{UnitSaveCache, entry_weight};
+use crate::config::cache::CacheConfig;
 use crate::part::repo::unit_save::UnitSaveGuard as _;
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 use std::sync::Arc;
@@ -19,6 +19,49 @@ use uuid::Uuid;
 
 fn key(value: u128) -> Uuid {
     Uuid::from_u128(value)
+}
+
+// save_cache(UnitSaveCache)(negative): expiration hides mappings without releasing in-flight exclusion.
+#[tokio::test]
+async fn expired_token_is_unavailable_while_its_guard_remains_held() {
+    let config = CacheConfig {
+        unit_save_ttl: Duration::from_millis(100),
+        ..CacheConfig::default()
+    };
+
+    let cache = UnitSaveCache::new(config);
+
+    let guard = cache.lock_save(key(999)).await;
+
+    guard.record(Arc::from([]));
+
+    assert!(guard.created_unit_ids().is_some());
+
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    // Lookup must reject expiration before explicit maintenance is requested.
+    assert!(guard.created_unit_ids().is_none());
+
+    assert!(
+        tokio::time::timeout(
+            Duration::from_millis(20),
+            cache.lock_save(key(999)),
+        )
+        .await
+        .is_err()
+    );
+
+    assert_eq!(cache.token_count(), 0);
+
+    drop(guard);
+
+    let next = cache.lock_save(key(999)).await;
+
+    next.record(Arc::from([]));
+
+    assert!(next.created_unit_ids().is_some());
+
+    drop(next);
 }
 
 #[tokio::test]
@@ -87,7 +130,13 @@ async fn cancelled_owner_releases_key_without_token() {
 
 #[tokio::test]
 async fn capacity_eviction_preserves_lock_and_allows_a_later_miss() {
-    let cache = UnitSaveCache::new(16 * MIN_ENTRY_WEIGHT);
+    let config = CacheConfig {
+        unit_save_limit_mib: NonZeroU32::MIN,
+        unit_save_token_budget: NonZeroU64::new(16).unwrap(),
+        ..CacheConfig::default()
+    };
+
+    let cache = UnitSaveCache::new(config);
 
     let guard = cache.lock_save(key(999)).await;
 
@@ -140,11 +189,17 @@ async fn distinct_tokens_and_restarted_cache_are_independent() {
 // Large mappings consume more retention capacity than token-only saves.
 #[tokio::test]
 async fn weighted_budget_evicts_large_mappings() {
-    let cache = UnitSaveCache::new(160 * MIN_ENTRY_WEIGHT);
+    let config = CacheConfig {
+        unit_save_limit_mib: NonZeroU32::MIN,
+        unit_save_token_budget: NonZeroU64::new(160).unwrap(),
+        ..CacheConfig::default()
+    };
+
+    let cache = UnitSaveCache::new(config);
 
     for index in 0..256 {
         let pair = UnitSaveCreatedUnitId {
-            local_id: "l".repeat(2000),
+            local_id: "l".repeat(20_000),
             unit_id: "unit".into(),
         };
 
@@ -153,7 +208,7 @@ async fn weighted_budget_evicts_large_mappings() {
 
     cache.tokens.run_pending_tasks();
 
-    assert!(cache.tokens.weighted_size() <= 160 * MIN_ENTRY_WEIGHT);
+    assert!(cache.tokens.weighted_size() <= config.unit_save_limit_bytes());
 
     assert!((1..160).contains(&cache.token_count()));
 }
@@ -161,9 +216,16 @@ async fn weighted_budget_evicts_large_mappings() {
 // The minimum entry charge bounds count, while string capacity bounds payload weight.
 #[test]
 fn weights_account_for_allocations_and_entry_count() {
-    let empty = entry_weight(&[]);
+    let config = CacheConfig::default();
 
-    assert!(MAX_CACHE_WEIGHT / u64::from(empty) <= MAX_TOKENS);
+    let minimum = config.unit_save_min_entry_weight();
+
+    let empty = entry_weight(&[], minimum);
+
+    assert!(
+        config.unit_save_limit_bytes() / u64::from(empty)
+            <= config.unit_save_token_budget.get()
+    );
 
     let mut local_id = String::with_capacity(4096);
 
@@ -174,5 +236,5 @@ fn weights_account_for_allocations_and_entry_count() {
         unit_id: "unit".into(),
     };
 
-    assert!(entry_weight(&[pair]) >= empty + 4096 - 320);
+    assert!(entry_weight(&[pair], minimum) >= empty + 4096 - 320);
 }

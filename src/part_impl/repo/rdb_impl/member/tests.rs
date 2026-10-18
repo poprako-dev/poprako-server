@@ -20,6 +20,8 @@ use tokio::sync::{Semaphore, mpsc};
 use poprako_rdb_core::RdbCore;
 
 use crate::complex::member as member_complex;
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::model::write::user::UserEntry;
@@ -110,7 +112,11 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -238,7 +244,11 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
         roles: RoleMask::from(RoleField::ADMIN),
     };
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
@@ -348,7 +358,11 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         roles: RoleMask::from(RoleField::ADMIN),
     };
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -450,7 +464,11 @@ async fn remove_admin_role_after_read(
     write_permits: Arc<Semaphore>,
 ) -> Result<(), BaseError> {
     //
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<Serial>::new(shared);
 
