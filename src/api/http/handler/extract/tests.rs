@@ -9,6 +9,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Extension, Json, Path, Query};
 use axum::http::{Request, StatusCode};
+use axum::response::IntoResponse as _;
 use axum::routing::{get, post};
 use axum_extra::extract::Query as MultiQuery;
 use serde::Deserialize;
@@ -38,6 +39,80 @@ fn extractor_router() -> Router {
         .route("/string", post(|_: String| async { StatusCode::OK }))
         .route("/bytes", post(|_: axum::body::Bytes| async { StatusCode::OK }))
         .layer(DefaultBodyLimit::max(128))
+}
+
+#[test]
+fn rejection_logging_survives_first_use_on_an_untraced_thread() {
+    // A fresh process makes the native rejection callsite unregistered.
+    const CHILD_ENV: &str = "POPRAKO_REJECTION_REGISTRATION_CHILD";
+
+    if std::env::var_os(CHILD_ENV).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "api::http::handler::extract::tests::rejection_logging_survives_first_use_on_an_untraced_thread",
+                "--nocapture",
+            ])
+            .env(CHILD_ENV, "1")
+            .output()
+            .unwrap();
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        assert!(
+            output.status.success() && stdout.contains("1 passed; 0 failed"),
+            "{}\n{}",
+            stdout,
+            String::from_utf8_lossy(&output.stderr),
+        );
+
+        return;
+    }
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    runtime.block_on(async {
+        let router = extractor_router().route_layer(axum::middleware::from_fn(
+            |request: Request<Body>, next: axum::middleware::Next| async move {
+                // Another test reaches the rejection while capture is active.
+                std::thread::spawn(|| {
+                    let uri = "/multi?id=private-sentinel".parse().unwrap();
+
+                    let rejection =
+                        MultiQuery::<RepeatedInput>::try_from_uri(&uri)
+                            .err()
+                            .unwrap();
+
+                    assert_eq!(
+                        rejection.into_response().status(),
+                        StatusCode::BAD_REQUEST
+                    );
+                })
+                .join()
+                .unwrap();
+
+                next.run(request).await
+            },
+        ));
+
+        let request = Request::builder()
+            .uri("/multi?id=private-sentinel")
+            .body(Body::empty())
+            .unwrap();
+
+        let (status, _, logs) = capture_request(router, request).await;
+
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+
+        assert!(logs.contains("FailedToDeserializeQueryString"), "{logs}");
+
+        assert_eq!(logs.matches("axum::rejection:").count(), 1, "{logs}");
+
+        assert!(!logs.contains("private-sentinel"), "{logs}");
+    });
 }
 
 #[tokio::test]

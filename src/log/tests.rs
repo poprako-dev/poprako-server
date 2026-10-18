@@ -8,7 +8,7 @@ use poprako_obj_dept::rest::ObjDeptError;
 use poprako_rdb_core::RdbError;
 
 use super::{RequestLogFormat, request_log_filter};
-use crate::test_util::http_logging::LogBuffer;
+use crate::test_util::http_logging::{LogBuffer, capture_dispatch};
 
 struct Unformattable;
 
@@ -34,7 +34,7 @@ fn capture(directives: Option<&str>, operation: impl FnOnce()) -> String {
         .with_writer(move || writer.clone())
         .finish();
 
-    tracing::subscriber::with_default(subscriber, operation);
+    tracing::dispatcher::with_default(&capture_dispatch(subscriber), operation);
 
     buffer.contents()
 }

@@ -98,10 +98,13 @@ process can lose deduplication and execute an old batch again. This is
 intentionally best-effort process-local retry protection. Archival is not
 required to bound token count.
 
-The legacy `t_unit_save` migration and table remain for migration-history
-compatibility, but application saves no longer read or write that table. Existing
-database receipts are not loaded into memory; their cleanup is separate from
-deploying this application change.
+The migration baseline no longer includes the legacy `t_unit_save` table or
+its index. Existing database receipts are not loaded into memory. For databases
+that applied those migrations, retain the original migration sources until an
+authorized rollback has completed. Back up and verify restoration before a full
+reset, then apply the current baseline and restore business data without the
+legacy receipts or old Diesel migration records. Applying the current forward
+migrations alone does not remove an existing legacy table.
 
 `last_translator_id` and `last_proofreader_id` are always derived from the
 authenticated token and are not accepted from the client.

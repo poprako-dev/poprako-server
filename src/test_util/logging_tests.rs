@@ -28,6 +28,7 @@ use crate::data::instr::unit::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
+use crate::test_util::http_logging::capture_dispatch;
 use crate::usecase::chapter_port::import_translation as chapter_port_import_translation_usecase;
 use crate::usecase::unit::transform as unit_transform_usecase;
 use crate::usecase::{
@@ -165,7 +166,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
             .is_err()
         );
     }
-    .with_subscriber(subscriber)
+    .with_subscriber(capture_dispatch(subscriber))
     .await;
 
     let spans = capture.spans.lock().unwrap();

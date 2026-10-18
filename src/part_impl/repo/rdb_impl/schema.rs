@@ -375,17 +375,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_unit_save (f_user_id, f_page_id, f_save_id) {
-        f_user_id -> Text,
-        f_page_id -> Text,
-        f_save_id -> Text,
-        f_payload_digest -> Bytea,
-        f_created_unit_ids -> Jsonb,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     t_user (f_id) {
         f_id -> Text,
         f_nickname -> Text,
@@ -455,8 +444,6 @@ diesel::joinable!(t_termbase -> t_comic (f_comic_id));
 diesel::joinable!(t_termbase -> t_team (f_team_id));
 diesel::joinable!(t_termbase -> t_user (f_creator_id));
 diesel::joinable!(t_unit -> t_page (f_page_id));
-diesel::joinable!(t_unit_save -> t_page (f_page_id));
-diesel::joinable!(t_unit_save -> t_user (f_user_id));
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -486,7 +473,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_term,
     t_termbase,
     t_unit,
-    t_unit_save,
     t_user,
     t_user_avatar,
     t_workset,

@@ -34,7 +34,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_team_avatar;
 use crate::part_impl::repo::rdb_impl::schema::t_term;
 use crate::part_impl::repo::rdb_impl::schema::t_termbase;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
-use crate::part_impl::repo::rdb_impl::schema::t_unit_save;
 use crate::part_impl::repo::rdb_impl::schema::t_user;
 use crate::part_impl::repo::rdb_impl::schema::t_user_avatar;
 use crate::part_impl::repo::rdb_impl::schema::t_workset;
@@ -146,7 +145,6 @@ pub async fn all_application_table_columns_match_generated_schema(
         t_term,
         t_termbase,
         t_unit,
-        t_unit_save,
         t_user,
         t_user_avatar,
         t_workset,
