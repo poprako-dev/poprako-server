@@ -15,6 +15,8 @@ use time::OffsetDateTime;
 use poprako_rdb_core::RdbCore;
 
 use crate::complex::comic_archive as comic_archive_complex;
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::nucl::ReptRead;
@@ -237,7 +239,11 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             .unwrap();
     }
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -343,7 +349,11 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

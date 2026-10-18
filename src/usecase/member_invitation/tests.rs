@@ -147,10 +147,15 @@ async fn create_admin_creates_pending_invitation() {
 
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
+    let config = InvitationConfig {
+        member_ttl: std::time::Duration::from_secs(37),
+        ..InvitationConfig::default()
+    };
+
     let before = test_util::now();
 
     let created = create(
-        (&mock, &mock, &mock),
+        (&mock, &mock, &mock, &config),
         token("admin-user"),
         create_instr("team-1", "qid-2"),
     )
@@ -188,12 +193,12 @@ async fn create_admin_creates_pending_invitation() {
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            >= before + EXPIRY_DELAY
+            >= before + config.member_ttl
     );
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            <= test_util::now() + EXPIRY_DELAY
+            <= test_util::now() + config.member_ttl
     );
 }
 
@@ -210,7 +215,7 @@ async fn create_non_admin_is_rejected() {
     ));
 
     let err = create(
-        (&mock, &mock, &mock),
+        (&mock, &mock, &mock, &InvitationConfig::default()),
         token("normal-user"),
         create_instr("team-1", "qid-2"),
     )

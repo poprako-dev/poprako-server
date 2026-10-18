@@ -1,21 +1,37 @@
 //! Rate limiting middleware using the governor crate.
 //!
-//! Applies a token-bucket rate limiter with burst = 80 and average = 20
-//! requests per second. Returns 429 Too Many Requests when exceeded.
+//! Shares one configured token bucket across an application's routes.
 
-use std::num::NonZeroU32;
-use std::sync::OnceLock;
+#[cfg(test)]
+mod tests;
 
-use axum::extract::Request;
+use std::sync::Arc;
+
+use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 
-/// `from_fn` handler that enforces a global rate limit.
-pub async fn rate_limit(request: Request, next: Next) -> Response {
+use crate::config::http::RateLimitConfig;
+
+/// Constructs one shared limiter for an application instance.
+#[must_use]
+pub fn new(config: RateLimitConfig) -> Arc<DefaultDirectRateLimiter> {
     //
-    if limiter().check().is_err() {
+    Arc::new(RateLimiter::direct(
+        Quota::per_second(config.requests_per_second).allow_burst(config.burst),
+    ))
+}
+
+/// Enforces the application quota using explicitly injected shared state.
+pub async fn rate_limit(
+    State(limiter): State<Arc<DefaultDirectRateLimiter>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    //
+    if limiter.check().is_err() {
         //
         tracing::warn!(
             status = 429,
@@ -27,28 +43,4 @@ pub async fn rate_limit(request: Request, next: Next) -> Response {
     }
 
     next.run(request).await
-}
-
-// Returns the global singleton rate limiter, created lazily at first call.
-fn limiter() -> &'static DefaultDirectRateLimiter {
-    // Lazily initialized rate-limiter singleton.
-    static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
-
-    LIMITER.get_or_init(|| {
-        //
-        RateLimiter::direct(
-            Quota::per_second(nonzero(20)).allow_burst(nonzero(80)),
-        )
-    })
-}
-
-// Converts a configured positive integer into its non-zero representation.
-const fn nonzero(value: u32) -> NonZeroU32 {
-    //
-    match NonZeroU32::new(value) {
-        //
-        Some(value) => value,
-
-        None => NonZeroU32::MIN,
-    }
 }

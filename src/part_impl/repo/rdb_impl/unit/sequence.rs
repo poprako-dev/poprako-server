@@ -29,12 +29,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::value::unit::UnitTextPart;
 
-// Number of Unit links consumed from one keyset query.
-const UNIT_ORDER_QUERY_CHUNK_SIZE: i64 = 512;
-
-// One extra row proves that another Unit-link chunk exists.
-const UNIT_ORDER_QUERY_SENTINEL_LIMIT: i64 = UNIT_ORDER_QUERY_CHUNK_SIZE + 1;
-
 #[declare_sql_function]
 extern "SQL" {
     /// `PostgreSQL` literal substring position.
@@ -247,8 +241,11 @@ pub async fn list_infos_by_ids(
 pub async fn list_orders(
     conn: &mut RdbConn,
     page_id: &str,
+    batch_size: std::num::NonZeroU32,
 ) -> BaseRest<Vec<UnitOrder>> {
     //
+    let sentinel_limit = i64::from(batch_size.get()) + 1;
+
     let mut rows =
         Vec::<(String, Option<String>, Option<OffsetDateTime>)>::new();
 
@@ -262,7 +259,7 @@ pub async fn list_orders(
                     .filter(unit_id.gt(after_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
-                    .limit(UNIT_ORDER_QUERY_SENTINEL_LIMIT)
+                    .limit(sentinel_limit)
                     .load::<(String, Option<String>, Option<OffsetDateTime>)>(
                         conn,
                     )
@@ -272,7 +269,7 @@ pub async fn list_orders(
                     .filter(f_page_id.eq(page_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
-                    .limit(UNIT_ORDER_QUERY_SENTINEL_LIMIT)
+                    .limit(sentinel_limit)
                     .load::<(String, Option<String>, Option<OffsetDateTime>)>(
                         conn,
                     )
@@ -280,10 +277,8 @@ pub async fn list_orders(
             }
             .map_err(diesel)?;
 
-        let has_next_chunk =
-            i64::try_from(chunk.len()).is_ok_and(|chunk_len| {
-                chunk_len == UNIT_ORDER_QUERY_SENTINEL_LIMIT
-            });
+        let has_next_chunk = i64::try_from(chunk.len())
+            .is_ok_and(|chunk_len| chunk_len == sentinel_limit);
 
         if has_next_chunk {
             let _ = chunk.pop();

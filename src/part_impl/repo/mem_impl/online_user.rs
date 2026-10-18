@@ -12,21 +12,30 @@ use dashmap::DashMap;
 use dashmap::mapref::entry::Entry;
 use poprako_orchestra::Run;
 
+use crate::config::cache::CacheConfig;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
 use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
-// One successful mark keeps a user online for ten minutes.
-const ONLINE_USER_TTL: Duration = Duration::from_mins(10);
-
 /// Shared team-partitioned online-user leases.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct OnlineUserCache {
+    /// Lease duration applied by every refresh.
+    ttl: Duration,
     /// User expiration instants grouped by team.
     deadlines: Arc<DashMap<String, HashMap<String, Instant>>>,
 }
 
 impl OnlineUserCache {
+    /// Builds an empty cache with the configured online lease duration.
+    #[must_use]
+    pub fn new(ttl: Duration) -> Self {
+        Self {
+            ttl,
+            deadlines: Arc::default(),
+        }
+    }
+
     /// Refreshes one online-user deadline using an explicit clock instant.
     pub fn mark_user_online_at(
         &self,
@@ -35,7 +44,7 @@ impl OnlineUserCache {
         now: Instant,
     ) {
         //
-        let Some(expires_at) = now.checked_add(ONLINE_USER_TTL) else {
+        let Some(expires_at) = now.checked_add(self.ttl) else {
             return;
         };
 
@@ -78,6 +87,13 @@ impl OnlineUserCache {
         online_user_ids.sort();
 
         online_user_ids
+    }
+}
+
+impl Default for OnlineUserCache {
+    // Use the same lease policy as a repository with default configuration.
+    fn default() -> Self {
+        Self::new(CacheConfig::default().online_user_ttl)
     }
 }
 

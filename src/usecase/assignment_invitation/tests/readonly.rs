@@ -24,7 +24,7 @@ async fn create_rejects_published_chapter() {
     }
 
     let result = create(
-        (&mock, &mock, &mock),
+        (&mock, &mock, &mock, &InvitationConfig::default()),
         token("admin-user"),
         create_data("target-qid"),
     )

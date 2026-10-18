@@ -34,6 +34,42 @@ const BUF_SIZE: NonZeroUsize = match NonZeroUsize::new(8) {
     None => NonZeroUsize::MIN,
 };
 
+// configured_capacity(AsyncEffectDevelop)(positive/negative): overflow drops events at the injected bound.
+#[tokio::test]
+async fn configured_capacity_bounds_the_event_queue() {
+    let config: crate::AppConfig =
+        toml::from_str("[effect]\nqueue_capacity = 2").unwrap();
+
+    let (develop, effect_recv) =
+        AsyncEffectDevelop::new(config.effect.capacity);
+
+    let mut recv = effect_recv.into_recv();
+
+    for index in 0..3 {
+        Event::UserSignedUp {
+            payload: UserSignedUpEvent {
+                team_id: "team".into(),
+                invitor_id: "owner".into(),
+                invitee_qid: index.to_string(),
+            },
+        }
+        .develop_on(&develop)
+        .await;
+    }
+
+    for index in 0..2 {
+        let invitee_qid = match recv.try_recv().unwrap() {
+            Event::UserSignedUp { payload } => Some(payload.invitee_qid),
+
+            _ => None,
+        };
+
+        assert_eq!(invitee_qid, Some(index.to_string()));
+    }
+
+    assert!(recv.try_recv().is_err());
+}
+
 // Internal implementation of `team_info`.
 // Build a stable test team with non-zero avatar metadata.
 fn team_info() -> TeamInfo {

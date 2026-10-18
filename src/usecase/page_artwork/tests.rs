@@ -174,10 +174,10 @@ fn seed(role: RoleField) -> Mock {
 
 fn config() -> ImageConfig {
     ImageConfig {
-        user_avatar_limit: 1,
-        team_avatar_limit: 1,
-        comic_cover_limit: 1,
-        page_image_limit: 1,
+        user_avatar_limit_mib: 1,
+        team_avatar_limit_mib: 1,
+        comic_cover_limit_mib: 1,
+        page_image_limit_mib: 1,
     }
 }
 

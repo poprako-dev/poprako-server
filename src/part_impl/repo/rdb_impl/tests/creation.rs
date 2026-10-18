@@ -18,6 +18,8 @@ use time::OffsetDateTime;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::data::instr::chapter::CreateChapterInstr;
 use crate::data::instr::comic::CreateComicInstr;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
@@ -61,7 +63,11 @@ async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
             .union(RoleMask::from(RoleField::TRANSLATOR)),
     };
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -139,7 +145,11 @@ async fn comic_creation_history_failure_rolls_back_workset() {
 
     let (workset_id, token) = seed_admin_workset(&shared).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -236,7 +246,11 @@ async fn chapter_creation_history_failure_restores_siblings() {
 
     let (workset_id, token) = seed_admin_workset(&shared).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

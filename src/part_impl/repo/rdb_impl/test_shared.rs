@@ -11,6 +11,8 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::comic::ComicEntry;
 use crate::model::write::page::{PageEntry, PageManifestEntry};
@@ -91,7 +93,11 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
 /// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -124,7 +130,11 @@ pub async fn seed_user_and_team(shared: &RdbCore, prefix: &str) -> TeamFixture {
     //
     reset(shared, prefix).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let user_entry = user_entry(prefix, "owner");
 
@@ -149,7 +159,11 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     //
     let team_fixture = seed_user_and_team(shared, prefix).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -183,7 +197,11 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
     //
     reset(shared, prefix).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -240,7 +258,11 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     //
     let comic_fixture = seed_comic(shared, prefix).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -281,7 +303,11 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     //
     let chapter_fixture = seed_chapter(shared, prefix).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

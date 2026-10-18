@@ -10,6 +10,8 @@ use time::{Duration, OffsetDateTime};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
@@ -41,7 +43,11 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

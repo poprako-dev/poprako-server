@@ -9,6 +9,8 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::chapter::{ChapterEntry, ChapterStageRepl};
 use crate::model::write::comic::{ComicEntry, ComicRepl};
@@ -455,7 +457,11 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     verify_related_workset_team(&repo, &comic_fixture).await;
 

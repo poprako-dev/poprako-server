@@ -48,6 +48,8 @@ use time::OffsetDateTime;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::model::write::chapter::ChapterEntry;
@@ -214,7 +216,11 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
 }
 
 async fn mark_and_sweep_workset(shared: &RdbCore, workset_id: &str) {
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     mark_workset(shared, workset_id).await;
@@ -253,7 +259,11 @@ async fn mark_and_sweep_workset(shared: &RdbCore, workset_id: &str) {
 }
 
 async fn mark_workset(shared: &RdbCore, workset_id: &str) {
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {

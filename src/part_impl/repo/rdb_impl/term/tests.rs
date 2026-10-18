@@ -11,6 +11,8 @@ use poprako_orchestra::Nucl as _;
 
 use poprako_rdb_core::RdbCore;
 
+use crate::config::cache::CacheConfig;
+use crate::config::repo::RepoConfig;
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::model::write::termbase::TermbaseEntry;
 use crate::part::nucl::ReptRead;
@@ -357,7 +359,11 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(shared.clone());
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

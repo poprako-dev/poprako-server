@@ -82,7 +82,13 @@ where
         context: &mut RdbContext<L>,
         oper: &ClaimSubtreeSweep,
     ) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-        sweep::claim(context.conn(), oper.level).await
+        //
+        sweep::claim(
+            context.conn(),
+            oper.level,
+            self.config.subtree_sweep_batch_size,
+        )
+        .await
     }
 }
 

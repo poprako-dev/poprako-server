@@ -1,7 +1,6 @@
 #![recursion_limit = "512"]
 
 use std::net::{SocketAddr, ToSocketAddrs};
-use std::num::NonZeroUsize;
 
 use anyhow::Context as _;
 use tokio::task::JoinError;
@@ -15,8 +14,8 @@ use poprako_server::part_impl::prom::rdb_impl::writer::RdbProm;
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, EffectActor, EffectActorDesc, Harn, HybNucl,
     HybRepo, JwtAuth, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore, RdbNucl,
-    RdbObjDeptProm, ReptRead, Sched, SchedConfig, SchedDesc, Serial,
-    SubtreeDeleteTask, dispatch_prom,
+    RdbObjDeptProm, ReptRead, Sched, SchedDesc, Serial, SubtreeDeleteTask,
+    dispatch_prom,
 };
 
 // Report every failed supervisor after all joins have completed.
@@ -118,8 +117,11 @@ async fn main() -> anyhow::Result<()> {
 
     load_dotenv();
 
+    let config = AppConfig::from_default_file()
+        .await
+        .context("failed to load application configuration")?;
+
     let (
-        config,
         rdb_core,
         auth,
         obj_dept_pool,
@@ -127,24 +129,19 @@ async fn main() -> anyhow::Result<()> {
         prom_repo,
         (develop, effect_recv),
     ) = (
-        AppConfig::from_default_file()
-            .await
-            .context("failed to load application configuration")?,
         RdbCore::from_env()?,
         JwtAuth::from_env()?,
         R2ObjDeptPool::from_env()?,
         RdbProm::new(),
         RdbPromRepo::new(),
-        AsyncEffectDevelop::new(
-            NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
-        ),
+        AsyncEffectDevelop::new(config.effect.capacity),
     );
 
     let (http_addr, rept_read_nucl, serial_nucl, repo, obj_dept_prom) = (
         http_addr(&config)?,
         RdbNucl::<ReptRead>::new(rdb_core.clone()),
         RdbNucl::<Serial>::new(rdb_core.clone()),
-        HybRepo::new(rdb_core.clone()),
+        HybRepo::new(rdb_core.clone(), config.cache, config.repo),
         RdbObjDeptProm::new(rdb_core.clone()),
     );
 
@@ -197,8 +194,9 @@ async fn main() -> anyhow::Result<()> {
                 rept_read_nucl,
                 repo.clone(),
                 obj_dept.clone(),
+                config.subtree_delete,
             ))],
-            SchedConfig::default(),
+            config.sched,
         ),
     );
 

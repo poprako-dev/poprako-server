@@ -301,7 +301,12 @@ async fn continue_is_immediate_and_wait_uses_idle_interval() {
         Action::Next(SchedNext::Wait),
     ]);
 
-    task.config.idle_interval = Duration::from_secs(7);
+    let config: crate::AppConfig = toml::from_str(
+        "[subtree_delete]\nconcurrency = 1\nidle_interval_secs = 7",
+    )
+    .unwrap();
+
+    task.config = config.subtree_delete.task_config();
 
     let desc = start(vec![Box::new(task)]);
 
@@ -457,7 +462,10 @@ async fn shutdown_uses_one_deadline_for_all_workers() {
 
     task.config.concurrency = NonZeroUsize::new(3).unwrap();
 
-    let desc = start(vec![Box::new(task)]);
+    let config: crate::AppConfig =
+        toml::from_str("[sched]\nshutdown_grace_secs = 8").unwrap();
+
+    let desc = Sched::new(vec![Box::new(task)], config.sched).run_detached();
 
     settle().await;
 
@@ -469,7 +477,7 @@ async fn shutdown_uses_one_deadline_for_all_workers() {
 
     settle().await;
 
-    advance(Duration::from_secs(29)).await;
+    advance(Duration::from_secs(7)).await;
 
     settle().await;
 
@@ -483,7 +491,7 @@ async fn shutdown_uses_one_deadline_for_all_workers() {
 
     joined.await.unwrap().unwrap();
 
-    assert!(started.elapsed() <= Duration::from_secs(31));
+    assert!(started.elapsed() <= Duration::from_secs(9));
 
     assert_eq!(probe.active.load(Ordering::SeqCst), 0);
 

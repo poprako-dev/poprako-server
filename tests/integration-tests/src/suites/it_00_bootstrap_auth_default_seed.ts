@@ -39,6 +39,28 @@ import type { RunCtx } from "../state/runCtx.ts";
 export const IMPLEMENTED = true as const;
 
 export async function runIt00Module(ctx: RunCtx): Promise<void> {
+    // ---- A4. default CORS policy handles preflight before authentication ----
+
+    for (const [origin, expectedOrigin] of [
+        ["https://poprako.com", "https://poprako.com"],
+        ["https://unrelated.example", null],
+    ] as const) {
+        const response = await fetch(`${testEnv.apiBaseUrl}/api/v1/users/me`, {
+            method: "OPTIONS",
+            headers: {
+                origin,
+                "access-control-request-method": "GET",
+                "access-control-request-headers": "authorization, content-type",
+            },
+        });
+
+        assert.deepEqual(response.status, 200);
+        assert.deepEqual(response.headers.get("access-control-allow-origin"), expectedOrigin);
+        assert.deepEqual(response.headers.get("cache-control"), "no-store");
+
+        await response.arrayBuffer();
+    }
+
     // ---- A3. public and rejected responses must not be stored in HTTP caches ----
 
     const cacheProbe = new ApiClient(testEnv.apiBaseUrl);

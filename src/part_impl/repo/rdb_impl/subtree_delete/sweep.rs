@@ -177,6 +177,7 @@ pub async fn delete_team_rows(
 pub async fn claim(
     conn: &mut RdbConn,
     level: SubtreeSweepLevel,
+    batch_size: std::num::NonZeroU32,
 ) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
     //
     match level {
@@ -184,10 +185,14 @@ pub async fn claim(
         SubtreeSweepLevel::Chapter => claim_chapter(conn).await,
 
         //
-        SubtreeSweepLevel::Comic => claim_comics(conn).await,
+        SubtreeSweepLevel::Comic => {
+            claim_comics(conn, i64::from(batch_size.get())).await
+        }
 
         //
-        SubtreeSweepLevel::Workset => claim_worksets(conn).await,
+        SubtreeSweepLevel::Workset => {
+            claim_worksets(conn, i64::from(batch_size.get())).await
+        }
 
         //
         SubtreeSweepLevel::Team => claim_team(conn).await,
@@ -228,58 +233,6 @@ pub async fn claim_chapter(
         .map_err(diesel)?;
 
     accept(id.map(|id| SubtreeDeleteSweepTarget::Chapter { id }))
-}
-
-/// Claim a bounded batch of eligible Comics.
-pub async fn claim_comics(
-    conn: &mut RdbConn,
-) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-    //
-    let ids = t_comic::table
-        .filter(t_comic::f_deleted_at.is_not_null())
-        .filter(not(exists(
-            t_chapter::table.filter(t_chapter::f_comic_id.eq(t_comic::f_id)),
-        )))
-        .select(t_comic::f_id)
-        .order((t_comic::f_deleted_at.asc(), t_comic::f_id.asc()))
-        .for_update()
-        .skip_locked()
-        .limit(64)
-        .load::<String>(conn)
-        .await
-        .map_err(diesel)?;
-
-    if ids.is_empty() {
-        return accept(None);
-    }
-
-    accept(Some(SubtreeDeleteSweepTarget::Comics { ids }))
-}
-
-/// Claim a bounded batch of eligible Worksets.
-pub async fn claim_worksets(
-    conn: &mut RdbConn,
-) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-    //
-    let ids = t_workset::table
-        .filter(t_workset::f_deleted_at.is_not_null())
-        .filter(not(exists(
-            t_comic::table.filter(t_comic::f_workset_id.eq(t_workset::f_id)),
-        )))
-        .select(t_workset::f_id)
-        .order((t_workset::f_deleted_at.asc(), t_workset::f_id.asc()))
-        .for_update()
-        .skip_locked()
-        .limit(64)
-        .load::<String>(conn)
-        .await
-        .map_err(diesel)?;
-
-    if ids.is_empty() {
-        return accept(None);
-    }
-
-    accept(Some(SubtreeDeleteSweepTarget::Worksets { ids }))
 }
 
 /// Claim one eligible Team.
@@ -352,4 +305,58 @@ pub async fn delete_active_scope(
     };
 
     delete_chapter_rows(conn, chapter_id).await
+}
+
+// Claim a bounded batch of eligible Comics.
+async fn claim_comics(
+    conn: &mut RdbConn,
+    batch_size: i64,
+) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
+    //
+    let ids = t_comic::table
+        .filter(t_comic::f_deleted_at.is_not_null())
+        .filter(not(exists(
+            t_chapter::table.filter(t_chapter::f_comic_id.eq(t_comic::f_id)),
+        )))
+        .select(t_comic::f_id)
+        .order((t_comic::f_deleted_at.asc(), t_comic::f_id.asc()))
+        .for_update()
+        .skip_locked()
+        .limit(batch_size)
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    if ids.is_empty() {
+        return accept(None);
+    }
+
+    accept(Some(SubtreeDeleteSweepTarget::Comics { ids }))
+}
+
+// Claim a bounded batch of eligible Worksets.
+async fn claim_worksets(
+    conn: &mut RdbConn,
+    batch_size: i64,
+) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
+    //
+    let ids = t_workset::table
+        .filter(t_workset::f_deleted_at.is_not_null())
+        .filter(not(exists(
+            t_comic::table.filter(t_comic::f_workset_id.eq(t_workset::f_id)),
+        )))
+        .select(t_workset::f_id)
+        .order((t_workset::f_deleted_at.asc(), t_workset::f_id.asc()))
+        .for_update()
+        .skip_locked()
+        .limit(batch_size)
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    if ids.is_empty() {
+        return accept(None);
+    }
+
+    accept(Some(SubtreeDeleteSweepTarget::Worksets { ids }))
 }

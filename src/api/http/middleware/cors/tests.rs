@@ -4,6 +4,7 @@
 )]
 
 use super::*;
+use crate::config::http::CorsOrigin;
 
 use axum::Router;
 use axum::body::Body;
@@ -24,7 +25,7 @@ async fn cors_handles_web_client_preflight_before_api_authorization() {
             "/api/v1/system-mails",
             get(|| async { StatusCode::NO_CONTENT }),
         )
-        .layer(cors());
+        .layer(cors(CorsOrigin::default().header()));
 
     let request = Request::builder()
         .method(Method::OPTIONS)
@@ -73,4 +74,47 @@ async fn cors_handles_web_client_preflight_before_api_authorization() {
                 has_authorization && has_content_type
             })
     );
+}
+
+// configured_origin(cors)(positive/negative): only the injected origin receives browser access.
+#[tokio::test]
+async fn configured_origin_controls_preflight_access() {
+    let origin = CorsOrigin::try_from("http://localhost:5173".to_owned())
+        .expect("local browser origin should be valid");
+
+    let router = Router::new()
+        .route("/known", get(|| async { StatusCode::OK }))
+        .layer(cors(origin.header()));
+
+    for (request_origin, allowed) in [
+        ("http://localhost:5173", true),
+        ("https://poprako.com", false),
+        ("https://unrelated.example", false),
+    ] {
+        let request = Request::builder()
+            .method(Method::OPTIONS)
+            .uri("/known")
+            .header(ORIGIN, request_origin)
+            .header(ACCESS_CONTROL_REQUEST_METHOD, "GET")
+            .body(Body::empty())
+            .expect("preflight request should be valid");
+
+        let response = router
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("preflight should succeed");
+
+        let permits_origin = response
+            .headers()
+            .get(ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_some_and(|value| value == request_origin);
+
+        assert_eq!(permits_origin, allowed);
+
+        assert_eq!(
+            response.headers().contains_key(ACCESS_CONTROL_ALLOW_ORIGIN),
+            allowed
+        );
+    }
 }
