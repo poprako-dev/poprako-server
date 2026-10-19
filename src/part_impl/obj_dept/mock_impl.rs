@@ -9,6 +9,7 @@ use time::{Duration, OffsetDateTime};
 use url::Url;
 
 use poprako_obj_dept::key::{KeyMap, ObjKey};
+use poprako_obj_dept::model::alloc::ObjAlloc;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::ObjSlot;
 use poprako_obj_dept::model::task::ObjTask;
@@ -80,7 +81,7 @@ pub fn gen_slot<K>(
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
     oper: &GenObjSlot<'_, K>,
-) -> ObjDeptRest<Option<ObjSlot>>
+) -> ObjDeptRest<ObjAlloc>
 where
     K: KeyMap<Img = String>,
 {
@@ -93,8 +94,10 @@ where
             meta.hash == oper.spec.hash && meta.ext == K::ext(&oper.spec.dom)
         });
 
-    if matching_meta.is_some_and(|meta| meta.is_avail) {
-        return Ok(None);
+    if let Some(meta) = matching_meta.filter(|meta| meta.is_avail) {
+        return Ok(ObjAlloc::Avail {
+            key: meta.key.clone(),
+        });
     }
 
     let reused_key = matching_meta.map(|meta| meta.key.clone());
@@ -148,12 +151,14 @@ where
             msg: source.to_string(),
         })?;
 
-    Ok(Some(ObjSlot {
-        key,
-        url,
-        headers: BTreeMap::default(),
-        expires_at: OffsetDateTime::now_utc() + Duration::minutes(5),
-    }))
+    Ok(ObjAlloc::Upload {
+        slot: ObjSlot {
+            key,
+            url,
+            headers: BTreeMap::default(),
+            expires_at: OffsetDateTime::now_utc() + Duration::minutes(5),
+        },
+    })
 }
 
 pub fn gen_slots<K>(
@@ -161,7 +166,7 @@ pub fn gen_slots<K>(
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
     oper: &GenObjSlots<'_, K>,
-) -> ObjDeptRest<HashMap<String, ObjSlot>>
+) -> ObjDeptRest<HashMap<String, ObjAlloc>>
 where
     K: KeyMap<Img = String>,
 {
@@ -186,11 +191,10 @@ where
         .iter()
         .map(|spec| {
             let single_oper = GenObjSlot::<K>::new(spec);
-            let slot = gen_slot(objs, tasks, topic, &single_oper)?;
+            let alloc = gen_slot(objs, tasks, topic, &single_oper)?;
 
-            Ok(slot.map(|slot| (K::id(&spec.dom).to_owned(), slot)))
+            Ok((K::id(&spec.dom).to_owned(), alloc))
         })
-        .filter_map(Result::transpose)
         .collect()
 }
 
@@ -430,7 +434,7 @@ macro_rules! implement_mock_obj_dept {
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
                     String,
-                    ::poprako_obj_dept::model::slot::ObjSlot,
+                    ::poprako_obj_dept::model::alloc::ObjAlloc,
                 >,
             > {
                 let $crate::part_impl::repo::mock_impl::MockState {
@@ -461,7 +465,7 @@ macro_rules! implement_mock_obj_dept {
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
                 oper: &::poprako_obj_dept::oper::GenObjSlot<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                Option<::poprako_obj_dept::model::slot::ObjSlot>,
+                ::poprako_obj_dept::model::alloc::ObjAlloc,
             > {
                 let $crate::part_impl::repo::mock_impl::MockState {
                     objs,

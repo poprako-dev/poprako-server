@@ -84,34 +84,18 @@ where
         byte_len,
     };
 
-    let slot = GenObjSlot::<PageArtworkImage>::new(&spec)
+    let alloc = GenObjSlot::<PageArtworkImage>::new(&spec)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
 
-    let metas = ListObjMetas::<PageArtworkImage>::new(&[page_artwork_entry
-        .id
-        .as_str()])
-    .step_on(obj_dept, context)
-    .await
-    .map_err(BaseError::from)?;
-
-    let meta = metas.get(&page_artwork_entry.id).ok_or_else(|| {
-        //
-        tracing::error!("allocated composite image metadata is missing");
-
-        BaseError::Unrecoverable {
-            msg: "allocated composite image metadata is missing".into(),
-        }
-    })?;
-
     accept(AllocatedPageArtworkVal {
         page_artwork_id: page_artwork_entry.id.clone(),
         index: page_artwork_entry.index,
-        image_ver: meta.key.ver,
+        image_ver: alloc.key().ver,
         image_hash: hash,
         ext,
-        slot: slot.map(|slot| ImageUploadSlotView {
+        slot: alloc.into_slot().map(|slot| ImageUploadSlotView {
             image_ver: slot.key.ver,
             put_url: slot.url.to_string(),
             headers: slot.headers,

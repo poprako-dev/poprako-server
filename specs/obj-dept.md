@@ -90,6 +90,12 @@ construction macro is used. `MarkObjUploaded<B>` supports both independent Run a
 `marked` and handled at the immediate use-case boundary.
 
 `ObjSlotSpec` carries `id`, `hash`, `ext`, `content_type`, and `byte_len`.
+Allocation returns `ObjAlloc::Avail { key }` for identical available
+content or `ObjAlloc::Upload { slot }` for new or resumed pending content.
+Both retain the exact selected generation; callers use `key()` without a
+metadata reload and `into_slot()` when only the upload capability is needed.
+Batch allocation returns one allocation for every requested object ID,
+including available content. Duplicate requested IDs are rejected.
 `ObjMeta` carries `key`, `is_available`, `hash`, and `ext`. Availability is an
 optimistic read decision, not proof that remote bytes were verified. Component failures
 use `ObjDeptError` and `ObjDeptRest`.

@@ -181,7 +181,8 @@ where
             let obj_slot = GenObjSlot::<PageImage>::new(&obj_spec)
                 .step_on(obj_dept, context)
                 .await
-                .map_err(BaseError::from)?;
+                .map_err(BaseError::from)?
+                .into_slot();
 
             let raw_ident_repl = PageRawIdentsRepl {
                 idents: &[(id.as_str(), instr.raw_ident.as_deref())],

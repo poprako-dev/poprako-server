@@ -17,7 +17,7 @@ use poprako_obj_dept::key::{KeyMap as _, ObjGen};
 use poprako_obj_dept::model::slot::{ObjDeptPoolSlot, ObjSlotSpec};
 use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{
-    DeleteObjs, GenObjSlot, ListObjMetas, MarkObjUploaded,
+    DeleteObjs, GenObjSlot, GenObjSlots, ListObjMetas, MarkObjUploaded,
 };
 use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
 use poprako_obj_dept::rest::ObjDeptRest;
@@ -67,19 +67,136 @@ impl ObjDeptPoolView for Pool {
 impl ObjDeptPool for Pool {
     async fn gen_slot(
         &self,
-        _key: &str,
-        _content_type: &str,
-        _byte_len: u64,
+        key: &str,
+        content_type: &str,
+        byte_len: u64,
     ) -> ObjDeptRest<ObjDeptPoolSlot> {
         Ok(ObjDeptPoolSlot {
-            url: Url::parse("https://example.test/upload").unwrap(),
-            headers: BTreeMap::new(),
+            url: Url::parse(&format!("https://example.test/upload/{key}"))
+                .unwrap(),
+            headers: BTreeMap::from([
+                ("content-type".into(), content_type.into()),
+                ("content-length".into(), byte_len.to_string()),
+            ]),
             expires_at: OffsetDateTime::now_utc() + time::Duration::minutes(10),
         })
     }
 
     async fn del(&self, _key: &str) -> ObjDeptRest<()> {
         Ok(())
+    }
+}
+
+// allocation_generations(GenObjSlot, GenObjSlots)(positive): every selected generation survives new allocation, pending resume and available reuse, with capabilities bound to the same key.
+#[tokio::test]
+#[serial_test::serial(repo_rdb)]
+async fn object_allocs_retain_every_selected_generation() {
+    let test_rdb = start().await;
+
+    let core = test_rdb.core();
+
+    let nucl = RdbNucl::<ReptRead>::new(core.clone());
+
+    let dept = NormObjDept::new(core.clone(), Pool, RdbObjDeptProm::new(core));
+
+    let specs = ["available", "pending", "new"].map(|id| ObjSlotSpec {
+        dom: PageArtworkImageKey {
+            chapter_id: "allocation-chapter".into(),
+            page_artwork_id: id.into(),
+            ext: ImageExt::Png,
+        },
+        hash: &[1; 32],
+        content_type: "image/png",
+        byte_len: 1024,
+    });
+
+    let first = nucl
+        .coord(async |context| {
+            GenObjSlot::<PageArtworkImage>::new(&specs[0])
+                .step_on(&dept, context)
+                .await
+        })
+        .await
+        .unwrap();
+
+    let first_key = first.key().clone();
+
+    assert_eq!(first_key.ver, 1);
+
+    assert_eq!(first.into_slot().unwrap().key, first_key);
+
+    nucl.coord(async |context| {
+        let resumed = GenObjSlot::<PageArtworkImage>::new(&specs[0])
+            .step_on(&dept, context)
+            .await?;
+
+        assert_eq!(resumed.key(), &first_key);
+
+        assert_eq!(resumed.into_slot().unwrap().key, first_key);
+
+        let marked = MarkObjUploaded::<PageArtworkImage>::new(&ObjGen {
+            id: first_key.id.clone(),
+            ver: first_key.ver,
+        })
+        .step_on(&dept, context)
+        .await?;
+
+        assert!(marked);
+
+        let available = GenObjSlot::<PageArtworkImage>::new(&specs[0])
+            .step_on(&dept, context)
+            .await?;
+
+        assert_eq!(available.key(), &first_key);
+
+        assert!(available.into_slot().is_none());
+
+        GenObjSlot::<PageArtworkImage>::new(&specs[1])
+            .step_on(&dept, context)
+            .await?;
+
+        Ok::<(), poprako_obj_dept::rest::ObjDeptError>(())
+    })
+    .await
+    .unwrap();
+
+    let allocs = nucl
+        .coord(async |context| {
+            GenObjSlots::<PageArtworkImage>::new(&specs)
+                .step_on(&dept, context)
+                .await
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(allocs.len(), specs.len());
+
+    let metas =
+        ListObjMetas::<PageArtworkImage>::new(&["available", "pending", "new"])
+            .run_on(&dept)
+            .await
+            .unwrap();
+
+    for (id, alloc) in allocs {
+        assert_eq!(alloc.key(), &metas.get(&id).unwrap().key);
+
+        assert_eq!(alloc.key().ver, 1);
+
+        match alloc.into_slot() {
+            None => assert_eq!(id, "available"),
+            Some(slot) => {
+                assert_ne!(id, "available");
+
+                assert!(slot.url.path().ends_with(&slot.key.image));
+
+                assert_eq!(
+                    slot.headers.get("content-type").unwrap(),
+                    "image/png"
+                );
+
+                assert_eq!(slot.headers.get("content-length").unwrap(), "1024");
+            }
+        }
     }
 }
 
@@ -164,13 +281,12 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
         let slot = GenObjSlot::<PageArtworkImage>::new(&spec)
             .step_on(&dept, context)
             .await
-            .map_err(BaseError::from)?
-            .unwrap();
+            .map_err(BaseError::from)?;
 
         assert!(
             MarkObjUploaded::<PageArtworkImage>::new(&ObjGen {
                 id: "composite-a".into(),
-                ver: slot.key.ver
+                ver: slot.key().ver
             })
             .step_on(&dept, context)
             .await
