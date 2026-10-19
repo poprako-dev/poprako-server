@@ -78,13 +78,13 @@ where
     O: ObjDept<ChapterArtwork, C> + Send + Sync,
 {
     //
-    chapter_artwork_complex::ensure_allocation(
+    chapter_artwork_complex::ensure_alloc(
         *config,
         instr.new_byte_len,
         &instr.ext,
     )?;
 
-    let allocation = nucl
+    let alloc = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -134,7 +134,7 @@ where
                     }
                 })?;
 
-            let allocation = AllocChapterArtworkVal {
+            let alloc = AllocChapterArtworkVal {
                 artwork_ver: artwork_meta.key.ver,
                 slot: artwork_slot.map(|slot| ChapterArtworkUploadSlotView {
                     put_url: slot.url.to_string(),
@@ -142,11 +142,11 @@ where
                 }),
             };
 
-            accept(allocation)
+            accept(alloc)
         })
         .await?;
 
-    accept(allocation)
+    accept(alloc)
 }
 
 /// Confirms an exact generation and completes typesetting in the same transaction.

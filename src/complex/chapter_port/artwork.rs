@@ -28,7 +28,7 @@ pub fn artwork_error(variant: ExpectedVariant, key: &str) -> BaseError {
 }
 
 /// Checks the exact upload size and extension before allocating an object.
-pub fn ensure_allocation(
+pub fn ensure_alloc(
     config: ArtworkConfig,
     byte_len: u64,
     ext: &str,

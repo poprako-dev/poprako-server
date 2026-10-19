@@ -4,6 +4,8 @@
 - result
 - error
 - connection ( -> conn )
+- allocation ( -> alloc )
+- allocations ( -> allocs )
 - txn
 - tx
 - target\_
