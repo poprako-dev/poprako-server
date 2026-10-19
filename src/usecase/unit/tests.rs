@@ -16,6 +16,8 @@ mod list;
 mod save_tokens;
 // Shared review flag lifecycle and save compatibility.
 mod flagged;
+// Shared Page edit counters, rollback, and completion contracts.
+mod page_edit;
 
 use super::transform::transform;
 use super::*;
@@ -478,7 +480,6 @@ fn token(user_id: &str) -> UserToken {
 // Build a mock scope with workset/chapter/page/assignment fixtures for tests.
 fn save_scope(roles: RoleMask) -> Mock {
     //
-    // Build a minimal snapshot scope with one chapter/page/assignment setup.
     let mock = Mock::new();
 
     mock.seed_workset(workset());
@@ -497,7 +498,6 @@ fn save_scope(roles: RoleMask) -> Mock {
 // Build baseline workset fixture consumed by other local entity builders.
 fn workset() -> WorksetInfo {
     //
-    // Build a baseline workset fixture.
     let current_time = OffsetDateTime::now_utc();
 
     WorksetInfo {
