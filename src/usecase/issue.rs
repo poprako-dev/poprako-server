@@ -11,6 +11,7 @@ use crate::complex::{chapter as chapter_complex, issue as issue_complex};
 use crate::data::instr::issue::ImportChapterIssuesInstr;
 use crate::data::val::issue::ImportChapterIssuesVal;
 use crate::data::view::issue::IssueInfoView;
+use crate::model::artifact::issue_import::PageIssueImport;
 use crate::model::shared::user::UserToken;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::part::nucl::ReptRead;
@@ -84,25 +85,30 @@ where
             .step_on(repo, context)
             .await?;
 
-            issue_complex::ensure_import_issue(&instr, &page_artwork_infos)?;
+            let pages = instr
+                .pages
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<PageIssueImport>>();
 
-            let imported_page_count = instr.pages.len();
+            issue_complex::ensure_import_issue(&pages, &page_artwork_infos)?;
+
+            let imported_page_count = pages.len();
 
             let mut issue_entries = Vec::new();
 
-            for page_instr in instr.pages {
+            for page in pages {
                 //
-                for (index, issue_instr) in
-                    page_instr.issues.into_iter().enumerate()
-                {
+                for (index, issue) in page.issues.into_iter().enumerate() {
+                    //
                     let issue_entry = IssueEntry {
                         id: next_snowflake_id(),
-                        page_artwork_id: page_instr.page_artwork_id.clone(),
+                        page_artwork_id: page.page_artwork_id.clone(),
                         index,
-                        variant: issue_instr.variant,
-                        layer_name: issue_instr.layer_name,
-                        rect: issue_instr.rect.map(Into::into),
-                        note: issue_instr.note,
+                        variant: issue.variant,
+                        layer_name: issue.layer_name,
+                        rect: issue.rect,
+                        note: issue.note,
                     };
 
                     issue_entries.push(issue_entry);
