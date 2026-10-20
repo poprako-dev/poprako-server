@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use crate::model::artifact::translation_document::UnitTranslationDocument;
+
 /// Unit object exchanged by the `PopRaKo` translation port.
 #[derive(Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -47,4 +49,25 @@ pub struct UnitTranslationPortView {
     /// Identifier of the proofreader user, or [`None`]. This is export metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofreader_id: Option<String>,
+}
+
+impl From<UnitTranslationDocument> for UnitTranslationPortView {
+    // Converts the native exchange document into its response representation.
+    fn from(document: UnitTranslationDocument) -> Self {
+        Self {
+            unit_id: document.unit_id,
+            unit_index: document.unit_index,
+            page_id: document.page_id,
+            page_index: document.page_index,
+            x_coord: document.x_coord,
+            y_coord: document.y_coord,
+            is_bubble: document.is_bubble,
+            is_flagged: document.is_flagged,
+            translated_text: document.translated_text,
+            translator_id: document.translator_id,
+            is_proofread: document.is_proofread,
+            proofread_text: document.proofread_text,
+            proofreader_id: document.proofreader_id,
+        }
+    }
 }

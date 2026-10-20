@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::data::view::chapter_port::ChapterTranslationPortView;
+use crate::model::artifact::translation_document::ChapterTranslationDocument;
 use crate::model::artifact::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
 };
@@ -24,7 +24,7 @@ pub fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
     //
     let content = content.strip_prefix('\u{feff}').unwrap_or(content);
 
-    let project = serde_json::from_str::<ChapterTranslationPortView>(content)
+    let project = serde_json::from_str::<ChapterTranslationDocument>(content)
         .map_err(|error| {
         //
         let err_msg = trl("error-invalid-chapter-import-content");
@@ -109,7 +109,7 @@ pub fn validate_page_count(
 
 // Convert the shared PopRaKo document into normalized import pages.
 fn convert_poprako_document(
-    project: ChapterTranslationPortView,
+    project: ChapterTranslationDocument,
 ) -> BaseRest<Vec<PageTranslationImport>> {
     //
     if project.pages.len() > MAX_CHAPTER_PAGE_COUNT {

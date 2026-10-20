@@ -16,9 +16,10 @@ use crate::complex::chapter_port::export_translation as chapter_translation_expo
 use crate::data::val::chapter_port::{
     ChapterPageRawIdentVal, ExportChapterTranslationsVal,
 };
-use crate::data::view::chapter_port::ChapterTranslationPortView;
-use crate::data::view::page_port::PageTranslationPortView;
-use crate::data::view::unit_port::UnitTranslationPortView;
+use crate::model::artifact::translation_document::{
+    ChapterTranslationDocument, PageTranslationDocument,
+    UnitTranslationDocument,
+};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
@@ -181,11 +182,11 @@ where
 
     let poprako = formats.includes_poprako().then(|| {
         //
-        let page_views = page_infos
+        let page_documents = page_infos
             .iter()
             .map(|page_info| {
                 //
-                let unit_views = units_by_page_id
+                let unit_documents = units_by_page_id
                     .get(&page_info.id)
                     .map_or(&[][..], Vec::as_slice)
                     .iter()
@@ -195,22 +196,24 @@ where
                     })
                     .collect();
 
-                PageTranslationPortView {
+                PageTranslationDocument {
                     page_id: page_info.id.clone(),
                     page_index: page_info.index,
-                    units: unit_views,
+                    units: unit_documents,
                 }
             })
             .collect();
 
-        ChapterTranslationPortView {
+        let document = ChapterTranslationDocument {
             chapter_id: chapter_info.id.clone(),
             chapter_index: chapter_info.index,
             chapter_subtitle: non_empty(&chapter_info.subtitle),
             comic_id: chapter_info.comic_id.clone(),
             comic_title: comic_info.title,
-            pages: page_views,
-        }
+            pages: page_documents,
+        };
+
+        document.into()
     });
 
     let val = ExportChapterTranslationsVal {
@@ -239,14 +242,14 @@ where
     accept(val)
 }
 
-// Builds a [`UnitTranslationPortView`] from page and unit info.
+// Builds a [`UnitTranslationDocument`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     index: usize,
     unit_info: &UnitInfo,
-) -> UnitTranslationPortView {
-    // Convert one unit into export view fields used by downstream translators.
-    UnitTranslationPortView {
+) -> UnitTranslationDocument {
+    // Preserve unit content and authorship in the native exchange document.
+    UnitTranslationDocument {
         unit_id: unit_info.id.clone(),
         unit_index: index,
         page_id: page_info.id.clone(),
