@@ -14,9 +14,7 @@ use crate::data::instr::unit::{
 };
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::page::PageInfo;
-use crate::model::read::proj::unit::{
-    UnitCountDelta, UnitCountMetrics, UnitInfo,
-};
+use crate::model::read::proj::unit::{UnitCountDelta, UnitInfo};
 use crate::model::shared::user::UserToken;
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::part::nucl::Serial;
@@ -29,16 +27,13 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, ListPageInfos, SetPageUnitCountMetrics,
-};
-use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitOrders,
-};
+use crate::part::repo::oper::page::{GetPageUnitScopeExcluded, ListPageInfos};
+use crate::part::repo::oper::unit::ListUnitInfosByIds;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage as stage_usecase;
+use crate::usecase::unit::page_edit as unit_page_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::unit::UnitTextPart;
 
@@ -342,47 +337,15 @@ where
         return accept(None);
     }
 
-    let page_info = GetPageInfoExcluded { id: page_id }
+    let page_scope = GetPageUnitScopeExcluded { id: page_id }
         .step_on(repo, context)
         .await?;
 
-    let orders = ListUnitOrders {
-        page_id: &page_info.id,
-    }
-    .step_on(repo, context)
-    .await?;
+    let page_edit =
+        unit_page_edit_usecase::apply_edits(repo, context, &page_scope, edits)
+            .await?;
 
-    let base_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
-
-    let edits = unit_complex::normalize_edits(&base_ids, edits)?;
-
-    let count_metrics = ApplyUnitEdits {
-        page_id: &page_info.id,
-        orders: &orders,
-        edits: &edits,
-    }
-    .step_on(repo, context)
-    .await?;
-
-    SetPageUnitCountMetrics {
-        id: &page_info.id,
-        count_metrics,
-    }
-    .step_on(repo, context)
-    .await?;
-
-    let old_count_metrics = UnitCountMetrics {
-        total: page_info.total_unit_count,
-        translated: page_info.translated_unit_count,
-        proofread: page_info.proofread_unit_count,
-    };
-
-    let count_delta = old_count_metrics.calc_delta(count_metrics)?;
-
-    accept(Some((count_delta, edits)))
+    accept(Some(page_edit.into_changes()))
 }
 
 // Aggregates persisted Unit changes across the transformed Pages.

@@ -509,12 +509,11 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
                 .await
         })
         .await
-        .unwrap()
         .unwrap();
 
     let generation = ObjGen {
         id: chapter_id.into(),
-        ver: slot.key.ver,
+        ver: slot.key().ver,
     };
 
     verify_artwork_rollback(&nucl, &dept, &generation, chapter_id).await;
@@ -539,7 +538,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
 
     // Repeatable-read can abort one contender; retry only that failed operation.
     let replacement = match replacement {
-        Ok(slot) => slot.unwrap(),
+        Ok(alloc) => alloc,
         Err(_) => nucl
             .coord(async |context| {
                 GenObjSlot::<ChapterArtwork>::new(&replacement_spec)
@@ -547,13 +546,12 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
                     .await
             })
             .await
-            .unwrap()
             .unwrap(),
     };
 
     let _ = confirmation;
 
-    assert!(replacement.key.ver > generation.ver);
+    assert!(replacement.key().ver > generation.ver);
 
     let metas = ListObjMetas::<ChapterArtwork>::new(&[chapter_id])
         .run_on(&dept)
@@ -575,7 +573,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
 
     let current_generation = ObjGen {
         id: chapter_id.into(),
-        ver: replacement.key.ver,
+        ver: replacement.key().ver,
     };
 
     verify_artwork_clear(&nucl, &dept, current_generation, chapter_id).await;

@@ -334,130 +334,119 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
 }
 
 #[tokio::test]
-async fn matching_available_content_returns_no_slot_without_mutation() {
+async fn allocs_retain_generations_for_new_pending_and_avail_content() {
     let mock = Mock::new();
 
-    let obj_dept = mock.clone();
+    let specs = ["page-1", "page-2", "page-3"].map(|id| ObjSlotSpec {
+        dom: page_dom(id),
+        hash: &[1; 32],
+        content_type: "image/png",
+        byte_len: 1024,
+    });
 
-    let first_slot = mock
-        .coord(async move |context| {
-            let obj_spec = ObjSlotSpec {
-                dom: page_dom("page-1"),
-                hash: &[1; 32],
-                content_type: "image/png",
-                byte_len: 1024,
-            };
-
-            GenObjSlot::<PageImage>::new(&obj_spec)
-                .step_on(&obj_dept, context)
+    let first = mock
+        .coord(async |context| {
+            GenObjSlot::<PageImage>::new(&specs[0])
+                .step_on(&mock, context)
                 .await
         })
         .await
-        .unwrap()
         .unwrap();
 
-    MarkObjUploaded::<PageImage>::new(&ObjGen {
-        id: first_slot.key.id.clone(),
-        ver: first_slot.key.ver,
+    assert_eq!(first.key().ver, 1);
+
+    let first_key = first.key().clone();
+
+    let first_slot = first.into_slot().unwrap();
+
+    assert_eq!(first_slot.key, first_key);
+
+    assert!(first_slot.url.path().ends_with(&first_key.image));
+
+    mock.coord(async |context| {
+        let resumed = GenObjSlot::<PageImage>::new(&specs[0])
+            .step_on(&mock, context)
+            .await?;
+
+        assert_eq!(resumed.key(), &first_key);
+
+        assert_eq!(resumed.into_slot().unwrap().key, first_key);
+
+        MarkObjUploaded::<PageImage>::new(&ObjGen {
+            id: first_key.id.clone(),
+            ver: first_key.ver,
+        })
+        .step_on(&mock, context)
+        .await?;
+
+        let task_count = context.state.obj_tasks.len();
+
+        let available = GenObjSlot::<PageImage>::new(&specs[0])
+            .step_on(&mock, context)
+            .await?;
+
+        assert_eq!(available.key(), &first_key);
+
+        assert!(available.into_slot().is_none());
+
+        assert_eq!(context.state.obj_tasks.len(), task_count);
+
+        GenObjSlot::<PageImage>::new(&specs[1])
+            .step_on(&mock, context)
+            .await?;
+
+        Ok::<(), ObjDeptError>(())
     })
-    .run_on(&mock)
     .await
     .unwrap();
 
-    let task_count = mock.snapshot().obj_tasks.len();
+    let before = mock.snapshot();
 
-    let obj_dept = mock.clone();
-
-    let repeated_slot = mock
-        .coord(async move |context| {
-            let obj_spec = ObjSlotSpec {
-                dom: page_dom("page-1"),
-                hash: &[1; 32],
-                content_type: "image/png",
-                byte_len: 1024,
-            };
-
-            GenObjSlot::<PageImage>::new(&obj_spec)
-                .step_on(&obj_dept, context)
+    let allocs = mock
+        .coord(async |context| {
+            GenObjSlots::<PageImage>::new(&specs)
+                .step_on(&mock, context)
                 .await
         })
         .await
         .unwrap();
 
-    assert!(repeated_slot.is_none());
-    assert_eq!(
-        mock.snapshot()
-            .objs
-            .get("page_image")
-            .unwrap()
-            .get("page-1")
-            .unwrap()
-            .version,
-        1
-    );
-    assert_eq!(mock.snapshot().obj_tasks.len(), task_count);
-}
+    assert_eq!(allocs.len(), specs.len());
 
-#[tokio::test]
-async fn matching_pending_content_resumes_the_current_generation() {
-    let mock = Mock::new();
+    for (id, alloc) in allocs {
+        assert_eq!(alloc.key().id, id);
 
-    let obj_dept = mock.clone();
+        assert_eq!(alloc.key().ver, 1);
 
-    let first_slot = mock
-        .coord(async move |context| {
-            let obj_spec = ObjSlotSpec {
-                dom: page_dom("page-1"),
-                hash: &[1; 32],
-                content_type: "image/png",
-                byte_len: 1024,
-            };
+        match alloc.into_slot() {
+            None => assert_eq!(id, "page-1"),
+            Some(slot) => {
+                assert_ne!(id, "page-1");
 
-            GenObjSlot::<PageImage>::new(&obj_spec)
-                .step_on(&obj_dept, context)
-                .await
-        })
-        .await
-        .unwrap()
-        .unwrap();
+                assert!(slot.url.path().ends_with(&slot.key.image));
+            }
+        }
+    }
 
-    let obj_dept = mock.clone();
+    let after = mock.snapshot();
 
-    let resumed_slot = mock
-        .coord(async move |context| {
-            let obj_spec = ObjSlotSpec {
-                dom: page_dom("page-1"),
-                hash: &[1; 32],
-                content_type: "image/png",
-                byte_len: 1024,
-            };
-
-            GenObjSlot::<PageImage>::new(&obj_spec)
-                .step_on(&obj_dept, context)
-                .await
-        })
-        .await
-        .unwrap()
-        .unwrap();
-
-    assert_eq!(resumed_slot.key, first_slot.key);
-    assert_eq!(
-        mock.snapshot()
-            .objs
-            .get("page_image")
-            .unwrap()
-            .get("page-1")
-            .unwrap()
-            .version,
-        1
-    );
-    assert_eq!(mock.snapshot().obj_tasks.len(), 2);
     assert!(
-        mock.snapshot()
-            .obj_tasks
-            .iter()
-            .all(|(_, task)| matches!(task, ObjTask::Check { .. }))
+        after
+            .objs
+            .get("page_image")
+            .unwrap()
+            .values()
+            .all(|record| {
+                record.version == 1
+                    && record.meta.as_ref().unwrap().key.ver == 1
+            })
     );
+
+    assert_eq!(after.obj_tasks.len(), before.obj_tasks.len() + 2);
+
+    assert!(after.obj_tasks.iter().all(
+        |(_, task)| matches!(task, ObjTask::Check { key } if key.ver == 1)
+    ));
 }
 
 #[tokio::test]
@@ -491,7 +480,7 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
         .await
         .unwrap();
 
-    assert_eq!(replacement.unwrap().key.ver, 2);
+    assert_eq!(replacement.into_slot().unwrap().key.ver, 2);
 }
 
 #[tokio::test]

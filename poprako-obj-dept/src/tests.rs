@@ -11,8 +11,8 @@ use crate::actor::rdb_impl::{
     requires_presence_reconciliation,
 };
 use crate::key::KeyMap;
+use crate::model::alloc::ObjAlloc;
 use crate::model::meta::ObjMeta;
-use crate::model::slot::ObjSlot;
 use crate::model::task::{CHECK, ObjDeptPromTask, obj_task_id, validate_task};
 use crate::model::url::ObjUrls;
 use crate::oper::{
@@ -158,7 +158,7 @@ impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
         &self,
         _context: &mut TestContext,
         _oper: &GenObjSlot<'a, PageImage>,
-    ) -> Result<Option<ObjSlot>, Self::Error> {
+    ) -> Result<ObjAlloc, Self::Error> {
         //
         Err(ObjDeptError::Unrecoverable {
             msg: "compile-only slot".into(),
@@ -174,7 +174,7 @@ impl<'a> Step<GenObjSlots<'a, PageImage>, TestContext> for TestDept {
         &self,
         _context: &mut TestContext,
         _oper: &GenObjSlots<'a, PageImage>,
-    ) -> Result<std::collections::HashMap<String, ObjSlot>, Self::Error> {
+    ) -> Result<std::collections::HashMap<String, ObjAlloc>, Self::Error> {
         Ok(std::collections::HashMap::default())
     }
 }
@@ -239,13 +239,13 @@ fn operations_keep_marker_in_their_type_identity() {
         std::collections::HashMap<String, ObjUrls>,
     >();
 
-    require_oper_output::<GenObjSlot<'static, PageImage>, Option<ObjSlot>>();
+    require_oper_output::<GenObjSlot<'static, PageImage>, ObjAlloc>();
 
     require_oper_output::<MarkObjUploaded<'static, PageImage>, bool>();
 
     require_oper_output::<
         GenObjSlots<'static, PageImage>,
-        std::collections::HashMap<String, ObjSlot>,
+        std::collections::HashMap<String, ObjAlloc>,
     >();
 
     require_oper_output::<ClearObjs<'static, PageImage>, ()>();

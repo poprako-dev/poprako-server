@@ -261,7 +261,7 @@ where
         ImageKind::UserAvatar,
     )?;
 
-    let obj_slot = nucl
+    let obj_alloc = nucl
         .coord(async move |context| {
             //
             GetUserInfoExcluded { id: &token.user_id }
@@ -285,7 +285,7 @@ where
         })
         .await?;
 
-    let slot = obj_slot.map(|obj_slot| ImageUploadSlotView {
+    let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,

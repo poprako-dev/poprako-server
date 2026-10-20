@@ -1,5 +1,8 @@
 //! Unit use cases for listing, searching, saving, and transforming text.
 
+// Shared transactional Unit edits and Page counter maintenance.
+mod page_edit;
+
 /// Chapter-scoped Unit text transformation.
 pub mod transform;
 
@@ -36,11 +39,11 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
-    GetPageUnitScope, GetPageUnitScopeExcluded, SetPageUnitCountMetrics,
+    GetPageUnitScope, GetPageUnitScopeExcluded,
 };
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosInChapterOrder,
-    ListUnitOrders, SearchChapterUnitIds,
+    ListUnitInfosByIds, ListUnitInfosInChapterOrder, ListUnitOrders,
+    SearchChapterUnitIds,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
@@ -49,6 +52,7 @@ use crate::part::repo::unit_save::{UnitSaveGuard as _, UnitSaveRepo};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
+use crate::usecase::unit::page_edit as unit_page_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::unit::{MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT};
 
@@ -284,36 +288,17 @@ where
                 return accept((created_unit_ids, false));
             }
 
-            let orders = ListUnitOrders { page_id: &page_id }
-                .step_on(repo, context)
-                .await?;
-
-            let order_ids = orders.iter().map(|order| order.id.as_str());
-
-            let base_ids = order_ids.collect::<Vec<_>>();
-
-            let edits = unit_complex::normalize_edits(&base_ids, edits)?;
-
-            let count_metrics = ApplyUnitEdits {
-                page_id: &page_scope.id,
-                orders: &orders,
-                edits: &edits,
-            }
-            .step_on(repo, context)
+            let page_edit = unit_page_edit_usecase::apply_edits(
+                repo,
+                context,
+                &page_scope,
+                edits,
+            )
             .await?;
-
-            SetPageUnitCountMetrics {
-                id: &page_scope.id,
-                count_metrics,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let delta = page_scope.count_metrics.calc_delta(count_metrics)?;
 
             AdjustChapterUnitCountDelta {
                 id: &chapter_scope.id,
-                delta,
+                delta: page_edit.count_delta(),
             }
             .step_on(repo, context)
             .await?;

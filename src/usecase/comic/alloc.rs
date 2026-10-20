@@ -54,7 +54,7 @@ where
 
     comic_perm_complex::ensure_user_can_alloc_cover(&member_info)?;
 
-    let obj_slot = nucl
+    let obj_alloc = nucl
         .coord(async move |context| {
             //
             let comic_info = GetComicInfoExcluded {
@@ -83,7 +83,7 @@ where
         })
         .await?;
 
-    let slot = obj_slot.map(|obj_slot| ImageUploadSlotView {
+    let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,

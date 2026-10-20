@@ -135,7 +135,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
                     String,
-                    ::poprako_obj_dept::model::slot::ObjSlot,
+                    ::poprako_obj_dept::model::alloc::ObjAlloc,
                 >,
             > {
                 use ::futures_util::future::try_join_all;
@@ -188,6 +188,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     .collect::<::std::collections::HashMap<_, _>>();
                 let mut planned = Vec::with_capacity(specs.len());
 
+                let mut allocs = ::std::collections::HashMap::new();
+
                 for spec in &specs {
                     //
                     let id =
@@ -219,7 +221,15 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             meta.hash.as_slice() == spec.hash && meta.ext == ext
                         });
 
-                    if matching_meta.is_some_and(|meta| meta.is_avail) {
+                    if let Some(meta) = matching_meta.filter(|meta| meta.is_avail) {
+                        //
+                        allocs.insert(
+                            id.to_owned(),
+                            ::poprako_obj_dept::model::alloc::ObjAlloc::Avail {
+                                key: meta.key.clone(),
+                            },
+                        );
+
                         continue;
                     }
 
@@ -337,8 +347,6 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     .defer_checks(context, #obj_module::TOPIC, &checks)
                     .await?;
 
-                let mut slots = ::std::collections::HashMap::new();
-
                 for (_, key, _, _) in planned {
                     //
                     let pool_slot = pool_slots
@@ -349,18 +357,20 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             }
                         })?;
 
-                    slots.insert(
+                    allocs.insert(
                         key.id.clone(),
-                        ::poprako_obj_dept::model::slot::ObjSlot {
-                            key,
-                            url: pool_slot.url,
-                            headers: pool_slot.headers,
-                            expires_at: pool_slot.expires_at,
+                        ::poprako_obj_dept::model::alloc::ObjAlloc::Upload {
+                            slot: ::poprako_obj_dept::model::slot::ObjSlot {
+                                key,
+                                url: pool_slot.url,
+                                headers: pool_slot.headers,
+                                expires_at: pool_slot.expires_at,
+                            },
                         },
                     );
                 }
 
-                Ok(slots)
+                Ok(allocs)
             }
         }
 
@@ -385,7 +395,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 context: &mut ::poprako_rdb_core::RdbContext<L>,
                 oper: &::poprako_obj_dept::oper::GenObjSlot<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                Option<::poprako_obj_dept::model::slot::ObjSlot>,
+                ::poprako_obj_dept::model::alloc::ObjAlloc,
             > {
                 use ::poprako_orchestra::Step as _;
 
@@ -393,13 +403,17 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     ::poprako_obj_dept::oper::GenObjSlots::<#obj>::new(
                         ::std::slice::from_ref(oper.spec),
                     );
-                let mut slots = self.step(context, &batch_oper).await?;
+                let mut allocs = self.step(context, &batch_oper).await?;
 
                 let id = <#obj as ::poprako_obj_dept::key::KeyMap>::id(
                     &oper.spec.dom,
                 );
 
-                Ok(slots.remove(id))
+                allocs.remove(id).ok_or_else(|| {
+                    ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
+                        msg: "object allocation result is missing".into(),
+                    }
+                })
             }
         }
 

@@ -534,6 +534,42 @@ contexts = [
     "macro_field",
 ]
 
+[[forbidden-identifiers.words]]
+word = "allocation"
+code = "FBD033"
+replacement = "alloc"
+message = "'allocation' is forbidden - use 'alloc' instead"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "allocations"
+code = "FBD034"
+replacement = "allocs"
+message = "'allocations' is forbidden - use 'allocs' instead"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [

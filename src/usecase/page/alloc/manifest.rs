@@ -239,7 +239,7 @@ where
         })
         .collect::<Vec<_>>();
 
-    let mut obj_slots = GenObjSlots::<PageImage>::new(&obj_specs)
+    let mut obj_allocs = GenObjSlots::<PageImage>::new(&obj_specs)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -255,7 +255,10 @@ where
 
             let obj_slot = match page_spec.new_byte_len {
                 //
-                Some(_) => obj_slots.remove(&manifest_entry.id),
+                Some(_) => obj_allocs
+                    .remove(&manifest_entry.id)
+                    .ok_or_else(page_manifest_result_missing)?
+                    .into_slot(),
 
                 None => None,
             };

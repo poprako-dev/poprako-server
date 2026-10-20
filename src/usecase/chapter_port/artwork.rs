@@ -78,13 +78,13 @@ where
     O: ObjDept<ChapterArtwork, C> + Send + Sync,
 {
     //
-    chapter_artwork_complex::ensure_allocation(
+    chapter_artwork_complex::ensure_alloc(
         *config,
         instr.new_byte_len,
         &instr.ext,
     )?;
 
-    let allocation = nucl
+    let alloc = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -114,39 +114,27 @@ where
                 byte_len: instr.new_byte_len,
             };
 
-            let artwork_slot = GenObjSlot::<ChapterArtwork>::new(&artwork_spec)
-                .step_on(obj_dept, context)
-                .await
-                .map_err(BaseError::from)?;
+            let artwork_alloc =
+                GenObjSlot::<ChapterArtwork>::new(&artwork_spec)
+                    .step_on(obj_dept, context)
+                    .await
+                    .map_err(BaseError::from)?;
 
-            let artwork_metas =
-                ListObjMetas::<ChapterArtwork>::new(&[chapter_info
-                    .id
-                    .as_str()])
-                .step_on(obj_dept, context)
-                .await
-                .map_err(BaseError::from)?;
-
-            let artwork_meta =
-                artwork_metas.get(&chapter_info.id).ok_or_else(|| {
-                    BaseError::Unrecoverable {
-                        msg: "allocated artwork metadata is missing".into(),
+            let alloc = AllocChapterArtworkVal {
+                artwork_ver: artwork_alloc.key().ver,
+                slot: artwork_alloc.into_slot().map(|slot| {
+                    ChapterArtworkUploadSlotView {
+                        put_url: slot.url.to_string(),
+                        headers: slot.headers,
                     }
-                })?;
-
-            let allocation = AllocChapterArtworkVal {
-                artwork_ver: artwork_meta.key.ver,
-                slot: artwork_slot.map(|slot| ChapterArtworkUploadSlotView {
-                    put_url: slot.url.to_string(),
-                    headers: slot.headers,
                 }),
             };
 
-            accept(allocation)
+            accept(alloc)
         })
         .await?;
 
-    accept(allocation)
+    accept(alloc)
 }
 
 /// Confirms an exact generation and completes typesetting in the same transaction.

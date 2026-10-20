@@ -222,7 +222,7 @@ where
 
     team_perm_complex::ensure_user_can_alloc_avatar(&member_info)?;
 
-    let obj_slot = nucl
+    let obj_alloc = nucl
         .coord(async move |context| {
             //
             GetTeamInfoExcluded { id: &id }
@@ -246,7 +246,7 @@ where
         })
         .await?;
 
-    let slot = obj_slot.map(|obj_slot| ImageUploadSlotView {
+    let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,

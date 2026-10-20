@@ -4,8 +4,9 @@ use std::marker::PhantomData;
 use poprako_orchestra::Oper;
 
 use crate::key::{KeyMap, ObjGen};
+use crate::model::alloc::ObjAlloc;
 use crate::model::meta::ObjMeta;
-use crate::model::slot::{ObjSlot, ObjSlotSpec};
+use crate::model::slot::ObjSlotSpec;
 use crate::model::url::{ObjUrlSpec, ObjUrls};
 
 /// Reads current object metadata for a collection of business objects.
@@ -70,9 +71,9 @@ where
     }
 }
 
-/// Allocates or resumes one generation and its locally signed write capability.
+/// Selects one generation, with a signed write capability when upload is needed.
 #[derive(Oper)]
-#[oper(output = Option<ObjSlot>)]
+#[oper(output = ObjAlloc)]
 pub struct GenObjSlot<'a, K>
 where
     K: KeyMap,
@@ -98,9 +99,9 @@ where
     }
 }
 
-/// Generates new generations and locally signed write capabilities in bulk.
+/// Selects a generation for every input, with capabilities where upload is needed.
 #[derive(Oper)]
-#[oper(output = HashMap<String, ObjSlot>)]
+#[oper(output = HashMap<String, ObjAlloc>)]
 pub struct GenObjSlots<'a, K>
 where
     K: KeyMap,
