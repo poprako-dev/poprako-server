@@ -16,7 +16,7 @@ pub enum ExpectedVariant {
     /// Authentication failure.
     Auth,
 
-    /// perm denied.
+    /// Perm denied.
     Perm,
 }
 

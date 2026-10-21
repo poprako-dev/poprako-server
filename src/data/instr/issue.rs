@@ -8,6 +8,7 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use crate::model::artifact::issue_import::{IssueImport, PageIssueImport};
 use crate::model::shared::issue::IssueRect;
 
 /// A finite rectangle contained within the normalized whole composite.
@@ -52,6 +53,18 @@ pub struct IssueInstr {
     pub note: String,
 }
 
+impl From<IssueInstr> for IssueImport {
+    // Preserves review contents while converting transport geometry.
+    fn from(instr: IssueInstr) -> Self {
+        Self {
+            variant: instr.variant,
+            layer_name: instr.layer_name,
+            rect: instr.rect.map(Into::into),
+            note: instr.note,
+        }
+    }
+}
+
 /// Issues for one explicit composite page in the imported review file.
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -60,6 +73,16 @@ pub struct PageIssuesInstr {
     pub page_artwork_id: String,
     /// Array order determines the zero-based issue index.
     pub issues: Vec<IssueInstr>,
+}
+
+impl From<PageIssuesInstr> for PageIssueImport {
+    // Preserves explicit targets and issue ordering, including empty pages.
+    fn from(instr: PageIssuesInstr) -> Self {
+        Self {
+            page_artwork_id: instr.page_artwork_id,
+            issues: instr.issues.into_iter().map(Into::into).collect(),
+        }
+    }
 }
 
 /// Replaces the single current review for a Chapter using explicit composite IDs.

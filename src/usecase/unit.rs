@@ -11,22 +11,28 @@ pub mod transform;
 mod tests;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+use uuid::Uuid;
 
 use poprako_util::i18n::trl_kv;
 
 use crate::complex::unit::perm as unit_perm_complex;
-use crate::complex::{chapter as chapter_complex, unit as unit_complex};
-use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr, SearchChapterUnitInfosInstr,
+use crate::complex::{
+    chapter as chapter_complex, unit as unit_complex,
+    unit_save as unit_save_complex,
 };
-use crate::data::instr::unit_save::prepare_save;
+use crate::data::instr::unit::{
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr,
+    SearchChapterUnitInfosInstr, into_unit_edits,
+};
 use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::shared::user::UserToken;
+use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -55,6 +61,7 @@ use crate::usecase::stage as stage_usecase;
 use crate::usecase::unit::page_edit as unit_page_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::unit::{MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT};
+use crate::value::unit_save::UnitSaveCreatedUnitId;
 
 /// Lists visible Units for one Page in final linked-list order.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
@@ -464,4 +471,30 @@ fn count_unit_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
             .filter(|unit_info| unit_info.is_proofread)
             .count(),
     }
+}
+
+// Validates the save token and assigns permanent identities to new Units.
+fn prepare_save(
+    instr: SavePageUnitEditsInstr,
+    user_id: &str,
+) -> BaseRest<(Vec<UnitEdit>, Uuid, Arc<[UnitSaveCreatedUnitId]>)> {
+    //
+    let save_id = Uuid::parse_str(&instr.save_id)
+        .map_err(|_| unit_save_complex::invalid_save())?;
+
+    let mut created_unit_ids = Vec::new();
+
+    let edits = into_unit_edits(instr.edits, user_id, |local_id| {
+        //
+        let unit_id = unit_complex::gen_id();
+
+        created_unit_ids.push(UnitSaveCreatedUnitId {
+            local_id: local_id.into(),
+            unit_id: unit_id.clone(),
+        });
+
+        unit_id
+    })?;
+
+    accept((edits, save_id, created_unit_ids.into()))
 }

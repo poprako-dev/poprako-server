@@ -81,7 +81,10 @@ where
             .await?;
 
             page_artwork_complex::ensure_manifest(
-                &instr.pages,
+                instr
+                    .pages
+                    .iter()
+                    .filter_map(|page| page.page_artwork_id.as_deref()),
                 &page_artwork_infos,
             )?;
 

@@ -5,6 +5,7 @@
 
 // export_translation(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
+mod roundtrip;
 mod visibility;
 
 use super::*;

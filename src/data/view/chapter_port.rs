@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::data::view::page_port::PageTranslationPortView;
+use crate::model::artifact::translation_document::ChapterTranslationDocument;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
 #[derive(Clone, Deserialize, Serialize)]
@@ -28,6 +29,20 @@ pub struct ChapterTranslationPortView {
 
     /// Pages and their translation units.
     pub pages: Vec<PageTranslationPortView>,
+}
+
+impl From<ChapterTranslationDocument> for ChapterTranslationPortView {
+    // Converts the native exchange document into its response representation.
+    fn from(document: ChapterTranslationDocument) -> Self {
+        Self {
+            chapter_id: document.chapter_id,
+            chapter_index: document.chapter_index,
+            chapter_subtitle: document.chapter_subtitle,
+            comic_id: document.comic_id,
+            comic_title: document.comic_title,
+            pages: document.pages.into_iter().map(Into::into).collect(),
+        }
+    }
 }
 
 /// A direct artwork upload capability.

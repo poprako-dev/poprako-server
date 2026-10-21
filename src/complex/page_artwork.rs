@@ -7,7 +7,6 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::data::instr::page_artwork::PageArtworkImageInstr;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
@@ -22,20 +21,19 @@ pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
 }
 
 /// Explicit IDs must be distinct identities from the locked Chapter manifest.
-pub fn ensure_manifest(
-    pages: &[PageArtworkImageInstr],
+pub fn ensure_manifest<'a, I>(
+    page_artwork_ids: I,
     existing: &[PageArtworkInfo],
-) -> BaseRest<()> {
+) -> BaseRest<()>
+where
+    I: IntoIterator<Item = &'a str>,
+{
     //
     let mut ids = HashSet::new();
 
-    for page in pages {
+    for id in page_artwork_ids {
         //
-        let Some(id) = &page.page_artwork_id else {
-            continue;
-        };
-
-        if !ids.insert(id) || !existing.iter().any(|info| info.id == *id) {
+        if !ids.insert(id) || !existing.iter().any(|info| info.id == id) {
             //
             return Err(error(
                 ExpectedVariant::Args,

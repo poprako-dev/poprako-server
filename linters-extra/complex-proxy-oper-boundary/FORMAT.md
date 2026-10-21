@@ -4,8 +4,9 @@
 Orchestra, repository traits or operation descriptors, Prom operations/tasks,
 or call `run_on`, `step_on`, or `proxy_on`.
 
-Pure payload/value types remain allowed, including
-`part::prom::payload::image::ResourceKind`.
+The separate `layer-dependency` checker also rejects `complex -> part`
+dependencies, including payload types. Shared domain payloads belong in
+`model` or `value` so pure rules can consume them without importing ports.
 
 ```sh
 python3 linters-extra/complex-proxy-oper-boundary/check.py --self-test

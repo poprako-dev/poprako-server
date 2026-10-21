@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::data::instr::issue::ImportChapterIssuesInstr;
+use crate::model::artifact::issue_import::PageIssueImport;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::model::shared::issue::IssueRect;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -43,18 +43,18 @@ pub fn ensure_rect(rect: IssueRect) -> BaseRest<()> {
 
 /// Validates every composite target and issue before replacement starts.
 pub fn ensure_import_issue(
-    instr: &ImportChapterIssuesInstr,
+    pages: &[PageIssueImport],
     page_artwork_infos: &[PageArtworkInfo],
 ) -> BaseRest<()> {
     //
     let mut ids = HashSet::new();
 
-    for page_instr in &instr.pages {
+    for page in pages {
         //
-        if !ids.insert(&page_instr.page_artwork_id)
+        if !ids.insert(&page.page_artwork_id)
             || !page_artwork_infos
                 .iter()
-                .any(|info| info.id == page_instr.page_artwork_id)
+                .any(|info| info.id == page.page_artwork_id)
         {
             return Err(error(
                 ExpectedVariant::Args,
@@ -63,10 +63,10 @@ pub fn ensure_import_issue(
         }
 
         //
-        for issue_instr in &page_instr.issues {
+        for issue in &page.issues {
             //
-            if issue_instr.variant.trim().is_empty()
-                || issue_instr
+            if issue.variant.trim().is_empty()
+                || issue
                     .layer_name
                     .as_ref()
                     .is_some_and(|name| name.trim().is_empty())
@@ -74,15 +74,7 @@ pub fn ensure_import_issue(
                 return Err(error(ExpectedVariant::Args, "error-issue-input"));
             }
 
-            if let Some(rect_instr) = &issue_instr.rect {
-                //
-                let rect = IssueRect {
-                    x_coord: rect_instr.x_coord,
-                    y_coord: rect_instr.y_coord,
-                    width: rect_instr.width,
-                    height: rect_instr.height,
-                };
-
+            if let Some(rect) = issue.rect {
                 ensure_rect(rect)?;
             }
         }

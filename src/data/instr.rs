@@ -40,8 +40,6 @@ pub mod termbase;
 pub mod termbase_port;
 /// Unit instruction DTOs.
 pub mod unit;
-/// Durable Unit save identities and receipts.
-pub mod unit_save;
 /// User instruction DTOs.
 pub mod user;
 /// Workset instruction DTOs.
