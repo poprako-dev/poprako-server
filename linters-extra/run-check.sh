@@ -63,7 +63,7 @@ for f in linters-extra/*/check.py; do
     passed=true
 
     case $name in
-        defer-oper-inline|oper-inline|diesel-type-safety)
+        defer-oper-inline|oper-inline|diesel-type-safety|layer-dependency)
             uv run --python linters-extra/.venv/bin/python python3 "$f" --self-test || passed=false
             ;;
     esac
