@@ -21,7 +21,9 @@ sys.path.insert(0, str(ROOT / "linters"))
 sys.path.insert(0, str(ROOT / "linters-extra"))
 
 from production_source import production_files, production_source
-from rust_style_lint.checkers.module_dependency import file_module, has_test_only_cfg
+from rust_style_lint.checkers.module_dependency import (
+    CfgParser, cfg_expression, file_module, leading_attributes,
+)
 
 
 # This is a denylist, never an exhaustive list of permitted dependencies.
@@ -60,6 +62,15 @@ class Reference:
 
 def text(source: bytes, node: tree_sitter.Node) -> str:
     return source[node.start_byte:node.end_byte].decode().removeprefix("r#")
+
+
+def has_direct_test_cfg(node: tree_sitter.Node, source: bytes) -> bool:
+    # The walker already prunes excluded ancestors before visiting children.
+    for attribute in leading_attributes(node):
+        expression = cfg_expression(text(source, attribute))
+        if expression is not None and True not in CfgParser(expression).parse():
+            return True
+    return False
 
 
 def parts(source: bytes, node: tree_sitter.Node) -> tuple[str, ...]:
@@ -125,7 +136,7 @@ class Scanner:
         return scope
 
     def walk(self, node, source, file, scope):
-        if node.type in IGNORED or has_test_only_cfg(node, source):
+        if node.type in IGNORED or has_direct_test_cfg(node, source):
             return
         if node.type == "mod_item":
             name = node.child_by_field_name("name")
@@ -153,6 +164,9 @@ class Scanner:
             argument = node.child_by_field_name("argument")
             if argument is not None:
                 for path, alias, glob, leaf in use_leaves(source, argument):
+                    # Anonymous trait imports remain references, not bindings.
+                    if alias == "_":
+                        alias = None
                     scope.imports.append((path, alias, glob))
                     if alias is not None:
                         scope.aliases[alias] = None
