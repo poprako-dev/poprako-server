@@ -78,10 +78,31 @@ pub fn make_label_plus(
                 );
             });
 
-            if let Some(main_text) = select_main_text(unit_info) {
-                //
-                output.push_str(main_text);
+            let main_text = select_main_text(unit_info);
 
+            let typography_note = unit_info
+                .typography_note
+                .as_deref()
+                .filter(|note| !note.trim().is_empty());
+
+            if let Some(text) = main_text {
+                output.push_str(text);
+            }
+
+            if let Some(note) = typography_note {
+                //
+                if main_text.is_some() {
+                    output.push_str("\n\n");
+                }
+
+                output.push_str("###");
+
+                output.push_str(note);
+
+                output.push_str("###");
+            }
+
+            if main_text.is_some() || typography_note.is_some() {
                 output.push('\n');
             }
 

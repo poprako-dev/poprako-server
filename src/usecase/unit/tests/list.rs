@@ -96,6 +96,8 @@ fn unit_info(id: &str) -> UnitInfo {
             y_coord: 2.0,
         },
 
+        typography_note: None,
+        translation_note: None,
         translated_text: Some("translated".to_string()),
         last_translator_id: Some("translator-1".to_string()),
 

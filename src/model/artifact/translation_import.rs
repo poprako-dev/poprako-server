@@ -43,6 +43,11 @@ pub struct UnitTranslationImport {
     /// Whether this Unit is flagged for later review.
     pub is_flagged: bool,
 
+    /// Translation text annotation delivered to typesetters.
+    pub typography_note: Option<String>,
+    /// Communication between translators and proofreaders.
+    pub translation_note: Option<String>,
+
     /// Format-specific source text and workflow state.
     pub source: UnitTranslationImportSource,
 }

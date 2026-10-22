@@ -16,6 +16,8 @@ mod list;
 mod save_tokens;
 // Shared review flag lifecycle and save compatibility.
 mod flagged;
+// Unit annotations, completion, and shared editing contracts.
+mod notes;
 // Shared Page edit counters, rollback, and completion contracts.
 mod page_edit;
 
@@ -44,7 +46,6 @@ use crate::value::unit::UnitTextPart;
 
 #[tokio::test]
 async fn create_uses_token_identity_and_updates_counts() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
@@ -75,7 +76,6 @@ async fn create_uses_token_identity_and_updates_counts() {
 
 #[tokio::test]
 async fn transform_updates_selected_text_without_cascading_targets() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let mut transform_assignment =
@@ -140,7 +140,6 @@ async fn transform_updates_selected_text_without_cascading_targets() {
 
 #[tokio::test]
 async fn overlapping_transform_rolls_back_the_complete_request() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
@@ -193,7 +192,6 @@ async fn overlapping_transform_rolls_back_the_complete_request() {
 
 #[tokio::test]
 async fn delete_then_patch_restores_the_tombstone() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
@@ -229,6 +227,8 @@ async fn delete_then_patch_restores_the_tombstone() {
             is_bubble: Some(false),
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Skip,
             revision: Patch::Skip,
         }]),
@@ -247,7 +247,6 @@ async fn delete_then_patch_restores_the_tombstone() {
 
 #[tokio::test]
 async fn translator_revision_edit_is_rejected_without_mutation() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
@@ -269,6 +268,8 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Skip,
             revision: Patch::Assign {
                 value: UnitRevisionInstr {
@@ -301,7 +302,6 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
 
 #[tokio::test]
 async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
-    //
     let proofreader = save_scope(RoleMask::from(RoleField::PROOFREADER));
 
     save_edits(
@@ -349,7 +349,6 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
 
 #[tokio::test]
 async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
-    //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
@@ -463,6 +462,8 @@ fn create(
             x_coord: 1.0,
             y_coord: 2.0,
         },
+        typography_note: None,
+        translation_note: None,
         translation: translated_text.map(|text| UnitTranslationInstr {
             translated_text: text.to_string(),
         }),
@@ -479,7 +480,6 @@ fn token(user_id: &str) -> UserToken {
 
 // Build a mock scope with workset/chapter/page/assignment fixtures for tests.
 fn save_scope(roles: RoleMask) -> Mock {
-    //
     let mock = Mock::new();
 
     mock.seed_workset(workset());

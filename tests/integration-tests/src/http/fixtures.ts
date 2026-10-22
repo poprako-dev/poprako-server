@@ -634,6 +634,8 @@ export interface UnitCreateEdit {
     is_bubble: boolean;
     is_flagged?: boolean;
     coord: UnitCoordInput;
+    typography_note?: string | null;
+    translation_note?: string | null;
     translation?: UnitTranslationInput | null;
     revision?: UnitRevisionInput | null;
 }
@@ -645,6 +647,8 @@ export interface UnitPatchEdit {
     is_bubble?: boolean | null;
     is_flagged?: boolean | null;
     coord?: UnitCoordInput | null;
+    typography_note?: PatchInput<string> | { type: "skip" } | null;
+    translation_note?: PatchInput<string> | { type: "skip" } | null;
     translation?: PatchInput<UnitTranslationInput>;
     revision?: PatchInput<UnitRevisionInput>;
 }

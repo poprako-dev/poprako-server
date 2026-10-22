@@ -7,6 +7,9 @@
 // import_translation(import)(positive): proofreader imports real LabelPlus material transactionally.
 // import_translation(import)(negative): page-count mismatch rejects import and leaves units and counters unchanged.
 
+// Annotation-only imports and workflow regressions.
+mod notes;
+
 use super::*;
 
 use time::OffsetDateTime;
@@ -206,6 +209,8 @@ fn unit(id: &str, page_id: &str, _index: usize, text: &str) -> UnitInfo {
             x_coord: 0.25,
             y_coord: 0.75,
         },
+        typography_note: None,
+        translation_note: None,
         translated_text: Some(text.into()),
         last_translator_id: Some("translator-1".into()),
         proofread_text: None,

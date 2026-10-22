@@ -28,8 +28,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_hidden_at, f_id, f_is_bubble, f_is_flagged, f_is_proofread,
     f_last_proofreader_id, f_last_translator_id, f_next_id, f_page_id,
-    f_proofread_text, f_translated_text, f_updated_at, f_x_coord, f_y_coord,
-    t_unit as unit_table,
+    f_proofread_text, f_translated_text, f_translation_note, f_typography_note,
+    f_updated_at, f_x_coord, f_y_coord, t_unit as unit_table,
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
@@ -253,6 +253,16 @@ async fn apply_update_rows(
         |change| change.f_last_proofreader_id,
     );
 
+    let typography_note_case =
+        nullable_text_case(changes, Box::new(f_typography_note), |change| {
+            change.f_typography_note
+        });
+
+    let translation_note_case =
+        nullable_text_case(changes, Box::new(f_translation_note), |change| {
+            change.f_translation_note
+        });
+
     let updated_at = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -272,6 +282,8 @@ async fn apply_update_rows(
         translator_id_case.map(|expr| f_last_translator_id.eq(expr)),
         proofread_text_case.map(|expr| f_proofread_text.eq(expr)),
         proofreader_id_case.map(|expr| f_last_proofreader_id.eq(expr)),
+        typography_note_case.map(|expr| f_typography_note.eq(expr)),
+        translation_note_case.map(|expr| f_translation_note.eq(expr)),
         f_updated_at.eq(updated_at),
     ))
     .execute(conn)
@@ -291,13 +303,19 @@ async fn count_visible_units(
 
     let has_revision = btrim(f_proofread_text, UNIT_TEXT_WHITESPACE).ne("");
 
+    let has_typography_note =
+        btrim(f_typography_note, UNIT_TEXT_WHITESPACE).ne("");
+
     let (total, translated, proofread) = unit_table
         .filter(f_page_id.eq(page_id))
         .filter(f_hidden_at.is_null())
         .select((
             diesel::dsl::count_star(),
             diesel::dsl::count(f_id).aggregate_filter(
-                has_translation.or(has_revision).assume_not_null(),
+                has_translation
+                    .or(has_revision)
+                    .or(has_typography_note)
+                    .assume_not_null(),
             ),
             diesel::dsl::count(f_id).aggregate_filter(f_is_proofread),
         ))

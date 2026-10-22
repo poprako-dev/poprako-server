@@ -321,6 +321,8 @@ fn unit_info(
             y_coord: 2.0,
         },
 
+        typography_note: None,
+        translation_note: None,
         translated_text: translated_text.map(str::to_string),
         last_translator_id: None,
 

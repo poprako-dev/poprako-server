@@ -365,6 +365,8 @@ diesel::table! {
         f_is_proofread -> Bool,
         f_x_coord -> Float8,
         f_y_coord -> Float8,
+        f_typography_note -> Nullable<Text>,
+        f_translation_note -> Nullable<Text>,
         f_translated_text -> Nullable<Text>,
         f_last_translator_id -> Nullable<Text>,
         f_proofread_text -> Nullable<Text>,

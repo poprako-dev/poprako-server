@@ -39,6 +39,8 @@ fn batch(page_id: &str, save_id: &str) -> SavePageUnitEditsInstr {
                 x_coord: 0.2,
                 y_coord: 0.3,
             },
+            typography_note: None,
+            translation_note: None,
             translation: None,
             revision: None,
         }],

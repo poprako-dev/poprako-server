@@ -25,7 +25,7 @@ pub struct PageUnitDiffStatsVal {
     /// Original zero-based Chapter position, preserved after filtering.
     pub index: usize,
 
-    /// Units with non-whitespace translation text; revision-only Units are excluded.
+    /// Units with translation text or typesetting annotations; revision-only Units are excluded.
     pub translated_unit_count: usize,
     /// Units with non-whitespace translation and revision texts that differ exactly.
     pub editted_unit_count: usize,

@@ -14,6 +14,8 @@ fn create_edit(id: &str, text: &str) -> UnitEdit {
             x_coord: 1.0,
             y_coord: 2.0,
         },
+        typography_note: None,
+        translation_note: None,
         translation: Some(UnitTranslation {
             translated_text: text.to_string(),
             last_translator_id: "translator-1".to_string(),
@@ -67,6 +69,8 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
         is_bubble: None,
         is_flagged: None,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Assign {
             value: UnitRevision {
@@ -193,6 +197,8 @@ fn sparse_writes_preserve_noop_timestamps_and_validate_skipped_targets() {
         is_bubble: None,
         is_flagged: None,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Skip,
     };

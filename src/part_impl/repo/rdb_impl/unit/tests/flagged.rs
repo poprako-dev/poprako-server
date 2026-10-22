@@ -182,6 +182,8 @@ fn patch(id: &str, is_flagged: Option<bool>) -> UnitEdit {
         is_bubble: None,
         is_flagged,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Skip,
     }

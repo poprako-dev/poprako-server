@@ -28,6 +28,11 @@ pub struct UnitTranslationDocument {
     #[serde(default)]
     pub is_flagged: bool,
 
+    /// Translation text annotation delivered to typesetters.
+    pub typography_note: Option<String>,
+    /// Communication between translators and proofreaders.
+    pub translation_note: Option<String>,
+
     /// Translated text content, or [`None`] if not translated.
     pub translated_text: Option<String>,
     /// Identifier of the translator user, or [`None`]. This is export metadata.

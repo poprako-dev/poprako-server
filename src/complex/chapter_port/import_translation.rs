@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
 
+use crate::complex::unit as unit_complex;
 use crate::model::artifact::translation_document::ChapterTranslationDocument;
 use crate::model::artifact::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
@@ -66,6 +67,12 @@ pub fn build_unit_create(
         next_id: None,
         is_bubble: parsed_unit.is_bubble,
         is_flagged: parsed_unit.is_flagged,
+        typography_note: unit_complex::normalize_note(
+            parsed_unit.typography_note.clone(),
+        ),
+        translation_note: unit_complex::normalize_note(
+            parsed_unit.translation_note.clone(),
+        ),
         coord: UnitCoord {
             x_coord: parsed_unit.x_coord,
             y_coord: parsed_unit.y_coord,
@@ -170,6 +177,12 @@ fn convert_poprako_document(
                 y_coord: unit.y_coord,
                 is_bubble: unit.is_bubble,
                 is_flagged: unit.is_flagged,
+                typography_note: unit_complex::normalize_note(
+                    unit.typography_note,
+                ),
+                translation_note: unit_complex::normalize_note(
+                    unit.translation_note,
+                ),
                 source: UnitTranslationImportSource::PopRaKo {
                     translated_text: normalize_optional_poprako_text(
                         unit.translated_text,

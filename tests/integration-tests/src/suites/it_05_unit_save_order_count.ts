@@ -28,6 +28,7 @@ import { titled } from "../state/prefix.ts";
 import { ROLE } from "../state/roles.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 import { PHASE, stagePhase } from "../state/stages.ts";
+import { verifyUnitNotes } from "./unit_notes.ts";
 import { saveWithConcurrentReplay } from "./unit_save_tokens.ts";
 
 export const IMPLEMENTED = true as const;
@@ -102,6 +103,8 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     assert.ok(restoredFlag.unit_infos[0]!.is_flagged);
     assert.deepEqual(await listPageUnitFlaggedStats(trans01.api, mainChapterId), flaggedStats);
     assert.deepEqual((await getChapter(ctx.sadmin, mainChapterId)).stages, stagesBeforeFlags);
+
+    await verifyUnitNotes(ctx);
 
     // ---------- F2. next_id insert ----------
 

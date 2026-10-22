@@ -258,6 +258,8 @@ fn make_unit_export(
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,
         is_flagged: unit_info.is_flagged,
+        typography_note: unit_info.typography_note.clone(),
+        translation_note: unit_info.translation_note.clone(),
         translated_text: unit_info.translated_text.clone(),
         translator_id: unit_info.last_translator_id.clone(),
         is_proofread: unit_info.is_proofread,

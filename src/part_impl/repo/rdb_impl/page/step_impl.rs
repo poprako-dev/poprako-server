@@ -35,7 +35,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_hidden_at as unit_hidden_at, f_is_flagged as unit_is_flagged,
     f_page_id as unit_page_id, f_proofread_text as unit_proofread_text,
-    f_translated_text as unit_translated_text, t_unit,
+    f_translated_text as unit_translated_text,
+    f_typography_note as unit_typography_note, t_unit,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
@@ -222,6 +223,9 @@ pub async fn list_unit_diff_stats(
 
     let has_revision = btrim(unit_proofread_text, UNIT_TEXT_WHITESPACE).ne("");
 
+    let has_typography_note =
+        btrim(unit_typography_note, UNIT_TEXT_WHITESPACE).ne("");
+
     let has_edit = has_translation
         .and(has_revision)
         .and(unit_proofread_text.is_distinct_from(unit_translated_text));
@@ -241,7 +245,13 @@ pub async fn list_unit_diff_stats(
         .select((
             f_id,
             f_index,
-            count(case_when(has_translation, unit_page_id).nullable()),
+            count(
+                case_when(
+                    has_translation.or(has_typography_note),
+                    unit_page_id,
+                )
+                .nullable(),
+            ),
             count(case_when(has_edit, unit_page_id).nullable()),
             count(case_when(has_append, unit_page_id).nullable()),
         ))

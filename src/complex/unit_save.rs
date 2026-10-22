@@ -131,6 +131,8 @@ fn patch_create(create: &mut UnitEdit, edit: &UnitEdit) -> BaseRest<()> {
             is_bubble,
             is_flagged,
             coord,
+            typography_note,
+            translation_note,
             translation,
             revision,
             ..
@@ -141,6 +143,8 @@ fn patch_create(create: &mut UnitEdit, edit: &UnitEdit) -> BaseRest<()> {
             coord: position,
             translation: translated,
             revision: proofread,
+            typography_note: typography_annotation,
+            translation_note: translation_annotation,
             ..
         },
     ) = (create, edit)
@@ -164,6 +168,10 @@ fn patch_create(create: &mut UnitEdit, edit: &UnitEdit) -> BaseRest<()> {
 
     patch_initial(revision, proofread);
 
+    patch_initial(typography_note, typography_annotation);
+
+    patch_initial(translation_note, translation_annotation);
+
     accept(())
 }
 
@@ -176,6 +184,8 @@ const fn has_content(edit: &UnitEdit) -> bool {
             is_bubble,
             is_flagged,
             coord,
+            typography_note,
+            translation_note,
             translation,
             revision,
             ..
@@ -186,6 +196,8 @@ const fn has_content(edit: &UnitEdit) -> bool {
                 || coord.is_some()
                 || !matches!(translation, Patch::Skip)
                 || !matches!(revision, Patch::Skip)
+                || !typography_note.is_skip()
+                || !translation_note.is_skip()
         }
 
         _ => false,

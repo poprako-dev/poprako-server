@@ -113,6 +113,8 @@ fn seed_archive_descendants(
             x_coord: 1.5,
             y_coord: 2.5,
         },
+        typography_note: None,
+        translation_note: None,
         translated_text: Some("translated".into()),
         last_translator_id: Some("user-1".into()),
         proofread_text: Some("proofread".into()),

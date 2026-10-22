@@ -237,6 +237,9 @@ export interface UnitInfoView {
     is_proofread: boolean;
     x_coord: number;
     y_coord: number;
+    typography_note?: string | null;
+    translation_note?: string | null;
+
     translated_text: string | null;
     last_translator_id: string | null;
     proofread_text: string | null;
@@ -412,6 +415,9 @@ export interface UnitTranslationPortView {
 
     is_bubble: boolean;
     is_flagged: boolean;
+
+    typography_note?: string | null;
+    translation_note?: string | null;
 
     translated_text: string | null;
     translator_id: string | null;

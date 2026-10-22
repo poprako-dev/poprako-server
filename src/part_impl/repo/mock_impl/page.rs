@@ -114,8 +114,10 @@ fn list_unit_diff_stats(
                 let has_revision =
                     has_unit_text(unit_info.proofread_text.as_deref());
 
-                unit_diff_stats.translated_unit_count +=
-                    usize::from(has_translation);
+                unit_diff_stats.translated_unit_count += usize::from(
+                    has_translation
+                        || has_unit_text(unit_info.typography_note.as_deref()),
+                );
 
                 unit_diff_stats.editted_unit_count += usize::from(
                     has_translation

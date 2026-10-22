@@ -255,7 +255,21 @@ where
         }
     };
 
-    let stages = import_stages(edit_perm);
+    let mut stages = import_stages(edit_perm);
+
+    if !stages.contains(&Stage::Translate)
+        && imported_pages
+            .iter()
+            .flat_map(|page| &page.units)
+            .any(|unit| {
+                //
+                unit.typography_note
+                    .as_ref()
+                    .is_some_and(|note| !note.trim().is_empty())
+            })
+    {
+        stages.insert(0, Stage::Translate);
+    }
 
     accept((edit_perm, format, mode, imported_pages, stages))
 }

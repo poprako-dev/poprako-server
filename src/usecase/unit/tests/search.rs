@@ -290,6 +290,8 @@ fn unit_info(
             x_coord: 1.0,
             y_coord: 2.0,
         },
+        typography_note: None,
+        translation_note: None,
         translated_text: Some(translated_text.to_string()),
         last_translator_id: Some("translator-1".to_string()),
         is_proofread: false,

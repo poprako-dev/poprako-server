@@ -20,6 +20,8 @@ fn patch(id: &str) -> UnitEdit {
         is_bubble: None,
         is_flagged: None,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Skip,
     }

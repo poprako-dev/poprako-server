@@ -579,6 +579,8 @@ fn create_text_edit(
             x_coord: 1.0,
             y_coord: 2.0,
         },
+        typography_note: None,
+        translation_note: None,
         translation: translated_text.map(|translated_text| UnitTranslation {
             translated_text: translated_text.to_string(),
             last_translator_id: user_id.to_string(),

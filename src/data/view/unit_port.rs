@@ -34,6 +34,13 @@ pub struct UnitTranslationPortView {
     #[serde(default)]
     pub is_flagged: bool,
 
+    /// Translation text annotation delivered to typesetters.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub typography_note: Option<String>,
+    /// Communication between translators and proofreaders.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation_note: Option<String>,
+
     /// Translated text content, or [`None`] if not translated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
@@ -63,6 +70,8 @@ impl From<UnitTranslationDocument> for UnitTranslationPortView {
             y_coord: document.y_coord,
             is_bubble: document.is_bubble,
             is_flagged: document.is_flagged,
+            typography_note: document.typography_note,
+            translation_note: document.translation_note,
             translated_text: document.translated_text,
             translator_id: document.translator_id,
             is_proofread: document.is_proofread,

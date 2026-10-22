@@ -9876,7 +9876,7 @@
                 },
                 "translated_unit_count": {
                   "type": "integer",
-                  "description": "Units with non-whitespace translation text; revision-only Units are excluded.",
+                  "description": "Units with translation text or typesetting annotations; revision-only Units are excluded.",
                   "minimum": 0
                 }
               }
@@ -10316,6 +10316,20 @@
                     "null"
                   ],
                   "description": "Current translated text."
+                },
+                "translation_note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Communication between translators and proofreaders."
+                },
+                "typography_note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Translation text annotation delivered to typesetters."
                 },
                 "updated_at": {
                   "type": "integer",
@@ -11700,7 +11714,7 @@
           },
           "translated_unit_count": {
             "type": "integer",
-            "description": "Units with non-whitespace translation text; revision-only Units are excluded.",
+            "description": "Units with translation text or typesetting annotations; revision-only Units are excluded.",
             "minimum": 0
           }
         }
@@ -12336,6 +12350,20 @@
                     "description": "Optional initial translation assignment."
                   }
                 ]
+              },
+              "translation_note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Initial communication between translators and proofreaders."
+              },
+              "typography_note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Initial text annotation delivered to typesetters."
               }
             }
           },
@@ -12412,6 +12440,28 @@
                   {
                     "$ref": "#/components/schemas/PatchInput_UnitTranslationInstr",
                     "description": "Three-state translation patch."
+                  }
+                ]
+              },
+              "translation_note": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PatchInput_String",
+                    "description": "Three-state translator and proofreader communication patch."
+                  }
+                ]
+              },
+              "typography_note": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PatchInput_String",
+                    "description": "Three-state typesetting annotation patch."
                   }
                 ]
               }
@@ -12507,6 +12557,20 @@
               "null"
             ],
             "description": "Current translated text."
+          },
+          "translation_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Communication between translators and proofreaders."
+          },
+          "typography_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Translation text annotation delivered to typesetters."
           },
           "updated_at": {
             "type": "integer",
@@ -12665,12 +12729,26 @@
             ],
             "description": "Translated text content, or [`None`] if not translated."
           },
+          "translation_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Communication between translators and proofreaders."
+          },
           "translator_id": {
             "type": [
               "string",
               "null"
             ],
             "description": "Identifier of the translator user, or [`None`]. This is export metadata."
+          },
+          "typography_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Translation text annotation delivered to typesetters."
           },
           "unit_id": {
             "type": "string",

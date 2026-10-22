@@ -34,6 +34,9 @@ pub struct UnitInfoRow {
     pub f_x_coord: f64,
     pub f_y_coord: f64,
 
+    pub f_typography_note: Option<String>,
+    pub f_translation_note: Option<String>,
+
     pub f_translated_text: Option<String>,
     pub f_last_translator_id: Option<String>,
 
@@ -56,6 +59,8 @@ impl From<UnitInfoRow> for UnitInfo {
                 x_coord: row.f_x_coord,
                 y_coord: row.f_y_coord,
             },
+            typography_note: row.f_typography_note,
+            translation_note: row.f_translation_note,
             translated_text: row.f_translated_text,
             last_translator_id: row.f_last_translator_id,
             is_proofread: row.f_is_proofread,
@@ -84,6 +89,9 @@ pub struct UnitEntryRow<'a> {
     pub f_x_coord: f64,
     pub f_y_coord: f64,
 
+    pub f_typography_note: Option<&'a str>,
+    pub f_translation_note: Option<&'a str>,
+
     pub f_translated_text: Option<&'a str>,
     pub f_last_translator_id: Option<&'a str>,
 
@@ -107,6 +115,8 @@ impl<'a> UnitEntryRow<'a> {
             is_bubble,
             is_flagged,
             coord,
+            typography_note,
+            translation_note,
             translation,
             revision,
             ..
@@ -146,6 +156,8 @@ impl<'a> UnitEntryRow<'a> {
             f_is_proofread: is_proofread,
             f_x_coord: coord.x_coord,
             f_y_coord: coord.y_coord,
+            f_typography_note: typography_note.as_deref(),
+            f_translation_note: translation_note.as_deref(),
             f_translated_text: translated_text,
             f_last_translator_id: last_translator_id,
             f_proofread_text: proofread_text,
@@ -169,6 +181,9 @@ pub struct UnitAspectRow<'a> {
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
 
+    pub f_typography_note: Option<Option<&'a str>>,
+    pub f_translation_note: Option<Option<&'a str>>,
+
     pub f_translated_text: Option<Option<&'a str>>,
     pub f_last_translator_id: Option<Option<&'a str>>,
 
@@ -189,6 +204,8 @@ impl<'a> UnitAspectRow<'a> {
             f_is_proofread: None,
             f_x_coord: None,
             f_y_coord: None,
+            f_typography_note: None,
+            f_translation_note: None,
             f_translated_text: None,
             f_last_translator_id: None,
             f_proofread_text: None,
@@ -204,6 +221,8 @@ impl<'a> UnitAspectRow<'a> {
             is_bubble,
             is_flagged,
             coord,
+            typography_note,
+            translation_note,
             translation,
             revision,
             ..
@@ -222,6 +241,24 @@ impl<'a> UnitAspectRow<'a> {
 
             self.f_y_coord = Some(coord.y_coord);
         }
+
+        self.f_typography_note = match typography_note {
+            //
+            Patch::Clear => Some(None),
+
+            Patch::Assign { value } => Some(Some(value.as_str())),
+
+            Patch::Skip => None,
+        };
+
+        self.f_translation_note = match translation_note {
+            //
+            Patch::Clear => Some(None),
+
+            Patch::Assign { value } => Some(Some(value.as_str())),
+
+            Patch::Skip => None,
+        };
 
         match translation {
             //
