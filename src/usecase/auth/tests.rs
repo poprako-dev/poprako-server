@@ -89,12 +89,15 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
         true,
     ));
 
-    let val = register(
-        (&mock, &mock, &mock, &mock),
-        register_data("qid-1", "Nick", "code-1"),
-    )
-    .await
-    .unwrap();
+    let mut instr = register_data(
+        "\u{2003}qid-1\u{00a0}",
+        "\u{3000}Nick\u{2009}",
+        "\u{2003}code-1\u{00a0}",
+    );
+
+    instr.password = "\u{2003}password\u{00a0}".into();
+
+    let val = register((&mock, &mock, &mock, &mock), instr).await.unwrap();
 
     assert_eq!(val.token, format!("token:{}", val.user_id));
 
@@ -103,6 +106,10 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     assert_eq!(snapshot.users.len(), 1);
 
     assert_eq!(snapshot.users.first().unwrap().id, val.user_id);
+
+    assert_eq!(snapshot.users.first().unwrap().qid, "qid-1");
+
+    assert_eq!(snapshot.users.first().unwrap().nickname, "Nick");
 
     assert_eq!(snapshot.members.len(), 1);
 
@@ -123,6 +130,15 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     assert_eq!(payload.invitor_id, "invitor-1");
 
     assert_eq!(payload.invitee_qid, "qid-1");
+
+    let login_val = login(
+        (&mock, &mock),
+        login_data("\u{2003}qid-1\u{00a0}", "\u{2003}password\u{00a0}"),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(login_val.user_id, val.user_id);
 }
 
 #[tokio::test]
@@ -203,9 +219,12 @@ async fn login_returns_signed_token_for_matching_credentials() {
         credential("user-1", "password"),
     );
 
-    let val = login((&mock, &mock), login_data("qid-1", "password"))
-        .await
-        .unwrap();
+    let val = login(
+        (&mock, &mock),
+        login_data("\u{2003}qid-1\u{00a0}", "password"),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(val.user_id, "user-1");
 

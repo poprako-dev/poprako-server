@@ -182,7 +182,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
             &context.state,
             None,
             &oper.entry.termbase_id,
-            &oper.entry.source,
+            oper.entry.source,
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -201,9 +201,14 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
         let term_info = TermInfo {
             id: oper.entry.id.clone(),
             termbase_id: oper.entry.termbase_id.clone(),
-            source: oper.entry.source.clone(),
-            targets: oper.entry.targets.clone(),
-            comment: oper.entry.comment.clone(),
+            source: oper.entry.source.to_owned(),
+            targets: oper
+                .entry
+                .targets
+                .iter()
+                .map(|target| (*target).to_owned())
+                .collect(),
+            comment: oper.entry.comment.map(str::to_owned),
             creator_id: oper.entry.creator_id.clone(),
             created_at: time,
             updated_at: time,
@@ -300,7 +305,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
             &context.state,
             Some(&oper.update.id),
             &current.termbase_id,
-            &oper.update.source,
+            oper.update.source,
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -312,11 +317,16 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
             .find(|term_info| term_info.id == oper.update.id)
             .ok_or_else(|| expected("error-term-not-found"))?;
 
-        term_info.source = oper.update.source.clone();
+        term_info.source = oper.update.source.to_owned();
 
-        term_info.targets = oper.update.targets.clone();
+        term_info.targets = oper
+            .update
+            .targets
+            .iter()
+            .map(|target| (*target).to_owned())
+            .collect();
 
-        term_info.comment = oper.update.comment.clone();
+        term_info.comment = oper.update.comment.map(str::to_owned);
 
         term_info.updated_at = now();
 
@@ -377,7 +387,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
                 &context.state,
                 None,
                 &entry.termbase_id,
-                &entry.source,
+                entry.source,
             ) {
                 return Err(expected("error-already-exists"));
             }
@@ -387,9 +397,13 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
             context.state.terms.push(TermInfo {
                 id: entry.id.clone(),
                 termbase_id: entry.termbase_id.clone(),
-                source: entry.source.clone(),
-                targets: entry.targets.clone(),
-                comment: entry.comment.clone(),
+                source: entry.source.to_owned(),
+                targets: entry
+                    .targets
+                    .iter()
+                    .map(|target| (*target).to_owned())
+                    .collect(),
+                comment: entry.comment.map(str::to_owned),
                 creator_id: entry.creator_id.clone(),
                 created_at: time,
                 updated_at: time,
@@ -404,7 +418,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
                 &context.state,
                 Some(&update.id),
                 &current.termbase_id,
-                &update.source,
+                update.source,
             ) {
                 return Err(expected("error-already-exists"));
             }
@@ -416,11 +430,15 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
                 .find(|term_info| term_info.id == update.id)
                 .ok_or_else(|| expected("error-term-not-found"))?;
 
-            term_info.source = update.source.clone();
+            term_info.source = update.source.to_owned();
 
-            term_info.targets = update.targets.clone();
+            term_info.targets = update
+                .targets
+                .iter()
+                .map(|target| (*target).to_owned())
+                .collect();
 
-            term_info.comment = update.comment.clone();
+            term_info.comment = update.comment.map(str::to_owned);
 
             term_info.updated_at = now();
         }

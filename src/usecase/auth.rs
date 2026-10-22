@@ -65,24 +65,29 @@ where
     A: TokenAuth + Sync,
     D: Develop + Send + Sync,
 {
+    let qid = instr.qid.trim();
+
+    let nickname = instr.nickname.trim();
+
+    let code = instr.code.trim();
+
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
             //
 
-            let invitation_info =
-                GetMemberInvitationInfoExcluded { code: &instr.code }
-                    .step_on(repo, context)
-                    .await?;
+            let invitation_info = GetMemberInvitationInfoExcluded { code }
+                .step_on(repo, context)
+                .await?;
 
             // Verify the invitation was issued for this QQ ID.
-            if invitation_info.invitee_qid != instr.qid {
+            if invitation_info.invitee_qid != qid {
                 //
                 let err_msg = trl("error-invalid-invitation-code");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
                     err_msg = %err_msg,
-                    invitee_qid = %instr.qid,
+                    invitee_qid = %qid,
                     invitation_invitee_qid = %invitation_info.invitee_qid,
                     "expected error: invitation code does not match invitee",
                 );
@@ -98,8 +103,8 @@ where
 
             let user_entry = UserEntry {
                 id: user_complex::gen_id(),
-                qid: instr.qid,
-                nickname: instr.nickname,
+                qid: qid.into(),
+                nickname: nickname.into(),
                 password_hash,
             };
 
@@ -184,8 +189,9 @@ where
     R: UserRepo<C>,
     A: TokenAuth + Sync,
 {
-    let user_credential =
-        GetUserCredential { qid: &instr.qid }.run_on(repo).await?;
+    let qid = instr.qid.trim();
+
+    let user_credential = GetUserCredential { qid }.run_on(repo).await?;
 
     if !user_complex::verify_password(
         &instr.password,
@@ -198,7 +204,7 @@ where
         tracing::warn!(
             err_variant = ?ExpectedVariant::Auth,
             err_msg = %err_msg,
-            qid = %instr.qid,
+            qid = %qid,
             "expected error: invalid login credentials",
         );
 

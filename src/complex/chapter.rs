@@ -15,6 +15,9 @@ mod role;
 /// Permission gates for chapter entity operations.
 pub mod perm;
 
+#[cfg(test)]
+mod tests;
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -36,13 +39,18 @@ pub fn gen_id() -> String {
     next_snowflake_id()
 }
 
-/// Returns the user-supplied subtitle if present and non-empty, or a
-/// generated default in the format "Ch. N" (1-based).
-pub fn subtitle_or_default(subtitle: Option<String>, index: usize) -> String {
+/// Returns the trimmed user-supplied subtitle if non-empty, or a generated
+/// default in the format "Ch. N" (1-based).
+pub fn subtitle_or_default(
+    subtitle: Option<&str>,
+    index: usize,
+) -> Cow<'_, str> {
     //
+    let subtitle = subtitle.map(str::trim);
+
     subtitle
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| default_subtitle(index))
+        .filter(|value| !value.is_empty())
+        .map_or_else(|| Cow::Owned(default_subtitle(index)), Cow::Borrowed)
 }
 
 /// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]

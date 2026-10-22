@@ -2,7 +2,7 @@
 
 /// The data needed to insert a team board comment row.
 #[cfg_attr(test, derive(Clone))]
-pub struct CommentEntry {
+pub struct CommentEntry<'a> {
     /// Unique identifier for the new comment.
     pub id: String,
 
@@ -12,5 +12,5 @@ pub struct CommentEntry {
     pub user_id: String,
 
     /// The text body of the comment being posted.
-    pub content: String,
+    pub content: &'a str,
 }

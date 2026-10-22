@@ -3,7 +3,7 @@
 use crate::value::role::RoleMask;
 
 /// The data needed to insert an assignment invitation row.
-pub struct AssignmentInvitationEntry {
+pub struct AssignmentInvitationEntry<'a> {
     /// Unique identifier to insert for the new invitation row.
     pub id: String,
 
@@ -13,7 +13,7 @@ pub struct AssignmentInvitationEntry {
     /// Foreign key identifying the user extending the invitation.
     pub inviter_id: String,
     /// Qualified identifier of the user being invited.
-    pub invitee_qid: String,
+    pub invitee_qid: &'a str,
 
     /// Unique secret token generated for this invitation.
     pub code: String,

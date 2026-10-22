@@ -26,11 +26,11 @@ pub struct ComicEntry<'a> {
     pub index: usize,
 
     /// Display title of the comic series or volume.
-    pub title: String,
+    pub title: &'a str,
     /// Name of the author or artist responsible for this comic.
-    pub author: String,
+    pub author: &'a str,
     /// Optional synopsis or editorial notes to accompany the comic.
-    pub description: Option<String>,
+    pub description: Option<&'a str>,
 
     /// The user who creates this comic record.
     pub creator_id: Cow<'a, str>,
@@ -38,14 +38,14 @@ pub struct ComicEntry<'a> {
 
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicRepl {
+pub struct ComicRepl<'a> {
     /// Identifies which comic record to update.
     pub id: String,
 
     /// Updated display title of the comic series or volume.
-    pub title: String,
+    pub title: &'a str,
     /// Updated name of the author or artist.
-    pub author: String,
+    pub author: &'a str,
     /// Updated synopsis or editorial notes.
-    pub description: Option<String>,
+    pub description: Option<&'a str>,
 }

@@ -216,7 +216,7 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
             PageIssuesInstr {
                 page_artwork_id: "artwork-0".into(),
                 issues: vec![IssueInstr {
-                    variant: "custom issue".into(),
+                    variant: "\u{2003}custom issue\u{2003}".into(),
                     layer_name: Some("  他们两个…  ".into()),
                     rect: Some(IssueRectInstr {
                         x_coord: 0.1,
@@ -261,6 +261,8 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     assert_eq!(first.page_artwork_id, "artwork-0");
 
     assert_eq!(first.index, 0);
+
+    assert_eq!(first.variant, "custom issue");
 
     assert_eq!(first.note, "  line one\nline two  ");
 
@@ -400,7 +402,7 @@ async fn rejected_input_preserves_current_review() {
             instr.pages.first_mut().unwrap().issues.first_mut().unwrap();
 
         match field {
-            "variant" => issue.variant = " \n\t".into(),
+            "variant" => issue.variant = "\u{2003}\n\t".into(),
             _ => issue.layer_name = Some(" \n\t".into()),
         }
 

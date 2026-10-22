@@ -103,7 +103,7 @@ where
         id: comment_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        content: instr.content,
+        content: instr.content.trim(),
     };
 
     let comment_info = CreateComment {

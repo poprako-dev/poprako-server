@@ -97,9 +97,9 @@ where
                 id: comic_complex::gen_id(),
                 workset_id: instr.workset_id.into(),
                 index,
-                title: instr.title,
-                author: instr.author,
-                description: instr.description,
+                title: instr.title.trim(),
+                author: instr.author.trim(),
+                description: instr.description.as_deref().map(str::trim),
                 creator_id: token.user_id.as_str().into(),
             };
 
@@ -213,9 +213,9 @@ where
 
     let comic_info_update = ComicRepl {
         id: instr.id,
-        title: instr.title,
-        author: instr.author,
-        description: instr.description,
+        title: instr.title.trim(),
+        author: instr.author.trim(),
+        description: instr.description.as_deref().map(str::trim),
     };
 
     UpdateComic {

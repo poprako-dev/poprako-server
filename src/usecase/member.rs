@@ -166,6 +166,8 @@ where
 {
     let current_user_id = token.user_id;
 
+    let code = instr.code.trim();
+
     let member_info = nucl
         .coord(async move |context| {
             //
@@ -177,7 +179,7 @@ where
             .await?;
 
             let member_invitation_info =
-                GetMemberInvitationInfoExcluded { code: &instr.code }
+                GetMemberInvitationInfoExcluded { code }
                     .step_on(repo, context)
                     .await?;
 
@@ -273,7 +275,7 @@ where
     R: MemberRepo<C> + Sync,
     O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let member_list_spec = instr.try_into()?;
+    let member_list_spec = (&instr).try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         //

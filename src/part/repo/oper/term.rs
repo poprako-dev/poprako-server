@@ -9,7 +9,7 @@ use crate::value::pagination::PubListLimit;
 #[oper(output = TermInfo)]
 pub struct CreateTerm<'a> {
     /// The term entry to insert.
-    pub entry: &'a TermEntry,
+    pub entry: &'a TermEntry<'a>,
 }
 
 /// Looks up a term by identifier.
@@ -56,7 +56,7 @@ pub struct LockTerm<'a> {
 #[oper(output = ())]
 pub struct UpdateTerm<'a> {
     /// The update payload for the term.
-    pub update: &'a TermRepl,
+    pub update: &'a TermRepl<'a>,
 }
 
 /// Applies imported terminology inserts and replacements together.
@@ -67,9 +67,9 @@ pub struct UpsertTerms<'a> {
     pub termbase_id: &'a str,
 
     /// New terminology entries to insert.
-    pub entries: &'a [TermEntry],
+    pub entries: &'a [TermEntry<'a>],
     /// Existing terminology entries to replace.
-    pub updates: &'a [TermRepl],
+    pub updates: &'a [TermRepl<'a>],
 }
 
 /// Deletes one term.

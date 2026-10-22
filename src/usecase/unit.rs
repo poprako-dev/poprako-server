@@ -156,7 +156,7 @@ where
         phrase,
     } = instr;
 
-    let phrase = unit_complex::normalize_search_phrase(phrase)?;
+    let phrase = unit_complex::normalize_search_phrase(&phrase)?;
 
     let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
         repo,
@@ -177,7 +177,7 @@ where
             let search_ids = SearchChapterUnitIds {
                 chapter_id: &chapter_id,
                 part,
-                phrase: &phrase,
+                phrase,
                 fetch_count: MAX_UNIT_SEARCH_MATCH_COUNT + 1,
             }
             .step_on(repo, context)

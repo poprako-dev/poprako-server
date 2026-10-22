@@ -14,14 +14,16 @@ import tomllib
 import unittest
 
 import tree_sitter
-import tree_sitter_rust
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "linters"))
 sys.path.insert(0, str(ROOT / "linters-extra"))
 
+from analysis_session import parse_rust
 from production_source import production_files, production_source
-from rust_style_lint.checkers.module_dependency import file_module, has_test_only_cfg
+from rust_style_lint.checkers.module_dependency import (
+    CfgParser, cfg_expression, file_module, leading_attributes,
+)
 
 
 # This is a denylist, never an exhaustive list of permitted dependencies.
@@ -34,7 +36,7 @@ FORBIDDEN = {
     "part": frozenset({"complex", "data", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
     "usecase": frozenset({"api", "extra", "part_impl", "harn", "shared"}),
 }
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 IGNORED = {"line_comment", "block_comment", "string_literal", "raw_string_literal", "char_literal", "byte_literal"}
 PATHS = {"scoped_identifier", "scoped_type_identifier"}
 IDENTIFIERS = {"identifier", "type_identifier", "crate", "self", "super"}
@@ -60,6 +62,15 @@ class Reference:
 
 def text(source: bytes, node: tree_sitter.Node) -> str:
     return source[node.start_byte:node.end_byte].decode().removeprefix("r#")
+
+
+def has_direct_test_cfg(node: tree_sitter.Node, source: bytes) -> bool:
+    # The walker already prunes excluded ancestors before visiting children.
+    for attribute in leading_attributes(node):
+        expression = cfg_expression(text(source, attribute))
+        if expression is not None and True not in CfgParser(expression).parse():
+            return True
+    return False
 
 
 def parts(source: bytes, node: tree_sitter.Node) -> tuple[str, ...]:
@@ -125,7 +136,7 @@ class Scanner:
         return scope
 
     def walk(self, node, source, file, scope):
-        if node.type in IGNORED or has_test_only_cfg(node, source):
+        if node.type in IGNORED or has_direct_test_cfg(node, source):
             return
         if node.type == "mod_item":
             name = node.child_by_field_name("name")
@@ -153,6 +164,9 @@ class Scanner:
             argument = node.child_by_field_name("argument")
             if argument is not None:
                 for path, alias, glob, leaf in use_leaves(source, argument):
+                    # Anonymous trait imports remain references, not bindings.
+                    if alias == "_":
+                        alias = None
                     scope.imports.append((path, alias, glob))
                     if alias is not None:
                         scope.aliases[alias] = None
@@ -236,7 +250,7 @@ class Scanner:
             if file.name == "main.rs" or file.name == "schema.rs":
                 continue
             source = production_source(file, self.root)
-            node = PARSER.parse(source).root_node
+            node = parse_rust(source).root_node
             module = file_module(self.root / "src", file)
             scope = self.scope(module, module_scope=True)
             if node.has_error and module and module[0] in FORBIDDEN:

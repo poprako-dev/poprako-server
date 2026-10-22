@@ -295,12 +295,12 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
         let issues = [IssueEntry {
             id: "composite-issue".into(),
-            page_artwork_id: "composite-a".into(),
+            page_artwork_id: "composite-a",
             index: 0,
-            variant: "custom".into(),
+            variant: "custom",
             layer_name: None,
             rect: None,
-            note: "review".into(),
+            note: "review",
         }];
 
         let repl = ChapterIssuesRepl {

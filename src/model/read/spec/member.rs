@@ -5,13 +5,13 @@ use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing memberships.
-pub enum MemberListSpec {
+pub enum MemberListSpec<'a> {
     /// List teams/memberships owned by a specific user.
     User {
         /// ID of the user whose memberships to list.
-        owner_id: String,
+        owner_id: &'a str,
         /// Optional include flags for related data.
-        incl_opt: Vec<MemberInclOpt>,
+        incl_opt: &'a [MemberInclOpt],
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -21,13 +21,13 @@ pub enum MemberListSpec {
     /// List members of a specific team, optionally narrowed by role or nickname.
     Team {
         /// ID of the team whose members to list.
-        team_id: String,
+        team_id: &'a str,
         /// Fuzzy filter by member nickname.
-        fuzzy_nickname: Option<String>,
+        fuzzy_nickname: Option<&'a str>,
         /// Optional role filter.
         role: Option<RoleField>,
         /// Optional include flags for related data.
-        incl_opt: Vec<MemberInclOpt>,
+        incl_opt: &'a [MemberInclOpt],
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -35,9 +35,9 @@ pub enum MemberListSpec {
     },
 }
 
-impl MemberListSpec {
+impl MemberListSpec<'_> {
     /// Returns the include options regardless of which variant the spec is.
-    pub fn incl_opt(&self) -> &[MemberInclOpt] {
+    pub const fn incl_opt(&self) -> &[MemberInclOpt] {
         //
         match self {
             //

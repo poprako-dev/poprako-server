@@ -22,7 +22,7 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
 
 fn join_team_instr() -> JoinTeamInstr {
     JoinTeamInstr {
-        code: "INV123".into(),
+        code: "\u{2003}INV123\u{00a0}".into(),
     }
 }
 

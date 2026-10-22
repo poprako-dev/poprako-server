@@ -117,11 +117,11 @@ pub async fn get_info_by_id(
 #[expect(clippy::too_many_lines, reason = "builds the typed Comic list query")]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ComicListSpec,
+    spec: &ComicListSpec<'_>,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
     let mut query = t_comic
-        .filter(f_workset_id.eq(spec.workset_id.as_str()))
+        .filter(f_workset_id.eq(spec.workset_id))
         .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .into_boxed();
@@ -283,7 +283,7 @@ pub async fn list_infos(
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<ComicInfo>>>()?;
 
-    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
+    incl::comic::populate_comic_incls(conn, &mut infos, spec.incl_opt).await?;
 
     accept(infos)
 }
@@ -292,7 +292,7 @@ pub async fn list_infos(
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ComicRepl,
+    update: &ComicRepl<'_>,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -301,14 +301,14 @@ pub async fn update_info(
 
     let composed_title = comic_complex::compose_title(
         comic_info.index,
-        &update.author,
-        &update.title,
+        update.author,
+        update.title,
     );
 
     let aspect = ComicAspectRow::new(now)
-        .title(&update.title)
-        .author(&update.author)
-        .description(update.description.as_deref())
+        .title(update.title)
+        .author(update.author)
+        .description(update.description)
         .composed_title(composed_title);
 
     let updated_count = diesel::update(

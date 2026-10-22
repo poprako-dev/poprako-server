@@ -93,7 +93,8 @@ where
         .step_on(repo, context)
         .await?;
 
-    let subtitle = chapter_complex::subtitle_or_default(subtitle, index);
+    let subtitle =
+        chapter_complex::subtitle_or_default(subtitle.as_deref(), index);
 
     let chapter_id = chapter_complex::gen_id();
 

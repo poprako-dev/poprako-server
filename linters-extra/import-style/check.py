@@ -10,15 +10,15 @@ import tomllib
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 PATH_NODE_TYPES = {"crate", "identifier", "scoped_identifier", "self", "super"}
 
 
@@ -124,7 +124,7 @@ def direct_module_names(path: Path) -> set[str]:
         return set()
 
     source = path.read_bytes()
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     names: set[str] = set()
 
     for node in tree.root_node.named_children:
@@ -222,7 +222,7 @@ def check(root: Path) -> list[str]:
 
     for path in production_files(root):
         source = production_source(path, root)
-        tree = PARSER.parse(source)
+        tree = parse_rust(source)
 
         for error in parse_errors(tree.root_node):
             violations.append(

@@ -123,8 +123,8 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
             id: format!("{prefix}comic-{comic_index:04}"),
             workset_id: fixture.workset_entry.id.clone().into(),
             index: comic_index,
-            title: "Benchmark comic".into(),
-            author: "Benchmark author".into(),
+            title: "Benchmark comic",
+            author: "Benchmark author",
             description: None,
             creator_id: creator_id.clone().into(),
         })

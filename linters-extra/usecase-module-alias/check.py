@@ -18,14 +18,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 DEFAULT_ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 
 
 @dataclass(frozen=True)
@@ -69,7 +69,7 @@ def rust_files(root: Path) -> list[RustFile]:
             path=path,
             module=file_module(path, root),
             source=(source := production_source(path, root)),
-            tree=PARSER.parse(source),
+            tree=parse_rust(source),
         )
         for path in paths
     ]
@@ -241,7 +241,7 @@ def check_root(root: Path) -> list[str]:
     alias_pattern = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*_usecase"
     for path in production_files(root):
         source = production_source(path, root)
-        file = RustFile(path, source_module(path, root), source, PARSER.parse(source))
+        file = RustFile(path, source_module(path, root), source, parse_rust(source))
         nodes = list(descendants(file.tree.root_node))
         scopes = {}
 

@@ -16,9 +16,9 @@ import tempfile
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
@@ -41,7 +41,6 @@ ACTION_PREFIXES = (
     "Update",
 )
 DECLARATION_KINDS = ("struct_item", "enum_item", "type_item")
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
 def rust_files(root: Path) -> list[Path]:
@@ -103,7 +102,7 @@ def role_and_domain(path: Path, root: Path) -> tuple[str, str]:
 
 def check_file(path: Path, root: Path, domains: set[str]) -> list[str]:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     role, source_domain = role_and_domain(path, root)
     expected_suffix = ROLE_SUFFIXES[role]
     diagnostics: list[str] = []

@@ -44,14 +44,14 @@ pub async fn find_info_by_qid(
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    repl: &UserInfoRepl,
+    repl: &UserInfoRepl<'_>,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspectRow::new(now)
-        .nickname(&repl.nickname)
-        .qid(&repl.qid);
+        .nickname(repl.nickname)
+        .qid(repl.qid);
 
     diesel::update(t_user.filter(f_id.eq(&repl.id)))
         .set(&aspect)

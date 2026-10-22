@@ -97,18 +97,18 @@ where
 
             let mut issue_entries = Vec::new();
 
-            for page in pages {
+            for page in &pages {
                 //
-                for (index, issue) in page.issues.into_iter().enumerate() {
+                for (index, issue) in page.issues.iter().enumerate() {
                     //
                     let issue_entry = IssueEntry {
                         id: next_snowflake_id(),
-                        page_artwork_id: page.page_artwork_id.clone(),
+                        page_artwork_id: &page.page_artwork_id,
                         index,
-                        variant: issue.variant,
-                        layer_name: issue.layer_name,
+                        variant: issue.variant.trim(),
+                        layer_name: issue.layer_name.as_deref(),
                         rect: issue.rect,
-                        note: issue.note,
+                        note: &issue.note,
                     };
 
                     issue_entries.push(issue_entry);

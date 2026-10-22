@@ -7,6 +7,7 @@ use crate::complex::chapter_port::import_translation as chapter_translation_impo
 // Integration fixture for real LabelPlus import parsing.
 // parse_poprako(parse_poprako)(positive): preserves zero-based PopRaKo indexes.
 // build_unit_create(build_unit_create)(positive): import always produces a complete Unit Create.
+// parse_label_plus(parse_label_plus)(positive): buffered text preserves meaningful whitespace and annotation syntax across units.
 
 use super::*;
 
@@ -151,6 +152,80 @@ fn parse_label_plus_accepts_bom_crlf_and_structure_trailing_whitespace() {
         UnitTranslationImportSource::LabelPlus { text }
             if text.as_deref() == Some(" translated  ")
     ));
+}
+
+#[test]
+fn parse_label_plus_preserves_text_and_annotations_across_buffer_reuse() {
+    //
+    let preamble = concat!(
+        "1,0\n-\n框内\n框外\n-\nnote\n",
+        ">>>>>>>>[000.jpg]<<<<<<<<\n",
+        "----------------[1]----------------[0.1,0.2,1]\n",
+    );
+
+    let next_unit = "----------------[2]----------------[0.3,0.4,1]";
+
+    for (body, expected_text, expected_note) in [
+        ("", None, None),
+        (" \u{2003}\t\n", None, None),
+        ("\n\n body \n\n", Some(" body "), None),
+        (
+            "  first  \n\n second \n",
+            Some("  first  \n\n second "),
+            None,
+        ),
+        (
+            "  body  \n\ninternal\n\n### note \nnext ###",
+            Some("  body  \n\ninternal"),
+            Some(" note \nnext "),
+        ),
+        ("### note ###", None, Some(" note ")),
+        ("body\n\n### \u{2003} ###", Some("body"), None),
+        ("body\n\n###note", Some("body\n\n###note"), None),
+        (
+            "body\n\n###nested###note###",
+            Some("body\n\n###nested###note###"),
+            None,
+        ),
+    ] {
+        //
+        let content = format!("{preamble}{body}\n{next_unit}\n next ");
+
+        let pages =
+            chapter_translation_import_complex::parse_label_plus(&content)
+                .unwrap();
+
+        let units = &pages.first().unwrap().units;
+
+        assert_eq!(units.len(), 2);
+
+        let unit = units.first().unwrap();
+
+        assert!(
+            matches!(
+                &unit.source,
+                UnitTranslationImportSource::LabelPlus { text }
+                    if text.as_deref() == expected_text
+            ),
+            "body: {body:?}"
+        );
+
+        assert_eq!(
+            unit.typography_note.as_deref(),
+            expected_note,
+            "body: {body:?}"
+        );
+
+        let next = units.get(1).unwrap();
+
+        assert!(matches!(
+            &next.source,
+            UnitTranslationImportSource::LabelPlus { text }
+                if text.as_deref() == Some(" next ")
+        ));
+
+        assert!(next.typography_note.is_none());
+    }
 }
 
 #[test]

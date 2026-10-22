@@ -140,7 +140,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
                 id: oper.entry.id.clone(),
                 chapter_id: oper.entry.chapter_id.clone(),
                 inviter_id: oper.entry.inviter_id.clone(),
-                invitee_qid: oper.entry.invitee_qid.clone(),
+                invitee_qid: oper.entry.invitee_qid.to_owned(),
                 code: oper.entry.code.clone(),
                 is_pending: true,
                 roles: oper.entry.roles,

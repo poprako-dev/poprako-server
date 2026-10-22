@@ -256,7 +256,7 @@ fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationInstr {
 // Build join instr with a deterministic invitation code.
 fn join_data() -> JoinAssignmentInvitationInstr {
     JoinAssignmentInvitationInstr {
-        code: "AINV123".into(),
+        code: "\u{2003}AINV123\u{00a0}".into(),
     }
 }
 

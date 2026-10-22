@@ -7,6 +7,7 @@
 // list_infos(list_infos)(positive): user include should be populated only when requested.
 // list_infos(list_infos)(negative): non-member should be rejected from team announcements.
 // create(create)(positive): team admin should create an announcement.
+// create(create)(positive): announcement text should be trimmed before persistence.
 // create(create)(negative): non-admin member should be rejected without mutation.
 // create(create)(negative): non-member should be rejected without mutation.
 // update_info(update_info)(positive): team admin should replace announcement content.
@@ -276,6 +277,51 @@ async fn create_team_admin_creates_announcement() {
         snapshot.announcements.first().unwrap().user_id,
         "admin-user"
     );
+}
+
+#[tokio::test]
+async fn create_and_update_trim_unicode_whitespace_from_announcement_texts() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "admin-user",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    let mut create_instr = create_instr("team-1");
+
+    create_instr.title = "\u{2003}created title\u{2003}".into();
+
+    create_instr.content = "\u{2003}created content\u{2003}".into();
+
+    create(&mock, token("admin-user"), create_instr)
+        .await
+        .unwrap();
+
+    let created = mock.snapshot().announcements.first().unwrap().clone();
+
+    assert_eq!(created.title, "created title");
+
+    assert_eq!(created.content, "created content");
+
+    let mut update_instr = update_instr(&created.id);
+
+    update_instr.title = "\u{2003}updated title\u{2003}".into();
+
+    update_instr.content = "\u{2003}updated content\u{2003}".into();
+
+    update_info(&mock, token("admin-user"), update_instr)
+        .await
+        .unwrap();
+
+    let updated = mock.snapshot().announcements.first().unwrap().clone();
+
+    assert_eq!(updated.title, "updated title");
+
+    assert_eq!(updated.content, "updated content");
 }
 
 #[tokio::test]

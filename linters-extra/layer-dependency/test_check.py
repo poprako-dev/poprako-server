@@ -5,11 +5,31 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from check import FORBIDDEN, check_root
+from check import FORBIDDEN, Scanner, check_root
 
 
 class LayerDependencyTests(unittest.TestCase):
+    def test_anonymous_imports_do_not_prevent_resolution_convergence(self):
+        original = Scanner.resolve
+        calls = []
+
+        def resolve(scanner, *args, **kwargs):
+            calls.append(args)
+            return original(scanner, *args, **kwargs)
+
+        with patch.object(Scanner, "resolve", resolve):
+            diagnostics = self.check({"src/complex/sample.rs": (
+                "use crate::model::{First as _, Second as _, Third as _, Fourth as _};"
+            )})
+
+        self.assertEqual(diagnostics, [])
+        self.assertLessEqual(len(calls), 16)
+
+    def test_anonymous_imports_still_report_forbidden_dependencies(self):
+        self.assert_edge("use crate::data::{First as _, Second as _};")
+
     def check(self, files, package="poprako-server"):
         with tempfile.TemporaryDirectory(prefix="poprako-layers-") as directory:
             root = Path(directory)

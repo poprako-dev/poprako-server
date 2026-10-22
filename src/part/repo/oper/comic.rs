@@ -28,7 +28,7 @@ pub struct GetComicInfo<'a, 'b> {
 #[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfos<'a> {
     /// The filter and pagination specification.
-    pub spec: &'a ComicListSpec,
+    pub spec: &'a ComicListSpec<'a>,
 }
 
 /// Retrieves a single comic's info with excluded relations omitted.
@@ -46,7 +46,7 @@ pub struct GetComicInfoExcluded<'a, 'b> {
 #[oper(output = ())]
 pub struct UpdateComic<'a> {
     /// The update payload.
-    pub update: &'a ComicRepl,
+    pub update: &'a ComicRepl<'a>,
 }
 
 /// Allocates a new chapter index for a comic.

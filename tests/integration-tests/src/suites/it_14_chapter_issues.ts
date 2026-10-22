@@ -105,7 +105,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
                 page_artwork_id: ids[0]!,
                 issues: [
                     {
-                        variant: "custom category",
+                        variant: "\u2003custom category\u2003",
                         layer_name: "  他们两个…  ",
                         rect,
                         note: " first line\nsecond line ",
@@ -139,6 +139,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
         [0, 1, 2, 3],
     );
     assert.deepEqual(first[0]!.page_artwork_id, ids[0]);
+    assert.deepEqual(first[0]!.variant, "custom category");
     assert.deepEqual(first[0]!.note, " first line\nsecond line ");
     assert.deepEqual(first[0]!.layer_name, "  他们两个…  ");
     assert.deepEqual(first[0]!.rect, rect);

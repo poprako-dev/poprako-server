@@ -73,6 +73,8 @@ where
 {
     let current_user_id = token.user_id;
 
+    let code = instr.code.trim();
+
     let assignment_info = nucl
         .coord(async move |context| {
             //
@@ -83,7 +85,7 @@ where
             .await?;
 
             let assignment_invitation_info =
-                GetAssignmentInvitationInfoExcluded { code: &instr.code }
+                GetAssignmentInvitationInfoExcluded { code }
                     .step_on(repo, context)
                     .await?;
 

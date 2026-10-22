@@ -157,7 +157,7 @@ async fn create_admin_creates_pending_invitation() {
     let created = create(
         (&mock, &mock, &mock, &config),
         token("admin-user"),
-        create_instr("team-1", "qid-2"),
+        create_instr("team-1", "\u{2003}qid-2\u{00a0}"),
     )
     .await
     .unwrap();

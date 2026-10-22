@@ -15,15 +15,14 @@ import sys
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
 DATA_ROLES = ("instr", "val", "view")
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
 def descendants(node: tree_sitter.Node, kind: str) -> list[tree_sitter.Node]:
@@ -74,7 +73,7 @@ def legacy_aliases(layer: str, domains: set[str]) -> set[str]:
 
 def remove_legacy_imports(path: Path, root: Path, layer: str, domains: set[str]) -> bool:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     aliases = legacy_aliases(layer, domains)
     edits: list[tuple[int, int]] = []
 
@@ -102,7 +101,7 @@ def remove_legacy_imports(path: Path, root: Path, layer: str, domains: set[str])
 
 def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[str]:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     errors: list[str] = []
     imported_modules: set[str] = set()
 
@@ -217,7 +216,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--layer", choices=("model", "data"), required=True)
-    parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=False)
     args = parser.parse_args()
     root = args.root.resolve()
     domains = layer_domains(root, args.layer)

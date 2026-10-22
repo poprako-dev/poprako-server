@@ -9,7 +9,7 @@ use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 #[oper(output = AssignmentInvitationInfo)]
 pub struct CreateAssignmentInvitation<'a> {
     /// The assignment invitation entry data.
-    pub entry: &'a AssignmentInvitationEntry,
+    pub entry: &'a AssignmentInvitationEntry<'a>,
 }
 
 /// Lists assignment invitation infos selected by a query specification.

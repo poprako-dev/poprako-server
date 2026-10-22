@@ -82,7 +82,7 @@ fn list_comments(
 // Internal implementation of `create_comment`.
 fn create_comment(
     state: &mut MockState,
-    entry: &CommentEntry,
+    entry: &CommentEntry<'_>,
 ) -> BaseRest<CommentInfo> {
     //
     // Internal implementation detail.
@@ -100,7 +100,7 @@ fn create_comment(
         team_id: entry.team_id.clone(),
         user_id: entry.user_id.clone(),
         user: None,
-        content: entry.content.clone(),
+        content: entry.content.to_owned(),
         created_at: now(),
     };
 

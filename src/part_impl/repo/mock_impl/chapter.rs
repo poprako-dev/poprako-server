@@ -113,7 +113,7 @@ pub fn create_chapter(
         comic: None,
         is_pinned: chapter_entry.is_pinned,
         index: chapter_entry.index,
-        subtitle: chapter_entry.subtitle.clone(),
+        subtitle: chapter_entry.subtitle.to_string(),
         page_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,

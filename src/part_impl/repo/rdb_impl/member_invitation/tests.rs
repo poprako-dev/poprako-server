@@ -53,7 +53,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: format!("{}member-invitation", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
         invitor_id: team_fixture.user_entry.id.clone(),
-        invitee_qid: format!("{}invitee", PREFIX),
+        invitee_qid: &format!("{}invitee", PREFIX),
         code: format!("{}code", PREFIX),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };

@@ -68,7 +68,7 @@ fn name_conflicts(
 // Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
-    spec: &TermbaseListSpec,
+    spec: &TermbaseListSpec<'_>,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Internal implementation detail.
@@ -232,7 +232,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
             None,
             oper.entry.team_id.as_deref(),
             oper.entry.comic_id.as_deref(),
-            &oper.entry.name,
+            oper.entry.name,
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -243,8 +243,8 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
             id: oper.entry.id.clone(),
             team_id: oper.entry.team_id.clone(),
             comic_id: oper.entry.comic_id.clone(),
-            name: oper.entry.name.clone(),
-            description: oper.entry.description.clone(),
+            name: oper.entry.name.to_owned(),
+            description: oper.entry.description.map(str::to_owned),
             term_count: 0,
             creator_id: oper.entry.creator_id.clone(),
             created_at: time,
@@ -357,7 +357,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
             Some(&oper.update.id),
             current.team_id.as_deref(),
             current.comic_id.as_deref(),
-            &oper.update.name,
+            oper.update.name,
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -369,9 +369,9 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
             .find(|termbase_info| termbase_info.id == oper.update.id)
             .ok_or_else(|| expected("error-termbase-not-found"))?;
 
-        termbase_info.name = oper.update.name.clone();
+        termbase_info.name = oper.update.name.to_owned();
 
-        termbase_info.description = oper.update.description.clone();
+        termbase_info.description = oper.update.description.map(str::to_owned);
 
         termbase_info.updated_at = now();
 

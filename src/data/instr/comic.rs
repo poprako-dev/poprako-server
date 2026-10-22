@@ -124,22 +124,22 @@ pub struct ListComicInfosInstr {
     pub limit: PubListLimit,
 }
 
-impl TryFrom<ListComicInfosInstr> for ComicListSpec {
+impl<'a> TryFrom<&'a ListComicInfosInstr> for ComicListSpec<'a> {
     // The error type for invalid listing parameters.
     type Error = BaseError;
 
     // Convert validated query parameters into the domain list spec.
-    fn try_from(instr: ListComicInfosInstr) -> BaseRest<Self> {
+    fn try_from(instr: &'a ListComicInfosInstr) -> BaseRest<Self> {
         //
         let stages =
             instr.stages.map(StageMask::try_filter_from).transpose()?;
 
         accept(Self {
-            workset_id: instr.workset_id,
-            fuzzy_title: instr.fuzzy_title,
+            workset_id: &instr.workset_id,
+            fuzzy_title: instr.fuzzy_title.as_deref().map(str::trim),
             stages,
             status: instr.status,
-            incl_opt: instr.incl_opt,
+            incl_opt: &instr.incl_opt,
             offset: instr.offset,
             limit: instr.limit,
         })

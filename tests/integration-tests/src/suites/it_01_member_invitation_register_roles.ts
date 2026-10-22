@@ -44,6 +44,7 @@ import {
     listMemberInvitations,
     listMyMembers,
     listTeamMembers,
+    login,
     registerInvitee,
     updateMemberInvitationRoles,
     updateMemberRoles,
@@ -71,7 +72,8 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
     const seenCodes = new Set<string>();
 
     for (const persona of personas) {
-        const invitation = await createMemberInvitation(ctx.sadmin, teamId, persona.qid, persona.roles);
+        const inviteeQid = persona.persona === "raw_01" ? `\u2003${persona.qid}\u2003` : persona.qid;
+        const invitation = await createMemberInvitation(ctx.sadmin, teamId, inviteeQid, persona.roles);
 
         assert.ok(invitation.id);
         assert.ok(invitation.code);
@@ -179,10 +181,11 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
 
         assert.ok(inv, `invitation for ${persona.persona} must exist`);
 
+        const isTrimCase = persona.persona === "raw_01";
         const { api, userId } = await registerInvitee(
-            inv.code,
-            persona.qid,
-            nickname(persona.persona),
+            isTrimCase ? `\u2003${inv.code}\u2003` : inv.code,
+            isTrimCase ? `\u2003${persona.qid}\u2003` : persona.qid,
+            isTrimCase ? `\u2003${nickname(persona.persona)}\u2003` : nickname(persona.persona),
             password(persona.persona),
         );
 
@@ -193,6 +196,13 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
         assert.deepEqual(me.qid, persona.qid);
         assert.deepEqual(me.nickname, nickname(persona.persona));
         assert.deepEqual(me.is_sadmin, false);
+
+        if (isTrimCase) {
+            const loginClient = new ApiClient(testEnv.apiBaseUrl);
+
+            await login(loginClient, `\u2003${persona.qid}\u2003`, password(persona.persona));
+            assert.deepEqual((await getMyInfo(loginClient)).nickname, nickname(persona.persona));
+        }
 
         // B3.3 + B3.4: /members/me returns exactly one default-team member
         // with roles equal to the (possibly widened) invitation roles.
@@ -327,6 +337,19 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
             `fuzzy_nickname=trans returned non-matching nickname: ${member.nickname}`,
         );
     }
+
+    // Whitespace around fuzzy_nickname is removed before matching.
+    const raw01 = ctx.users.get("raw_01");
+
+    assert.ok(raw01);
+
+    const fuzzyRaw01 = await listTeamMembers(
+        ctx.sadmin,
+        teamId,
+        `&fuzzy_nickname=${encodeURIComponent(`\u2003${nickname("raw_01")}\u2003`)}`,
+    );
+
+    assert.ok(fuzzyRaw01.some((member) => member.user_id === raw01.userId));
 
     // B4.4: owner mode returns trans_01's default-team membership.
     const trans01 = ctx.users.get("trans_01");

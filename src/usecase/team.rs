@@ -80,8 +80,8 @@ where
 
     let team_entry = TeamEntry {
         id: team_complex::gen_id(),
-        name: instr.name,
-        description: instr.description,
+        name: instr.name.trim().into(),
+        description: instr.description.trim().into(),
     };
 
     let team_info = nucl
@@ -154,8 +154,8 @@ where
 
     let team_repl = TeamRepl {
         id: instr.id,
-        name: instr.name,
-        description: instr.description,
+        name: instr.name.trim(),
+        description: instr.description.trim(),
     };
 
     UpdateTeam { repl: &team_repl }.run_on(repo).await?;

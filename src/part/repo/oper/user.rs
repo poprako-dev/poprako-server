@@ -8,7 +8,7 @@ use crate::model::write::user::{UserCredsRepl, UserEntry, UserInfoRepl};
 #[oper(output = UserInfo)]
 pub struct CreateUser<'a> {
     /// The user entry to insert.
-    pub entry: &'a UserEntry,
+    pub entry: &'a UserEntry<'a>,
 }
 
 /// Looks up a user by identifier.
@@ -42,7 +42,7 @@ pub enum UpdateUser<'a> {
     /// Updates user metadata fields.
     Info {
         /// The replacement payload.
-        repl: &'a UserInfoRepl,
+        repl: &'a UserInfoRepl<'a>,
     },
 
     /// Touches the last-active timestamp.

@@ -271,13 +271,15 @@ where
 
         chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-        match instr.subtitle {
+        let subtitle = instr.subtitle.as_deref().map(str::trim);
+
+        match subtitle {
             //
             Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
                 //
                 let chapter_info_update = ChapterPatch {
                     id: instr.id,
-                    subtitle: Some(next_subtitle.clone()),
+                    subtitle: Some(next_subtitle),
                     pin: None,
                 };
 
@@ -292,7 +294,7 @@ where
                     Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
                         previous_subtitle: chapter_info.subtitle,
-                        next_subtitle,
+                        next_subtitle: next_subtitle.to_owned(),
                     },
                 );
 

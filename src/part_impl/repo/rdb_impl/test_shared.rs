@@ -37,36 +37,36 @@ use crate::result::BaseError;
 pub use cleanup::{assert_no_leftovers, cleanup};
 
 pub struct UserFixture {
-    pub user_entry: UserEntry,
+    pub user_entry: UserEntry<'static>,
 }
 
 pub struct TeamFixture {
     //
-    pub user_entry: UserEntry,
-    pub team_entry: TeamEntry,
+    pub user_entry: UserEntry<'static>,
+    pub team_entry: TeamEntry<'static>,
 }
 
 pub struct WorksetFixture {
     //
-    pub team_entry: TeamEntry,
-    pub workset_entry: WorksetEntry,
+    pub team_entry: TeamEntry<'static>,
+    pub workset_entry: WorksetEntry<'static>,
 }
 
 pub struct ComicFixture {
     //
-    pub creator_form: UserEntry,
-    pub team_entry: TeamEntry,
-    pub workset_entry: WorksetEntry,
+    pub creator_form: UserEntry<'static>,
+    pub team_entry: TeamEntry<'static>,
+    pub workset_entry: WorksetEntry<'static>,
     pub comic_entry: ComicEntry<'static>,
 }
 
 pub struct ChapterFixture {
     //
-    pub creator_form: UserEntry,
+    pub creator_form: UserEntry<'static>,
 
-    pub team_entry: TeamEntry,
+    pub team_entry: TeamEntry<'static>,
 
-    pub workset_entry: WorksetEntry,
+    pub workset_entry: WorksetEntry<'static>,
 
     pub comic_entry: ComicEntry<'static>,
 
@@ -75,7 +75,7 @@ pub struct ChapterFixture {
 
 pub struct PageFixture {
     //
-    pub team_entry: TeamEntry,
+    pub team_entry: TeamEntry<'static>,
     pub chapter_entry: ChapterEntry<'static>,
     pub page_entry: PageEntry,
 }
@@ -91,7 +91,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
 
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
+pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry<'_>) {
     //
     let repo = HybRepo::new(
         shared.clone(),

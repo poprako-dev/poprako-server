@@ -83,14 +83,14 @@ pub struct ListMemberInfosInstr {
     pub limit: PubListLimit,
 }
 
-impl TryInto<MemberListSpec> for ListMemberInfosInstr {
+impl<'a> TryFrom<&'a ListMemberInfosInstr> for MemberListSpec<'a> {
     // The error type for invalid member listing parameters.
     type Error = BaseError;
 
     // Convert validated member query parameters into the domain list spec.
-    fn try_into(self) -> BaseRest<MemberListSpec> {
+    fn try_from(instr: &'a ListMemberInfosInstr) -> BaseRest<Self> {
         //
-        let Self {
+        let ListMemberInfosInstr {
             owner_id,
             team_id,
             fuzzy_nickname,
@@ -98,7 +98,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
             incl_opt,
             offset,
             limit,
-        } = self;
+        } = instr;
 
         if owner_id.is_some() == team_id.is_some() {
             //
@@ -145,8 +145,8 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
             return accept(MemberListSpec::User {
                 owner_id,
                 incl_opt,
-                offset,
-                limit,
+                offset: *offset,
+                limit: *limit,
             });
         }
 
@@ -172,11 +172,11 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
         accept(MemberListSpec::Team {
             team_id,
-            fuzzy_nickname,
-            role,
+            fuzzy_nickname: fuzzy_nickname.as_deref().map(str::trim),
+            role: *role,
             incl_opt,
-            offset,
-            limit,
+            offset: *offset,
+            limit: *limit,
         })
     }
 }

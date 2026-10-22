@@ -21,7 +21,10 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `create_team`.
-fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
+fn create_team(
+    state: &mut MockState,
+    entry: &TeamEntry<'_>,
+) -> BaseRest<TeamInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -33,8 +36,8 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
 
     let team_info = TeamInfo {
         id: entry.id.clone(),
-        name: entry.name.clone(),
-        description: entry.description.clone(),
+        name: entry.name.to_string(),
+        description: entry.description.to_string(),
         created_at: time,
         updated_at: time,
     };
@@ -116,9 +119,9 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
         .find(|team_info| team_info.id == oper.repl.id)
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    team_info.name = oper.repl.name.clone();
+    team_info.name = oper.repl.name.to_owned();
 
-    team_info.description = oper.repl.description.clone();
+    team_info.description = oper.repl.description.to_owned();
 
     team_info.updated_at = now();
 
