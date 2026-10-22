@@ -194,7 +194,12 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     // ---------- H1. announcement ----------
 
-    const ann1 = await createAnnouncement(ctx.sadmin, teamId, titled("ann-1"), "content-1");
+    const ann1 = await createAnnouncement(
+        ctx.sadmin,
+        teamId,
+        `\u2003${titled("ann-1")}\u2003`,
+        "\u2003content-1\u2003",
+    );
 
     ctx.leftoverAnnouncementIds.push(ann1.id);
 
@@ -215,7 +220,12 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     assert.deepEqual(ann1Full.title, titled("ann-1"));
     assert.deepEqual(ann1Full.content, "content-1");
 
-    await updateAnnouncement(ctx.sadmin, ann1.id, titled("ann-1-updated"), "content-1-updated");
+    await updateAnnouncement(
+        ctx.sadmin,
+        ann1.id,
+        `\u2003${titled("ann-1-updated")}\u2003`,
+        "\u2003content-1-updated\u2003",
+    );
 
     const updatedAnnList = await listTeamAnnouncements(ctx.sadmin, teamId);
     const updatedAnn1 = updatedAnnList.find((announcement) => announcement.id === ann1.id)!;
@@ -317,7 +327,8 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         // sadmin is ctx.sadmin (an ApiClient, not a UserClient); use it directly.
         const api = i === 0 ? ctx.sadmin : (commenter as { api: typeof ctx.sadmin }).api;
 
-        const comment = await createComment(api, teamId, `comment-${i}`);
+        const content = i === 0 ? "\u2003comment-0\u2003" : `comment-${i}`;
+        const comment = await createComment(api, teamId, content);
 
         createdCommentIds.push(comment.id);
         ctx.leftoverCommentIds.push(comment.id);
@@ -333,6 +344,8 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
             `comment ${id} must be in list`,
         );
     }
+
+    assert.deepEqual(commentList.find((comment) => comment.id === createdCommentIds[0])?.content, "comment-0");
 
     // comment does not bump team.updated_at
     const teamBeforeComment = await getTeam(ctx.sadmin, teamId);
@@ -357,8 +370,8 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     expectStatus(
         await trans01.api.put<null>(`/api/v1/users/${trans01.userId}`, {
             id: trans01.userId,
-            nickname: newNickname,
-            qid: trans01.qid,
+            nickname: `\u2003${newNickname}\u2003`,
+            qid: `\u2003${trans01.qid}\u2003`,
         }),
         204,
     );

@@ -334,7 +334,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const fuzzyYuye = await listWorksetComics(
         ctx.sadmin,
         serialWsId,
-        `&fuzzy_title=${encodeURIComponent(titled("雨夜"))}`,
+        `&fuzzy_title=${encodeURIComponent(`\u2003${titled("雨夜")}\u2003`)}`,
     );
 
     assert.ok(
@@ -381,13 +381,15 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     assert.deepEqual(xingchenAfterChDelete.chapter_count, 3);
 
     // create 第 5 话 断层回声; new index must not backfill (> any existing)
-    const ch5 = await createChapter(ctx.sadmin, xingchenId, titled("第 5 话 断层回声"));
+    const ch5Subtitle = titled("第 5 话 断层回声");
+    const ch5 = await createChapter(ctx.sadmin, xingchenId, `\u2003${ch5Subtitle}\u2003`);
 
     chapterIdsByLabel["ch5"] = ch5.id;
 
     const ch5Info = await getChapter(ctx.sadmin, ch5.id);
 
     assert.ok(ch5Info.index > maxChIndexBeforeDelete, "new chapter index no backfill");
+    assert.deepEqual(ch5Info.subtitle, ch5Subtitle);
 
     // active indexes are [0,1,3,4] (ch1=0, ch2=1, ch4=3, ch5=4) — no backfill
     const activeChapters = await listComicChapters(ctx.sadmin, xingchenId);
@@ -504,7 +506,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const teamOriginalDesc = teamForUpdate.description;
     const teamOriginalUpdated = teamForUpdate.updated_at;
 
-    await updateTeam(ctx.sadmin, teamId, titled("team-renamed"), "updated desc");
+    await updateTeam(ctx.sadmin, teamId, `\u2003${titled("team-renamed")}\u2003`, `\u2003updated desc\u2003`);
 
     const teamUpdated = await getTeam(ctx.sadmin, teamId);
 
@@ -531,7 +533,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const wsOriginalName = wsForUpdate.name;
     const wsOriginalDesc = wsForUpdate.description ?? "";
 
-    await updateWorkset(ctx.sadmin, serialWsId, titled("ws-renamed"), "ws updated");
+    await updateWorkset(ctx.sadmin, serialWsId, `\u2003${titled("ws-renamed")}\u2003`, `\u2003ws updated\u2003`);
 
     const wsUpdated = await getWorkset(ctx.sadmin, serialWsId);
 
@@ -548,7 +550,13 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const comicOriginalTitle = comicForUpdate.title;
     const comicOriginalAuthor = comicForUpdate.author;
 
-    await updateComic(ctx.sadmin, xingchenId, titled("comic-renamed"), "new author", "new desc");
+    await updateComic(
+        ctx.sadmin,
+        xingchenId,
+        `\u2003${titled("comic-renamed")}\u2003`,
+        `\u2003new author\u2003`,
+        `\u2003new desc\u2003`,
+    );
 
     const comicUpdated = await getComic(ctx.sadmin, xingchenId);
 
@@ -565,7 +573,14 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const chForUpdate = await getChapter(ctx.sadmin, ch2Id);
     const chOriginalSubtitle = chForUpdate.subtitle;
 
-    await patchChapter(ctx.sadmin, ch2Id, { subtitle: titled("ch-renamed") });
+    await patchChapter(ctx.sadmin, ch2Id, { subtitle: `\u2003${chOriginalSubtitle}\u2003` });
+
+    const chAfterEquivalentPatch = await getChapter(ctx.sadmin, ch2Id);
+
+    assert.deepEqual(chAfterEquivalentPatch.subtitle, chOriginalSubtitle);
+    assert.deepEqual(chAfterEquivalentPatch.updated_at, chForUpdate.updated_at);
+
+    await patchChapter(ctx.sadmin, ch2Id, { subtitle: `\u2003${titled("ch-renamed")}\u2003` });
 
     const chUpdated = await getChapter(ctx.sadmin, ch2Id);
 

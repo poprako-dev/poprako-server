@@ -48,6 +48,7 @@ use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::chapter_info_views;
+use crate::util::trim_owned;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
@@ -271,7 +272,9 @@ where
 
         chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-        match instr.subtitle {
+        let subtitle = instr.subtitle.map(trim_owned);
+
+        match subtitle {
             //
             Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
                 //

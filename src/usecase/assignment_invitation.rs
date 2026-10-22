@@ -50,7 +50,7 @@ use crate::usecase::assignment_invitation::code::{
 };
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::util::next_snowflake_id;
+use crate::util::{next_snowflake_id, trim_owned};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Removes one assignment invitation when it has expired.
@@ -129,6 +129,8 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
+    let invitee_qid = trim_owned(instr.invitee_qid);
+
     validate_roles(instr.roles, &token.user_id, &instr.chapter_id)?;
 
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
@@ -146,7 +148,7 @@ where
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let invitee_user_info = FindUserInfo {
-                qid: &instr.invitee_qid,
+                qid: &invitee_qid,
             }
             .step_on(repo, context)
             .await?;
@@ -171,7 +173,7 @@ where
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
-                        invitee_qid = %instr.invitee_qid,
+                        invitee_qid = %invitee_qid,
                         roles = ?instr.roles,
                         "expected error: invitee already has a chapter assignment",
                     );
@@ -187,7 +189,7 @@ where
                 id: assignment_invitation_id,
                 chapter_id: instr.chapter_id,
                 inviter_id: token.user_id,
-                invitee_qid: instr.invitee_qid,
+                invitee_qid,
                 code,
                 roles: instr.roles,
             };

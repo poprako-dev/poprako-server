@@ -5,6 +5,8 @@
 
 // Member join flows and invitation conversion behavior.
 mod join_team;
+// Member nickname filter conversion behavior.
+mod fuzzy_nickname;
 // Member role updates and deletion scenarios.
 mod mutate;
 

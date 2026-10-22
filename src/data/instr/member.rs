@@ -14,6 +14,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::spec::member::MemberListSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::util::trim_owned;
 use crate::value::member::MemberInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
@@ -172,7 +173,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
         accept(MemberListSpec::Team {
             team_id,
-            fuzzy_nickname,
+            fuzzy_nickname: fuzzy_nickname.map(trim_owned),
             role,
             incl_opt,
             offset,

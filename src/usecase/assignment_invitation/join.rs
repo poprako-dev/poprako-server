@@ -42,6 +42,7 @@ use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::view::assignment_info_view;
+use crate::util::trim_owned;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -73,6 +74,8 @@ where
 {
     let current_user_id = token.user_id;
 
+    let code = trim_owned(instr.code);
+
     let assignment_info = nucl
         .coord(async move |context| {
             //
@@ -83,7 +86,7 @@ where
             .await?;
 
             let assignment_invitation_info =
-                GetAssignmentInvitationInfoExcluded { code: &instr.code }
+                GetAssignmentInvitationInfoExcluded { code: &code }
                     .step_on(repo, context)
                     .await?;
 

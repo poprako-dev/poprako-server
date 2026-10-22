@@ -41,6 +41,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::member::view::{member_info_view, member_info_views};
+use crate::util::trim_owned;
 
 /// Creates one member under a team.
 ///
@@ -166,6 +167,8 @@ where
 {
     let current_user_id = token.user_id;
 
+    let code = trim_owned(instr.code);
+
     let member_info = nucl
         .coord(async move |context| {
             //
@@ -177,7 +180,7 @@ where
             .await?;
 
             let member_invitation_info =
-                GetMemberInvitationInfoExcluded { code: &instr.code }
+                GetMemberInvitationInfoExcluded { code: &code }
                     .step_on(repo, context)
                     .await?;
 

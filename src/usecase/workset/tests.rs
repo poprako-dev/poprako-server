@@ -193,10 +193,15 @@ async fn create_allocates_index_and_persists() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created =
-        create((&mock, &mock), token("user-1"), create_instr("team-1"))
-            .await
-            .unwrap();
+    let mut instr = create_instr("team-1");
+
+    instr.name = "\u{2003}new\u{00a0}".into();
+
+    instr.description = Some("\u{2003}desc\u{00a0}".into());
+
+    let created = create((&mock, &mock), token("user-1"), instr)
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -207,6 +212,11 @@ async fn create_allocates_index_and_persists() {
     assert_eq!(snapshot.worksets.len(), 1);
 
     assert_eq!(snapshot.worksets.first().unwrap().name, "new");
+
+    assert_eq!(
+        snapshot.worksets.first().unwrap().description,
+        Some("desc".into())
+    );
 }
 
 #[tokio::test]
@@ -327,8 +337,8 @@ async fn update_info_updates_workset() {
         token("user-1"),
         UpdateWorksetInfoInstr {
             id: "workset-1".into(),
-            name: "updated".into(),
-            description: Some("updated-desc".into()),
+            name: "\u{2003}updated\u{00a0}".into(),
+            description: Some("\u{2003}updated-desc\u{00a0}".into()),
         },
     )
     .await

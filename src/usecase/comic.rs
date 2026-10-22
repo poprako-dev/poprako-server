@@ -50,6 +50,7 @@ use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::comic_info_view;
+use crate::util::trim_owned;
 
 /// Creates a comic with its first chapter and optional worker assignment.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
@@ -97,9 +98,9 @@ where
                 id: comic_complex::gen_id(),
                 workset_id: instr.workset_id.into(),
                 index,
-                title: instr.title,
-                author: instr.author,
-                description: instr.description,
+                title: trim_owned(instr.title),
+                author: trim_owned(instr.author),
+                description: instr.description.map(trim_owned),
                 creator_id: token.user_id.as_str().into(),
             };
 
@@ -213,9 +214,9 @@ where
 
     let comic_info_update = ComicRepl {
         id: instr.id,
-        title: instr.title,
-        author: instr.author,
-        description: instr.description,
+        title: trim_owned(instr.title),
+        author: trim_owned(instr.author),
+        description: instr.description.map(trim_owned),
     };
 
     UpdateComic {

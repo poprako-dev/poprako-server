@@ -308,7 +308,11 @@ async fn update_info_updates_user_and_member_nickname() {
     update_info(
         (&mock, &mock),
         token("user-1"),
-        update_instr("user-1", "qid-new", "New"),
+        update_instr(
+            "user-1",
+            "\u{2003}qid-new\u{00a0}",
+            "\u{3000}New\u{2009}",
+        ),
     )
     .await
     .unwrap();

@@ -7,6 +7,7 @@
 // list_infos(list_infos)(positive): user include should be populated only when requested.
 // list_infos(list_infos)(negative): non-member should be rejected from team comments.
 // create(create)(positive): team member should create a comment.
+// create(create)(positive): comment content should be trimmed before persistence.
 // create(create)(negative): non-member should be rejected without mutation.
 
 use super::*;
@@ -228,6 +229,25 @@ async fn create_team_member_creates_comment() {
     assert_eq!(snapshot.comments.first().unwrap().team_id, "team-1");
 
     assert_eq!(snapshot.comments.first().unwrap().user_id, "viewer-user");
+}
+
+#[tokio::test]
+async fn create_trims_unicode_whitespace_from_comment_content() {
+    //
+    let mock = Mock::new();
+
+    seed_member(&mock, "viewer-user", "team-1");
+
+    let mut instr = create_instr("team-1");
+
+    instr.content = "\u{2003}comment content\u{2003}".into();
+
+    create(&mock, token("viewer-user"), instr).await.unwrap();
+
+    assert_eq!(
+        mock.snapshot().comments.first().unwrap().content,
+        "comment content"
+    );
 }
 
 #[tokio::test]

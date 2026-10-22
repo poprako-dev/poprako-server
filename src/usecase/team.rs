@@ -49,6 +49,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::team::view::team_info_view;
+use crate::util::trim_owned;
 use crate::value::image::{ImageKind, TeamAvatarKey};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -80,8 +81,8 @@ where
 
     let team_entry = TeamEntry {
         id: team_complex::gen_id(),
-        name: instr.name,
-        description: instr.description,
+        name: trim_owned(instr.name),
+        description: trim_owned(instr.description),
     };
 
     let team_info = nucl
@@ -154,8 +155,8 @@ where
 
     let team_repl = TeamRepl {
         id: instr.id,
-        name: instr.name,
-        description: instr.description,
+        name: trim_owned(instr.name),
+        description: trim_owned(instr.description),
     };
 
     UpdateTeam { repl: &team_repl }.run_on(repo).await?;

@@ -28,6 +28,7 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::util::trim_owned;
 
 /// Registers a new user using an invitation code.
 ///
@@ -65,24 +66,30 @@ where
     A: TokenAuth + Sync,
     D: Develop + Send + Sync,
 {
+    let qid = trim_owned(instr.qid);
+
+    let nickname = trim_owned(instr.nickname);
+
+    let code = trim_owned(instr.code);
+
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
             //
 
             let invitation_info =
-                GetMemberInvitationInfoExcluded { code: &instr.code }
+                GetMemberInvitationInfoExcluded { code: &code }
                     .step_on(repo, context)
                     .await?;
 
             // Verify the invitation was issued for this QQ ID.
-            if invitation_info.invitee_qid != instr.qid {
+            if invitation_info.invitee_qid != qid {
                 //
                 let err_msg = trl("error-invalid-invitation-code");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
                     err_msg = %err_msg,
-                    invitee_qid = %instr.qid,
+                    invitee_qid = %qid,
                     invitation_invitee_qid = %invitation_info.invitee_qid,
                     "expected error: invitation code does not match invitee",
                 );
@@ -98,8 +105,8 @@ where
 
             let user_entry = UserEntry {
                 id: user_complex::gen_id(),
-                qid: instr.qid,
-                nickname: instr.nickname,
+                qid,
+                nickname,
                 password_hash,
             };
 
@@ -184,8 +191,9 @@ where
     R: UserRepo<C>,
     A: TokenAuth + Sync,
 {
-    let user_credential =
-        GetUserCredential { qid: &instr.qid }.run_on(repo).await?;
+    let qid = trim_owned(instr.qid);
+
+    let user_credential = GetUserCredential { qid: &qid }.run_on(repo).await?;
 
     if !user_complex::verify_password(
         &instr.password,
@@ -198,7 +206,7 @@ where
         tracing::warn!(
             err_variant = ?ExpectedVariant::Auth,
             err_msg = %err_msg,
-            qid = %instr.qid,
+            qid = %qid,
             "expected error: invalid login credentials",
         );
 

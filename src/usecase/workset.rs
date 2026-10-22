@@ -34,6 +34,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::util::trim_owned;
 
 /// Creates a new workset inside a team.
 #[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
@@ -76,8 +77,8 @@ where
                 id: workset_complex::gen_id(),
                 team_id: instr.team_id,
                 index,
-                name: instr.name,
-                description: instr.description,
+                name: trim_owned(instr.name),
+                description: instr.description.map(trim_owned),
             };
 
             let workset_info = CreateWorkset {
@@ -181,8 +182,8 @@ where
 
     let workset_info_update = WorksetRepl {
         id: instr.id,
-        name: instr.name,
-        description: instr.description,
+        name: trim_owned(instr.name),
+        description: instr.description.map(trim_owned),
     };
 
     UpdateWorkset {

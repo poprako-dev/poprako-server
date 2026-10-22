@@ -26,7 +26,7 @@ async fn create_reviewer_creates_pending_invitation() {
     let val = create(
         (&mock, &mock, &mock, &config),
         token("admin-user"),
-        create_data("target-qid"),
+        create_data("\u{2003}target-qid\u{00a0}"),
     )
     .await
     .unwrap();

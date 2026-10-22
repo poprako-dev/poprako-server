@@ -12,6 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::util::trim_owned;
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
@@ -136,7 +137,7 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
 
         accept(Self {
             workset_id: instr.workset_id,
-            fuzzy_title: instr.fuzzy_title,
+            fuzzy_title: instr.fuzzy_title.map(trim_owned),
             stages,
             status: instr.status,
             incl_opt: instr.incl_opt,

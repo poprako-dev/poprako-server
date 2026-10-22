@@ -49,7 +49,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::member_invitation::view::member_invitation_info_views;
-use crate::util::next_snowflake_id;
+use crate::util::{next_snowflake_id, trim_owned};
 
 /// Removes one member invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
@@ -91,6 +91,8 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
+    let invitee_qid = trim_owned(instr.invitee_qid);
+
     let roles = instr.roles;
 
     let member_info = FindMemberInfo {
@@ -128,11 +130,9 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            let invitee_user_info = FindUserInfo {
-                qid: &instr.invitee_qid,
-            }
-            .step_on(repo, context)
-            .await?;
+            let invitee_user_info = FindUserInfo { qid: &invitee_qid }
+                .step_on(repo, context)
+                .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
@@ -154,7 +154,7 @@ where
                         team_id = %instr.team_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
-                        invitee_qid = %instr.invitee_qid,
+                        invitee_qid = %invitee_qid,
                         "expected error: invitee is already a team member",
                     );
 
@@ -174,7 +174,7 @@ where
                 id: member_invitation_id,
                 team_id: instr.team_id,
                 invitor_id: token.user_id,
-                invitee_qid: instr.invitee_qid,
+                invitee_qid,
                 code,
                 roles,
             };

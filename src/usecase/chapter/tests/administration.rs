@@ -85,7 +85,7 @@ async fn team_admin_manages_without_assignment() {
         token("user-1"),
         UpdateChapterInfoInstr {
             id: "chapter-1".into(),
-            subtitle: Some("updated".into()),
+            subtitle: Some("\u{2003}updated\u{00a0}".into()),
         },
     )
     .await
@@ -100,6 +100,25 @@ async fn team_admin_manages_without_assignment() {
     assert!(snapshot.assignments.is_empty());
 
     assert_eq!(snapshot.chapters.first().unwrap().subtitle, "updated");
+
+    let subtitle_record = snapshot
+        .chapter_workflow_records
+        .iter()
+        .find(|record| {
+            matches!(
+                record.payload,
+                ChapterWorkflowRecordPayload::ChapterSubtitleUpdated { .. }
+            )
+        })
+        .unwrap();
+
+    assert!(matches!(
+        &subtitle_record.payload,
+        ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
+            next_subtitle,
+            ..
+        } if next_subtitle == "updated"
+    ));
 
     assert!(snapshot.chapters.first().unwrap().is_pinned);
 

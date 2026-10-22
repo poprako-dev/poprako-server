@@ -278,7 +278,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
-            fuzzy_title: Some("Beta".into()),
+            fuzzy_title: Some("\u{2003}Beta\u{00a0}".into()),
             stages: None,
             status: None,
             offset: 0,

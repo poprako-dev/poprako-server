@@ -187,8 +187,8 @@ async fn create_persists_team_and_returns_info() {
         (&mock, &mock, &mock),
         token("user-1"),
         CreateTeamInstr {
-            name: "Team".into(),
-            description: "Desc".into(),
+            name: "\u{2003}Team\u{00a0}".into(),
+            description: "\u{2003}Desc\u{00a0}".into(),
         },
     )
     .await
@@ -203,6 +203,10 @@ async fn create_persists_team_and_returns_info() {
     assert_eq!(snapshot.teams.len(), 1);
 
     assert_eq!(snapshot.teams.first().unwrap().id, val.id);
+
+    assert_eq!(snapshot.teams.first().unwrap().name, "Team");
+
+    assert_eq!(snapshot.teams.first().unwrap().description, "Desc");
 }
 
 #[tokio::test]
@@ -384,7 +388,11 @@ async fn update_info_updates_team() {
     update_info(
         (&mock,),
         token("user-1"),
-        update_instr("team-1", "New", "New Desc"),
+        update_instr(
+            "team-1",
+            "\u{2003}New\u{00a0}",
+            "\u{2003}New Desc\u{00a0}",
+        ),
     )
     .await
     .unwrap();

@@ -126,6 +126,14 @@ async fn create_allocates_index_and_updates_count() {
 
     let mut instr = create_instr("workset-1");
 
+    instr.title = "\u{2003}new\u{00a0}".into();
+
+    instr.author = "\u{2003}author\u{00a0}".into();
+
+    instr.description = Some("\u{2003}desc\u{00a0}".into());
+
+    instr.first_chapter_subtitle = Some("\u{2003}First\u{00a0}".into());
+
     instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
     let created = create((&mock, &mock), token("user-1"), instr).await;
@@ -137,11 +145,19 @@ async fn create_allocates_index_and_updates_count() {
     let snapshot = mock.snapshot();
 
     // Comic
-    assert_eq!(created.id, snapshot.comics.first().unwrap().id);
+    let comic_info = snapshot.comics.first().unwrap();
 
-    assert_eq!(snapshot.comics.first().unwrap().index, 0);
+    assert_eq!(created.id, comic_info.id);
 
-    assert_eq!(snapshot.comics.first().unwrap().creator_id, "user-1");
+    assert_eq!(comic_info.index, 0);
+
+    assert_eq!(comic_info.creator_id, "user-1");
+
+    assert_eq!(comic_info.title, "new");
+
+    assert_eq!(comic_info.author, "author");
+
+    assert_eq!(comic_info.description.as_deref(), Some("desc"));
 
     assert_eq!(snapshot.comics.len(), 1);
 
@@ -159,19 +175,13 @@ async fn create_allocates_index_and_updates_count() {
 
     assert_eq!(snapshot.chapters.first().unwrap().index, 0);
 
+    assert_eq!(snapshot.chapters.first().unwrap().subtitle, "First");
+
     // Denormalised chapter counters
-    assert_eq!(snapshot.comics.first().unwrap().chapter_count, 1);
+    assert_eq!(comic_info.chapter_count, 1);
 
     // last_active_at should be set (not epoch)
-    assert!(
-        snapshot
-            .comics
-            .first()
-            .unwrap()
-            .last_active_at
-            .unix_timestamp()
-            > 0
-    );
+    assert!(comic_info.last_active_at.unix_timestamp() > 0);
 
     // Creator worker assignment
     assert_eq!(snapshot.assignments.len(), 1);
@@ -538,9 +548,9 @@ async fn update_info_updates_comic() {
         token("user-1"),
         UpdateComicInfoInstr {
             id: "comic-1".into(),
-            title: "updated".into(),
-            author: "updated-author".into(),
-            description: Some("updated-desc".into()),
+            title: "\u{2003}updated\u{00a0}".into(),
+            author: "\u{2003}updated-author\u{00a0}".into(),
+            description: Some("\u{2003}updated-desc\u{00a0}".into()),
         },
     )
     .await

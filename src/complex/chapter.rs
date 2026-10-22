@@ -15,6 +15,9 @@ mod role;
 /// Permission gates for chapter entity operations.
 pub mod perm;
 
+#[cfg(test)]
+mod tests;
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -25,7 +28,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
+use crate::util::{next_snowflake_id, trim_owned};
 use crate::value::chapter::stage::{
     Stage, StageOper, StagePhase, try_modify_stage,
 };
@@ -36,12 +39,14 @@ pub fn gen_id() -> String {
     next_snowflake_id()
 }
 
-/// Returns the user-supplied subtitle if present and non-empty, or a
-/// generated default in the format "Ch. N" (1-based).
+/// Returns the trimmed user-supplied subtitle if non-empty, or a generated
+/// default in the format "Ch. N" (1-based).
 pub fn subtitle_or_default(subtitle: Option<String>, index: usize) -> String {
     //
+    let subtitle = subtitle.map(trim_owned);
+
     subtitle
-        .filter(|value| !value.trim().is_empty())
+        .filter(|value| !value.is_empty())
         .unwrap_or_else(|| default_subtitle(index))
 }
 
