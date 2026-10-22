@@ -11,14 +11,14 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
-/// Normalize `LabelPlus` text while preserving non-empty whitespace and lines.
-pub fn normalize_label_plus_text(text: String) -> Option<String> {
+/// Copies non-blank `LabelPlus` text while preserving whitespace and lines.
+pub fn normalize_label_plus_text(text: &str) -> Option<String> {
     //
     if text.trim().is_empty() {
         return None;
     }
 
-    Some(text)
+    Some(text.to_owned())
 }
 
 /// Construct the stable invalid-content error for `LabelPlus` input.
@@ -157,7 +157,7 @@ pub fn parse_label_plus_unit_header(
 pub fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
-    main_text_lines: &mut Vec<String>,
+    main_text: &mut String,
 ) -> BaseRest<()> {
     //
     let Some(label_plus_unit) = current_unit.take() else {
@@ -187,8 +187,7 @@ pub fn flush_label_plus_unit(
         ));
     }
 
-    let (text, typography_note) =
-        split_label_plus_text(&main_text_lines.join("\n"));
+    let (text, typography_note) = split_label_plus_text(main_text);
 
     page_units.push(UnitTranslationImport {
         index: label_plus_unit.index,
@@ -201,7 +200,7 @@ pub fn flush_label_plus_unit(
         source: UnitTranslationImportSource::LabelPlus { text },
     });
 
-    main_text_lines.clear();
+    main_text.clear();
 
     accept(())
 }
@@ -298,11 +297,11 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
 
     validate_label_plus_header(&mut lines)?;
 
-    let (mut pages, mut current_page, mut current_unit, mut main_text_lines) = (
+    let (mut pages, mut current_page, mut current_unit, mut main_text) = (
         Vec::new(),
         None::<Vec<UnitTranslationImport>>,
         None::<LabelPlusUnit>,
-        Vec::new(),
+        String::new(),
     );
 
     for line in lines {
@@ -312,7 +311,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
             flush_label_plus_unit(
                 &mut current_page,
                 &mut current_unit,
-                &mut main_text_lines,
+                &mut main_text,
             )?;
 
             if let Some(mut units) = current_page.take() {
@@ -370,7 +369,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
             flush_label_plus_unit(
                 &mut current_page,
                 &mut current_unit,
-                &mut main_text_lines,
+                &mut main_text,
             )?;
 
             current_unit = Some(unit);
@@ -379,14 +378,17 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         }
 
         if current_unit.is_some() {
-            main_text_lines.push(line.to_string());
+            //
+            main_text.push_str(line);
+
+            main_text.push('\n');
         }
     }
 
     flush_label_plus_unit(
         &mut current_page,
         &mut current_unit,
-        &mut main_text_lines,
+        &mut main_text,
     )?;
 
     if let Some(mut units) = current_page.take() {
@@ -442,7 +444,7 @@ fn split_label_plus_text(text: &str) -> (Option<String>, Option<String>) {
     let text = text.trim_matches('\n');
 
     let Some(without_end) = text.strip_suffix("###") else {
-        return (normalize_label_plus_text(text.into()), None);
+        return (normalize_label_plus_text(text), None);
     };
 
     let text_and_note = without_end
@@ -450,15 +452,15 @@ fn split_label_plus_text(text: &str) -> (Option<String>, Option<String>) {
         .or_else(|| without_end.strip_prefix("###").map(|note| ("", note)));
 
     let Some((body, note)) = text_and_note else {
-        return (normalize_label_plus_text(text.into()), None);
+        return (normalize_label_plus_text(text), None);
     };
 
     if note.contains("###") {
-        return (normalize_label_plus_text(text.into()), None);
+        return (normalize_label_plus_text(text), None);
     }
 
     (
-        normalize_label_plus_text(body.into()),
-        normalize_label_plus_text(note.into()),
+        normalize_label_plus_text(body),
+        normalize_label_plus_text(note),
     )
 }
