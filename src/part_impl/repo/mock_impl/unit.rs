@@ -64,6 +64,8 @@ fn unit_from_edit(
         is_bubble,
         is_flagged,
         coord,
+        typography_note,
+        translation_note,
         translation,
         revision,
         ..
@@ -100,6 +102,8 @@ fn unit_from_edit(
         is_bubble: *is_bubble,
         is_flagged: *is_flagged,
         coord: coord.clone(),
+        typography_note: typography_note.clone(),
+        translation_note: translation_note.clone(),
         translated_text,
         last_translator_id,
         is_proofread,
@@ -119,6 +123,8 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
         is_bubble,
         is_flagged,
         coord,
+        typography_note,
+        translation_note,
         translation,
         revision,
         ..
@@ -137,6 +143,28 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 
     if let Some(coord) = coord {
         unit_info.coord = coord.clone();
+    }
+
+    match typography_note {
+        //
+        Patch::Clear => unit_info.typography_note = None,
+
+        Patch::Assign { value } => {
+            unit_info.typography_note = Some(value.clone());
+        }
+
+        Patch::Skip => {}
+    }
+
+    match translation_note {
+        //
+        Patch::Clear => unit_info.translation_note = None,
+
+        Patch::Assign { value } => {
+            unit_info.translation_note = Some(value.clone());
+        }
+
+        Patch::Skip => {}
     }
 
     match translation {

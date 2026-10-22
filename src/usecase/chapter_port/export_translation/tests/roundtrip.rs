@@ -7,9 +7,9 @@ use crate::data::view::unit_port::UnitTranslationPortView;
 use crate::model::artifact::translation_document::ChapterTranslationDocument;
 use crate::model::artifact::translation_import::UnitTranslationImportSource;
 
-#[test]
-fn export_view_roundtrips_native_import_and_sorts_indexes() {
-    let document = ChapterTranslationPortView {
+// Build an unordered native export with independent annotations.
+fn document() -> ChapterTranslationPortView {
+    ChapterTranslationPortView {
         chapter_id: "source-chapter".into(),
         chapter_index: 4,
         chapter_subtitle: Some("source subtitle".into()),
@@ -28,6 +28,8 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
                     y_coord: 0.5,
                     is_bubble: false,
                     is_flagged: false,
+                    typography_note: Some("小字\n\n括号".into()),
+                    translation_note: Some("存疑".into()),
                     translated_text: Some("second".into()),
                     translator_id: Some("source-translator".into()),
                     is_proofread: false,
@@ -48,6 +50,8 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
                         y_coord: 0.3,
                         is_bubble: true,
                         is_flagged: false,
+                        typography_note: None,
+                        translation_note: None,
                         translated_text: Some("first".into()),
                         translator_id: None,
                         is_proofread: false,
@@ -63,6 +67,8 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
                         y_coord: 0.2,
                         is_bubble: true,
                         is_flagged: false,
+                        typography_note: None,
+                        translation_note: None,
                         translated_text: None,
                         translator_id: None,
                         is_proofread: false,
@@ -72,7 +78,12 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
                 ],
             },
         ],
-    };
+    }
+}
+
+#[test]
+fn export_view_roundtrips_native_import_and_sorts_indexes() {
+    let document = document();
 
     let original_json = serde_json::to_value(&document).unwrap();
 
@@ -94,6 +105,30 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
     assert_eq!(pages.first().unwrap().units.first().unwrap().index, 0);
     assert_eq!(pages.first().unwrap().units.get(1).unwrap().index, 1);
     assert_eq!(pages.get(1).unwrap().page_index, 1);
+
+    assert_eq!(
+        pages
+            .get(1)
+            .unwrap()
+            .units
+            .first()
+            .unwrap()
+            .typography_note
+            .as_deref(),
+        Some("小字\n\n括号")
+    );
+
+    assert_eq!(
+        pages
+            .get(1)
+            .unwrap()
+            .units
+            .first()
+            .unwrap()
+            .translation_note
+            .as_deref(),
+        Some("存疑")
+    );
     assert!(matches!(
         &pages.get(1).unwrap().units.first().unwrap().source,
         UnitTranslationImportSource::PopRaKo {

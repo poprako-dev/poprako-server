@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS "t_unit" (
     "f_x_coord"             DOUBLE PRECISION NOT NULL,
     "f_y_coord"             DOUBLE PRECISION NOT NULL,
 
+    "f_typography_note"     TEXT,
+    "f_translation_note"    TEXT,
+
     "f_translated_text"     TEXT,
     "f_last_translator_id"  TEXT             REFERENCES "t_user" ("f_id") ON DELETE SET NULL,
 

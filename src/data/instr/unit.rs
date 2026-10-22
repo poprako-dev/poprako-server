@@ -207,6 +207,13 @@ pub enum UnitEditInstr {
         /// Initial page-relative coordinate.
         coord: UnitCoordInstr,
 
+        /// Initial text annotation delivered to typesetters.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        typography_note: Option<String>,
+        /// Initial communication between translators and proofreaders.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        translation_note: Option<String>,
+
         /// Optional initial translation assignment.
         #[serde(default)]
         translation: Option<UnitTranslationInstr>,
@@ -237,6 +244,15 @@ pub enum UnitEditInstr {
         /// Optional coordinate replacement.
         #[serde(default)]
         coord: Option<UnitCoordInstr>,
+
+        /// Three-state typesetting annotation patch.
+        #[serde(default, skip_serializing_if = "Patch::is_skip")]
+        #[cfg_attr(feature = "swagger", schema(value_type = Option<PatchInput<String>>))]
+        typography_note: Patch<String>,
+        /// Three-state translator and proofreader communication patch.
+        #[serde(default, skip_serializing_if = "Patch::is_skip")]
+        #[cfg_attr(feature = "swagger", schema(value_type = Option<PatchInput<String>>))]
+        translation_note: Patch<String>,
 
         /// Three-state translation patch.
         #[serde(default)]
@@ -320,6 +336,8 @@ impl UnitEditInstr {
                 is_bubble,
                 is_flagged,
                 coord,
+                typography_note,
+                translation_note,
                 translation,
                 revision,
             } => {
@@ -347,6 +365,8 @@ impl UnitEditInstr {
                     is_bubble,
                     is_flagged,
                     coord: coord.into(),
+                    typography_note,
+                    translation_note,
                     translation,
                     revision,
                 })
@@ -358,6 +378,8 @@ impl UnitEditInstr {
                 is_bubble,
                 is_flagged,
                 coord,
+                typography_note,
+                translation_note,
                 translation,
                 revision,
             } => {
@@ -372,6 +394,8 @@ impl UnitEditInstr {
                     is_bubble,
                     is_flagged,
                     coord: coord.map(UnitCoord::from),
+                    typography_note,
+                    translation_note,
                     translation: translation.map(|value| UnitTranslation {
                         translated_text: value.translated_text,
                         last_translator_id: user_id.to_string(),

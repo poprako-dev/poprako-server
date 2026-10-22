@@ -36,6 +36,11 @@ pub struct UnitInfo {
     /// Page-relative coordinate.
     pub coord: UnitCoord,
 
+    /// Translation text annotation delivered to typesetters.
+    pub typography_note: Option<String>,
+    /// Communication between translators and proofreaders.
+    pub translation_note: Option<String>,
+
     /// Current translated text.
     pub translated_text: Option<String>,
     /// ID of the translator who last assigned translation content.
@@ -58,11 +63,12 @@ pub struct UnitInfo {
 }
 
 impl UnitInfo {
-    /// Reports whether this Unit has usable translation or revision text.
+    /// Reports whether this Unit has usable translation, revision, or typesetting annotation.
     pub fn is_translated(&self) -> bool {
         //
         has_unit_text(self.translated_text.as_deref())
             || has_unit_text(self.proofread_text.as_deref())
+            || has_unit_text(self.typography_note.as_deref())
     }
 }
 

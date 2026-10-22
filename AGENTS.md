@@ -42,6 +42,12 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 ## Work and validation
 
+- Correctness and performance reviews must use static analysis, normal business
+  regression tests, and small bounded performance probes. Do not construct,
+  execute, or provide explicit attack code, exploit chains, credential misuse
+  scenarios, or denial-of-service workloads. Record permission and input-boundary
+  concerns as static findings with corrective recommendations.
+
 - Every `AppConfig` configuration type and field must have a complete default.
   The optional TOML file overrides those defaults: missing files, sections,
   and fields use defaults; explicit invalid values and other read errors fail

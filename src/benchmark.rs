@@ -376,6 +376,8 @@ fn unit_info(
             x_coord: f64::from(unit_index),
             y_coord: f64::from(page_index),
         },
+        typography_note: None,
+        translation_note: None,
         translated_text: Some(format!(
             "Translated text for chapter {}, page {}, unit {}.",
             chapter_index, page_index, unit_index,

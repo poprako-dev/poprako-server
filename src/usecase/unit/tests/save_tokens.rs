@@ -350,6 +350,8 @@ async fn empty_patch_records_token_without_refreshing_unit_timestamp() {
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Skip,
             revision: Patch::Skip,
         }]);

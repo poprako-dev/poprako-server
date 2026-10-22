@@ -24,6 +24,8 @@ fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
         is_bubble: None,
         is_flagged: None,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Skip,
     }
@@ -126,6 +128,8 @@ fn plan_folds_create_patch_content_after_sequence_planning() {
                 x_coord: 1.0,
                 y_coord: 2.0,
             },
+            typography_note: None,
+            translation_note: None,
             translation: Some(UnitTranslation {
                 translated_text: "initial".into(),
                 last_translator_id: "first".into(),
@@ -139,6 +143,8 @@ fn plan_folds_create_patch_content_after_sequence_planning() {
             is_bubble: Some(false),
             is_flagged: Some(true),
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Clear,
             revision: Patch::Skip,
         },
@@ -173,6 +179,8 @@ fn plan_preserves_content_assignment_and_clear_without_forcing_structure() {
         is_bubble: None,
         is_flagged: Some(false),
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Clear,
         revision: Patch::Skip,
     }];

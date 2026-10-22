@@ -38,6 +38,13 @@ pub struct UnitInfoView {
     /// Vertical page-relative coordinate.
     pub y_coord: f64,
 
+    /// Translation text annotation delivered to typesetters.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub typography_note: Option<String>,
+    /// Communication between translators and proofreaders.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation_note: Option<String>,
+
     /// Current translated text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
@@ -69,6 +76,8 @@ impl From<UnitInfo> for UnitInfoView {
             is_proofread: model.is_proofread,
             x_coord: model.coord.x_coord,
             y_coord: model.coord.y_coord,
+            typography_note: model.typography_note,
+            translation_note: model.translation_note,
             translated_text: model.translated_text,
             last_translator_id: model.last_translator_id,
             proofread_text: model.proofread_text,

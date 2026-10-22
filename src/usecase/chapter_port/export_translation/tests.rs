@@ -6,6 +6,8 @@
 // export_translation(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
 mod roundtrip;
+// Annotation formatting and native exchange compatibility.
+mod notes;
 mod visibility;
 
 use super::*;
@@ -176,6 +178,8 @@ fn unit(
             x_coord: 0.25,
             y_coord: 0.75,
         },
+        typography_note: None,
+        translation_note: None,
         translated_text: Some(text.into()),
         last_translator_id: Some("translator-1".into()),
         proofread_text: proofread_text.map(Into::into),

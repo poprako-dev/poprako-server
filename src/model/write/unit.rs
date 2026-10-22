@@ -39,6 +39,11 @@ pub enum UnitEdit {
         /// Initial page-relative coordinate.
         coord: UnitCoord,
 
+        /// Initial text annotation delivered to typesetters.
+        typography_note: Option<String>,
+        /// Initial communication between translators and proofreaders.
+        translation_note: Option<String>,
+
         /// Optional initial translation.
         translation: Option<UnitTranslation>,
         /// Optional initial revision.
@@ -58,6 +63,11 @@ pub enum UnitEdit {
         is_flagged: Option<bool>,
         /// Optional updated coordinate.
         coord: Option<UnitCoord>,
+
+        /// Three-state typesetting annotation patch.
+        typography_note: Patch<String>,
+        /// Three-state translator and proofreader communication patch.
+        translation_note: Patch<String>,
 
         /// Three-state translation patch.
         translation: Patch<UnitTranslation>,

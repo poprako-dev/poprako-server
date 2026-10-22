@@ -19,7 +19,7 @@ pub struct PageUnitDiffStats {
     /// Zero-based position in the Chapter.
     pub index: usize,
 
-    /// Units with non-whitespace translation text.
+    /// Units with non-whitespace translation text or typesetting annotation.
     pub translated_unit_count: usize,
     /// Units with non-whitespace translation and revision texts that differ exactly.
     pub editted_unit_count: usize,

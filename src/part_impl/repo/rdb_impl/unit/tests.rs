@@ -10,6 +10,8 @@ mod regression;
 mod sparse;
 // Review flag persistence and page aggregation.
 mod flagged;
+// Typed annotation persistence and counter regressions.
+mod notes;
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
@@ -128,6 +130,8 @@ async fn verify_restore(
         is_bubble: None,
         is_flagged: None,
         coord: None,
+        typography_note: Patch::Skip,
+        translation_note: Patch::Skip,
         translation: Patch::Skip,
         revision: Patch::Assign {
             value: UnitRevision {
@@ -244,6 +248,8 @@ async fn verify_mixed_patches(
                 x_coord: 3.0,
                 y_coord: 4.0,
             }),
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Clear,
             revision: Patch::Clear,
         },
@@ -253,6 +259,8 @@ async fn verify_mixed_patches(
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Assign {
                 value: UnitTranslation {
                     translated_text: "\u{3000}".to_string(),
@@ -341,6 +349,8 @@ async fn verify_stale_edit_rollback(
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Assign {
                 value: UnitTranslation {
                     translated_text: "must roll back".to_string(),
@@ -355,6 +365,8 @@ async fn verify_stale_edit_rollback(
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Skip,
             revision: Patch::Skip,
         },
@@ -425,6 +437,8 @@ async fn verify_create_and_save(
             is_bubble: None,
             is_flagged: None,
             coord: None,
+            typography_note: Patch::Skip,
+            translation_note: Patch::Skip,
             translation: Patch::Assign {
                 value: UnitTranslation {
                     translated_text: "saved after create".to_string(),
@@ -527,6 +541,8 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     flagged::verify_flags(shared.clone()).await;
 
+    notes::verify_notes(shared.clone()).await;
+
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
@@ -544,6 +560,8 @@ fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
             x_coord: 1.0,
             y_coord: 2.0,
         },
+        typography_note: None,
+        translation_note: None,
         translation: Some(UnitTranslation {
             translated_text: text.to_string(),
             last_translator_id: user_id.to_string(),

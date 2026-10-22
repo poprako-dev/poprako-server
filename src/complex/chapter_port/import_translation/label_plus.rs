@@ -187,15 +187,18 @@ pub fn flush_label_plus_unit(
         ));
     }
 
+    let (text, typography_note) =
+        split_label_plus_text(&main_text_lines.join("\n"));
+
     page_units.push(UnitTranslationImport {
         index: label_plus_unit.index,
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
         is_bubble: label_plus_unit.is_bubble,
         is_flagged: false,
-        source: UnitTranslationImportSource::LabelPlus {
-            text: normalize_label_plus_text(main_text_lines.join("\n")),
-        },
+        typography_note,
+        translation_note: None,
+        source: UnitTranslationImportSource::LabelPlus { text },
     });
 
     main_text_lines.clear();
@@ -375,7 +378,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
             continue;
         }
 
-        if current_unit.is_some() && !line.is_empty() {
+        if current_unit.is_some() {
             main_text_lines.push(line.to_string());
         }
     }
@@ -431,4 +434,31 @@ fn invalid_label_plus_limit(
         variant: ExpectedVariant::Args,
         msg: err_msg,
     }
+}
+
+// Extract only a complete trailing annotation, preserving internal blank lines.
+fn split_label_plus_text(text: &str) -> (Option<String>, Option<String>) {
+    //
+    let text = text.trim_matches('\n');
+
+    let Some(without_end) = text.strip_suffix("###") else {
+        return (normalize_label_plus_text(text.into()), None);
+    };
+
+    let text_and_note = without_end
+        .rsplit_once("\n\n###")
+        .or_else(|| without_end.strip_prefix("###").map(|note| ("", note)));
+
+    let Some((body, note)) = text_and_note else {
+        return (normalize_label_plus_text(text.into()), None);
+    };
+
+    if note.contains("###") {
+        return (normalize_label_plus_text(text.into()), None);
+    }
+
+    (
+        normalize_label_plus_text(body.into()),
+        normalize_label_plus_text(note.into()),
+    )
 }
