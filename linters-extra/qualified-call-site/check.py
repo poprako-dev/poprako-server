@@ -18,14 +18,14 @@ import tomllib
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import is_production_path, production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 REEXPORT = re.compile(r"pub(?:\s*\([^)]*\))?\s+use\b")
 PUBLIC_REEXPORT = re.compile(r"pub\s+use\b")
 PATH_NODES = {"scoped_identifier", "scoped_type_identifier"}
@@ -193,7 +193,7 @@ def local_crate_path_diagnostics(
     root: Path,
     source: bytes,
 ) -> list[str]:
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
 
     return [
         diagnostic(
@@ -267,8 +267,8 @@ def check_file(
 ) -> list[str]:
     raw_source = path.read_bytes()
     source = production_source(path, root)
-    tree = PARSER.parse(source)
-    raw_tree = PARSER.parse(raw_source)
+    tree = parse_rust(source)
+    raw_tree = parse_rust(raw_source)
     diagnostics = local_crate_path_diagnostics(path, root, raw_source)
     diagnostics.extend(
         import_policy_diagnostics(
@@ -423,7 +423,7 @@ def workspace_rust_paths(root: Path) -> list[Path]:
 
 def reexport_diagnostics(path: Path, root: Path) -> list[str]:
     source = path.read_bytes()
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     diagnostics: list[str] = []
 
     for declaration in descendants(tree.root_node):

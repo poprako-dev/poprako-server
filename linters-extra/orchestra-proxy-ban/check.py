@@ -16,14 +16,14 @@ import tempfile
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 PROXY_NAMES = {"Proxy", "OperProxy", "PromProxy"}
 PROXY_MACROS = {"proxy", "run_proxy", "step_proxy"}
 
@@ -95,7 +95,7 @@ def diagnostic(path: Path, root: Path, node: tree_sitter.Node) -> str:
 
 def check_file(path: Path, root: Path) -> list[str]:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     diagnostics: list[str] = []
 
     for node in descendants(tree.root_node):

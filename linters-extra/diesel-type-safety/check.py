@@ -13,12 +13,12 @@ import sys
 import tomllib
 import unittest
 
-import tree_sitter
-import tree_sitter_rust
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analysis_session import parse_rust
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 # Reserve these names everywhere: rejecting the original import also prevents
 # aliases, re-exports, function pointers, and glob imports from hiding an API.
 FORBIDDEN = {
@@ -48,7 +48,7 @@ IGNORED_NODES = {
 
 
 def rust_diagnostics(source: bytes, label: str) -> list[str]:
-    pending = [PARSER.parse(source).root_node]
+    pending = [parse_rust(source).root_node]
     diagnostics = []
     while pending:
         node = pending.pop()

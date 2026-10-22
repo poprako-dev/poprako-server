@@ -13,4 +13,5 @@ uv run fmt/direct-struct-import/check.py --layer model
 uv run fmt/direct-struct-import/check.py --layer data
 ```
 
-`*_data` module aliases. It never rewrites a mixed import or a type use.
+Checking is read-only by default. Pass `--fix` explicitly to remove legacy
+`*_model` or `*_data` module aliases. It never rewrites a mixed import or a type use.

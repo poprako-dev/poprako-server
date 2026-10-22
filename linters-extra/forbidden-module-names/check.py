@@ -16,14 +16,14 @@ import tempfile
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 FORBIDDEN_NAMES = {
     "helper": (
         "MODNAME001",
@@ -64,7 +64,7 @@ def diagnostic(
 
 def check_file(path: Path, root: Path) -> list[str]:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     pending = [tree.root_node]
     diagnostics: list[str] = []
 

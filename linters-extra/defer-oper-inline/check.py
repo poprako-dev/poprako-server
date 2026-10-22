@@ -16,14 +16,14 @@ import tempfile
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+
 WRAPPERS = {"parenthesized_expression"}
 
 
@@ -84,7 +84,7 @@ def check_root(root: Path) -> list[str]:
 
     for path in production_files(root):
         source = production_source(path, root)
-        tree = PARSER.parse(source)
+        tree = parse_rust(source)
 
         for call in descendants(tree.root_node, "call_expression"):
             if is_defer_constructor(call, source) and not is_step_on_receiver(call, source):

@@ -17,14 +17,13 @@ import tempfile
 from pathlib import Path
 
 import tree_sitter
-import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
+from analysis_session import parse_rust
 from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
 def descendants(node: tree_sitter.Node, kind: str) -> list[tree_sitter.Node]:
@@ -51,7 +50,7 @@ def oper_names(paths: list[Path], root: Path) -> set[str]:
 
     for path in paths:
         source = production_source(path, root)
-        tree = PARSER.parse(source)
+        tree = parse_rust(source)
 
         for item in descendants(tree.root_node, "impl_item"):
             item_text = text(source, item)
@@ -124,7 +123,7 @@ def constructor_name(source: bytes, value: tree_sitter.Node) -> str | None:
 
 def check_file(path: Path, names: set[str], root: Path) -> list[str]:
     source = production_source(path, root)
-    tree = PARSER.parse(source)
+    tree = parse_rust(source)
     errors: list[str] = []
 
     for declaration in descendants(tree.root_node, "let_declaration"):
@@ -310,12 +309,13 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
-    root = args.root.resolve()
-    paths = production_files(root)
-    names = oper_names(paths, root)
 
     if args.self_test:
         return self_test()
+
+    root = args.root.resolve()
+    paths = production_files(root)
+    names = oper_names(paths, root)
 
     errors = [error for path in paths for error in check_file(path, names, root)]
 
