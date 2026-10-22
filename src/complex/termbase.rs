@@ -110,7 +110,8 @@ use crate::complex::term as term_complex;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::write::term::{
-    TermEntry, TermImport, TermRepl, TermUpsertPlan,
+    TermAppendPlan, TermAppendRepl, TermEntry, TermImport, TermRepl,
+    TermUpsertPlan,
 };
 use crate::model::write::termbase::{
     TermbaseEntry, TermbaseImport, TermbaseRepl,
@@ -169,20 +170,20 @@ pub fn build_entry<'a>(
     })
 }
 
-/// Normalize and validate a native terminology-base import document.
-pub fn normalize_import(
-    termbase_import: TermbaseImport<'_>,
-) -> BaseRest<TermbaseImport<'_>> {
+/// Normalize a portable batch and reject duplicate source keys before writing.
+pub fn normalize_terms(
+    input: Vec<TermImport<'_>>,
+) -> BaseRest<Vec<TermImport<'_>>> {
     //
-    if termbase_import.terms.len() > TERMBASE_TERM_LIMIT {
-        return Err(term_limit_error(0, termbase_import.terms.len()));
+    if input.len() > TERMBASE_TERM_LIMIT {
+        return Err(term_limit_error(0, input.len()));
     }
 
-    let mut seen_sources = HashSet::with_capacity(termbase_import.terms.len());
+    let mut seen_sources = HashSet::with_capacity(input.len());
 
-    let mut terms = Vec::with_capacity(termbase_import.terms.len());
+    let mut terms = Vec::with_capacity(input.len());
 
-    for term_import in termbase_import.terms {
+    for term_import in input {
         //
         let term_import = term_complex::build_import(
             term_import.source,
@@ -209,6 +210,16 @@ pub fn normalize_import(
 
         terms.push(term_import);
     }
+
+    accept(terms)
+}
+
+/// Normalize and validate a native terminology-base import document.
+pub fn normalize_import(
+    termbase_import: TermbaseImport<'_>,
+) -> BaseRest<TermbaseImport<'_>> {
+    //
+    let terms = normalize_terms(termbase_import.terms)?;
 
     let (name, description) = (
         normalize_name(termbase_import.name)?,
@@ -360,6 +371,62 @@ pub fn build_update<'a>(
     })
 }
 
+/// Plan atomic append writes while retaining identity and skipping unchanged entries.
+pub fn build_term_append_plan<'a>(
+    termbase_id: &str,
+    creator_id: &str,
+    current_term_count: usize,
+    existing_term_infos: &'a [TermInfo],
+    incoming_terms: Vec<TermImport<'a>>,
+) -> BaseRest<TermAppendPlan<'a>> {
+    //
+    let term_upsert_plan = build_term_upsert_plan(
+        termbase_id,
+        creator_id,
+        current_term_count,
+        existing_term_infos,
+        incoming_terms,
+    )?;
+
+    let existing_terms = existing_term_infos
+        .iter()
+        .map(|term| (term.id.as_str(), term))
+        .collect::<HashMap<_, _>>();
+
+    let mut updates = Vec::new();
+
+    for update in term_upsert_plan.updates {
+        // Every replacement was resolved from these persisted entries by the shared planner.
+        let Some(existing) = existing_terms.get(update.id.as_str()) else {
+            //
+            tracing::error!(term_id = %update.id, "unrecoverable error: append replacement has no existing term");
+
+            return Err(BaseError::Unrecoverable {
+                msg: "append replacement has no existing term".into(),
+            });
+        };
+
+        let comment =
+            merge_append_comment(existing.comment.as_deref(), update.comment);
+
+        if update.targets == existing.targets && comment == existing.comment {
+            continue;
+        }
+
+        updates.push(TermAppendRepl {
+            id: update.id,
+            source: &existing.source,
+            targets: update.targets,
+            comment,
+        });
+    }
+
+    accept(TermAppendPlan {
+        entries: term_upsert_plan.entries,
+        updates,
+    })
+}
+
 // Normalize an optional string by trimming whitespace; empty strings become `None`.
 fn normalize_optional(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|value| !value.is_empty())
@@ -445,4 +512,26 @@ fn merge_targets<'a>(
     }
 
     targets
+}
+
+// Compare comments as whole blocks, preserving absent, equal, and multiline text.
+fn merge_append_comment(
+    existing: Option<&str>,
+    incoming: Option<&str>,
+) -> Option<String> {
+    //
+    match (existing, incoming) {
+        //
+        (existing, None) => existing.map(str::to_owned),
+
+        (None, incoming) => incoming.map(str::to_owned),
+
+        (Some(existing), Some(incoming)) if existing == incoming => {
+            Some(existing.into())
+        }
+
+        (Some(existing), Some(incoming)) => {
+            Some([existing, incoming].join("\n"))
+        }
+    }
 }

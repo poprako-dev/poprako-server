@@ -13,7 +13,9 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::instr::termbase_port::{ImportTermInstr, ImportTermbaseInstr};
+use crate::data::instr::termbase_port::{
+    AppendTermbaseTermInstr, ImportTermInstr, ImportTermbaseInstr,
+};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
@@ -296,4 +298,258 @@ async fn export_orders_portable_terms_without_metadata() {
     assert_eq!(val.terms.first().unwrap().source, "Alpha");
 
     assert_eq!(val.terms.get(1).unwrap().source, "Beta");
+}
+
+// append(append)(positive): mixed batches preserve identity, metadata, preferred targets, and unchanged timestamps.
+// append(append)(negative): invalid input, missing targets, permissions, and capacity fail atomically.
+
+fn append_term(
+    source: &str,
+    targets: &[&str],
+    comment: Option<&str>,
+) -> AppendTermbaseTermInstr {
+    AppendTermbaseTermInstr {
+        source: source.into(),
+        targets: targets.iter().map(|target| (*target).into()).collect(),
+        comment: comment.map(str::to_owned),
+    }
+}
+
+#[tokio::test]
+async fn append_preserves_identity_and_metadata_and_counts_real_changes() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let original_base = termbase(2);
+
+    let original_term = term("term-1", "Source", &["Preferred", "Second"]);
+
+    let unchanged_term = term("term-2", "Stable", &["Stable target"]);
+
+    mock.seed_termbase(original_base.clone());
+
+    mock.seed_term(original_term.clone());
+
+    mock.seed_term(unchanged_term.clone());
+
+    let instr = AppendTermbaseInstr {
+        terms: vec![
+            append_term(" source ", &["second", "New"], Some("New note")),
+            append_term("STABLE", &["stable target"], None),
+            append_term("Added", &["New entry"], None),
+        ],
+    };
+
+    let val = append((&mock, &mock), token(), original_base.id.clone(), instr)
+        .await
+        .unwrap();
+
+    assert_eq!((val.added, val.updated, val.unchanged), (1, 1, 1));
+
+    let snapshot = mock.snapshot();
+
+    let base = snapshot.termbases.first().unwrap();
+
+    assert_eq!(base.term_count, 3);
+
+    assert_eq!(base.name, original_base.name);
+
+    assert_eq!(base.description, original_base.description);
+
+    assert_eq!(base.creator_id, original_base.creator_id);
+
+    let merged = snapshot
+        .terms
+        .iter()
+        .find(|term| term.id == original_term.id)
+        .unwrap();
+
+    assert_eq!(merged.source, "Source");
+
+    assert_eq!(merged.targets, ["Preferred", "Second", "New"]);
+
+    assert_eq!(merged.comment.as_deref(), Some("Old comment\nNew note"));
+
+    assert_eq!(merged.creator_id, original_term.creator_id);
+
+    assert_eq!(merged.created_at, original_term.created_at);
+
+    let stable = snapshot
+        .terms
+        .iter()
+        .find(|term| term.id == unchanged_term.id)
+        .unwrap();
+
+    assert_eq!(stable.updated_at, unchanged_term.updated_at);
+
+    let added = snapshot
+        .terms
+        .iter()
+        .find(|term| term.source == "Added")
+        .unwrap();
+
+    assert_eq!(added.creator_id, token().user_id);
+}
+
+#[tokio::test]
+async fn append_empty_and_identical_batches_preserve_timestamps() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let original_base = termbase(1);
+
+    let original_term = term("term-1", "Source", &["Preferred"]);
+
+    mock.seed_termbase(original_base.clone());
+
+    mock.seed_term(original_term.clone());
+
+    for terms in [
+        vec![],
+        vec![append_term("SOURCE", &["preferred"], Some("Old comment"))],
+    ] {
+        let count = terms.len();
+
+        let instr = AppendTermbaseInstr { terms };
+
+        let val =
+            append((&mock, &mock), token(), original_base.id.clone(), instr)
+                .await
+                .unwrap();
+
+        assert_eq!((val.added, val.updated, val.unchanged), (0, 0, count));
+
+        let snapshot = mock.snapshot();
+
+        assert_eq!(
+            snapshot.termbases.first().unwrap().updated_at,
+            original_base.updated_at
+        );
+
+        assert_eq!(
+            snapshot.terms.first().unwrap().updated_at,
+            original_term.updated_at
+        );
+    }
+}
+
+#[tokio::test]
+async fn append_rejects_invalid_batches_before_any_write() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let original_base = termbase(0);
+
+    mock.seed_termbase(original_base.clone());
+
+    for invalid in [
+        append_term(" valid ", &["Duplicate source"], None),
+        append_term(" ", &["Target"], None),
+        append_term("Invalid", &[], None),
+        append_term("Invalid", &[" "], None),
+        append_term("Invalid", &["Same", " same "], None),
+    ] {
+        let instr = AppendTermbaseInstr {
+            terms: vec![append_term("Valid", &["Target"], None), invalid],
+        };
+
+        let error =
+            append((&mock, &mock), token(), original_base.id.clone(), instr)
+                .await
+                .unwrap_err();
+
+        assert_expected_variant(&error, ExpectedVariant::Args);
+
+        assert!(mock.snapshot().terms.is_empty());
+
+        assert_eq!(
+            mock.snapshot().termbases.first().unwrap().updated_at,
+            original_base.updated_at
+        );
+    }
+}
+
+#[tokio::test]
+async fn append_requires_existing_base_and_write_membership_even_when_empty() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let error = append(
+        (&mock, &mock),
+        token(),
+        "missing".into(),
+        AppendTermbaseInstr { terms: vec![] },
+    )
+    .await
+    .unwrap_err();
+
+    assert_expected_variant(&error, ExpectedVariant::Args);
+
+    mock.seed_termbase(termbase(0));
+
+    let mut reader = member("reader");
+
+    reader.roles = RoleMask::from(RoleField::TYPESETTER);
+
+    mock.seed_member(reader);
+
+    for user_id in ["reader", "outsider"] {
+        let token = UserToken {
+            user_id: user_id.into(),
+        };
+
+        let error = append(
+            (&mock, &mock),
+            token,
+            "termbase-1".into(),
+            AppendTermbaseInstr { terms: vec![] },
+        )
+        .await
+        .unwrap_err();
+
+        assert_expected_variant(&error, ExpectedVariant::Perm);
+    }
+}
+
+#[tokio::test]
+async fn append_capacity_failure_keeps_existing_content() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let limit = crate::value::termbase::TERMBASE_TERM_LIMIT;
+
+    mock.seed_termbase(termbase(limit));
+
+    for index in 0..limit {
+        mock.seed_term(term(
+            &format!("term-{index}"),
+            &format!("Source-{index}"),
+            &["Old"],
+        ));
+    }
+
+    let instr = AppendTermbaseInstr {
+        terms: vec![
+            append_term("Source-0", &["New"], Some("New note")),
+            append_term("Added", &["Target"], None),
+        ],
+    };
+
+    let error = append((&mock, &mock), token(), "termbase-1".into(), instr)
+        .await
+        .unwrap_err();
+
+    assert_expected_variant(&error, ExpectedVariant::Args);
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.terms.len(), limit);
+
+    assert!(snapshot.terms.iter().all(|term| term.targets == ["Old"]
+        && term.comment.as_deref() == Some("Old comment")));
 }

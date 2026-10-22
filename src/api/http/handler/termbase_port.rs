@@ -20,8 +20,12 @@ use crate::api::http::result::HttpBody;
 
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::instr::termbase_port::ImportTermbaseInstr;
-use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
+use crate::data::instr::termbase_port::{
+    AppendTermbaseInstr, ImportTermbaseInstr,
+};
+use crate::data::val::termbase_port::{
+    AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
+};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
@@ -175,6 +179,40 @@ pub async fn import_comic(
     };
 
     import_termbase_val.accept(status)
+}
+
+/// `POST /api/v1/termbases/{termbase_id}/append` — atomically append portable terms.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    post,
+    path = "/api/v1/termbases/{termbase_id}/append",
+    tag = "termbase-port",
+    description = "Append a strict terms-only document. Match trimmed, case-insensitive sources, preserve existing source spelling and translation order, and append distinct translations. Comments are compared as whole text blocks and joined with a newline when different. Empty or unchanged batches preserve timestamps. This operation is not idempotent when different comment blocks are combined; do not blindly replay after an uncertain response.",
+    params(("termbase_id" = String, Path, description = "Existing termbase ID")),
+    request_body = AppendTermbaseInstr,
+    responses(
+        (status = 200, description = "Atomic append counts", body = HttpBody<AppendTermbaseVal>),
+        (status = 403, description = "Team translator or proofreader required"),
+        (status = 422, description = "Invalid document, missing termbase, or capacity exceeded"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn append(
+    State(harn): State<AppHarn>,
+    Path(termbase_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Json(instr): Json<AppendTermbaseInstr>,
+) -> HttpResult<AppendTermbaseVal> {
+    //
+    let append_termbase_val =
+        termbase_port_usecase::append::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            termbase_id,
+            instr,
+        )
+        .await?;
+
+    append_termbase_val.accept(StatusCode::OK)
 }
 
 // Load and serialize one export document for either response mode.

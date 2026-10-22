@@ -11,10 +11,15 @@ use poprako_util::i18n::trl;
 
 use crate::complex::termbase::perm as termbase_perm_complex;
 use crate::complex::{comic as comic_complex, termbase as termbase_complex};
-use crate::data::instr::termbase_port::ImportTermbaseInstr;
-use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
+use crate::data::instr::termbase_port::{
+    AppendTermbaseInstr, ImportTermbaseInstr,
+};
+use crate::data::val::termbase_port::{
+    AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
+};
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::shared::user::UserToken;
+use crate::model::write::term::TermRepl;
 use crate::model::write::termbase::{TermbaseImport, TermbaseRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::comic::ComicRepo;
@@ -24,7 +29,8 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::{ListTermInfos, UpsertTerms};
 use crate::part::repo::oper::termbase::{
-    CreateTermbase, GetTermbaseInfo, ListTermbaseInfosExcluded, UpdateTermbase,
+    CreateTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
+    ListTermbaseInfosExcluded, TouchTermbase, UpdateTermbase,
     UpdateTermbaseTermCount,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
@@ -185,6 +191,121 @@ where
         .await?;
 
     accept(import_termbase_val)
+}
+
+/// Appends portable terms to a locked existing base without replacing its metadata.
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, term_count = instr.terms.len()))]
+pub async fn append<N, C, R>(
+    (nucl, repo): (&N, &R),
+    token: UserToken,
+    id: String,
+    instr: AppendTermbaseInstr,
+) -> BaseRest<AppendTermbaseVal>
+where
+    C: Context + Send,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
+    C::Level: AtLeast<ReptRead>,
+    R: TermbaseRepo<C>
+        + TermRepo<C>
+        + TeamRepo<C>
+        + MemberRepo<C>
+        + Send
+        + Sync,
+{
+    let terms = termbase_complex::normalize_terms(
+        instr.terms.iter().map(Into::into).collect(),
+    )?;
+
+    let append_termbase_val = nucl
+        .coord(async move |context| {
+            //
+            let termbase_info = GetTermbaseInfoExcluded { id: &id }
+                .step_on(repo, context)
+                .await?;
+
+            let member_info = MemberLoader::load_info_from_termbase(
+                repo,
+                LoadMode::Step { context },
+                &token.user_id,
+                &termbase_info,
+            )
+            .await?;
+
+            termbase_perm_complex::ensure_user_can_write(
+                &member_info,
+                &termbase_info,
+            )?;
+
+            let existing_term_infos = ListTermInfos::Termbase {
+                termbase_id: &id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let term_count = terms.len();
+
+            let term_append_plan = termbase_complex::build_term_append_plan(
+                &id,
+                &token.user_id,
+                termbase_info.term_count,
+                &existing_term_infos,
+                terms,
+            )?;
+
+            let added = term_append_plan.entries.len();
+
+            let updated = term_append_plan.updates.len();
+
+            let term_replacements = term_append_plan.updates
+                .iter()
+                .map(TermRepl::from)
+                .collect::<Vec<_>>();
+
+            UpsertTerms {
+                termbase_id: &id,
+                entries: &term_append_plan.entries,
+                updates: &term_replacements,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            match (added, updated) {
+                //
+                (0, 0) => {}
+
+                (0, _) => {
+                    TouchTermbase { id: &id }.step_on(repo, context).await?;
+                }
+
+                _ => {
+                    // The shared capacity guard bounds additions to the termbase limit.
+                    let delta = i32::try_from(added).map_err(|_| {
+                        //
+                        tracing::error!(
+                            added,
+                            "unrecoverable error: append count exceeds signed delta range",
+                        );
+
+                        BaseError::Unrecoverable {
+                            msg: "append count exceeds signed delta range".into(),
+                        }
+                    })?;
+
+                    UpdateTermbaseTermCount { id: &id, delta }
+                        .step_on(repo, context)
+                        .await?;
+                }
+            }
+
+            accept(AppendTermbaseVal {
+                added,
+                updated,
+                unchanged: term_count - added - updated,
+            })
+        })
+        .await?;
+
+    accept(append_termbase_val)
 }
 
 // Lock the import scope and resolve its owning team.

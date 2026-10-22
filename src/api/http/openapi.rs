@@ -57,7 +57,10 @@ use crate::data::instr::term::{CreateTermInstr, UpdateTermInfoInstr};
 use crate::data::instr::termbase::{
     CreateTermbaseInstr, UpdateTermbaseInfoInstr,
 };
-use crate::data::instr::termbase_port::{ImportTermInstr, ImportTermbaseInstr};
+use crate::data::instr::termbase_port::{
+    AppendTermbaseInstr, AppendTermbaseTermInstr, ImportTermInstr,
+    ImportTermbaseInstr,
+};
 use crate::data::instr::unit::{
     TransformChapterUnitsInstr, UnitCoordInstr, UnitEditInstr,
     UnitRevisionInstr, UnitTextTransformInstr, UnitTransformInstr,
@@ -90,7 +93,9 @@ use crate::data::val::page_artwork::{
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
-use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
+use crate::data::val::termbase_port::{
+    AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
+};
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
@@ -226,6 +231,7 @@ use crate::value::unit::UnitTextPart;
         handler::termbase::get_info,
         handler::termbase::update_info,
         handler::termbase::delete,
+        handler::termbase_port::append,
         handler::termbase_port::export,
         handler::termbase_port::export_download,
         handler::termbase_port::import_team,
@@ -342,6 +348,9 @@ use crate::value::unit::UnitTextPart;
         CreateTermbaseInstr,
         CreateTermbaseVal,
         UpdateTermbaseInfoInstr,
+        AppendTermbaseTermInstr,
+        AppendTermbaseInstr,
+        AppendTermbaseVal,
         ImportTermInstr,
         ImportTermbaseInstr,
         TermbaseTermView,
