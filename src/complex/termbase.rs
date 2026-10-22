@@ -99,6 +99,9 @@ pub mod perm {
     }
 }
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -284,13 +287,28 @@ pub fn build_term_upsert_plan<'a>(
 
     let mut updates = Vec::new();
 
+    if imported_terms.is_empty() {
+        //
+        ensure_term_capacity(current_term_count, 0)?;
+
+        return accept(TermUpsertPlan { entries, updates });
+    }
+
+    let mut existing_terms_by_source =
+        HashMap::with_capacity(loaded_term_count);
+
+    for term_info in existing_term_infos {
+        //
+        existing_terms_by_source
+            .entry(normalized_key(&term_info.source))
+            .or_insert(term_info);
+    }
+
     for imported_term in imported_terms {
         //
         let source_key = normalized_key(imported_term.source);
 
-        let existing_term_info = existing_term_infos
-            .iter()
-            .find(|term_info| normalized_key(&term_info.source) == source_key);
+        let existing_term_info = existing_terms_by_source.get(&source_key);
 
         match existing_term_info {
             //
