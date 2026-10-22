@@ -37,11 +37,11 @@ async fn verify_related_workset_team(
     comic_fixture: &ComicFixture,
 ) {
     let comic_list_spec = ComicListSpec {
-        workset_id: comic_fixture.workset_entry.id.clone(),
-        fuzzy_title: Some("Comic".into()),
+        workset_id: &comic_fixture.workset_entry.id,
+        fuzzy_title: Some("Comic"),
         stages: None,
         status: None,
-        incl_opt: vec![ComicInclOpt::WorksetTeam],
+        incl_opt: &[ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -84,9 +84,9 @@ async fn verify_related_workset_team(
 async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     let comic_info_update = ComicRepl {
         id: comic_fixture.comic_entry.id.clone(),
-        title: "RDB Comic Updated".into(),
-        author: "RDB Author Updated".into(),
-        description: Some("updated".into()),
+        title: "RDB Comic Updated",
+        author: "RDB Author Updated",
+        description: Some("updated"),
     };
 
     repo.run(&UpdateComic {
@@ -106,11 +106,11 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     assert_eq!(comic_info.title, "RDB Comic Updated");
 
     let comic_list_spec = ComicListSpec {
-        workset_id: comic_fixture.workset_entry.id.clone(),
-        fuzzy_title: Some("RDB Author Updated".into()),
+        workset_id: &comic_fixture.workset_entry.id,
+        fuzzy_title: Some("RDB Author Updated"),
         stages: None,
         status: None,
-        incl_opt: Vec::new(),
+        incl_opt: &[],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -130,11 +130,11 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     );
 
     let comic_list_spec = ComicListSpec {
-        workset_id: comic_fixture.workset_entry.id.clone(),
-        fuzzy_title: Some("1".into()),
+        workset_id: &comic_fixture.workset_entry.id,
+        fuzzy_title: Some("1"),
         stages: None,
         status: None,
-        incl_opt: Vec::new(),
+        incl_opt: &[],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -156,11 +156,11 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%", "_", "\\"] {
         //
         let comic_list_spec = ComicListSpec {
-            workset_id: comic_fixture.workset_entry.id.clone(),
-            fuzzy_title: Some(fuzzy_title.into()),
+            workset_id: &comic_fixture.workset_entry.id,
+            fuzzy_title: Some(fuzzy_title),
             stages: None,
             status: None,
-            incl_opt: Vec::new(),
+            incl_opt: &[],
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -177,9 +177,9 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 
     let comic_info_update = ComicRepl {
         id: comic_fixture.comic_entry.id.clone(),
-        title: "RDB 100%_Comic\\Updated".into(),
-        author: "RDB Author Updated".into(),
-        description: Some("updated".into()),
+        title: "RDB 100%_Comic\\Updated",
+        author: "RDB Author Updated",
+        description: Some("updated"),
     };
 
     repo.run(&UpdateComic {
@@ -191,11 +191,11 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%_", "\\Updated"] {
         //
         let comic_list_spec = ComicListSpec {
-            workset_id: comic_fixture.workset_entry.id.clone(),
-            fuzzy_title: Some(fuzzy_title.into()),
+            workset_id: &comic_fixture.workset_entry.id,
+            fuzzy_title: Some(fuzzy_title),
             stages: None,
             status: None,
-            incl_opt: Vec::new(),
+            incl_opt: &[],
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -225,7 +225,7 @@ async fn seed_sibling_stages(
         id: format!("{}sibling-workset", PREFIX),
         team_id: comic_fixture.team_entry.id.clone(),
         index: 1,
-        name: "Sibling Workset".into(),
+        name: "Sibling Workset",
         description: None,
     };
 
@@ -233,8 +233,8 @@ async fn seed_sibling_stages(
         id: format!("{}sibling-comic", PREFIX),
         workset_id: sibling_workset.id.clone().into(),
         index: 0,
-        title: "Sibling Comic".into(),
-        author: "Sibling Author".into(),
+        title: "Sibling Comic",
+        author: "Sibling Author",
         description: None,
         creator_id: comic_fixture.creator_form.id.clone().into(),
     };
@@ -346,11 +346,11 @@ async fn verify_single_stage_filters(
         .unwrap();
 
         let comic_list_spec = ComicListSpec {
-            workset_id: comic_fixture.workset_entry.id.clone(),
+            workset_id: &comic_fixture.workset_entry.id,
             fuzzy_title: None,
             stages: Some(single_stage_filter(stage, phase)),
             status: None,
-            incl_opt: Vec::new(),
+            incl_opt: &[],
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -398,14 +398,14 @@ async fn verify_combined_stage_filters(
     .unwrap();
 
     let combined_filter_spec = ComicListSpec {
-        workset_id: comic_fixture.workset_entry.id.clone(),
+        workset_id: &comic_fixture.workset_entry.id,
         fuzzy_title: None,
         stages: Some(stage_filter(&[
             (Stage::Translate, StagePhase::Active),
             (Stage::Proofread, StagePhase::Completed),
         ])),
         status: None,
-        incl_opt: Vec::new(),
+        incl_opt: &[],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -424,11 +424,11 @@ async fn verify_combined_stage_filters(
     );
 
     let no_stage_filter_spec = ComicListSpec {
-        workset_id: comic_fixture.workset_entry.id.clone(),
+        workset_id: &comic_fixture.workset_entry.id,
         fuzzy_title: None,
         stages: Some(StageMask::try_filter_from(0xFFF).unwrap()),
         status: None,
-        incl_opt: Vec::new(),
+        incl_opt: &[],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

@@ -3,7 +3,7 @@
 use crate::value::role::RoleMask;
 
 /// The data needed to insert a member invitation row.
-pub struct MemberInvitationEntry {
+pub struct MemberInvitationEntry<'a> {
     /// Unique identifier for the new invitation record.
     pub id: String,
 
@@ -13,7 +13,7 @@ pub struct MemberInvitationEntry {
     /// The user creating and sending the invitation.
     pub invitor_id: String,
     /// Qualified identifier of the user being invited.
-    pub invitee_qid: String,
+    pub invitee_qid: &'a str,
 
     /// Opaque token the invitee presents to accept the invitation.
     pub code: String,

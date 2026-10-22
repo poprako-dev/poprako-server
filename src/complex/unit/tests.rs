@@ -310,23 +310,22 @@ fn edit_sequence_plan_rejects_visible_overflow_and_corrupt_order() {
 #[test]
 fn search_phrase_trims_unicode_and_accepts_one_character() {
     //
-    let phrase =
-        unit_complex::normalize_search_phrase(" 译文甲 ".into()).unwrap();
+    let input = "\u{2003} 译文甲 \u{00a0}".to_string();
+
+    let phrase = unit_complex::normalize_search_phrase(&input).unwrap();
 
     assert_eq!(phrase, "译文甲");
 
-    assert_eq!(
-        unit_complex::normalize_search_phrase(" 日 ".into()).unwrap(),
-        "日",
-    );
+    assert_eq!(phrase.as_ptr(), input.trim().as_ptr());
+
+    assert_eq!(input, "\u{2003} 译文甲 \u{00a0}");
+
+    assert_eq!(unit_complex::normalize_search_phrase(" 日 ").unwrap(), "日",);
+
+    assert_args(&unit_complex::normalize_search_phrase("").unwrap_err());
 
     assert_args(
-        &unit_complex::normalize_search_phrase(String::new()).unwrap_err(),
-    );
-
-    assert_args(
-        &unit_complex::normalize_search_phrase(" \u{2003}\n ".into())
-            .unwrap_err(),
+        &unit_complex::normalize_search_phrase(" \u{2003}\n ").unwrap_err(),
     );
 }
 

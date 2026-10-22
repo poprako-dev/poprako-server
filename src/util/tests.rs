@@ -1,21 +1,6 @@
 // next_snowflake_u64 (positive): generated snowflake values should be monotonic and fit into u64.
 // next_snowflake_id (positive): generated snowflake strings should be base62 and round-trip via base62::decode.
-
 use super::*;
-
-#[test]
-fn trim_owned_removes_outer_unicode_whitespace_in_place() {
-    //
-    let value = " \u{2003}example\n".to_string();
-
-    assert_eq!(trim_owned(value), "example");
-}
-
-#[test]
-fn trim_owned_returns_empty_for_whitespace_only_values() {
-    //
-    assert!(trim_owned("\u{2003}\t ".into()).is_empty());
-}
 
 #[test]
 fn next_snowflake_u64_generates_monotonic_ids() {

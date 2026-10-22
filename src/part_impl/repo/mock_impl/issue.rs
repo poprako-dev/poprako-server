@@ -93,12 +93,12 @@ impl Step<ReplaceChapterIssues<'_>, MockContext> for Mock {
             .issues
             .extend(oper.repl.entries.iter().map(|entry| IssueInfo {
                 id: entry.id.clone(),
-                page_artwork_id: entry.page_artwork_id.clone(),
+                page_artwork_id: entry.page_artwork_id.to_owned(),
                 index: entry.index,
-                variant: entry.variant.clone(),
-                layer_name: entry.layer_name.clone(),
+                variant: entry.variant.to_owned(),
+                layer_name: entry.layer_name.map(str::to_owned),
                 rect: entry.rect,
-                note: entry.note.clone(),
+                note: entry.note.to_owned(),
             }));
 
         accept(())

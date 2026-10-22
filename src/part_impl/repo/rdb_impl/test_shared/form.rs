@@ -10,11 +10,11 @@ use crate::model::write::workset::WorksetEntry;
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
+pub fn user_entry(prefix: &str, name: &str) -> UserEntry<'static> {
     UserEntry {
         id: format!("{}user-{}", prefix, name),
-        nickname: format!("{}user-{}", prefix, name),
-        qid: format!("{}qid-{}", prefix, name),
+        nickname: format!("{}user-{}", prefix, name).into(),
+        qid: format!("{}qid-{}", prefix, name).into(),
         password_hash: "hash".into(),
     }
 }
@@ -24,10 +24,10 @@ pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn team_entry(prefix: &str) -> TeamEntry {
+pub fn team_entry(prefix: &str) -> TeamEntry<'static> {
     TeamEntry {
         id: format!("{}team", prefix),
-        name: format!("{}team", prefix),
+        name: format!("{}team", prefix).into(),
         description: "team".into(),
     }
 }
@@ -37,13 +37,16 @@ pub fn team_entry(prefix: &str) -> TeamEntry {
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
+pub fn workset_entry(
+    prefix: &str,
+    team_entry: &TeamEntry<'_>,
+) -> WorksetEntry<'static> {
     WorksetEntry {
         id: format!("{}workset", prefix),
         team_id: team_entry.id.clone(),
         index: 0,
-        name: "RDB Workset".into(),
-        description: Some("workset".into()),
+        name: "RDB Workset",
+        description: Some("workset"),
     }
 }
 
@@ -54,16 +57,16 @@ pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
 #[must_use]
 pub fn comic_entry(
     prefix: &str,
-    workset_entry: &WorksetEntry,
-    creator_form: &UserEntry,
+    workset_entry: &WorksetEntry<'_>,
+    creator_form: &UserEntry<'_>,
 ) -> ComicEntry<'static> {
     ComicEntry {
         id: format!("{}comic", prefix),
         workset_id: workset_entry.id.clone().into(),
         index: 0,
-        title: "RDB Comic".into(),
-        author: "RDB Author".into(),
-        description: Some("comic".into()),
+        title: "RDB Comic",
+        author: "RDB Author",
+        description: Some("comic"),
         creator_id: creator_form.id.clone().into(),
     }
 }
@@ -76,7 +79,7 @@ pub fn comic_entry(
 pub fn chapter_entry(
     prefix: &str,
     comic_entry: &ComicEntry<'_>,
-    creator_form: &UserEntry,
+    creator_form: &UserEntry<'_>,
 ) -> ChapterEntry<'static> {
     ChapterEntry {
         id: format!("{}chapter", prefix),

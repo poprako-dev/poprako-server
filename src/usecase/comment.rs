@@ -28,7 +28,6 @@ use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::comment::view::comment_info_views;
-use crate::util::trim_owned;
 
 /// Lists comments under a team.
 #[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
@@ -104,7 +103,7 @@ where
         id: comment_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        content: trim_owned(instr.content),
+        content: instr.content.trim(),
     };
 
     let comment_info = CreateComment {

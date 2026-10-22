@@ -78,8 +78,8 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_repl = TeamRepl {
         id: team_fixture.team_entry.id.clone(),
-        name: "RDB Team Updated".into(),
-        description: "updated".into(),
+        name: "RDB Team Updated",
+        description: "updated",
     };
 
     repo.run(&UpdateTeam { repl: &team_repl }).await.unwrap();

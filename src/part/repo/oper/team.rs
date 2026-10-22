@@ -9,7 +9,7 @@ use crate::model::write::team::{TeamEntry, TeamRepl};
 #[oper(output = TeamInfo)]
 pub struct CreateTeam<'a> {
     /// The team entry to insert.
-    pub entry: &'a TeamEntry,
+    pub entry: &'a TeamEntry<'a>,
 }
 
 /// Looks up a team by identifier.
@@ -50,7 +50,7 @@ pub struct ListTeamInfos<'a> {
 #[oper(output = ())]
 pub struct UpdateTeam<'a> {
     /// The replacement payload.
-    pub repl: &'a TeamRepl,
+    pub repl: &'a TeamRepl<'a>,
 }
 
 /// Looks up a team by identifier, matching deleted rows as well.

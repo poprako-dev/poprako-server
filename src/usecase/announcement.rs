@@ -34,7 +34,6 @@ use crate::part::repo::oper::announcement::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::announcement::view::announcement_info_views;
-use crate::util::trim_owned;
 
 /// Lists announcements under a team.
 #[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
@@ -111,8 +110,8 @@ where
         id: announcement_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        title: trim_owned(instr.title),
-        content: trim_owned(instr.content),
+        title: instr.title.trim(),
+        content: instr.content.trim(),
     };
 
     let announcement_info = CreateAnnouncement {
@@ -170,8 +169,8 @@ where
 
     let announcement_repl = AnnouncementRepl {
         id: instr.id,
-        title: trim_owned(instr.title),
-        content: trim_owned(instr.content),
+        title: instr.title.trim(),
+        content: instr.content.trim(),
     };
 
     UpdateAnnouncement {

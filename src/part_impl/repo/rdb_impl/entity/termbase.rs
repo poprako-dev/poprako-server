@@ -69,8 +69,8 @@ pub struct TermbaseEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a TermbaseEntry> for TermbaseEntryRow<'a> {
-    fn from(termbase_entry: &'a TermbaseEntry) -> Self {
+impl<'a> From<&'a TermbaseEntry<'a>> for TermbaseEntryRow<'a> {
+    fn from(termbase_entry: &'a TermbaseEntry<'a>) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -78,8 +78,8 @@ impl<'a> From<&'a TermbaseEntry> for TermbaseEntryRow<'a> {
             f_id: &termbase_entry.id,
             f_team_id: termbase_entry.team_id.as_deref(),
             f_comic_id: termbase_entry.comic_id.as_deref(),
-            f_name: &termbase_entry.name,
-            f_description: termbase_entry.description.as_deref(),
+            f_name: termbase_entry.name,
+            f_description: termbase_entry.description,
             f_creator_id: &termbase_entry.creator_id,
             f_created_at: now,
             f_updated_at: now,

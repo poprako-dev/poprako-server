@@ -10,19 +10,19 @@ use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing comics within a workset.
-pub struct ComicListSpec {
+pub struct ComicListSpec<'a> {
     /// The workset whose comics should be listed.
-    pub workset_id: String,
+    pub workset_id: &'a str,
 
     /// Optional fuzzy title search to narrow the results.
-    pub fuzzy_title: Option<String>,
+    pub fuzzy_title: Option<&'a str>,
     /// Optional workflow-stage mask filter.
     pub stages: Option<StageMask>,
     /// Optional lifecycle state filter.
     pub status: Option<ComicStatus>,
 
     /// Additional data to include in each result, such as the workset or creator.
-    pub incl_opt: Vec<ComicInclOpt>,
+    pub incl_opt: &'a [ComicInclOpt],
 
     /// Number of records to skip for pagination.
     pub offset: u32,

@@ -308,12 +308,17 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
     test_shared::reset(shared, PREFIX).await;
 
     let fixture = test_shared::seed_workset(shared, PREFIX).await;
+    let names = (1..=4)
+        .map(|index| format!("Workset {index}"))
+        .collect::<Vec<_>>();
+
     let entries = (1..=4)
-        .map(|index| WorksetEntry {
+        .zip(&names)
+        .map(|(index, name)| WorksetEntry {
             id: format!("{PREFIX}workset-{index:04}"),
             team_id: fixture.team_entry.id.clone(),
             index,
-            name: format!("Workset {index}"),
+            name,
             description: None,
         })
         .collect::<Vec<_>>();
@@ -335,8 +340,8 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
         id: format!("{PREFIX}blocked-comic"),
         workset_id: fixture.workset_entry.id.clone().into(),
         index: 0,
-        title: "Blocked comic".into(),
-        author: "Author".into(),
+        title: "Blocked comic",
+        author: "Author",
         description: None,
         creator_id: format!("{PREFIX}user-owner").into(),
     };

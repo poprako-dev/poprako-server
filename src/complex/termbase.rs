@@ -113,22 +113,22 @@ use crate::model::write::termbase::{
     TermbaseEntry, TermbaseImport, TermbaseRepl,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::{next_snowflake_id, trim_owned};
+use crate::util::next_snowflake_id;
 use crate::value::termbase::TERMBASE_TERM_LIMIT;
 
 /// Normalize an optional terminology-base name filter.
-pub fn normalize_fuzzy_name(fuzzy_name: Option<String>) -> Option<String> {
+pub fn normalize_fuzzy_name(fuzzy_name: Option<&str>) -> Option<&str> {
     normalize_optional(fuzzy_name)
 }
 
 /// Build a validated terminology-base entry.
-pub fn build_entry(
+pub fn build_entry<'a>(
     team_id: Option<String>,
     comic_id: Option<String>,
-    name: String,
-    description: Option<String>,
+    name: &'a str,
+    description: Option<&'a str>,
     creator_id: String,
-) -> BaseRest<TermbaseEntry> {
+) -> BaseRest<TermbaseEntry<'a>> {
     //
     match (&team_id, &comic_id) {
         //
@@ -168,8 +168,8 @@ pub fn build_entry(
 
 /// Normalize and validate a native terminology-base import document.
 pub fn normalize_import(
-    termbase_import: TermbaseImport,
-) -> BaseRest<TermbaseImport> {
+    termbase_import: TermbaseImport<'_>,
+) -> BaseRest<TermbaseImport<'_>> {
     //
     if termbase_import.terms.len() > TERMBASE_TERM_LIMIT {
         return Err(term_limit_error(0, termbase_import.terms.len()));
@@ -187,7 +187,7 @@ pub fn normalize_import(
             term_import.comment,
         )?;
 
-        if !seen_sources.insert(normalized_key(&term_import.source)) {
+        if !seen_sources.insert(normalized_key(term_import.source)) {
             //
             let err_msg = trl("error-term-source-duplicate");
 
@@ -256,13 +256,13 @@ pub fn ensure_term_capacity(
 }
 
 /// Build inserts and replacements for a normalized terminology-base import.
-pub fn build_term_upsert_plan(
+pub fn build_term_upsert_plan<'a>(
     termbase_id: &str,
     creator_id: &str,
     current_term_count: usize,
-    existing_term_infos: &[TermInfo],
-    imported_terms: Vec<TermImport>,
-) -> BaseRest<TermUpsertPlan> {
+    existing_term_infos: &'a [TermInfo],
+    imported_terms: Vec<TermImport<'a>>,
+) -> BaseRest<TermUpsertPlan<'a>> {
     //
     let loaded_term_count = existing_term_infos.len();
 
@@ -286,7 +286,7 @@ pub fn build_term_upsert_plan(
 
     for imported_term in imported_terms {
         //
-        let source_key = normalized_key(&imported_term.source);
+        let source_key = normalized_key(imported_term.source);
 
         let existing_term_info = existing_term_infos
             .iter()
@@ -326,11 +326,11 @@ pub fn build_term_upsert_plan(
 }
 
 /// Build a validated terminology-base profile replacement.
-pub fn build_update(
+pub fn build_update<'a>(
     id: String,
-    name: String,
-    description: Option<String>,
-) -> BaseRest<TermbaseRepl> {
+    name: &'a str,
+    description: Option<&'a str>,
+) -> BaseRest<TermbaseRepl<'a>> {
     //
     let (name, description) =
         (normalize_name(name)?, normalize_optional(description));
@@ -343,20 +343,14 @@ pub fn build_update(
 }
 
 // Normalize an optional string by trimming whitespace; empty strings become `None`.
-fn normalize_optional(value: Option<String>) -> Option<String> {
-    //
-    value.and_then(|value| {
-        //
-        let value = trim_owned(value);
-
-        if value.is_empty() { None } else { Some(value) }
-    })
+fn normalize_optional(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
 }
 
 // Trim a termbase name and reject empty values.
-fn normalize_name(name: String) -> BaseRest<String> {
+fn normalize_name(name: &str) -> BaseRest<&str> {
     //
-    let name = trim_owned(name);
+    let name = name.trim();
 
     if name.is_empty() {
         //
@@ -410,12 +404,15 @@ fn normalized_key(value: &str) -> String {
 }
 
 // Merge imported targets after existing values while preserving first spelling and order.
-fn merge_targets(
-    existing_targets: &[String],
-    imported_targets: Vec<String>,
-) -> Vec<String> {
+fn merge_targets<'a>(
+    existing_targets: &'a [String],
+    imported_targets: Vec<&'a str>,
+) -> Vec<&'a str> {
     //
-    let mut targets = existing_targets.to_vec();
+    let mut targets = existing_targets
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
 
     let mut seen_targets = existing_targets
         .iter()
@@ -424,7 +421,7 @@ fn merge_targets(
 
     for target in imported_targets {
         //
-        if seen_targets.insert(normalized_key(&target)) {
+        if seen_targets.insert(normalized_key(target)) {
             targets.push(target);
         }
     }

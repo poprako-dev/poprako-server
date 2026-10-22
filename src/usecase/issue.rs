@@ -29,7 +29,7 @@ use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::list as page_list_usecase;
-use crate::util::{next_snowflake_id, trim_owned};
+use crate::util::next_snowflake_id;
 
 /// Atomically replaces all issues without changing workflow or Unit counters.
 #[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, page_count = instr.pages.len()))]
@@ -85,20 +85,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut pages = instr
+            let pages = instr
                 .pages
                 .into_iter()
                 .map(Into::into)
                 .collect::<Vec<PageIssueImport>>();
-
-            for page in &mut pages {
-                //
-                for issue in &mut page.issues {
-                    //
-                    issue.variant =
-                        trim_owned(std::mem::take(&mut issue.variant));
-                }
-            }
 
             issue_complex::ensure_import_issue(&pages, &page_artwork_infos)?;
 
@@ -106,18 +97,18 @@ where
 
             let mut issue_entries = Vec::new();
 
-            for page in pages {
+            for page in &pages {
                 //
-                for (index, issue) in page.issues.into_iter().enumerate() {
+                for (index, issue) in page.issues.iter().enumerate() {
                     //
                     let issue_entry = IssueEntry {
                         id: next_snowflake_id(),
-                        page_artwork_id: page.page_artwork_id.clone(),
+                        page_artwork_id: &page.page_artwork_id,
                         index,
-                        variant: issue.variant,
-                        layer_name: issue.layer_name,
+                        variant: issue.variant.trim(),
+                        layer_name: issue.layer_name.as_deref(),
                         rect: issue.rect,
-                        note: issue.note,
+                        note: &issue.note,
                     };
 
                     issue_entries.push(issue_entry);

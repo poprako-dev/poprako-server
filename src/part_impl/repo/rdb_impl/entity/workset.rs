@@ -80,17 +80,19 @@ pub struct WorksetEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a WorksetEntry> for WorksetEntryRow<'a> {
+impl<'a> TryFrom<&'a WorksetEntry<'a>> for WorksetEntryRow<'a> {
     type Error = BaseError;
 
-    fn try_from(workset_entry: &'a WorksetEntry) -> Result<Self, Self::Error> {
+    fn try_from(
+        workset_entry: &'a WorksetEntry<'a>,
+    ) -> Result<Self, Self::Error> {
         //
         Ok(Self {
             f_id: &workset_entry.id,
             f_team_id: &workset_entry.team_id,
             f_index: i32_from_usize(workset_entry.index, "t_workset.f_index")?,
-            f_name: &workset_entry.name,
-            f_description: workset_entry.description.as_deref(),
+            f_name: workset_entry.name,
+            f_description: workset_entry.description,
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
         })

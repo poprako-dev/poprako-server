@@ -20,13 +20,13 @@ pub struct ImportTermInstr {
     pub comment: Option<String>,
 }
 
-impl From<ImportTermInstr> for TermImport {
+impl<'a> From<&'a ImportTermInstr> for TermImport<'a> {
     // Convert one import entry into the domain write model.
-    fn from(instr: ImportTermInstr) -> Self {
+    fn from(instr: &'a ImportTermInstr) -> Self {
         Self {
-            source: instr.source,
-            targets: instr.targets,
-            comment: instr.comment,
+            source: &instr.source,
+            targets: instr.targets.iter().map(String::as_str).collect(),
+            comment: instr.comment.as_deref(),
         }
     }
 }
@@ -43,13 +43,13 @@ pub struct ImportTermbaseInstr {
     pub terms: Vec<ImportTermInstr>,
 }
 
-impl From<ImportTermbaseInstr> for TermbaseImport {
+impl<'a> From<&'a ImportTermbaseInstr> for TermbaseImport<'a> {
     // Convert the complete import document into the domain write model.
-    fn from(instr: ImportTermbaseInstr) -> Self {
+    fn from(instr: &'a ImportTermbaseInstr) -> Self {
         Self {
-            name: instr.name,
-            description: instr.description,
-            terms: instr.terms.into_iter().map(Into::into).collect(),
+            name: &instr.name,
+            description: instr.description.as_deref(),
+            terms: instr.terms.iter().map(Into::into).collect(),
         }
     }
 }

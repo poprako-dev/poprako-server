@@ -51,9 +51,9 @@ where
 {
     let term_entry = term_complex::build_entry(
         instr.termbase_id,
-        instr.source,
-        instr.targets,
-        instr.comment,
+        &instr.source,
+        instr.targets.iter().map(String::as_str).collect(),
+        instr.comment.as_deref(),
         token.user_id.clone(),
     )?;
 
@@ -161,11 +161,12 @@ where
 
     termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    let fuzzy_source = term_complex::normalize_fuzzy_source(instr.fuzzy_source);
+    let fuzzy_source =
+        term_complex::normalize_fuzzy_source(instr.fuzzy_source.as_deref());
 
     let term_infos = ListTermInfos::Query {
         termbase_id: &instr.termbase_id,
-        fuzzy_source: fuzzy_source.as_deref(),
+        fuzzy_source,
         offset: instr.offset,
         limit: instr.limit,
     }
@@ -195,9 +196,9 @@ where
 {
     let term_info_update = term_complex::build_update(
         instr.id,
-        instr.source,
-        instr.targets,
-        instr.comment,
+        &instr.source,
+        instr.targets.iter().map(String::as_str).collect(),
+        instr.comment.as_deref(),
     )?;
 
     let term_info = GetTermInfo {

@@ -109,7 +109,7 @@ where
         + Send
         + Sync,
 {
-    let termbase_import = termbase_complex::normalize_import(instr.into())?;
+    let termbase_import = termbase_complex::normalize_import((&instr).into())?;
 
     let import_termbase_val = nucl
         .coord(async move |context| {
@@ -123,7 +123,7 @@ where
 
             let existing_termbase_info = termbase_complex::find_import_target(
                 termbase_infos,
-                &termbase_import.name,
+                termbase_import.name,
             );
 
             let Some(termbase_info) = existing_termbase_info else {
@@ -142,8 +142,8 @@ where
                 let termbase_entry = termbase_complex::build_entry(
                     team_id,
                     comic_id,
-                    termbase_import.name.clone(),
-                    termbase_import.description.clone(),
+                    termbase_import.name,
+                    termbase_import.description,
                     token.user_id.clone(),
                 )?;
 
@@ -167,7 +167,7 @@ where
             };
 
             if !force_merge {
-                return Err(already_exists_err(&termbase_import.name));
+                return Err(already_exists_err(termbase_import.name));
             }
 
             apply_import(
@@ -309,7 +309,7 @@ async fn apply_import<C, R>(
     context: &mut C,
     token: &UserToken,
     destination: ImportDestination,
-    termbase_import: TermbaseImport,
+    termbase_import: TermbaseImport<'_>,
 ) -> BaseRest<ImportTermbaseVal>
 where
     C: Context,

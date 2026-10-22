@@ -133,7 +133,7 @@ where
                 update_user_nickname(
                     context.conn(),
                     &repl.user_id,
-                    &repl.user_nickname,
+                    repl.user_nickname,
                 )
                 .await
             }

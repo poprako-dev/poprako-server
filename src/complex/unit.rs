@@ -21,7 +21,7 @@ use crate::complex::unit::text_transform as unit_text_transform_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::{Patch, next_snowflake_id, trim_owned};
+use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
 
@@ -30,10 +30,10 @@ pub fn normalize_note(note: Option<String>) -> Option<String> {
     note.filter(|value| !value.trim().is_empty())
 }
 
-/// Trims and validates a Unit search phrase.
-pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
+/// Borrows the trimmed, validated slice of a Unit search phrase.
+pub fn normalize_search_phrase(phrase: &str) -> BaseRest<&str> {
     //
-    let phrase = trim_owned(phrase);
+    let phrase = phrase.trim();
 
     if phrase.is_empty() {
         //

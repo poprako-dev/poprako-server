@@ -31,10 +31,10 @@ pub struct MemberRoleRepl {
 }
 
 /// An updated cached member nickname.
-pub struct MemberNicknameRepl {
+pub struct MemberNicknameRepl<'a> {
     /// The user whose memberships are being updated.
     pub user_id: String,
 
     /// The nickname to cache on each membership.
-    pub user_nickname: String,
+    pub user_nickname: &'a str,
 }

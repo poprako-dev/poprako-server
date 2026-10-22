@@ -142,7 +142,7 @@ fn get_member_invitation_info(
 // Internal implementation of `create_member_invitation`.
 fn create_member_invitation(
     state: &mut MockState,
-    entry: &MemberInvitationEntry,
+    entry: &MemberInvitationEntry<'_>,
 ) -> BaseRest<MemberInvitationInfo> {
     //
     // Internal implementation detail.
@@ -173,7 +173,7 @@ fn create_member_invitation(
         team_id: entry.team_id.clone(),
         invitor: None,
         invitor_id: entry.invitor_id.clone(),
-        invitee_qid: entry.invitee_qid.clone(),
+        invitee_qid: entry.invitee_qid.to_owned(),
         code: entry.code.clone(),
         is_pending: true,
         roles: entry.roles,

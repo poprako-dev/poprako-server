@@ -114,14 +114,17 @@ async fn list_infos(
 
 // Update mutable metadata for an existing workset.
 #[instrument(level = "info", skip_all)]
-async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
+async fn update_info(
+    conn: &mut RdbConn,
+    update: &WorksetRepl<'_>,
+) -> BaseRest<()> {
     //
     // Build an aspect object and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();
 
     let aspect = WorksetAspectRow::new(now)
-        .name(&update.name)
-        .description(update.description.as_deref());
+        .name(update.name)
+        .description(update.description);
 
     let updated_count = diesel::update(
         t_workset
@@ -144,7 +147,7 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    workset_entry: &WorksetEntry,
+    workset_entry: &WorksetEntry<'_>,
 ) -> BaseRest<WorksetInfo> {
     //
     // Convert API entry into row form and read back generated values.

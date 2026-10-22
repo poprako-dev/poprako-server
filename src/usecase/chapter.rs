@@ -48,7 +48,6 @@ use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::chapter_info_views;
-use crate::util::trim_owned;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
@@ -272,7 +271,7 @@ where
 
         chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-        let subtitle = instr.subtitle.map(trim_owned);
+        let subtitle = instr.subtitle.as_deref().map(str::trim);
 
         match subtitle {
             //
@@ -280,7 +279,7 @@ where
                 //
                 let chapter_info_update = ChapterPatch {
                     id: instr.id,
-                    subtitle: Some(next_subtitle.clone()),
+                    subtitle: Some(next_subtitle),
                     pin: None,
                 };
 
@@ -295,7 +294,7 @@ where
                     Some(token.user_id.as_str().into()),
                     ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
                         previous_subtitle: chapter_info.subtitle,
-                        next_subtitle,
+                        next_subtitle: next_subtitle.to_owned(),
                     },
                 );
 

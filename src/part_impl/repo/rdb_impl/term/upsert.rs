@@ -28,8 +28,8 @@ type TermExpr<'a, SqlType> =
 pub async fn upsert_terms(
     conn: &mut RdbConn,
     termbase_id: &str,
-    entries: &[TermEntry],
-    updates: &[TermRepl],
+    entries: &[TermEntry<'_>],
+    updates: &[TermRepl<'_>],
 ) -> BaseRest<()> {
     //
     ensure_upsert_ids(termbase_id, entries, updates)?;
@@ -54,13 +54,12 @@ pub async fn upsert_terms(
             .map(|update| update.id.as_str())
             .collect::<Vec<_>>();
 
-        let source_case = text_case(updates, Box::new(f_source), |update| {
-            update.source.as_str()
-        });
+        let source_case =
+            text_case(updates, Box::new(f_source), |update| update.source);
 
         let comment_case =
             nullable_text_case(updates, Box::new(f_comment), |update| {
-                update.comment.as_deref()
+                update.comment
             });
 
         let targets_case = targets_case(updates);
@@ -91,8 +90,8 @@ pub async fn upsert_terms(
 // Validates Termbase scope and uniqueness before executing a batch.
 fn ensure_upsert_ids(
     termbase_id: &str,
-    entries: &[TermEntry],
-    updates: &[TermRepl],
+    entries: &[TermEntry<'_>],
+    updates: &[TermRepl<'_>],
 ) -> BaseRest<()> {
     //
     let entries_in_scope =
@@ -150,12 +149,12 @@ fn ensure_upsert_affected(
 
 // Builds a typed CASE expression for text replacements.
 fn text_case<'a, F>(
-    updates: &'a [TermRepl],
+    updates: &'a [TermRepl<'a>],
     mut expression: TermExpr<'a, Text>,
     field: F,
 ) -> TermExpr<'a, Text>
 where
-    F: Fn(&'a TermRepl) -> &'a str,
+    F: Fn(&'a TermRepl<'a>) -> &'a str,
 {
     for update in updates {
         //
@@ -173,12 +172,12 @@ where
 
 // Builds a typed CASE expression for nullable text replacements.
 fn nullable_text_case<'a, F>(
-    updates: &'a [TermRepl],
+    updates: &'a [TermRepl<'a>],
     mut expression: TermExpr<'a, Nullable<Text>>,
     field: F,
 ) -> TermExpr<'a, Nullable<Text>>
 where
-    F: Fn(&'a TermRepl) -> Option<&'a str>,
+    F: Fn(&'a TermRepl<'a>) -> Option<&'a str>,
 {
     for update in updates {
         //
@@ -196,7 +195,7 @@ where
 
 // Builds a typed CASE expression for target-array replacements.
 fn targets_case<'a>(
-    updates: &'a [TermRepl],
+    updates: &'a [TermRepl<'a>],
 ) -> TermExpr<'a, Array<Nullable<Text>>> {
     //
     let mut expression =
@@ -207,7 +206,7 @@ fn targets_case<'a>(
         let targets = update
             .targets
             .iter()
-            .map(|target| Some(target.as_str()))
+            .map(|target| Some(*target))
             .collect::<Vec<_>>();
 
         expression = Box::new(

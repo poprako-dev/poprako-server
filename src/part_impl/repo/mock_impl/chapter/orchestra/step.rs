@@ -297,7 +297,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
         if let Some(subtitle) = &oper.update.subtitle {
-            chapter_info.subtitle = subtitle.clone();
+            chapter_info.subtitle = (*subtitle).to_owned();
         }
 
         if let Some(is_pinned) = oper.update.pin {

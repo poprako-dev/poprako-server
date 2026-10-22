@@ -75,10 +75,10 @@ pub struct AssignmentInvitationEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a AssignmentInvitationEntry>
+impl<'a> From<&'a AssignmentInvitationEntry<'a>>
     for AssignmentInvitationEntryRow<'a>
 {
-    fn from(entry: &'a AssignmentInvitationEntry) -> Self {
+    fn from(entry: &'a AssignmentInvitationEntry<'a>) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -86,7 +86,7 @@ impl<'a> From<&'a AssignmentInvitationEntry>
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_inviter_id: &entry.inviter_id,
-            f_invitee_qid: &entry.invitee_qid,
+            f_invitee_qid: entry.invitee_qid,
             f_code: &entry.code,
             f_pending: true,
             f_role_mask: i64::from(u32::from(entry.roles)),

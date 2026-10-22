@@ -50,7 +50,7 @@ use crate::usecase::assignment_invitation::code::{
 };
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::util::{next_snowflake_id, trim_owned};
+use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Removes one assignment invitation when it has expired.
@@ -129,7 +129,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let invitee_qid = trim_owned(instr.invitee_qid);
+    let invitee_qid = instr.invitee_qid.trim();
 
     validate_roles(instr.roles, &token.user_id, &instr.chapter_id)?;
 
@@ -148,7 +148,7 @@ where
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
             let invitee_user_info = FindUserInfo {
-                qid: &invitee_qid,
+                qid: invitee_qid,
             }
             .step_on(repo, context)
             .await?;

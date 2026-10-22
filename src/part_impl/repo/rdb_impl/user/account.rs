@@ -43,7 +43,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    entry: &UserEntry,
+    entry: &UserEntry<'_>,
 ) -> BaseRest<UserInfo> {
     //
     let now = OffsetDateTime::now_utc();

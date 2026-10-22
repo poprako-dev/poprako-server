@@ -92,7 +92,7 @@ pub struct ListPinnedChapterInfos<'a> {
 #[oper(output = ())]
 pub struct UpdateChapter<'a> {
     /// The chapter update data.
-    pub update: &'a ChapterPatch,
+    pub update: &'a ChapterPatch<'a>,
 }
 
 /// Updates a chapter's stage.

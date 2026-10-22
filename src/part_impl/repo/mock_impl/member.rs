@@ -191,7 +191,7 @@ fn get_member_info(
 // Internal implementation of `list_member_infos`.
 fn list_member_infos(
     state: &MockState,
-    spec: &MemberListSpec,
+    spec: &MemberListSpec<'_>,
 ) -> Vec<MemberInfo> {
     //
     // Internal implementation detail.
@@ -241,7 +241,7 @@ fn list_member_infos(
                 .filter(|member_info| {
                     //
                     fuzzy_nickname.as_ref().is_none_or(|keyword| {
-                        member_info.user_nickname.contains(keyword.as_str())
+                        member_info.user_nickname.contains(*keyword)
                     })
                 })
                 .filter(|member_info| {
@@ -404,7 +404,9 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
                     .iter_mut()
                     .filter(|member_info| member_info.user_id == repl.user_id)
                     .for_each(|member_info| {
-                        member_info.user_nickname = repl.user_nickname.clone();
+                        //
+                        member_info.user_nickname =
+                            repl.user_nickname.to_owned();
                     });
 
                 accept(())

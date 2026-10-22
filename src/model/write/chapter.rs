@@ -36,7 +36,7 @@ pub struct ChapterEntry<'a> {
     /// Ordinal position assigned to the new chapter within the comic.
     pub index: usize,
     /// Chapter subtitle or number for display.
-    pub subtitle: String,
+    pub subtitle: Cow<'a, str>,
 
     /// Foreign key identifying the user creating the chapter.
     pub creator_id: Cow<'a, str>,
@@ -49,12 +49,12 @@ pub struct ChapterEntry<'a> {
 /// the single-pinned-chapter invariant. Workflow phase transitions are
 /// handled via [`ChapterStageRepl`] instead.
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterPatch {
+pub struct ChapterPatch<'a> {
     /// Unique identifier of the chapter whose profile fields are being changed.
     pub id: String,
 
     /// New subtitle value, or `None` to leave unchanged.
-    pub subtitle: Option<String>,
+    pub subtitle: Option<&'a str>,
     /// New pinned state for a dedicated pinning operation.
     pub pin: Option<bool>,
 }

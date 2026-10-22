@@ -212,7 +212,10 @@ fn get_comic_info(
 }
 
 // Build filtered, sorted and paginated comic lists.
-fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
+fn list_comic_infos(
+    state: &MockState,
+    spec: &ComicListSpec<'_>,
+) -> Vec<ComicInfo> {
     //
     let mut comic_infos = state
         .comics
@@ -241,7 +244,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
     });
 
     for comic_info in &mut comic_infos {
-        apply_comic_incls(state, comic_info, &spec.incl_opt);
+        apply_comic_incls(state, comic_info, spec.incl_opt);
     }
 
     let offset = spec.offset as usize;

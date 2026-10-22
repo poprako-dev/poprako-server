@@ -12,7 +12,6 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::util::trim_owned;
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
@@ -125,22 +124,22 @@ pub struct ListComicInfosInstr {
     pub limit: PubListLimit,
 }
 
-impl TryFrom<ListComicInfosInstr> for ComicListSpec {
+impl<'a> TryFrom<&'a ListComicInfosInstr> for ComicListSpec<'a> {
     // The error type for invalid listing parameters.
     type Error = BaseError;
 
     // Convert validated query parameters into the domain list spec.
-    fn try_from(instr: ListComicInfosInstr) -> BaseRest<Self> {
+    fn try_from(instr: &'a ListComicInfosInstr) -> BaseRest<Self> {
         //
         let stages =
             instr.stages.map(StageMask::try_filter_from).transpose()?;
 
         accept(Self {
-            workset_id: instr.workset_id,
-            fuzzy_title: instr.fuzzy_title.map(trim_owned),
+            workset_id: &instr.workset_id,
+            fuzzy_title: instr.fuzzy_title.as_deref().map(str::trim),
             stages,
             status: instr.status,
-            incl_opt: instr.incl_opt,
+            incl_opt: &instr.incl_opt,
             offset: instr.offset,
             limit: instr.limit,
         })

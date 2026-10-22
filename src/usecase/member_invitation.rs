@@ -49,7 +49,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::member_invitation::view::member_invitation_info_views;
-use crate::util::{next_snowflake_id, trim_owned};
+use crate::util::next_snowflake_id;
 
 /// Removes one member invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
@@ -91,7 +91,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let invitee_qid = trim_owned(instr.invitee_qid);
+    let invitee_qid = instr.invitee_qid.trim();
 
     let roles = instr.roles;
 
@@ -130,7 +130,7 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            let invitee_user_info = FindUserInfo { qid: &invitee_qid }
+            let invitee_user_info = FindUserInfo { qid: invitee_qid }
                 .step_on(repo, context)
                 .await?;
 

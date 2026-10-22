@@ -40,7 +40,6 @@ use crate::part::repo::oper::user::{
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::user::view::user_info_view;
-use crate::util::trim_owned;
 use crate::value::image::{ImageKind, UserAvatarKey};
 
 /// Fetches a user's profile with avatar URL resolution.
@@ -99,9 +98,9 @@ where
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let qid = trim_owned(instr.qid);
+    let qid = instr.qid.trim();
 
-    let nickname = trim_owned(instr.nickname);
+    let nickname = instr.nickname.trim();
 
     // Only the user themselves can update their own profile.
     if token.user_id != instr.id {
@@ -130,7 +129,7 @@ where
 
     let member_repl = MemberNicknameRepl {
         user_id: user_repl.id.clone(),
-        user_nickname: user_repl.nickname.clone(),
+        user_nickname: user_repl.nickname,
     };
 
     nucl.coord(async move |context| {

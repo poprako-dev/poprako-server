@@ -54,7 +54,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
         id: format!("{}assignment-invitation", PREFIX),
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
         inviter_id: chapter_fixture.creator_form.id.clone(),
-        invitee_qid: format!("{}invitee", PREFIX),
+        invitee_qid: &format!("{}invitee", PREFIX),
         code: format!("{}code", PREFIX),
         roles: RoleMask::from(RoleField::REVIEWER),
     };

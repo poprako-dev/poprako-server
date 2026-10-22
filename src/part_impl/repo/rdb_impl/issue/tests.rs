@@ -36,20 +36,20 @@ use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::test_rdb::start;
 
-fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
+fn entry<'a>(id: &str, chapter_id: &'a str, index: usize) -> IssueEntry<'a> {
     IssueEntry {
         id: id.into(),
-        page_artwork_id: chapter_id.into(),
+        page_artwork_id: chapter_id,
         index,
-        variant: "custom category".into(),
-        layer_name: Some("  他们两个…  ".into()),
+        variant: "custom category",
+        layer_name: Some("  他们两个…  "),
         rect: Some(IssueRect {
             x_coord: 0.1,
             y_coord: 0.2,
             width: 0.3,
             height: 0.1,
         }),
-        note: "first line\nsecond line".into(),
+        note: "first line\nsecond line",
     }
 }
 
@@ -57,7 +57,7 @@ async fn replace(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
-    entries: &[IssueEntry],
+    entries: &[IssueEntry<'_>],
 ) -> BaseRest<()> {
     nucl.coord(async |context| {
         let chapter_info = GetChapterInfoExcluded {
@@ -319,7 +319,9 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
         entry("review-second", chapter_id, 1),
     ];
 
-    entries.get_mut(1).unwrap().page_artwork_id = format!("{chapter_id}-extra");
+    let extra_artwork_id = format!("{chapter_id}-extra");
+
+    entries.get_mut(1).unwrap().page_artwork_id = &extra_artwork_id;
 
     entries.get_mut(1).unwrap().index = 0;
 

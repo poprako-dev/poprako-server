@@ -1,26 +1,32 @@
 //! Terminology-entry construction and validation rules.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
 use crate::model::write::term::{TermEntry, TermImport, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::{next_snowflake_id, trim_owned};
+use crate::util::next_snowflake_id;
 
-/// Normalize an optional terminology-entry source filter.
-pub fn normalize_fuzzy_source(fuzzy_source: Option<String>) -> Option<String> {
-    normalize_comment(fuzzy_source)
+/// Borrows a trimmed terminology-entry source filter, omitting blank values.
+pub fn normalize_fuzzy_source(fuzzy_source: Option<&str>) -> Option<&str> {
+    //
+    fuzzy_source
+        .map(str::trim)
+        .filter(|source| !source.is_empty())
 }
 
 /// Build a validated terminology entry.
-pub fn build_entry(
+pub fn build_entry<'a>(
     termbase_id: String,
-    source: String,
-    targets: Vec<String>,
-    comment: Option<String>,
+    source: &'a str,
+    targets: Vec<&'a str>,
+    comment: Option<&'a str>,
     creator_id: String,
-) -> BaseRest<TermEntry> {
+) -> BaseRest<TermEntry<'a>> {
     //
     let (source, targets, comment) = (
         normalize_source(source)?,
@@ -39,11 +45,11 @@ pub fn build_entry(
 }
 
 /// Build normalized portable terminology-entry content.
-pub fn build_import(
-    source: String,
-    targets: Vec<String>,
-    comment: Option<String>,
-) -> BaseRest<TermImport> {
+pub fn build_import<'a>(
+    source: &'a str,
+    targets: Vec<&'a str>,
+    comment: Option<&'a str>,
+) -> BaseRest<TermImport<'a>> {
     //
     let (source, targets, comment) = (
         normalize_source(source)?,
@@ -59,12 +65,12 @@ pub fn build_import(
 }
 
 /// Build a validated terminology-entry replacement.
-pub fn build_update(
+pub fn build_update<'a>(
     id: String,
-    source: String,
-    targets: Vec<String>,
-    comment: Option<String>,
-) -> BaseRest<TermRepl> {
+    source: &'a str,
+    targets: Vec<&'a str>,
+    comment: Option<&'a str>,
+) -> BaseRest<TermRepl<'a>> {
     //
     let (source, targets, comment) = (
         normalize_source(source)?,
@@ -80,25 +86,10 @@ pub fn build_update(
     })
 }
 
-// Normalize an optional comment value; empty content becomes `None`.
-fn normalize_comment(comment: Option<String>) -> Option<String> {
-    //
-    comment.and_then(|comment| {
-        //
-        let comment = trim_owned(comment);
-
-        if comment.is_empty() {
-            None
-        } else {
-            Some(comment)
-        }
-    })
-}
-
 // Trim a term source and reject empty values after normalization.
-fn normalize_source(source: String) -> BaseRest<String> {
+fn normalize_source(source: &str) -> BaseRest<&str> {
     //
-    let source = trim_owned(source);
+    let source = source.trim();
 
     if source.is_empty() {
         //
@@ -121,7 +112,7 @@ fn normalize_source(source: String) -> BaseRest<String> {
 }
 
 // Normalize all targets and validate required presence, uniqueness and non-empty values.
-fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
+fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
     //
     if targets.is_empty() {
         //
@@ -140,14 +131,11 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
         });
     }
 
-    let (mut normalized_targets, mut seen_targets) = (
-        Vec::with_capacity(targets.len()),
-        HashSet::with_capacity(targets.len()),
-    );
+    let mut seen_targets = HashSet::with_capacity(targets.len());
 
-    for target in targets {
+    for (index, target) in targets.iter_mut().enumerate() {
         //
-        let target = trim_owned(target);
+        *target = target.trim();
 
         if target.is_empty() {
             //
@@ -157,7 +145,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
                 err_variant = ?ExpectedVariant::Args,
                 err_msg = %err_msg,
                 target = %target,
-                target_count = normalized_targets.len(),
+                target_count = index,
                 "expected error: term target required",
             );
 
@@ -175,7 +163,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
                 err_variant = ?ExpectedVariant::Args,
                 err_msg = %err_msg,
                 target = %target,
-                target_count = normalized_targets.len(),
+                target_count = index,
                 "expected error: duplicate term target",
             );
 
@@ -184,9 +172,12 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
                 msg: err_msg,
             });
         }
-
-        normalized_targets.push(target);
     }
 
-    accept(normalized_targets)
+    accept(targets)
+}
+
+// Normalize an optional comment value; empty content becomes `None`.
+fn normalize_comment(comment: Option<&str>) -> Option<&str> {
+    comment.map(str::trim).filter(|comment| !comment.is_empty())
 }

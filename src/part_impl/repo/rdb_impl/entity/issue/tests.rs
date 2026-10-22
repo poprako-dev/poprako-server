@@ -10,15 +10,15 @@ use crate::model::write::issue::IssueEntry;
 use crate::result::BaseError;
 
 // Builds an issue with an unsigned domain index for storage conversion tests.
-fn entry(index: usize) -> IssueEntry {
+fn entry(index: usize) -> IssueEntry<'static> {
     IssueEntry {
         id: "issue".into(),
-        page_artwork_id: "artwork".into(),
+        page_artwork_id: "artwork",
         index,
-        variant: "text".into(),
+        variant: "text",
         layer_name: None,
         rect: None,
-        note: String::new(),
+        note: "",
     }
 }
 

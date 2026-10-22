@@ -49,8 +49,8 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: format!("{}announcement", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
         user_id: team_fixture.user_entry.id.clone(),
-        title: "RDB Announcement".into(),
-        content: "announcement".into(),
+        title: "RDB Announcement",
+        content: "announcement",
     };
 
     repo.run(&CreateAnnouncement {
@@ -61,8 +61,8 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let announcement_repl = AnnouncementRepl {
         id: announcement_entry.id.clone(),
-        title: "Updated RDB Announcement".into(),
-        content: "updated announcement".into(),
+        title: "Updated RDB Announcement",
+        content: "updated announcement",
     };
 
     repo.run(&GetAnnouncementInfo {

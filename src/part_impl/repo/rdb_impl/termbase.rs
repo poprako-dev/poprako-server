@@ -142,7 +142,7 @@ async fn get_info_excluded(
 )]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermbaseListSpec,
+    spec: &TermbaseListSpec<'_>,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
@@ -239,7 +239,7 @@ async fn list_infos_excluded(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    termbase_entry: &TermbaseEntry,
+    termbase_entry: &TermbaseEntry<'_>,
 ) -> BaseRest<TermbaseInfo> {
     //
     // Convert API entry into insert row shape and fetch persisted row.
@@ -259,14 +259,14 @@ async fn create(
 #[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
-    update: &TermbaseRepl,
+    update: &TermbaseRepl<'_>,
 ) -> BaseRest<()> {
     //
     // Keep `updated_at` current while applying partial name/description updates.
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
         .set((
             f_name.eq(&update.name),
-            f_description.eq(update.description.as_deref()),
+            f_description.eq(update.description),
             f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(conn)

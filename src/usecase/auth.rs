@@ -28,7 +28,6 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::trim_owned;
 
 /// Registers a new user using an invitation code.
 ///
@@ -66,20 +65,19 @@ where
     A: TokenAuth + Sync,
     D: Develop + Send + Sync,
 {
-    let qid = trim_owned(instr.qid);
+    let qid = instr.qid.trim();
 
-    let nickname = trim_owned(instr.nickname);
+    let nickname = instr.nickname.trim();
 
-    let code = trim_owned(instr.code);
+    let code = instr.code.trim();
 
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
             //
 
-            let invitation_info =
-                GetMemberInvitationInfoExcluded { code: &code }
-                    .step_on(repo, context)
-                    .await?;
+            let invitation_info = GetMemberInvitationInfoExcluded { code }
+                .step_on(repo, context)
+                .await?;
 
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != qid {
@@ -105,8 +103,8 @@ where
 
             let user_entry = UserEntry {
                 id: user_complex::gen_id(),
-                qid,
-                nickname,
+                qid: qid.into(),
+                nickname: nickname.into(),
                 password_hash,
             };
 
@@ -191,9 +189,9 @@ where
     R: UserRepo<C>,
     A: TokenAuth + Sync,
 {
-    let qid = trim_owned(instr.qid);
+    let qid = instr.qid.trim();
 
-    let user_credential = GetUserCredential { qid: &qid }.run_on(repo).await?;
+    let user_credential = GetUserCredential { qid }.run_on(repo).await?;
 
     if !user_complex::verify_password(
         &instr.password,

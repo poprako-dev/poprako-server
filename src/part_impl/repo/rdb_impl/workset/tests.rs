@@ -48,8 +48,8 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let workset_info_update = WorksetRepl {
         id: workset_fixture.workset_entry.id.clone(),
-        name: "RDB Workset Updated".into(),
-        description: Some("updated".into()),
+        name: "RDB Workset Updated",
+        description: Some("updated"),
     };
 
     repo.run(&UpdateWorkset {

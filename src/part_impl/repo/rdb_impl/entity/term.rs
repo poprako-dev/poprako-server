@@ -58,21 +58,21 @@ pub struct TermEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a TermEntry> for TermEntryRow<'a> {
-    fn from(term_entry: &'a TermEntry) -> Self {
+impl<'a> From<&'a TermEntry<'a>> for TermEntryRow<'a> {
+    fn from(term_entry: &'a TermEntry<'a>) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
             f_id: &term_entry.id,
             f_termbase_id: &term_entry.termbase_id,
-            f_source: &term_entry.source,
+            f_source: term_entry.source,
             f_targets: term_entry
                 .targets
                 .iter()
-                .map(|target| Some(target.as_str()))
+                .map(|target| Some(*target))
                 .collect(),
-            f_comment: term_entry.comment.as_deref(),
+            f_comment: term_entry.comment,
             f_creator_id: &term_entry.creator_id,
             f_created_at: now,
             f_updated_at: now,

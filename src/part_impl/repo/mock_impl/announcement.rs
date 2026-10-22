@@ -86,7 +86,7 @@ fn list_announcements(
 // Internal implementation of `create_announcement`.
 fn create_announcement(
     state: &mut MockState,
-    entry: &AnnouncementEntry,
+    entry: &AnnouncementEntry<'_>,
 ) -> BaseRest<AnnouncementInfo> {
     //
     // Internal implementation detail.
@@ -104,8 +104,8 @@ fn create_announcement(
         team_id: entry.team_id.clone(),
         user_id: entry.user_id.clone(),
         user: None,
-        title: entry.title.clone(),
-        content: entry.content.clone(),
+        title: entry.title.to_owned(),
+        content: entry.content.to_owned(),
         created_at: now(),
     };
 
@@ -131,7 +131,7 @@ fn get_announcement_info(
 // Replaces an announcement's editable fields in mock storage.
 fn update_announcement(
     state: &mut MockState,
-    update: &AnnouncementRepl,
+    update: &AnnouncementRepl<'_>,
 ) -> BaseRest<()> {
     //
     let announcement_info = state
@@ -140,9 +140,9 @@ fn update_announcement(
         .find(|announcement_info| announcement_info.id == update.id)
         .ok_or_else(|| expected("error-announcement-not-found"))?;
 
-    announcement_info.title = update.title.clone();
+    announcement_info.title = update.title.to_owned();
 
-    announcement_info.content = update.content.clone();
+    announcement_info.content = update.content.to_owned();
 
     accept(())
 }

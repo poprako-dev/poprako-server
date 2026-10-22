@@ -333,7 +333,7 @@ pub async fn create(
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ChapterPatch,
+    update: &ChapterPatch<'_>,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();

@@ -12,7 +12,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 #[oper(output = MemberInvitationInfo)]
 pub struct CreateMemberInvitation<'a> {
     /// The invitation entry to insert.
-    pub entry: &'a MemberInvitationEntry,
+    pub entry: &'a MemberInvitationEntry<'a>,
 }
 
 /// Lists member invitations matching the given spec.

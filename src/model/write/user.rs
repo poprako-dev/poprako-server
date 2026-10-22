@@ -1,29 +1,31 @@
 //! Domain models for user authentication and profile storage.
 
+use std::borrow::Cow;
+
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
-pub struct UserEntry {
+pub struct UserEntry<'a> {
     /// Server-assigned unique user identifier.
     pub id: String,
 
     /// Third-party OAuth or QID provider identifier for this user.
-    pub qid: String,
+    pub qid: Cow<'a, str>,
     /// Display name shown throughout the application.
-    pub nickname: String,
+    pub nickname: Cow<'a, str>,
 
     /// Bcrypt or similar hashed password for credential verification.
     pub password_hash: String,
 }
 
 /// Mutable user profile fields updated together.
-pub struct UserInfoRepl {
+pub struct UserInfoRepl<'a> {
     /// The user identifier.
     pub id: String,
 
     /// The OAuth qualified identifier.
-    pub qid: String,
+    pub qid: &'a str,
     /// The display nickname.
-    pub nickname: String,
+    pub nickname: &'a str,
 }
 
 /// A user's credential fields updated together.
