@@ -49,3 +49,16 @@ pub struct ImportTermbaseVal {
     /// Number of existing terminology entries merged.
     pub merged_term_count: usize,
 }
+
+/// Content-change counts for one atomic terminology append.
+#[derive(Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
+pub struct AppendTermbaseVal {
+    /// Number of newly inserted entries.
+    pub added: usize,
+    /// Number of existing entries whose content changed.
+    pub updated: usize,
+    /// Number of matched entries whose content was already present.
+    pub unchanged: usize,
+}

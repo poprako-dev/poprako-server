@@ -102,6 +102,16 @@ export interface ImportTermbaseInstr extends Record<string, unknown> {
     terms: ImportTermInstr[];
 }
 
+export interface AppendTermbaseInstr extends Record<string, unknown> {
+    terms: { source: string; targets: string[]; comment?: string | null }[];
+}
+
+export interface AppendTermbaseVal {
+    added: number;
+    updated: number;
+    unchanged: number;
+}
+
 export interface ImportTermbaseVal {
     id: string;
     created: boolean;

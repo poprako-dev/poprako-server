@@ -53,3 +53,36 @@ impl<'a> From<&'a ImportTermbaseInstr> for TermbaseImport<'a> {
         }
     }
 }
+
+/// One strict portable terminology entry supplied by an append request.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct AppendTermbaseTermInstr {
+    /// Source-language term or phrase.
+    pub source: String,
+    /// Target-language translations in preferred order.
+    pub targets: Vec<String>,
+    /// Optional complete annotation block to merge.
+    pub comment: Option<String>,
+}
+
+impl<'a> From<&'a AppendTermbaseTermInstr> for TermImport<'a> {
+    // Convert append content without introducing terminology-base metadata.
+    fn from(instr: &'a AppendTermbaseTermInstr) -> Self {
+        Self {
+            source: &instr.source,
+            targets: instr.targets.iter().map(String::as_str).collect(),
+            comment: instr.comment.as_deref(),
+        }
+    }
+}
+
+/// Strict metadata-free document appended to an existing terminology base.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct AppendTermbaseInstr {
+    /// Portable entries; an empty batch is a successful no-op.
+    pub terms: Vec<AppendTermbaseTermInstr>,
+}

@@ -34,6 +34,8 @@ import { titled } from "../state/prefix.ts";
 import { ROLE } from "../state/roles.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 
+import { verifyTermbaseAppend } from "./it_12_termbase_append.ts";
+
 export const IMPLEMENTED = true as const;
 
 async function createTermbase(
@@ -99,6 +101,12 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         " Main Comic Glossary ",
         "comic description",
     );
+
+    const reader = [...ctx.users.values()].find((user) => (user.roles & (ROLE.TRANSLATOR | ROLE.PROOFREADER)) === 0);
+
+    assert.ok(reader);
+    await verifyTermbaseAppend(translator.api, reader.api, teamTermbase.id);
+    await verifyTermbaseAppend(proofreader.api, reader.api, comicTermbase.id);
 
     const teamInfo = await getTermbase(translator.api, teamTermbase.id);
 

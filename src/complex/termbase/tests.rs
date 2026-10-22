@@ -186,3 +186,60 @@ fn empty_import_preserves_count_validation() {
         Err(BaseError::Unrecoverable { .. }),
     ));
 }
+
+// append_comments(merge_append_comment)(positive): comments are whole blocks, never line or substring sets.
+#[test]
+fn append_comments_compare_complete_blocks() {
+    for (existing, incoming, expected) in [
+        (None, None, None),
+        (Some("old"), None, Some("old")),
+        (None, Some("new"), Some("new")),
+        (Some("same"), Some("same"), Some("same")),
+        (
+            Some("first\nsecond"),
+            Some("second"),
+            Some("first\nsecond\nsecond"),
+        ),
+        (
+            Some("first"),
+            Some("first\nsecond"),
+            Some("first\nfirst\nsecond"),
+        ),
+    ] {
+        assert_eq!(
+            merge_append_comment(existing, incoming).as_deref(),
+            expected
+        );
+    }
+}
+
+// append_plan(build_term_append_plan)(positive): a full base accepts updates and retains Unicode source spelling.
+#[test]
+fn append_plan_preserves_unicode_spelling_and_accepts_full_base_updates() {
+    let existing = (0..TERMBASE_TERM_LIMIT)
+        .map(|index| {
+            term_info(
+                &format!("term-{index}"),
+                &format!("ÄPFEL-{index}"),
+                &["ÄLT", "Second"],
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let plan = build_term_append_plan(
+        "termbase-1",
+        "creator",
+        existing.len(),
+        &existing,
+        vec![term_import("äpfel-0", &["ält", "New"])],
+    )
+    .unwrap();
+
+    assert!(plan.entries.is_empty());
+
+    let update = plan.updates.first().unwrap();
+
+    assert_eq!(update.source, "ÄPFEL-0");
+
+    assert_eq!(update.targets, ["ÄLT", "Second", "New"]);
+}

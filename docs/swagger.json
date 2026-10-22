@@ -3999,6 +3999,55 @@
         }
       }
     },
+    "/api/v1/termbases/{termbase_id}/append": {
+      "post": {
+        "tags": [
+          "termbase-port"
+        ],
+        "summary": "`POST /api/v1/termbases/{termbase_id}/append` — atomically append portable terms.",
+        "description": "Append a strict terms-only document. Match trimmed, case-insensitive sources, preserve existing source spelling and translation order, and append distinct translations. Comments are compared as whole text blocks and joined with a newline when different. Empty or unchanged batches preserve timestamps. This operation is not idempotent when different comment blocks are combined; do not blindly replay after an uncertain response.",
+        "operationId": "append",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Existing termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendTermbaseInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Atomic append counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AppendTermbaseVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team translator or proofreader required"
+          },
+          "422": {
+            "description": "Invalid document, missing termbase, or capacity exceeded"
+          }
+        }
+      }
+    },
     "/api/v1/termbases/{termbase_id}/export": {
       "get": {
         "tags": [
@@ -5264,6 +5313,78 @@
           "user_id": {
             "type": "string",
             "description": "Authoring user identifier."
+          }
+        }
+      },
+      "AppendTermbaseInstr": {
+        "type": "object",
+        "description": "Strict metadata-free document appended to an existing terminology base.",
+        "required": [
+          "terms"
+        ],
+        "properties": {
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppendTermbaseTermInstr"
+            },
+            "description": "Portable entries; an empty batch is a successful no-op."
+          }
+        },
+        "additionalProperties": false
+      },
+      "AppendTermbaseTermInstr": {
+        "type": "object",
+        "description": "One strict portable terminology entry supplied by an append request.",
+        "required": [
+          "source",
+          "targets"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional complete annotation block to merge."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source-language term or phrase."
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target-language translations in preferred order."
+          }
+        },
+        "additionalProperties": false
+      },
+      "AppendTermbaseVal": {
+        "type": "object",
+        "description": "Content-change counts for one atomic terminology append.",
+        "required": [
+          "added",
+          "updated",
+          "unchanged"
+        ],
+        "properties": {
+          "added": {
+            "type": "integer",
+            "description": "Number of newly inserted entries.",
+            "minimum": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "description": "Number of matched entries whose content was already present.",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "description": "Number of existing entries whose content changed.",
+            "minimum": 0
           }
         }
       },
@@ -7182,6 +7303,49 @@
                     "description": "Presigned upload slot, if a new image must be uploaded."
                   }
                 ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AppendTermbaseVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Content-change counts for one atomic terminology append.",
+            "required": [
+              "added",
+              "updated",
+              "unchanged"
+            ],
+            "properties": {
+              "added": {
+                "type": "integer",
+                "description": "Number of newly inserted entries.",
+                "minimum": 0
+              },
+              "unchanged": {
+                "type": "integer",
+                "description": "Number of matched entries whose content was already present.",
+                "minimum": 0
+              },
+              "updated": {
+                "type": "integer",
+                "description": "Number of existing entries whose content changed.",
+                "minimum": 0
               }
             }
           }

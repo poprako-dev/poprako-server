@@ -44,3 +44,27 @@ fn native_export_wire_deserializes_as_import_instr() {
 
     assert_eq!(instr.terms.first().unwrap().source, "Source");
 }
+
+// append_wire(AppendTermbaseInstr)(positive): empty terms and omitted or null comments are accepted.
+// append_wire(AppendTermbaseInstr)(negative): library metadata, persistence fields, and malformed entries are rejected.
+#[test]
+fn append_wire_accepts_only_strict_terms_documents() {
+    for value in [
+        serde_json::json!({"terms": []}),
+        serde_json::json!({"terms": [{"source": "S", "targets": ["T"]}]}),
+        serde_json::json!({"terms": [{"source": "S", "targets": ["T"], "comment": null}]}),
+    ] {
+        assert!(serde_json::from_value::<AppendTermbaseInstr>(value).is_ok());
+    }
+
+    for value in [
+        serde_json::json!({"terms": [], "name": "Overwrite"}),
+        serde_json::json!({"terms": [], "description": null}),
+        serde_json::json!({}),
+        serde_json::json!({"terms": null}),
+        serde_json::json!({"terms": [{"source": "S", "targets": ["T"], "id": "foreign"}]}),
+        serde_json::json!({"terms": [{"source": "S", "targets": "T"}]}),
+    ] {
+        assert!(serde_json::from_value::<AppendTermbaseInstr>(value).is_err());
+    }
+}

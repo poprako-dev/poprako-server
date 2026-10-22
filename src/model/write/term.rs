@@ -45,6 +45,18 @@ pub struct TermRepl<'a> {
     pub comment: Option<&'a str>,
 }
 
+impl<'a> From<&'a TermAppendRepl<'a>> for TermRepl<'a> {
+    // Borrow merged content for the existing typed persistence operation.
+    fn from(update: &'a TermAppendRepl<'a>) -> Self {
+        Self {
+            id: update.id.clone(),
+            source: update.source,
+            targets: update.targets.clone(),
+            comment: update.comment.as_deref(),
+        }
+    }
+}
+
 /// Delivery changes produced by one terminology-base import.
 pub struct TermUpsertPlan<'a> {
     /// New terminology entries to insert.
@@ -52,4 +64,25 @@ pub struct TermUpsertPlan<'a> {
 
     /// Existing terminology entries to update.
     pub updates: Vec<TermRepl<'a>>,
+}
+
+/// A merged terminology replacement owning its combined comment text.
+pub struct TermAppendRepl<'a> {
+    /// Identifier of the existing terminology entry.
+    pub id: String,
+
+    /// Original source spelling retained by the append.
+    pub source: &'a str,
+    /// Existing translations followed by new distinct translations.
+    pub targets: Vec<&'a str>,
+    /// Combined complete comment blocks.
+    pub comment: Option<String>,
+}
+
+/// Changes produced by appending a normalized terminology batch.
+pub struct TermAppendPlan<'a> {
+    /// New terminology entries to insert.
+    pub entries: Vec<TermEntry<'a>>,
+    /// Existing entries whose content actually changes.
+    pub updates: Vec<TermAppendRepl<'a>>,
 }

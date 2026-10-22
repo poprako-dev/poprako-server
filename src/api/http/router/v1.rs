@@ -346,6 +346,10 @@ pub fn v1_termbase_router() -> Router<AppHarn> {
                 .delete(termbase::delete),
         )
         .route(
+            "/termbases/{termbase_id}/append",
+            post(termbase_port::append),
+        )
+        .route(
             "/termbases/{termbase_id}/export",
             get(termbase_port::export),
         )

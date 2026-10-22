@@ -7,16 +7,23 @@
 
 use super::*;
 
-use poprako_orchestra::Nucl as _;
+use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
 use poprako_rdb_core::RdbCore;
 
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
+use crate::data::instr::termbase_port::{
+    AppendTermbaseInstr, AppendTermbaseTermInstr,
+};
 use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberEntry;
 use crate::model::write::termbase::TermbaseEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::CreateComic;
+use crate::part::repo::oper::member::CreateMember;
+use crate::part::repo::oper::term::ListTermInfos;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
 };
@@ -24,6 +31,8 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
+use crate::usecase::termbase_port as termbase_port_usecase;
+use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
@@ -229,4 +238,203 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
         .unwrap();
+}
+
+// Build one ordinary append request for the database regression.
+fn append_instr(
+    source: &str,
+    target: &str,
+    comment: Option<&str>,
+) -> AppendTermbaseInstr {
+    AppendTermbaseInstr {
+        terms: vec![AppendTermbaseTermInstr {
+            source: source.into(),
+            targets: vec![target.into()],
+            comment: comment.map(str::to_owned),
+        }],
+    }
+}
+
+// Verify a persisted no-op preserves aggregate and entry timestamps.
+async fn verify_append_noop(
+    repo: &HybRepo,
+    nucl: &RdbNucl<ReptRead>,
+    token: UserToken,
+    base_id: &str,
+) {
+    let terms = ListTermInfos::Termbase {
+        termbase_id: base_id,
+    }
+    .run_on(repo)
+    .await
+    .unwrap();
+
+    let original_updated_at = terms.as_slice().first().unwrap().updated_at;
+
+    let before = GetTermbaseInfo { id: base_id }.run_on(repo).await.unwrap();
+
+    let val = termbase_port_usecase::append(
+        (nucl, repo),
+        token,
+        base_id.into(),
+        append_instr("SOURCE", "preferred", Some("Old")),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!((val.added, val.updated, val.unchanged), (0, 0, 1));
+
+    let after = GetTermbaseInfo { id: base_id }.run_on(repo).await.unwrap();
+
+    assert_eq!(after.term_count, 1);
+
+    assert_eq!(after.name, "Kept name");
+
+    assert_eq!(after.description.as_deref(), Some("Kept description"));
+
+    assert_eq!(after.updated_at, before.updated_at);
+
+    let terms = ListTermInfos::Termbase {
+        termbase_id: base_id,
+    }
+    .run_on(repo)
+    .await
+    .unwrap();
+
+    assert_eq!(
+        terms.as_slice().first().unwrap().updated_at,
+        original_updated_at
+    );
+}
+
+// append(append)(positive): PostgreSQL writes preserve identity and no-op timestamps under concurrent batches.
+#[tokio::test]
+async fn append_roundtrip_and_concurrent_merges() {
+    let database = crate::shared::test_rdb::start().await;
+
+    let shared = database.core();
+
+    let fixture = test_shared::seed_user_and_team(&shared, "append-rdb-").await;
+
+    let repo = HybRepo::new(
+        shared.clone(),
+        CacheConfig::default(),
+        RepoConfig::default(),
+    );
+
+    let nucl = RdbNucl::<ReptRead>::new(shared);
+
+    let member_entry = MemberEntry {
+        id: "append-rdb-member".into(),
+        user_id: fixture.user_entry.id.clone(),
+        user_nickname: fixture.user_entry.nickname.to_string(),
+        team_id: fixture.team_entry.id.clone(),
+        roles: RoleMask::from(RoleField::TRANSLATOR),
+    };
+
+    nucl.coord(async |context| {
+        CreateMember {
+            entry: &member_entry,
+        }
+        .step_on(&repo, context)
+        .await
+    })
+    .await
+    .unwrap();
+
+    let base_entry = TermbaseEntry {
+        id: "append-rdb-base".into(),
+        team_id: Some(fixture.team_entry.id),
+        comic_id: None,
+        name: "Kept name",
+        description: Some("Kept description"),
+        creator_id: fixture.user_entry.id.clone(),
+    };
+
+    create_termbase(&repo, &nucl, &base_entry).await;
+
+    let token = UserToken {
+        user_id: fixture.user_entry.id,
+    };
+
+    let val = termbase_port_usecase::append(
+        (&nucl, &repo),
+        token.clone(),
+        base_entry.id.clone(),
+        append_instr("Source", "Preferred", Some("Old")),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!((val.added, val.updated, val.unchanged), (1, 0, 0));
+
+    let terms = ListTermInfos::Termbase {
+        termbase_id: &base_entry.id,
+    }
+    .run_on(&repo)
+    .await
+    .unwrap();
+
+    let original = terms.as_slice().first().unwrap();
+
+    let left = append_instr(" source ", "Second", None);
+
+    let right = append_instr("SOURCE", "Third", None);
+
+    let (left_result, right_result) = tokio::join!(
+        termbase_port_usecase::append(
+            (&nucl, &repo),
+            token.clone(),
+            base_entry.id.clone(),
+            left
+        ),
+        termbase_port_usecase::append(
+            (&nucl, &repo),
+            token.clone(),
+            base_entry.id.clone(),
+            right
+        ),
+    );
+
+    assert!(left_result.is_ok() || right_result.is_ok());
+
+    // Repeatable-read conflicts may reject one transaction; retry only the known failed batch.
+    for (result, target) in [(left_result, "Second"), (right_result, "Third")] {
+        if result.is_err() {
+            termbase_port_usecase::append(
+                (&nucl, &repo),
+                token.clone(),
+                base_entry.id.clone(),
+                append_instr("source", target, None),
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    let terms = ListTermInfos::Termbase {
+        termbase_id: &base_entry.id,
+    }
+    .run_on(&repo)
+    .await
+    .unwrap();
+
+    let merged = terms.as_slice().first().unwrap();
+
+    assert_eq!(merged.id, original.id);
+
+    assert_eq!(merged.created_at, original.created_at);
+
+    assert_eq!(merged.source, "Source");
+
+    assert_eq!(merged.targets.as_slice().first().unwrap(), "Preferred");
+
+    assert_eq!(merged.targets.len(), 3);
+
+    assert!(
+        merged.targets.contains(&"Second".into())
+            && merged.targets.contains(&"Third".into())
+    );
+
+    verify_append_noop(&repo, &nucl, token, &base_entry.id).await;
 }
