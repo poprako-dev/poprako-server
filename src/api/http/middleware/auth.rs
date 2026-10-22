@@ -5,6 +5,9 @@
 //! decoded [`UserToken`] is inserted into request extensions for handlers.
 //! This middleware performs no database side-effects.
 
+#[cfg(test)]
+mod tests;
+
 use axum::extract::{Request, State};
 use axum::http::header;
 use axum::middleware::Next;
@@ -28,7 +31,7 @@ pub async fn authorize(
     //
     let raw_token = extract_token(&request);
 
-    let user_token = match harn.auth().verify_token(&raw_token) {
+    let user_token = match harn.auth().verify_token(raw_token) {
         //
         Ok(token) => token,
 
@@ -40,11 +43,11 @@ pub async fn authorize(
     next.run(request).await
 }
 
-/// Extracts the raw token string from the request.
+/// Borrows the raw token from the request headers, or returns an empty slice.
 ///
 /// Prefers the `authorization-token` cookie; falls back to the `Authorization`
 /// header, stripping the `Bearer ` prefix when present.
-pub fn extract_token(request: &Request) -> String {
+pub fn extract_token(request: &Request) -> &str {
     //
     if let Some(cookie) = request.headers().get(header::COOKIE)
         && let Ok(cookie_str) = cookie.to_str()
@@ -54,11 +57,9 @@ pub fn extract_token(request: &Request) -> String {
             if let Some((name, value)) = part.trim().split_once('=')
                 && name.trim() == AUTH_COOKIE_NAME
             {
-                return value
-                    .trim()
-                    .strip_prefix(AUTH_BEARER_PREFIX)
-                    .unwrap_or_else(|| value.trim())
-                    .to_string();
+                let value = value.trim();
+
+                return value.strip_prefix(AUTH_BEARER_PREFIX).unwrap_or(value);
             }
         }
     }
@@ -68,9 +69,8 @@ pub fn extract_token(request: &Request) -> String {
     {
         return auth_str
             .strip_prefix(AUTH_BEARER_PREFIX)
-            .unwrap_or(auth_str)
-            .to_string();
+            .unwrap_or(auth_str);
     }
 
-    String::new()
+    ""
 }
