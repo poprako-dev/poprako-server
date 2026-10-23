@@ -2,12 +2,21 @@
 
 Use `src/lib.rs` for the authoritative module graph. HTTP delivery lives in
 `api/http`, domain orchestration in `usecase`, pure rules in `complex`,
-persisted models in `model`, DTOs in `data`, ports in `part`, adapters in
+business models in `model`, DTOs in `data`, ports in `part`, adapters in
 `part_impl`, background scheduling in `extra`, and shared domain types in
 `value`. `harn.rs` stores the already-composed application parts.
 
 Read the root skill routing for the affected layer. Workspace utility and
 infrastructure crates have their own module graphs in their crate roots.
+
+## Business models
+
+`model` represents business entities and their data forms. A model need not
+map one-to-one to a database table or persisted record. Classify models by
+their business role: `read` for queried state and query specifications,
+`write` for intended changes and import contents, and `shared` for concepts
+used by both read and write flows. Do not add an `artifact` category for
+models that lack a direct persistence mapping.
 
 ## Domain rule interfaces
 

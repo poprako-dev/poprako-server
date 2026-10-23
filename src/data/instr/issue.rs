@@ -8,8 +8,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::model::artifact::issue_import::{IssueImport, PageIssueImport};
 use crate::model::shared::issue::IssueRect;
+use crate::model::write::issue_import::{IssueImport, PageIssueImport};
 
 /// A finite rectangle contained within the normalized whole composite.
 #[derive(Deserialize)]

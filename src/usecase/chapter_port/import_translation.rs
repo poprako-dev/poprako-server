@@ -15,13 +15,13 @@ use crate::complex::unit::perm as unit_perm_complex;
 use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::model::artifact::translation_import::{
-    PageTranslationImport, UnitTranslationImport,
-};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::model::write::translation_import::{
+    PageTranslationImport, UnitTranslationImport,
+};
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;

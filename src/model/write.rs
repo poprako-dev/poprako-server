@@ -16,6 +16,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Review contents prepared for validation and replacement.
+pub mod issue_import;
 /// Member mutation models.
 pub mod member;
 /// Member invitation mutation models.
@@ -32,6 +34,8 @@ pub mod team;
 pub mod term;
 /// Termbase mutation models.
 pub mod termbase;
+/// Normalized translation contents prepared for import.
+pub mod translation_import;
 /// Unit mutation models.
 pub mod unit;
 /// User mutation models.

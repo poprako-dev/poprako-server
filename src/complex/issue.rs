@@ -7,9 +7,9 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::artifact::issue_import::PageIssueImport;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::model::shared::issue::IssueRect;
+use crate::model::write::issue_import::PageIssueImport;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Constructs one localized issue validation or permission error.

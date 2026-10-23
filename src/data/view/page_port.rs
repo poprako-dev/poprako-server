@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::model::artifact::translation_document::PageTranslationDocument;
+use crate::model::shared::translation_document::PageTranslationDocument;
 
 /// Page object exchanged by the `PopRaKo` translation port.
 #[derive(Clone, Deserialize, Serialize)]

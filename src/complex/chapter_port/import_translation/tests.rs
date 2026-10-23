@@ -11,7 +11,7 @@ use crate::complex::chapter_port::import_translation as chapter_translation_impo
 
 use super::*;
 
-use crate::model::artifact::translation_import::UnitTranslationImportSource;
+use crate::model::write::translation_import::UnitTranslationImportSource;
 
 // LabelPlus import fixture used by chapter import parse tests.
 const LABEL_PLUS_MATERIAL: &str =
