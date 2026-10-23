@@ -12,8 +12,9 @@ appear in a list of known legal edges.
 
 | Source layer | Forbidden target layers |
 | --- | --- |
-| `value` | `model`, `complex`, `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
-| `model` | `complex`, `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
+| `value` | `shape`, `model`, `complex`, `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
+| `model` | `shape`, `complex`, `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
+| `shape` | `complex`, `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
 | `complex` | `data`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
 | `data` | `complex`, `part`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |
 | `part` | `complex`, `data`, `usecase`, `api`, `extra`, `part_impl`, `harn`, `shared` |

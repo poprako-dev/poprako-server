@@ -35,7 +35,7 @@ class LayerDependencyTests(unittest.TestCase):
             root = Path(directory)
             (root / "Cargo.toml").write_text(f'[package]\nname = "{package}"\n')
             files = {
-                "src/lib.rs": "mod value; mod model; mod complex; mod data; mod part; mod usecase; mod util; mod future;",
+                "src/lib.rs": "mod value; mod model; mod shape; mod complex; mod data; mod part; mod usecase; mod util; mod future;",
                 **files,
             }
             for name, source in files.items():
@@ -56,7 +56,7 @@ class LayerDependencyTests(unittest.TestCase):
                     self.assert_edge(f"use crate::{target}::Thing;", origin, target)
 
     def test_architecture_regressions_independent_of_the_rule_table(self):
-        for origin, target in [("value", "model"), ("model", "complex"), ("data", "complex"), ("complex", "data"), ("part", "usecase"), ("usecase", "part_impl")]:
+        for origin, target in [("value", "model"), ("value", "shape"), ("model", "shape"), ("shape", "complex"), ("shape", "data"), ("shape", "part_impl"), ("model", "complex"), ("data", "complex"), ("complex", "data"), ("part", "usecase"), ("usecase", "part_impl")]:
             with self.subTest(origin=origin, target=target):
                 self.assert_edge(f"use crate::{target}::Thing;", origin, target)
 
@@ -64,10 +64,11 @@ class LayerDependencyTests(unittest.TestCase):
         cases = {
             "value": ["result", "util", "future", "value::new_type"],
             "model": ["value", "result", "util", "future", "model::new_model"],
-            "complex": ["model", "value", "result", "util", "config", "future"],
+            "shape": ["model", "value", "shape::write", "util", "result"],
+            "complex": ["shape", "model", "value", "result", "util", "config", "future"],
             "data": ["model", "value", "result", "util", "future", "data::new_dto"],
-            "part": ["model", "value", "result", "future"],
-            "usecase": ["model", "value", "complex", "data", "part", "result", "future"],
+            "part": ["shape", "model", "value", "result", "future"],
+            "usecase": ["shape", "model", "value", "complex", "data", "part", "result", "future"],
             "future": ["data", "complex", "part_impl"],
         }
         for origin, targets in cases.items():

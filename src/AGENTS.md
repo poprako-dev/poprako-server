@@ -2,7 +2,7 @@
 
 Use `src/lib.rs` for the authoritative module graph. HTTP delivery lives in
 `api/http`, domain orchestration in `usecase`, pure rules in `complex`,
-business models in `model`, DTOs in `data`, ports in `part`, adapters in
+owned business models in `model`, borrowed domain Shapes in `shape`, DTOs in `data`, ports in `part`, adapters in
 `part_impl`, background scheduling in `extra`, and shared domain types in
 `value`. `harn.rs` stores the already-composed application parts.
 
@@ -17,6 +17,9 @@ their business role: `read` for queried state and query specifications,
 `write` for intended changes and import contents, and `shared` for concepts
 used by both read and write flows. Do not add an `artifact` category for
 models that lack a direct persistence mapping.
+
+For Model ownership, Shape placement, and normalization accessors, follow
+[model-shape-boundaries](../.agents/skills/model-shape-boundaries/SKILL.md).
 
 ## Domain rule interfaces
 

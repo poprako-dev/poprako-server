@@ -18,7 +18,8 @@ execution shape.
 ## 2. Domain and transport types
 
 Put shared concepts under `value`; follow
-[general-conventions](../general-conventions/SKILL.md) for persisted models.
+[general-conventions](../general-conventions/SKILL.md) for domain source conventions, and
+[model-shape-boundaries](../model-shape-boundaries/SKILL.md) for ownership.
 Follow [usecase-boundaries](../usecase-boundaries/SKILL.md) for pure rules and
 [data-dto-boundaries](../data-dto-boundaries/SKILL.md) for changed DTOs.
 Convert timestamps to Unix milliseconds at the response boundary.

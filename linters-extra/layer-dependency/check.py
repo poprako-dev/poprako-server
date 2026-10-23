@@ -29,8 +29,9 @@ from rust_style_lint.checkers.module_dependency import (
 # This is a denylist, never an exhaustive list of permitted dependencies.
 # Unknown source/target modules and new submodules remain unrestricted.
 FORBIDDEN = {
-    "value": frozenset({"model", "complex", "data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
-    "model": frozenset({"complex", "data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
+    "value": frozenset({"shape", "model", "complex", "data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
+    "model": frozenset({"shape", "complex", "data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
+    "shape": frozenset({"complex", "data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
     "complex": frozenset({"data", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
     "data": frozenset({"complex", "part", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
     "part": frozenset({"complex", "data", "usecase", "api", "extra", "part_impl", "harn", "shared"}),
