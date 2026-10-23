@@ -84,6 +84,42 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(runner.run_extra(root, [Path("first/check.py"), Path("second/check.py")]), 1)
             self.assertEqual(load.call_count, 2)
 
+    def test_line_width_runs_once_for_the_whole_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for crate in (root, root / "member"):
+                (crate / "src").mkdir(parents=True)
+                (crate / "Cargo.toml").touch()
+            calls = []
+            module = SimpleNamespace(__file__="check.py", main=lambda: calls.append(sys.argv[1:]) or 1)
+            with patch.object(runner, "load_checker", return_value=module):
+                self.assertEqual(runner.run_extra(root, [Path("line-width/check.py")]), 1)
+            self.assertEqual(calls, [["--root", str(root)]])
+
+    def test_line_width_runs_even_without_a_crate_source_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            calls = []
+            module = SimpleNamespace(__file__="check.py", main=lambda: calls.append(sys.argv[1:]) or 0)
+            with patch.object(runner, "load_checker", return_value=module):
+                self.assertEqual(runner.run_extra(root, [Path("line-width/check.py")]), 0)
+            self.assertEqual(calls, [["--root", str(root)]])
+
+    def test_line_width_reports_nested_crate_lines_once_using_workspace_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".rustfmt.toml").write_text("max_width = 8\n")
+            for crate in (root, root / "member"):
+                (crate / "src").mkdir(parents=True)
+                (crate / "Cargo.toml").touch()
+                (crate / "src/lib.rs").write_text("macro! { long }\n")
+            out = io.StringIO()
+            with redirect_stderr(out):
+                status = runner.run_extra(root, [ROOT / "linters-extra/line-width/check.py"])
+            self.assertEqual(status, 1)
+            self.assertEqual(out.getvalue().count("WID001"), 2)
+            self.assertIn("2 overlong macro lines in 2 files", out.getvalue())
+
     def test_compatibility_aliases_are_not_dispatched_twice(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

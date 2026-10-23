@@ -5,6 +5,12 @@ Python environment, runs the existing self-test gate, then checks the shared
 suite and every project rule. Every failure contributes to the final exit code.
 Project rule output includes elapsed time.
 
+`line-width` enforces the workspace rustfmt `max_width` on macro invocations,
+definitions, and procedural/helper attributes, including `instrument`. Ordinary
+code, imports, built-in attributes, and standalone comments are outside its
+scope. It runs once across the workspace and reports every violation. See
+[line-width/FORMAT.md](line-width/FORMAT.md) for column counting and exclusions.
+
 Project rules run in one Python process. During that read-only run, masked
 production sources are reused across rules, and an LRU cache retains up to
 1024 Rust syntax trees keyed by their exact source bytes. Each caller receives
