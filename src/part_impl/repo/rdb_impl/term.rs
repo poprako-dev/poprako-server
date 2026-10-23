@@ -386,7 +386,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
             error_variant = ?ExpectedVariant::Args,
             term_id = %id,
             operation = "lock term row",
-            "expected term error",
+            "term operation rejected",
         });
     };
 
@@ -454,7 +454,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
             error_variant = ?ExpectedVariant::Args,
             term_id = %id,
             operation = "get term info",
-            "expected term error",
+            "term operation rejected",
         });
     };
 

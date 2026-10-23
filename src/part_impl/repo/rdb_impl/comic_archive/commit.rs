@@ -51,7 +51,7 @@ pub async fn commit(
             error_variant = ?ExpectedVariant::Args,
             comic_id = %comic_archive_entry.record.source_comic_id,
             operation = "commit comic archive",
-            "expected comic archive error",
+            "comic archive operation rejected",
         });
     }
 

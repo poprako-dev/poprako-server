@@ -122,7 +122,7 @@ async fn get_info_by_id(
             error_variant = ?ExpectedVariant::Args,
             invitation_id = %id,
             operation = "get member invitation info",
-            "expected member invitation error",
+            "member invitation operation rejected",
         });
     };
 
@@ -182,7 +182,7 @@ async fn get_info_by_code(
             invitation_code = %code,
             pending = true,
             operation = "get pending member invitation by code",
-            "expected member invitation error",
+            "member invitation operation rejected",
         });
     };
 
@@ -215,7 +215,7 @@ async fn get_info_by_code_excluded(
             invitation_code = %code,
             pending = true,
             operation = "lock pending member invitation by code",
-            "expected member invitation error",
+            "member invitation operation rejected",
         });
     };
 

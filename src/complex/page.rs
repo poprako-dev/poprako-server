@@ -105,7 +105,7 @@ pub mod perm {
             ExpectedVariant::Perm,
             message: trl(msg_key);
             event,
-            "expected page permission error",
+            "page permission denied",
         })
     }
 }

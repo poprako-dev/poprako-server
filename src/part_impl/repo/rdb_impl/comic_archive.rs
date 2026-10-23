@@ -80,7 +80,7 @@ async fn load_archive_root(
             error_variant = ?ExpectedVariant::Args,
             comic_id = %source_comic_id,
             operation = "get comic archive snapshot",
-            "expected comic archive error",
+            "comic archive operation rejected",
         });
     };
 
@@ -104,7 +104,7 @@ async fn load_archive_root(
             comic_id = %source_comic_id,
             workset_id = %comic_info.workset_id,
             operation = "get comic archive snapshot",
-            "expected comic archive error",
+            "comic archive operation rejected",
         });
     };
 
@@ -264,7 +264,7 @@ fn assemble_chapter_snapshots(
                 assignment_id = %assignment_info.id,
                 user_id = %assignment_info.user_id,
                 operation = "assemble comic archive snapshot",
-                "expected comic archive error",
+                "comic archive operation rejected",
             });
         };
 

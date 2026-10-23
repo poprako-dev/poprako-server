@@ -189,7 +189,7 @@ impl TokenAuth for JwtAuth {
                 message: trl("error-unauthorized");
                 operation = "verify_token",
                 sdk_err = ?err,
-                "JWT SDK error converted to expected authentication error",
+                "JWT verification failed",
             }
         })?;
 

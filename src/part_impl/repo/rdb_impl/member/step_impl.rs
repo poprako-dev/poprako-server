@@ -204,7 +204,7 @@ pub async fn get_info_by_id(
             error_variant = ?ExpectedVariant::Args,
             member_id = %id,
             operation = "get member info",
-            "expected member error",
+            "member operation rejected",
         });
     };
 

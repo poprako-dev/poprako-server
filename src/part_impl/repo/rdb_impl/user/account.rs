@@ -91,7 +91,7 @@ pub async fn get_credential_by_qid(
             error_variant = ?ExpectedVariant::Args,
             user_qid = %qid,
             operation = "get user credential",
-            "expected user error",
+            "user operation rejected",
         });
     };
 

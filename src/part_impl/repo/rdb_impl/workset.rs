@@ -44,7 +44,7 @@ pub fn missing_workset(id: &str, operation: &str) -> BaseError {
         message: trl("error-workset-not-found");
         workset_id = %id,
         operation,
-        "expected workset error",
+        "workset operation rejected",
     }
 }
 
@@ -70,7 +70,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
             error_variant = ?ExpectedVariant::Args,
             workset_id = %id,
             operation = "get workset info",
-            "expected workset error",
+            "workset operation rejected",
         });
     };
 

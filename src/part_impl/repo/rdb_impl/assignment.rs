@@ -151,7 +151,7 @@ async fn get_info_by_id(
             error_variant = ?ExpectedVariant::Args,
             assignment_id = %id,
             operation = "get assignment info",
-            "expected assignment error",
+            "assignment operation rejected",
         });
     };
 
@@ -236,7 +236,7 @@ async fn put_roles(
             error_variant = ?ExpectedVariant::Args,
             assignment_id = %update.id,
             operation = "update assignment roles",
-            "expected assignment error",
+            "assignment operation rejected",
         });
     };
 

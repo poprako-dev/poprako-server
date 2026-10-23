@@ -51,7 +51,7 @@ pub fn ensure_snapshot_archivable(
         return Err(expected_error! {
             ExpectedVariant::Args,
             message: trl("error-comic-archived");
-            "expected comic archive error",
+            "comic archive operation rejected",
         });
     }
 
@@ -73,7 +73,7 @@ pub fn ensure_snapshot_archivable(
     Err(expected_error! {
         ExpectedVariant::Args,
         message: trl("error-comic-archive-incomplete");
-        "expected comic archive error",
+        "comic archive operation rejected",
     })
 }
 

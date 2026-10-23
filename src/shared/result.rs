@@ -35,7 +35,7 @@ pub fn diesel(source: DieselError) -> BaseError {
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
-                "expected error constructed from Diesel database error",
+                "database uniqueness constraint violated",
             }
         }
 

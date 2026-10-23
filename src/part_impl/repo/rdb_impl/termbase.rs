@@ -83,7 +83,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
             error_variant = ?ExpectedVariant::Args,
             termbase_id = %id,
             operation = "get termbase info",
-            "expected termbase error",
+            "termbase operation rejected",
         });
     };
 
@@ -115,7 +115,7 @@ async fn get_info_excluded(
             error_variant = ?ExpectedVariant::Args,
             termbase_id = %id,
             operation = "lock termbase info",
-            "expected termbase error",
+            "termbase operation rejected",
         });
     };
 

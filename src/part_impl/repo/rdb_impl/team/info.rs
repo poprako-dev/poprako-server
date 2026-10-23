@@ -33,7 +33,7 @@ pub fn missing_team(id: &str, operation: &str) -> BaseError {
         message: trl("error-team-not-found");
         team_id = %id,
         operation,
-        "expected team error",
+        "team operation rejected",
     }
 }
 
@@ -91,7 +91,7 @@ pub async fn get_info_by_id(
             error_variant = ?ExpectedVariant::Args,
             team_id = %id,
             operation = "get team info",
-            "expected team error",
+            "team operation rejected",
         });
     };
 
@@ -191,7 +191,7 @@ pub async fn get_info_excluded(
             error_variant = ?ExpectedVariant::Args,
             team_id = %id,
             operation = "lock team info",
-            "expected team error",
+            "team operation rejected",
         });
     };
 
@@ -221,7 +221,7 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
             error_variant = ?ExpectedVariant::Args,
             team_id = %id,
             operation = "lock team row",
-            "expected team error",
+            "team operation rejected",
         });
     };
 

@@ -120,7 +120,7 @@ async fn get_info(
             error_variant = ?ExpectedVariant::Args,
             user_id = %id,
             operation,
-            "expected user error",
+            "user operation rejected",
         });
     };
 

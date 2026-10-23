@@ -128,7 +128,7 @@ async fn mark_read_batch(
                 system_mail_id = %id,
                 receiver_user_id = %user_id,
                 operation = "mark system mails read",
-                "expected system mail error",
+                "system mail operation rejected",
             });
         };
 
@@ -141,7 +141,7 @@ async fn mark_read_batch(
                 receiver_user_id = %user_id,
                 actual_receiver_user_id = %receiver_id,
                 operation = "mark system mails read",
-                "expected system mail perm error",
+                "system mail permission denied",
             });
         }
     }

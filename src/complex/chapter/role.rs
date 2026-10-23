@@ -110,6 +110,6 @@ fn reject(msg_key: &str, event: &'static str) -> BaseRest<()> {
         ExpectedVariant::Perm,
         message: trl(msg_key);
         event,
-        "expected chapter role error",
+        "chapter role requirement not met",
     })
 }

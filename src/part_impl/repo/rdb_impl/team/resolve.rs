@@ -36,7 +36,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
         resource_kind = %resource_kind,
         resource_id = %resource_id,
         operation = "resolve team id",
-        "expected ownership resolution error",
+        "resource ownership could not be resolved",
     }
 }
 

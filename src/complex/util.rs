@@ -79,6 +79,6 @@ fn reject_perm(msg_key: &str, event: &'static str) -> BaseRest<()> {
         ExpectedVariant::Perm,
         message: trl(msg_key);
         event,
-        "expected permission error",
+        "permission denied",
     })
 }

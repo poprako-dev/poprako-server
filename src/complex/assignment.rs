@@ -180,7 +180,7 @@ pub mod perm {
             variant,
             message: trl(msg_key);
             event,
-            "expected assignment permission error",
+            "assignment permission denied",
         })
     }
 
