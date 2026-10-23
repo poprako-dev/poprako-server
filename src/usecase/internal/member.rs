@@ -15,7 +15,7 @@ use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::internal::util::LoadMode;
 
 /// Loads membership models needed by use-case orchestration.
@@ -246,20 +246,13 @@ impl MemberLoader {
 
             _ => {
                 //
-                let err_msg = trl("error-invalid-termbase-scope");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-termbase-scope");
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
-                    "expected error: invalid termbase ownership scope",
-                );
-
-                Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invalid termbase ownership scope",
                 })
             }
         }
@@ -298,17 +291,10 @@ impl MemberLoader {
         //
         let Some(member_info) = member_info else {
             //
-            let err_msg = trl("error-team-member-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
-                "expected error: team membership required",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                msg: err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Perm,
+                message: trl("error-team-member-required");
+                "team membership required",
             });
         };
 

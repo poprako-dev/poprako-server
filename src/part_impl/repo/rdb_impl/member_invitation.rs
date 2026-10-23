@@ -116,19 +116,13 @@ async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-invitation-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invitation-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             invitation_id = %id,
             operation = "get member invitation info",
             "expected member invitation error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     };
 
@@ -181,20 +175,14 @@ async fn get_info_by_code(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-invitation-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invitation-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             invitation_code = %code,
             pending = true,
             operation = "get pending member invitation by code",
             "expected member invitation error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     };
 
@@ -220,20 +208,14 @@ async fn get_info_by_code_excluded(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-invitation-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invitation-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             invitation_code = %code,
             pending = true,
             operation = "lock pending member invitation by code",
             "expected member invitation error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     };
 

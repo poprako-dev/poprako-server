@@ -3,6 +3,9 @@
 //! Crate root: explicit public re-exports and internal module organization for
 //! the `PopRaKo` application core.
 
+// Shared expected-error macro in lexical scope for all application modules.
+#[macro_use]
+mod expected_error;
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
 // Core business-logic helpers that coordinate domain rules across models.

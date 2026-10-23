@@ -14,7 +14,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::role::RoleField;
 
 /// Authorizes chapter export and returns whether the caller holds a typesetter or redrawer assignment.
@@ -81,20 +81,13 @@ where
 
         (None, None) => {
             //
-            let err_msg = trl("error-chapter-port-export-perm-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
+            Err(expected_error! {
+                ExpectedVariant::Perm,
+                message: trl("error-chapter-port-export-perm-required");
                 chapter_id = %chapter_id,
                 user_id = %token.user_id,
                 operation = "export",
-                "expected error: chapter port export permission denied",
-            );
-
-            Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                "chapter port export permission denied",
             })
         }
     }

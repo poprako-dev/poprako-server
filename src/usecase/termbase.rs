@@ -125,17 +125,12 @@ where
                 let err_msg =
                     trl("error-team-translator-or-proofreader-required");
 
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: err_msg;
                     team_id = %team_id,
                     user_id = %token.user_id,
-                    "expected error: termbase creator membership missing",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                    "termbase creator membership missing",
                 });
             };
 
@@ -212,19 +207,12 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-member-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-member-required");
             team_id = %instr.team_id,
             user_id = %token.user_id,
-            "expected error: termbase list membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "termbase list membership missing",
         });
     };
 

@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::role::RoleField;
 
 /// Requires a current REVIEWER assignment for Issue import.
@@ -15,8 +15,9 @@ pub fn ensure_user_can_import_issue(
         return accept(());
     }
 
-    Err(BaseError::expected(
+    Err(expected_error! {
         ExpectedVariant::Perm,
-        trl("error-issue-reviewer-required"),
-    ))
+        message: trl("error-issue-reviewer-required");
+        "reviewer assignment required for issue import",
+    })
 }

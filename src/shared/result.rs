@@ -25,11 +25,9 @@ pub fn diesel(source: DieselError) -> BaseError {
             information,
         ) => {
             //
-            let msg = trl("error-already-exists");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-already-exists");
                 database_err = "unique violation",
                 database_msg = information.message(),
                 database_details = ?information.details(),
@@ -38,11 +36,6 @@ pub fn diesel(source: DieselError) -> BaseError {
                 table = ?information.table_name(),
                 column = ?information.column_name(),
                 "expected error constructed from Diesel database error",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
             }
         }
 
@@ -69,19 +62,12 @@ pub fn diesel(source: DieselError) -> BaseError {
 
         DieselError::NotFound => {
             //
-            let msg = trl("error-not-found");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-not-found");
                 database_err = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() \
-                    and map None at call site"
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+                    and map None at call site",
             }
         }
 

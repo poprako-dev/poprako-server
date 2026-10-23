@@ -74,20 +74,13 @@ impl StageMask {
         //
         if !is_valid_stage_phase(stage, phase) {
             //
-            let err_msg = trl("error-invalid-stage-phase");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase");
                 stage = ?stage,
                 phase = ?phase,
                 current_mask = self.0,
-                "expected error: invalid stage phase for mask",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid stage phase for mask",
             });
         }
 
@@ -155,19 +148,12 @@ impl StageMask {
         //
         if value & !Self::VALID_BITS != 0 {
             //
-            let err_msg = trl("error-invalid-stage");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-stage");
                 raw_value = value,
                 allow_ignore,
-                "expected error: invalid stage mask bits",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid stage mask bits",
             });
         }
 
@@ -233,59 +219,38 @@ impl StageMask {
                 return accept(());
             }
 
-            let err_msg = trl("error-invalid-stage-phase");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase");
                 stage = ?stage,
                 field = ?field,
                 allow_ignore,
-                "expected error: ignored stage phase is not allowed",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "ignored stage phase is not allowed",
             });
         }
 
         let Some(phase) = field.as_phase() else {
             //
-            let err_msg = trl("error-invalid-stage-phase");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase");
                 stage = ?stage,
                 field = ?field,
                 allow_ignore,
-                "expected error: invalid stage phase field",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid stage phase field",
             });
         };
 
         if !is_valid_stage_phase(stage, phase) {
             //
-            let err_msg = trl("error-invalid-stage-phase");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase");
                 stage = ?stage,
                 phase = ?phase,
                 field = ?field,
                 allow_ignore,
-                "expected error: invalid stage phase combination",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid stage phase combination",
             });
         }
 

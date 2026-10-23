@@ -382,20 +382,13 @@ where
 
             let Some(assignment_info) = assignment_info else {
                 //
-                let err_msg = trl("error-forbidden");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-forbidden");
                     user_id = %token.user_id,
                     chapter_id = %chapter_id,
                     team_id = %team_id,
-                    "expected error: assignment list perm denied",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                    "assignment list perm denied",
                 });
             };
 

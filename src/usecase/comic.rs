@@ -274,17 +274,10 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_msg = trl("error-team-member-required");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
-                    "expected error: team membership required",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-team-member-required");
+                    "team membership required",
                 });
             };
 

@@ -113,19 +113,12 @@ where
     // Only the user themselves can update their own profile.
     if token.user_id != instr.id {
         //
-        let err_msg = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-forbidden");
             user_id = %token.user_id,
             affected_user_id = %instr.id,
-            "expected error: user profile ownership required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "user profile ownership required",
         });
     }
 
@@ -175,19 +168,12 @@ where
 {
     if token.user_id != user_id {
         //
-        let err_msg = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-forbidden");
             user_id = %token.user_id,
             affected_user_id = %user_id,
-            "expected error: password update ownership required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "password update ownership required",
         });
     }
 
@@ -205,19 +191,12 @@ where
     )
     .await
     {
-        let err_msg = trl("error-wrong-credentials");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Auth,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Auth,
+            message: trl("error-wrong-credentials");
             user_id = %user_id,
             qid = %user_info.qid,
-            "expected error: current password verification failed",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Auth,
-            msg: err_msg,
+            "current password verification failed",
         });
     }
 
@@ -332,10 +311,11 @@ where
 {
     if token.user_id != id {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-forbidden"),
-        ));
+            message: trl("error-forbidden");
+            "user avatar ownership required",
+        });
     }
 
     // SAFETY: This is an optimistic exact-generation transition. It does not
@@ -353,9 +333,10 @@ where
 
     marked.then_some(()).ok_or_else(|| {
         //
-        BaseError::expected(
+        expected_error! {
             ExpectedVariant::Args,
-            trl("error-stale-avatar-upload"),
-        )
+            message: trl("error-stale-avatar-upload");
+            "avatar upload generation is stale",
+        }
     })
 }

@@ -50,19 +50,12 @@ impl BoolSql for bool {
 /// Build the expected error for a missing comic.
 pub fn missing_comic(id: &str, operation: &str) -> BaseError {
     //
-    let err_msg = trl("error-comic-not-found");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-comic-not-found");
         comic_id = %id,
         operation,
-        "expected error: comic not found",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "comic not found",
     }
 }
 
@@ -84,19 +77,13 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-comic-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-comic-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 comic_id = %id,
                 stage = "get_info_by_id",
-                "expected error: comic not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "comic not found",
             }
         })?;
 
@@ -366,19 +353,13 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-comic-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-comic-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 comic_id = %id,
                 stage = "get_info_excluded",
-                "expected error: comic not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "comic not found",
             }
         })?;
 

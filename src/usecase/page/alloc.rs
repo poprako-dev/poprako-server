@@ -299,10 +299,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-page-alloc-role-required"),
-        ));
+            message: trl("error-page-alloc-role-required");
+            "page allocation role required",
+        });
     };
 
     page_perm_complex::ensure_user_can_alloc(&assignment_info)

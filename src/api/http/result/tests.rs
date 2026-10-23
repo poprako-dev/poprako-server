@@ -97,10 +97,11 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
         let router = Router::new().route(
             "/error",
             get(move || async move {
-                Err::<(), _>(HttpError::from(BaseError::expected(
+                Err::<(), _>(HttpError::from(expected_error! {
                     variant,
-                    "source diagnostic".into(),
-                )))
+                    message: "source diagnostic".into();
+                    "application request rejected",
+                }))
             }),
         );
 
@@ -113,17 +114,22 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
 
         assert_eq!(actual, status);
 
-        assert_eq!(
-            (*serde_json::from_str::<serde_json::Value>(&body)
-                .unwrap()
-                .get("code")
-                .unwrap()),
-            code
-        );
+        let response =
+            serde_json::from_str::<serde_json::Value>(&body).unwrap();
+
+        assert_eq!(response.get("code"), Some(&json!(code)));
+
+        assert_eq!(response.get("message"), Some(&json!("source diagnostic")));
 
         assert!(logs.contains("source diagnostic"), "{logs}");
 
         assert!(logs.contains("source_file="), "{logs}");
+
+        assert!(logs.contains("source_line="), "{logs}");
+
+        assert!(logs.contains("err_message="), "{logs}");
+
+        assert!(!logs.contains("err_msg="), "{logs}");
 
         assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
     }

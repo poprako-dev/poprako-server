@@ -75,12 +75,11 @@ async fn protected_method_fallback_keeps_authorization_before_routing() {
         .route("/known", get(|| async { StatusCode::OK }))
         .method_not_allowed_fallback(method_not_allowed)
         .layer(from_fn(|_: Request<Body>, _: Next| async {
-            crate::api::http::result::HttpError::from(
-                crate::result::BaseError::expected(
-                    crate::result::ExpectedVariant::Auth,
-                    "authentication required".into(),
-                ),
-            )
+            crate::api::http::result::HttpError::from(expected_error! {
+                crate::result::ExpectedVariant::Auth,
+                message: "authentication required".into();
+                "authentication required",
+            })
         }))
         .method_not_allowed_fallback(method_not_allowed);
 

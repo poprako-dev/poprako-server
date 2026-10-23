@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::role::RoleField;
 
 /// Allows assigned typesetters, redrawers and reviewers to maintain composites.
@@ -17,8 +17,9 @@ pub fn ensure_user_can_write(assignment_info: &AssignmentInfo) -> BaseRest<()> {
         return accept(());
     }
 
-    Err(BaseError::expected(
+    Err(expected_error! {
         ExpectedVariant::Perm,
-        trl("error-page-artwork-write-role-required"),
-    ))
+        message: trl("error-page-artwork-write-role-required");
+        "page artwork write role required",
+    })
 }

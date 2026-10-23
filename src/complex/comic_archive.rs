@@ -48,17 +48,10 @@ pub fn ensure_snapshot_archivable(
     //
     if comic_archive_snapshot.comic_info.archived_at.is_some() {
         //
-        let msg = trl("error-comic-archived");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-comic-archived");
             "expected comic archive error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     }
 
@@ -77,17 +70,10 @@ pub fn ensure_snapshot_archivable(
         return accept(());
     }
 
-    let msg = trl("error-comic-archive-incomplete");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %msg,
+    Err(expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-comic-archive-incomplete");
         "expected comic archive error",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg,
     })
 }
 

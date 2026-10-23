@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_qid, t_user,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 
 /// Find user info by QID, returning None when absent.
@@ -114,19 +114,13 @@ async fn get_info(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-user-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-user-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             user_id = %id,
             operation,
             "expected user error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     };
 

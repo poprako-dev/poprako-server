@@ -51,19 +51,12 @@ where
 {
     if token.user_id != id {
         //
-        let err_msg = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-forbidden");
             user_id = %token.user_id,
             affected_user_id = %id,
-            "expected error: user deletion ownership required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "user deletion ownership required",
         });
     }
 
@@ -94,22 +87,15 @@ where
                 member_info,
             ) {
                 //
-                let err_msg = trl("error-forbidden");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-forbidden");
                     team_id = %member_info.team_id,
                     user_id = %id,
                     member_id = %member_info.id,
                     operation = "delete user holding last team administrator \
                     role",
-                    "expected error: team administrator retention required",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                    "team administrator retention required",
                 });
             }
         }

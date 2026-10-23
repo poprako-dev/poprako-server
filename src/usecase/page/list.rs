@@ -25,7 +25,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::view::{page_info_view, page_info_views};
 
 /// Lists pages under one chapter.
@@ -175,19 +175,12 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let err_msg = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-forbidden");
             chapter_id = %chapter_id,
             user_id = %token.user_id,
-            "expected error: page list permission denied",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "page list permission denied",
         });
     };
 

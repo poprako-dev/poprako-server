@@ -84,18 +84,11 @@ impl TryFrom<u32> for RoleField {
             || !Self::VALID_VALUES.contains(&value)
             || value.count_ones() != 1
         {
-            let err_msg = trl("error-invalid-role");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-role");
                 raw_value = value,
-                "expected error: invalid role field",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid role field",
             });
         }
 
@@ -200,18 +193,11 @@ impl TryFrom<u32> for RoleMask {
         //
         if value == 0 || value & !Self::VALID_BITS != 0 {
             //
-            let err_msg = trl("error-invalid-role");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-role");
                 raw_value = value,
-                "expected error: invalid role mask",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid role mask",
             });
         }
 

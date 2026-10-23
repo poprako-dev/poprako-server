@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::write::term::{TermEntry, TermImport, TermRepl};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 /// Borrows a trimmed terminology-entry source filter, omitting blank values.
@@ -93,18 +93,11 @@ fn normalize_source(source: &str) -> BaseRest<&str> {
 
     if source.is_empty() {
         //
-        let err_msg = trl("error-term-source-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-term-source-required");
             source = %source,
-            "expected error: term source required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "term source required",
         });
     }
 
@@ -116,18 +109,11 @@ fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
     //
     if targets.is_empty() {
         //
-        let err_msg = trl("error-term-targets-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-term-targets-required");
             target_count = targets.len(),
-            "expected error: term targets required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "term targets required",
         });
     }
 
@@ -139,37 +125,23 @@ fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
 
         if target.is_empty() {
             //
-            let err_msg = trl("error-term-target-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-term-target-required");
                 target = %target,
                 target_count = index,
-                "expected error: term target required",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "term target required",
             });
         }
 
         if !seen_targets.insert(target.to_lowercase()) {
             //
-            let err_msg = trl("error-term-target-duplicate");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-term-target-duplicate");
                 target = %target,
                 target_count = index,
-                "expected error: duplicate term target",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "duplicate term target",
             });
         }
     }

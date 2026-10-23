@@ -24,18 +24,11 @@ pub fn normalize_label_plus_text(text: &str) -> Option<String> {
 /// Construct the stable invalid-content error for `LabelPlus` input.
 pub fn invalid_label_plus_content(condition: &str) -> BaseError {
     //
-    let err_msg = trl("error-invalid-chapter-import-content");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-chapter-import-content");
         condition,
-        "expected error: chapter import content is invalid",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "chapter import content is invalid",
     }
 }
 
@@ -333,17 +326,10 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
 
         if structural_line.starts_with(">>>>>>>>") {
             //
-            let err_msg = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
-                "expected error: LabelPlus structure line is malformed",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-chapter-import-content");
+                "LabelPlus structure line is malformed",
             });
         }
 
@@ -351,18 +337,11 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
             //
             if current_page.is_none() {
                 //
-                let err_msg = trl("error-invalid-chapter-import-content");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-chapter-import-content");
                     line = %line,
-                    "expected error: chapter import unit appears before page",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "chapter import unit appears before page",
                 });
             }
 
@@ -422,19 +401,12 @@ fn invalid_label_plus_limit(
     //
     let args = HashMap::from([("limit".into(), limit.into())]);
 
-    let err_msg = trl_kv(key, &args);
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl_kv(key, &args);
         limit,
         condition,
-        "expected error: LabelPlus import limit exceeded",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "LabelPlus import limit exceeded",
     }
 }
 

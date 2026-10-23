@@ -383,19 +383,12 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-translator-or-proofreader-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-translator-or-proofreader-required");
             team_id = %team_id,
             user_id = %token.user_id,
-            "expected error: termbase importer membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "termbase importer membership missing",
         });
     };
 
@@ -528,18 +521,11 @@ where
 // Construct a stable expected error when a target scope already owns the imported name.
 fn already_exists_err(name: &str) -> BaseError {
     //
-    let err_msg = trl("error-already-exists");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-already-exists");
         termbase_name = %name,
-        "expected error: imported termbase already exists",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "imported termbase already exists",
     }
 }
 

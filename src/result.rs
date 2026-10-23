@@ -1,5 +1,8 @@
 //! Application-level error and result types used throughout the domain layer.
 
+#[cfg(test)]
+mod tests;
+
 use std::result::Result;
 
 use poprako_obj_dept::rest::ObjDeptError;
@@ -50,27 +53,6 @@ pub enum BaseError {
         /// Description of the system failure.
         msg: String,
     },
-}
-
-impl BaseError {
-    /// Constructs and records an expected error at its unlogged source.
-    /// Already-logged errors must retain their variant when propagated.
-    #[must_use]
-    #[track_caller]
-    pub fn expected(variant: ExpectedVariant, msg: String) -> Self {
-        //
-        let origin = std::panic::Location::caller();
-
-        tracing::warn!(
-            err_variant = ?variant,
-            err_msg = %msg,
-            source_file = origin.file(),
-            source_line = origin.line(),
-            "expected application error",
-        );
-
-        Self::Expected { variant, msg }
-    }
 }
 
 /// Alias for [`Result`] used at module boundary layers.

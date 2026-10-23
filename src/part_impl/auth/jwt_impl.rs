@@ -184,19 +184,12 @@ impl TokenAuth for JwtAuth {
         )
         .map_err(|err| {
             //
-            let err_msg = trl("error-unauthorized");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Auth,
-                err_msg = %err_msg,
+            expected_error! {
+                ExpectedVariant::Auth,
+                message: trl("error-unauthorized");
                 operation = "verify_token",
                 sdk_err = ?err,
                 "JWT SDK error converted to expected authentication error",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Auth,
-                msg: err_msg,
             }
         })?;
 

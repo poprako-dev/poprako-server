@@ -82,19 +82,12 @@ where
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != qid {
                 //
-                let err_msg = trl("error-invalid-invitation-code");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-invitation-code");
                     invitee_qid = %qid,
                     invitation_invitee_qid = %invitation_info.invitee_qid,
-                    "expected error: invitation code does not match invitee",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invitation code does not match invitee",
                 });
             }
 
@@ -199,18 +192,11 @@ where
     )
     .await
     {
-        let err_msg = trl("error-wrong-credentials");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Auth,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Auth,
+            message: trl("error-wrong-credentials");
             qid = %qid,
-            "expected error: invalid login credentials",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Auth,
-            msg: err_msg,
+            "invalid login credentials",
         });
     }
 

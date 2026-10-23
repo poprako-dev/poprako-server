@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_password_hash, f_qid, f_updated_at, t_user,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 
 /// Remove a user row from persistence.
@@ -85,19 +85,13 @@ pub async fn get_credential_by_qid(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-user-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-user-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             user_qid = %qid,
             operation = "get user credential",
             "expected user error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
         });
     };
 

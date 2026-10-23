@@ -205,17 +205,12 @@ where
                 let err_msg =
                     trl_kv("error-unit-search-too-many-matches", &args);
 
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: err_msg;
                     match_count = search_ids.len(),
                     match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
-                    "expected error: too many Unit search matches",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "too many Unit search matches",
                 });
             }
 

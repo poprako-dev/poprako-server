@@ -157,18 +157,11 @@ fn transform_text(
 // Build the client-visible error for an invalid Unit transform.
 fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
     //
-    let err_msg = trl("error-invalid-unit-transform");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-transform");
         unit_id,
         reason,
-        "expected error: invalid unit transform",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid unit transform",
     }
 }

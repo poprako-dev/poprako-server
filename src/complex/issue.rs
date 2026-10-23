@@ -15,15 +15,11 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// Constructs one localized issue validation or permission error.
 pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
-    let msg = trl(key);
-
-    tracing::warn!(
-        err_variant = ?variant,
-        err_msg = %msg,
-        "review issue rejected"
-    );
-
-    BaseError::Expected { variant, msg }
+    expected_error! {
+        variant,
+        message: trl(key);
+        "review issue rejected",
+    }
 }
 
 /// Ensures finite, positive geometry entirely contained within the composite.

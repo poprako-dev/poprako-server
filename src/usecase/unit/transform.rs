@@ -44,20 +44,13 @@ pub fn invalid_unit_transform(
     reason: &'static str,
 ) -> BaseError {
     //
-    let err_msg = trl("error-invalid-unit-transform");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-transform");
         chapter_id,
         unit_id,
         reason,
-        "expected error: invalid chapter unit transform",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid chapter unit transform",
     }
 }
 

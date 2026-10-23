@@ -20,7 +20,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{f_termbase_id as term_termbase_id, t_term};
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{f_comic_id as termbase_comic_id, f_id as termbase_id, t_termbase};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 
 // Store archive payload, clear sources, and retain the comic management row.
@@ -45,19 +45,13 @@ pub async fn commit(
 
     if updated_comic_count != 1 {
         //
-        let err_msg = trl("error-comic-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-comic-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
             comic_id = %comic_archive_entry.record.source_comic_id,
             operation = "commit comic archive",
             "expected comic archive error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
         });
     }
 

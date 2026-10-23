@@ -79,10 +79,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     member_perm_complex::ensure_user_can_create(&member_info)?;
@@ -108,21 +109,14 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_msg = trl("error-already-team-member");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-already-team-member");
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %instr.user_id,
                     roles = ?roles,
-                    "expected error: user is already a team member",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "user is already a team member",
                 });
             }
 
@@ -203,23 +197,16 @@ where
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 //
-                let err_msg = trl("error-no-pending-invitation");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-no-pending-invitation");
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
                     invitation_invitee_qid =
                         %member_invitation_info.invitee_qid,
                     team_id = %member_invitation_info.team_id,
-                    "expected error: invitation does not belong to \
+                    "invitation does not belong to \
                     current user",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
                 });
             }
 
@@ -232,19 +219,12 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let err_msg = trl("error-already-team-member");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-already-team-member");
                     user_id = %current_user_id,
                     team_id = %member_invitation_info.team_id,
-                    "expected error: user is already a team member",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "user is already a team member",
                 });
             }
 
@@ -308,10 +288,11 @@ where
 
         let Some(member_info) = member_info else {
             //
-            return Err(BaseError::expected(
+            return Err(expected_error! {
                 ExpectedVariant::Perm,
-                trl("error-team-member-required"),
-            ));
+                message: trl("error-team-member-required");
+                "team membership required",
+            });
         };
 
         member_perm_complex::ensure_user_can_list_infos(&member_info)?;
@@ -372,10 +353,11 @@ where
 
             let Some(caller_member_info) = caller_member_info else {
                 //
-                return Err(BaseError::expected(
+                return Err(expected_error! {
                     ExpectedVariant::Perm,
-                    trl("error-team-admin-required"),
-                ));
+                    message: trl("error-team-admin-required");
+                    "team administrator role required",
+                });
             };
 
             member_perm_complex::ensure_user_can_update_info(
@@ -394,23 +376,16 @@ where
                 instr.roles,
             ) {
                 //
-                let err_msg = trl("error-forbidden");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-forbidden");
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
                     member_id = %member_info.id,
                     roles = ?instr.roles,
                     operation = "remove last team administrator role",
-                    "expected error: team administrator retention required",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                    "team administrator retention required",
                 });
             }
 
@@ -476,10 +451,11 @@ where
 
             let Some(caller_member_info) = caller_member_info else {
                 //
-                return Err(BaseError::expected(
+                return Err(expected_error! {
                     ExpectedVariant::Perm,
-                    trl("error-team-admin-required"),
-                ));
+                    message: trl("error-team-admin-required");
+                    "team administrator role required",
+                });
             };
 
             member_perm_complex::ensure_user_can_delete(&caller_member_info)?;
@@ -495,22 +471,15 @@ where
                 &member_info,
             ) {
                 //
-                let err_msg = trl("error-forbidden");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-forbidden");
                     team_id = %member_info.team_id,
                     user_id = %token.user_id,
                     affected_user_id = %member_info.user_id,
                     member_id = %member_info.id,
                     operation = "delete last team administrator member",
-                    "expected error: team administrator retention required",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                    "team administrator retention required",
                 });
             }
 

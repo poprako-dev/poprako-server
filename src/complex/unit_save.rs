@@ -17,14 +17,10 @@ use crate::util::Patch;
 /// Reports an invalid save identity without exposing payloads.
 pub fn invalid_save() -> BaseError {
     //
-    let msg = trl("error-invalid-unit-oper");
-
-    tracing::warn!(err_variant = ?ExpectedVariant::Args, err_msg = %msg,
-    "invalid Unit save identity or payload");
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper");
+        "invalid Unit save identity or payload",
     }
 }
 

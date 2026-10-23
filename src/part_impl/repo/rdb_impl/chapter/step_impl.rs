@@ -39,19 +39,12 @@ use crate::value::chapter::stage::Stage;
 /// Build the expected error for a missing chapter.
 pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
     //
-    let err_msg = trl("error-chapter-not-found");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-chapter-not-found");
         chapter_id = %id,
         operation,
-        "expected error: chapter not found",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "chapter not found",
     }
 }
 
@@ -73,19 +66,13 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-chapter-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-chapter-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 chapter_id = %id,
                 stage = "get_info_by_id",
-                "expected error: chapter not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "chapter not found",
             }
         })?;
 
@@ -120,19 +107,13 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-chapter-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-chapter-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 chapter_id = %id,
                 stage = "get_info_excluded",
-                "expected error: chapter not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "chapter not found",
             }
         })?;
 
@@ -172,19 +153,12 @@ pub async fn get_unit_edit_scope_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-page-not-found");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-page-not-found");
                 page_id,
                 operation = "get_unit_edit_scope_excluded",
-                "expected error: page not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "page not found",
             }
         })?;
 

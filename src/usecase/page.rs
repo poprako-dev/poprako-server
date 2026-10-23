@@ -64,10 +64,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-page-upload-role-required"),
-        ));
+            message: trl("error-page-upload-role-required");
+            "page upload role required",
+        });
     };
 
     page_perm_complex::ensure_user_can_mark_image_uploaded(&assignment_info)?;
@@ -87,9 +88,10 @@ where
 
     marked.then_some(()).ok_or_else(|| {
         //
-        BaseError::expected(
+        expected_error! {
             ExpectedVariant::Args,
-            trl("error-stale-page-image-upload"),
-        )
+            message: trl("error-stale-page-image-upload");
+            "page image upload generation is stale",
+        }
     })
 }

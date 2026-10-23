@@ -4,7 +4,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::role::RoleField;
 
 /// Verify that membership evidence exists.
@@ -75,17 +75,10 @@ pub fn check_user_is_chapter_translator_or_proofreader(
 // Build and log one expected permission error.
 fn reject_perm(msg_key: &str, event: &'static str) -> BaseRest<()> {
     //
-    let err_msg = trl(msg_key);
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Perm,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Perm,
+        message: trl(msg_key);
         event,
         "expected permission error",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        msg: err_msg,
     })
 }

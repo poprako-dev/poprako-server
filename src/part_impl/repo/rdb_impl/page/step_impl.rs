@@ -75,19 +75,13 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-page-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-page-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 page_id = %id,
                 stage = "get_info_by_id",
-                "expected error: page not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "page not found",
             }
         })?;
 
@@ -171,19 +165,13 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-page-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-page-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 page_id = %id,
                 stage = "get_info_excluded",
-                "expected error: page not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "page not found",
             }
         })?;
 
@@ -530,19 +518,12 @@ pub async fn list_unit_flagged_stats(
 // Builds the expected error used when a Page scope cannot be found.
 fn missing_page(id: &str, operation: &str) -> BaseError {
     //
-    let err_msg = trl("error-page-not-found");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-page-not-found");
         page_id = %id,
         operation,
-        "expected error: page not found",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "page not found",
     }
 }
 

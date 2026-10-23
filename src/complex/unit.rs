@@ -20,7 +20,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::unit::text_transform as unit_text_transform_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
@@ -37,17 +37,10 @@ pub fn normalize_search_phrase(phrase: &str) -> BaseRest<&str> {
 
     if phrase.is_empty() {
         //
-        let err_msg = trl("error-unit-search-phrase-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
-            "expected error: unit search phrase required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-unit-search-phrase-required");
+            "unit search phrase required",
         });
     }
 
@@ -146,18 +139,14 @@ pub fn normalize_edits(
             ("max_count".into(), MAX_UNIT_EDIT_COUNT.into()),
         ]);
 
-        let err_msg = trl_kv("error-invalid-unit-edit-count", &args);
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl_kv("error-invalid-unit-edit-count", &args);
             edit_count = edits.len(),
             max_edit_count = MAX_UNIT_EDIT_COUNT,
             base_id_count = base_ids.len(),
-            "expected error: unit edit count is invalid",
-        );
-
-        return Err(invalid_unit_oper(err_msg));
+            "unit edit count is invalid",
+        });
     }
 
     let (delete_edits, non_delete_edits) = edits
@@ -217,14 +206,6 @@ pub fn plan_edit_sequence<'a>(
     edits: &'a [UnitEdit],
 ) -> BaseRest<edit::UnitEditSequencePlan<'a>> {
     edit::UnitEditSequencePlan::build(orders, edits)
-}
-
-// Build the client-visible error for an invalid Unit operation.
-const fn invalid_unit_oper(err_msg: String) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
-    }
 }
 
 // Converts blank assignments to explicit clears without changing skipped patches.
@@ -336,19 +317,15 @@ fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
     if create_count != created_ids.len()
         || created_ids.iter().any(|id| base_ids.contains(id))
     {
-        let err_msg = trl("error-invalid-unit-oper");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-unit-oper");
             edit_count = edits.len(),
             base_id_count = base_ids.len(),
             create_count,
             created_id_count = created_ids.len(),
-            "expected error: unit create edits are inconsistent",
-        );
-
-        return Err(invalid_unit_oper(err_msg));
+            "unit create edits are inconsistent",
+        });
     }
 
     edits.iter().try_for_each(|edit| {
@@ -430,17 +407,13 @@ fn validate_edit(
 
     if let Some((id, operation)) = invalid_target {
         //
-        let err_msg = trl("error-invalid-unit-oper");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-unit-oper");
             unit_id = %id,
             operation,
-            "expected error: unit edit target is invalid",
-        );
-
-        return Err(invalid_unit_oper(err_msg));
+            "unit edit target is invalid",
+        });
     }
 
     let Some((id, next_id)) = (match edit {
@@ -467,17 +440,13 @@ fn validate_edit(
         || deleted_ids.contains(next_id.as_str())
     {
         //
-        let err_msg = trl("error-invalid-unit-oper");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-unit-oper");
             unit_id = %id,
             next_unit_id = %next_id,
-            "expected error: unit next pointer is invalid",
-        );
-
-        return Err(invalid_unit_oper(err_msg));
+            "unit next pointer is invalid",
+        });
     }
 
     accept(())

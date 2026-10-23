@@ -9,7 +9,7 @@ pub mod perm {
     };
     use crate::model::read::proj::member::MemberInfo;
     use crate::model::read::proj::user::UserInfo;
-    use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+    use crate::result::{BaseRest, ExpectedVariant, accept};
 
     /// Verify the caller may mark themselves online in the target team.
     pub const fn ensure_user_can_mark_self_online(
@@ -66,19 +66,12 @@ pub mod perm {
         //
         if !user_info.is_sadmin {
             //
-            let err_msg = trl("error-sadmin-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Perm,
+                message: trl("error-sadmin-required");
                 user_id = %user_info.id,
                 is_sadmin = user_info.is_sadmin,
-                "expected error: super-admin perm required",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                "super-admin perm required",
             });
         }
 

@@ -27,7 +27,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{
     Stage, StageOper, StagePhase, try_modify_stage,
@@ -81,20 +81,13 @@ pub fn ensure_writable_state(
     //
     if is_published {
         //
-        let err_msg = trl("error-chapter-published-frozen");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-chapter-published-frozen");
             chapter_id,
             stage = ?Stage::Publish,
             stage_phase = ?StagePhase::Completed,
-            "expected error: published chapter is frozen",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "published chapter is frozen",
         });
     }
 

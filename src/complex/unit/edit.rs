@@ -460,20 +460,13 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
         return accept(());
     }
 
-    let err_msg = trl("error-invalid-unit-oper");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper");
         visible_count,
         max_visible_count = MAX_PAGE_UNIT_COUNT,
         operation = "reorder",
-        "expected error: invalid unit operation",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid unit operation",
     })
 }
 
@@ -492,19 +485,12 @@ fn invalid_edit_sequence(
     operation: &'static str,
 ) -> BaseError {
     //
-    let err_msg = trl("error-invalid-unit-oper");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper");
         unit_id,
         next_unit_id,
         operation,
-        "expected error: invalid unit operation",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid unit operation",
     }
 }

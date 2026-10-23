@@ -32,7 +32,7 @@ use crate::part::repo::oper::announcement::{
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::usecase::announcement::view::announcement_info_views;
 
 /// Lists announcements under a team.
@@ -64,10 +64,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     announcement_perm_complex::ensure_user_can_list_infos(&member_info)?;
@@ -112,10 +113,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     announcement_perm_complex::ensure_user_can_create(&member_info)?;
@@ -170,20 +172,13 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-admin-required");
             team_id = %announcement_info.team_id,
             user_id = %token.user_id,
             announcement_id = %announcement_info.id,
-            "expected error: announcement updater membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "announcement updater membership missing",
         });
     };
 
@@ -233,20 +228,13 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-admin-required");
             team_id = %announcement_info.team_id,
             user_id = %token.user_id,
             announcement_id = %announcement_info.id,
-            "expected error: announcement deleter membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "announcement deleter membership missing",
         });
     };
 

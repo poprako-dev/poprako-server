@@ -17,7 +17,7 @@ use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part::repo::oper::comic::ListComicInfos;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::util::LoadMode;
@@ -145,20 +145,13 @@ fn validate_with_options(
         return accept(());
     }
 
-    let err_msg = trl("error-pinned-chapter-with-required");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-pinned-chapter-with-required");
         workset_id = %instr.workset_id,
         user_id = %user_id,
         with_pinned_chapter,
         with_pinned_chapter_assignment,
-        "expected error: pinned chapter assignment requires pinned chapter",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "pinned chapter assignment requires pinned chapter",
     })
 }
