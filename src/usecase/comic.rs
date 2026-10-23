@@ -98,7 +98,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let comic_entry = ComicEntryShape {
+            let entry = ComicEntryShape {
                 id: comic_complex::gen_id(),
                 workset_id: &instr.workset_id,
                 index,
@@ -108,14 +108,11 @@ where
                 creator_id: token.user_id.as_str(),
             };
 
-            let comic_info = CreateComic {
-                entry: &comic_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let comic_info =
+                CreateComic { entry: &entry }.step_on(repo, context).await?;
 
             UpdateWorksetComicCount {
-                id: comic_entry.workset_id,
+                id: entry.workset_id,
                 delta: 1,
             }
             .step_on(repo, context)

@@ -37,7 +37,7 @@ use crate::result::BaseError;
 pub use cleanup::{assert_no_leftovers, cleanup};
 
 pub struct UserFixture {
-    pub user_entry: UserEntry,
+    pub entry: UserEntry,
 }
 
 pub struct TeamFixture {
@@ -91,7 +91,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
 
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
+pub async fn create_user(shared: &RdbCore, entry: &UserEntry) {
     //
     let repo = HybRepo::new(
         shared.clone(),
@@ -103,8 +103,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
 
     nucl.coord(async |context| {
         //
-        repo.step(context, &CreateUser { entry: user_entry })
-            .await?;
+        repo.step(context, &CreateUser { entry }).await?;
 
         Ok::<(), BaseError>(())
     })
@@ -117,11 +116,11 @@ pub async fn seed_user(shared: &RdbCore, prefix: &str) -> UserFixture {
     //
     reset(shared, prefix).await;
 
-    let user_entry = user_entry(prefix, "owner");
+    let entry = user_entry(prefix, "owner");
 
-    create_user(shared, &user_entry).await;
+    create_user(shared, &entry).await;
 
-    UserFixture { user_entry }
+    UserFixture { entry }
 }
 
 /// # Panics
@@ -268,7 +267,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let chapter_entry = chapter_entry(
+    let entry = chapter_entry(
         prefix,
         &comic_fixture.comic_info,
         &comic_fixture.creator_form,
@@ -277,14 +276,8 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     let chapter_info = nucl
         .coord(async |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &CreateChapter {
-                        entry: &chapter_entry,
-                    },
-                )
-                .await?;
+            let chapter_info =
+                repo.step(context, &CreateChapter { entry: &entry }).await?;
 
             Ok::<_, BaseError>(chapter_info)
         })

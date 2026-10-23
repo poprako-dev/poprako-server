@@ -57,7 +57,7 @@ where
         + Send
         + Sync,
 {
-    let term_entry = term_complex::build_entry(
+    let entry = term_complex::build_entry(
         instr.termbase_id,
         instr.source,
         instr.targets,
@@ -69,7 +69,7 @@ where
         .coord(async move |context| {
             //
             let termbase_info = GetTermbaseInfoExcluded {
-                id: &term_entry.termbase_id,
+                id: &entry.termbase_id,
             }
             .step_on(repo, context)
             .await?;
@@ -92,9 +92,8 @@ where
                 1,
             )?;
 
-            let term_info = CreateTerm { entry: &term_entry }
-                .step_on(repo, context)
-                .await?;
+            let term_info =
+                CreateTerm { entry: &entry }.step_on(repo, context).await?;
 
             UpdateTermbaseTermCount {
                 id: &termbase_info.id,

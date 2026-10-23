@@ -39,10 +39,10 @@ pub fn team_entry(prefix: &str) -> TeamEntry {
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
+pub fn workset_entry(prefix: &str, team: &TeamEntry) -> WorksetEntry {
     WorksetEntry {
         id: format!("{}workset", prefix),
-        team_id: team_entry.id.clone(),
+        team_id: team.id.clone(),
         index: 0,
         name: "RDB Workset".into(),
         description: Some("workset".into()),
@@ -56,12 +56,12 @@ pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
 #[must_use]
 pub fn comic_entry<'a>(
     prefix: &str,
-    workset_entry: &'a WorksetEntry,
+    workset: &'a WorksetEntry,
     creator_form: &'a UserEntry,
 ) -> ComicEntryShape<'a> {
     ComicEntryShape {
         id: format!("{}comic", prefix),
-        workset_id: &workset_entry.id,
+        workset_id: &workset.id,
         index: 0,
         title: "RDB Comic".into(),
         author: "RDB Author".into(),
@@ -77,12 +77,12 @@ pub fn comic_entry<'a>(
 #[must_use]
 pub fn chapter_entry<'a>(
     prefix: &str,
-    comic_entry: &'a ComicInfo,
+    comic: &'a ComicInfo,
     creator_form: &'a UserEntry,
 ) -> ChapterEntryShape<'a> {
     ChapterEntryShape {
         id: format!("{}chapter", prefix),
-        comic_id: &comic_entry.id,
+        comic_id: &comic.id,
         is_pinned: true,
         index: 0,
         subtitle: "RDB Chapter".into(),
@@ -95,10 +95,10 @@ pub fn chapter_entry<'a>(
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn page_entry(prefix: &str, chapter_entry: &ChapterInfo) -> PageEntry {
+pub fn page_entry(prefix: &str, chapter: &ChapterInfo) -> PageEntry {
     PageEntry {
         id: format!("{}page", prefix),
-        chapter_id: chapter_entry.id.clone(),
+        chapter_id: chapter.id.clone(),
         index: 0,
     }
 }

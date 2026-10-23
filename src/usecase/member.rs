@@ -120,7 +120,7 @@ where
                 });
             }
 
-            let member_entry = MemberEntry {
+            let entry = MemberEntry {
                 id: member_complex::gen_id(),
                 user_id: instr.user_id,
                 user_nickname: user_info.nickname,
@@ -128,11 +128,9 @@ where
                 roles,
             };
 
-            let member_info = CreateMember {
-                entry: &member_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let member_info = CreateMember { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
             accept(member_info.id)
         })
@@ -228,7 +226,7 @@ where
                 });
             }
 
-            let member_entry = MemberEntry {
+            let entry = MemberEntry {
                 id: member_complex::gen_id(),
                 user_id: current_user_id,
                 user_nickname: current_user_info.nickname,
@@ -236,11 +234,9 @@ where
                 roles: member_invitation_info.roles,
             };
 
-            let member_info = CreateMember {
-                entry: &member_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let member_info = CreateMember { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
             UpdateMemberInvitation::MarkUsed {
                 id: &member_invitation_info.id,

@@ -143,7 +143,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+    let entry = ChapterWorkflowRecordEntryShape::new(
         instr.chapter_id.as_str(),
         Some(token.user_id.as_str()),
         ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
@@ -154,7 +154,7 @@ where
     );
 
     CreateChapterWorkflowRecords {
-        entries: std::slice::from_ref(&workflow_record_entry),
+        entries: std::slice::from_ref(&entry),
     }
     .step_on(repo, context)
     .await?;

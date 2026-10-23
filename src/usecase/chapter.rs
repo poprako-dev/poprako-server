@@ -309,21 +309,20 @@ where
                 .step_on(repo, context)
                 .await?;
 
-                let workflow_record_entry =
-                    ChapterWorkflowRecordEntryShape::new(
-                        chapter_info.id.as_str(),
-                        Some(token.user_id.as_str()),
-                        ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
-                            previous_subtitle: chapter_info.subtitle,
-                            next_subtitle: chapter_info_update
-                                .trimmed_subtitle()
-                                .unwrap_or_default()
-                                .to_owned(),
-                        },
-                    );
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str()),
+                    ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
+                        previous_subtitle: chapter_info.subtitle,
+                        next_subtitle: chapter_info_update
+                            .trimmed_subtitle()
+                            .unwrap_or_default()
+                            .to_owned(),
+                    },
+                );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
@@ -431,37 +430,31 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut workflow_record_entries = Vec::with_capacity(2);
+            let mut entries = Vec::with_capacity(2);
 
             if let Some(prev_pinned_chapter) = &prev_pinned_chapter
                 && prev_pinned_chapter.id != chapter_info.id
             {
                 //
-                workflow_record_entries.push(
-                    ChapterWorkflowRecordEntryShape::new(
-                        &prev_pinned_chapter.id,
-                        Some(token.user_id.as_str()),
-                        ChapterWorkflowRecordPayload::ChapterUnpinned,
-                    ),
-                );
+                entries.push(ChapterWorkflowRecordEntryShape::new(
+                    &prev_pinned_chapter.id,
+                    Some(token.user_id.as_str()),
+                    ChapterWorkflowRecordPayload::ChapterUnpinned,
+                ));
             }
 
             if !chapter_info.is_pinned {
                 //
-                workflow_record_entries.push(
-                    ChapterWorkflowRecordEntryShape::new(
-                        chapter_info.id.as_str(),
-                        Some(token.user_id.as_str()),
-                        ChapterWorkflowRecordPayload::ChapterPinned,
-                    ),
-                );
+                entries.push(ChapterWorkflowRecordEntryShape::new(
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str()),
+                    ChapterWorkflowRecordPayload::ChapterPinned,
+                ));
             }
 
-            CreateChapterWorkflowRecords {
-                entries: &workflow_record_entries,
-            }
-            .step_on(repo, context)
-            .await?;
+            CreateChapterWorkflowRecords { entries: &entries }
+                .step_on(repo, context)
+                .await?;
 
             TouchComicLastActive {
                 id: &chapter_info.comic_id,

@@ -45,7 +45,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         RepoConfig::default(),
     );
 
-    let announcement_entry = AnnouncementEntry {
+    let entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
         user_id: team_fixture.user_entry.id.clone(),
@@ -53,23 +53,19 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "announcement".into(),
     };
 
-    repo.run(&CreateAnnouncement {
-        entry: &announcement_entry,
-    })
-    .await
-    .unwrap();
+    repo.run(&CreateAnnouncement { entry: &entry })
+        .await
+        .unwrap();
 
     let announcement_repl = AnnouncementRepl {
-        id: announcement_entry.id.clone(),
+        id: entry.id.clone(),
         title: "Updated RDB Announcement".into(),
         content: "updated announcement".into(),
     };
 
-    repo.run(&GetAnnouncementInfo {
-        id: &announcement_entry.id,
-    })
-    .await
-    .unwrap();
+    repo.run(&GetAnnouncementInfo { id: &entry.id })
+        .await
+        .unwrap();
 
     repo.run(&UpdateAnnouncement {
         update: &announcement_repl,
@@ -115,22 +111,16 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         team_fixture.user_entry.id
     );
 
-    repo.run(&GetAnnouncementInfo {
-        id: &announcement_entry.id,
-    })
-    .await
-    .unwrap();
+    repo.run(&GetAnnouncementInfo { id: &entry.id })
+        .await
+        .unwrap();
 
-    repo.run(&DeleteAnnouncement {
-        id: &announcement_entry.id,
-    })
-    .await
-    .unwrap();
+    repo.run(&DeleteAnnouncement { id: &entry.id })
+        .await
+        .unwrap();
 
     let missing_error = repo
-        .run(&GetAnnouncementInfo {
-            id: &announcement_entry.id,
-        })
+        .run(&GetAnnouncementInfo { id: &entry.id })
         .await
         .err()
         .unwrap();

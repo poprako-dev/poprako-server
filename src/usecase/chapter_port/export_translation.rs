@@ -307,14 +307,14 @@ where
             .step_on(repo, context)
             .await?;
 
-            let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+            let entry = ChapterWorkflowRecordEntryShape::new(
                 chapter_info.id.as_str(),
                 Some(actor_user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationExported { formats },
             );
 
             CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
+                entries: std::slice::from_ref(&entry),
             }
             .step_on(repo, context)
             .await?;

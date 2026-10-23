@@ -304,7 +304,7 @@ async fn verify_single_stage_filters(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    chapter_entry: &ChapterEntryShape<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) {
     let legal_stage_phases = [
         (Stage::RawProvide, StagePhase::Pending),
@@ -331,7 +331,7 @@ async fn verify_single_stage_filters(
             .unwrap();
 
         let stage_update = ChapterStageRepl {
-            id: chapter_entry.id.clone(),
+            id: entry.id.clone(),
             stages,
         };
 
@@ -373,7 +373,7 @@ async fn verify_combined_stage_filters(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    chapter_entry: &ChapterEntryShape<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) {
     let combined_stages = StageMask::try_from(0)
         .unwrap()
@@ -383,7 +383,7 @@ async fn verify_combined_stage_filters(
         .unwrap();
 
     let combined_update = ChapterStageRepl {
-        id: chapter_entry.id.clone(),
+        id: entry.id.clone(),
         stages: combined_stages,
     };
 
@@ -471,7 +471,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     verify_literal_search(&repo, &comic_fixture).await;
 
-    let chapter_entry = ChapterEntryShape {
+    let entry = ChapterEntryShape {
         id: format!("{}stage-chapter", PREFIX),
         comic_id: &comic_fixture.comic_info.id,
         is_pinned: true,
@@ -483,13 +483,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateChapter {
-                entry: &chapter_entry,
-            },
-        )
-        .await?;
+        repo.step(context, &CreateChapter { entry: &entry }).await?;
 
         Ok::<(), crate::result::BaseError>(())
     })
@@ -498,11 +492,9 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     seed_sibling_stages(&repo, &nucl, &comic_fixture).await;
 
-    verify_single_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
-        .await;
+    verify_single_stage_filters(&repo, &nucl, &comic_fixture, &entry).await;
 
-    verify_combined_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
-        .await;
+    verify_combined_stage_filters(&repo, &nucl, &comic_fixture, &entry).await;
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 

@@ -115,18 +115,14 @@ where
 
     comment_perm_complex::ensure_user_can_create(&member_info)?;
 
-    let comment_entry = CommentEntry {
+    let entry = CommentEntry {
         id: comment_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
         content: instr.content,
     };
 
-    let comment_info = CreateComment {
-        entry: &comment_entry,
-    }
-    .run_on(repo)
-    .await?;
+    let comment_info = CreateComment { entry: &entry }.run_on(repo).await?;
 
     accept(CreateCommentVal {
         id: comment_info.id,

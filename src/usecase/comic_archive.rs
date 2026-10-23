@@ -174,7 +174,7 @@ where
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let comic_archive_entry = comic_archive_complex::prepare_entry(
+            let entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 token.user_id,
                 archived_at,
@@ -182,38 +182,32 @@ where
             .await?;
 
             ClearObjs::<ComicCover>::new(std::slice::from_ref(
-                &comic_archive_entry.record.source_comic_id,
+                &entry.record.source_comic_id,
             ))
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
 
-            DeleteObjs::<PageArtworkImage>::new(
-                &comic_archive_entry.source_page_artwork_ids,
-            )
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
-
-            DeleteObjs::<PageImage>::new(&comic_archive_entry.source_page_ids)
+            DeleteObjs::<PageArtworkImage>::new(&entry.source_page_artwork_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;
 
-            DeleteObjs::<ChapterArtwork>::new(
-                &comic_archive_entry.source_chapter_ids,
-            )
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+            DeleteObjs::<PageImage>::new(&entry.source_page_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
-            CommitComicArchive {
-                entry: &comic_archive_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            DeleteObjs::<ChapterArtwork>::new(&entry.source_chapter_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
-            let record = comic_archive_entry.record;
+            CommitComicArchive { entry: &entry }
+                .step_on(repo, context)
+                .await?;
+
+            let record = entry.record;
 
             accept(ArchiveComicVal {
                 archived_id: record.id,

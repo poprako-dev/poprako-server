@@ -124,21 +124,19 @@ where
 
             if is_advanced {
                 //
-                let workflow_record_entry =
-                    ChapterWorkflowRecordEntryShape::new(
-                        chapter_id,
-                        actor_user_id.as_deref(),
-                        ChapterWorkflowRecordPayload::StageTransitioned {
-                            stage: Stage::RawProvide,
-                            previous_phase: StagePhase::Pending,
-                            next_phase: StagePhase::Completed,
-                            origin:
-                                ChapterWorkflowRecordOrigin::RawProvideCheck,
-                        },
-                    );
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    chapter_id,
+                    actor_user_id.as_deref(),
+                    ChapterWorkflowRecordPayload::StageTransitioned {
+                        stage: Stage::RawProvide,
+                        previous_phase: StagePhase::Pending,
+                        next_phase: StagePhase::Completed,
+                        origin: ChapterWorkflowRecordOrigin::RawProvideCheck,
+                    },
+                );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
@@ -242,20 +240,19 @@ where
                 .step_on(repo, context)
                 .await?;
 
-                let workflow_record_entry =
-                    ChapterWorkflowRecordEntryShape::new(
-                        chapter_info.id.as_str(),
-                        Some(token.user_id.as_str()),
-                        ChapterWorkflowRecordPayload::StageTransitioned {
-                            stage,
-                            previous_phase: prev_phase,
-                            next_phase,
-                            origin: ChapterWorkflowRecordOrigin::Manual,
-                        },
-                    );
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    chapter_info.id.as_str(),
+                    Some(token.user_id.as_str()),
+                    ChapterWorkflowRecordPayload::StageTransitioned {
+                        stage,
+                        previous_phase: prev_phase,
+                        next_phase,
+                        origin: ChapterWorkflowRecordOrigin::Manual,
+                    },
+                );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;

@@ -127,16 +127,10 @@ async fn verify_comic_termbase_scope(
 async fn create_termbase(
     repo: &HybRepo,
     nucl: &RdbNucl,
-    termbase_entry: &TermbaseEntry,
+    entry: &TermbaseEntry,
 ) -> TermbaseInfo {
     nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateTermbase {
-                entry: termbase_entry,
-            },
-        )
-        .await
+        repo.step(context, &CreateTermbase { entry }).await
     })
     .await
     .unwrap()

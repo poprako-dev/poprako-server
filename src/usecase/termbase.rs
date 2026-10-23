@@ -64,7 +64,7 @@ where
         + Send
         + Sync,
 {
-    let termbase_entry = termbase_complex::build_entry(
+    let entry = termbase_complex::build_entry(
         instr.team_id,
         instr.comic_id,
         instr.name,
@@ -75,10 +75,7 @@ where
     let termbase_id = nucl
         .coord(async move |context| {
             //
-            let team_id = match (
-                &termbase_entry.team_id,
-                &termbase_entry.comic_id,
-            ) {
+            let team_id = match (&entry.team_id, &entry.comic_id) {
                 //
                 (Some(team_id), None) => {
                     //
@@ -111,8 +108,8 @@ where
                     //
                     return Err(unrecoverable_error! {
                         message: "validated termbase scope is invalid".into();
-                        team_id = ?termbase_entry.team_id,
-                        comic_id = ?termbase_entry.comic_id,
+                        team_id = ?entry.team_id,
+                        comic_id = ?entry.comic_id,
                         "validated termbase scope is invalid",
                     });
                 }
@@ -141,11 +138,9 @@ where
 
             termbase_perm_complex::ensure_user_can_write_team(&member_info)?;
 
-            let termbase_info = CreateTermbase {
-                entry: &termbase_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let termbase_info = CreateTermbase { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
             accept(termbase_info.id)
         })

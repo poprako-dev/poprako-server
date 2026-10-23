@@ -158,15 +158,14 @@ where
 
             if let Some(payload) = workflow_record_payload {
                 //
-                let workflow_record_entry =
-                    ChapterWorkflowRecordEntryShape::new(
-                        &chapter_info.id,
-                        Some(&current_user_id),
-                        payload,
-                    );
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    &chapter_info.id,
+                    Some(&current_user_id),
+                    payload,
+                );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
@@ -273,18 +272,16 @@ where
         .await;
     }
 
-    let assignment_entry = AssignmentEntryShape {
+    let entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
         chapter_id: assignment_invitation_info.chapter_id.as_str(),
         user_id: current_user_id,
         roles: assignment_invitation_info.roles,
     };
 
-    let assignment_info = CreateAssignment {
-        entry: &assignment_entry,
-    }
-    .step_on(repo, context)
-    .await?;
+    let assignment_info = CreateAssignment { entry: &entry }
+        .step_on(repo, context)
+        .await?;
 
     let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
         subject_user_id: assignment_info.user_id.clone(),

@@ -34,11 +34,11 @@ const PREFIX: &str = "rdb-test-assignment-domain-";
 async fn verify_assignment_ancestor_inclusions(
     repo: &HybRepo,
     chapter_fixture: &ChapterFixture,
-    assignment_entry: &AssignmentEntryShape<'_>,
+    entry: &AssignmentEntryShape<'_>,
 ) {
     let assignment_info = repo
         .run(&GetAssignmentInfo {
-            id: &assignment_entry.id,
+            id: &entry.id,
             incls: &[AssignmentInclOpt::ChapterComicWorksetTeam],
         })
         .await
@@ -88,7 +88,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
-    let assignment_entry = AssignmentEntryShape {
+    let entry = AssignmentEntryShape {
         id: format!("{}assignment", PREFIX),
         chapter_id: &chapter_fixture.chapter_info.id,
         user_id: &assignee_form.id,
@@ -97,13 +97,8 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        repo.step(
-            context,
-            &CreateAssignment {
-                entry: &assignment_entry,
-            },
-        )
-        .await?;
+        repo.step(context, &CreateAssignment { entry: &entry })
+            .await?;
 
         Ok::<(), BaseError>(())
     })
@@ -149,13 +144,10 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(assignment_infos.len(), 1);
 
-    assert_eq!(
-        assignment_infos.as_slice().first().unwrap().id,
-        assignment_entry.id
-    );
+    assert_eq!(assignment_infos.as_slice().first().unwrap().id, entry.id);
 
     let assignment_role_update = AssignmentRoleRepl {
-        id: assignment_entry.id.clone(),
+        id: entry.id.clone(),
         roles: reviewer_role,
     };
 
@@ -176,7 +168,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let assignment_info = repo
         .run(&GetAssignmentInfo {
-            id: &assignment_entry.id,
+            id: &entry.id,
             incls: &[AssignmentInclOpt::User],
         })
         .await
@@ -184,12 +176,8 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(assignment_info.roles, reviewer_role);
 
-    verify_assignment_ancestor_inclusions(
-        &repo,
-        &chapter_fixture,
-        &assignment_entry,
-    )
-    .await;
+    verify_assignment_ancestor_inclusions(&repo, &chapter_fixture, &entry)
+        .await;
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 

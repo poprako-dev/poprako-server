@@ -124,7 +124,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_role = RoleMask::from(RoleField::TRANSLATOR);
 
-    let member_entry = MemberEntry {
+    let entry = MemberEntry {
         id: format!("{}member", PREFIX),
         user_id: team_fixture.user_entry.id.clone(),
         user_nickname: team_fixture.user_entry.nickname.clone(),
@@ -134,25 +134,14 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        repo.step(
-            context,
-            &CreateMember {
-                entry: &member_entry,
-            },
-        )
-        .await?;
+        repo.step(context, &CreateMember { entry: &entry }).await?;
 
         Ok::<(), BaseError>(())
     })
     .await
     .unwrap();
 
-    verify_member_activity(
-        &repo,
-        &member_entry.id,
-        &team_fixture.user_entry.id,
-    )
-    .await;
+    verify_member_activity(&repo, &entry.id, &team_fixture.user_entry.id).await;
 
     let member_list_spec = MemberListSpec::Team {
         team_id: team_fixture.team_entry.id.clone(),
@@ -185,7 +174,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     );
 
     let member_role_update = MemberRoleRepl {
-        id: member_entry.id.clone(),
+        id: entry.id.clone(),
         roles: member_role,
     };
 
@@ -207,7 +196,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_info = repo
         .run(&GetMemberInfo {
-            id: &member_entry.id,
+            id: &entry.id,
             incls: &[MemberInclOpt::User],
         })
         .await
@@ -236,7 +225,7 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let member_entry = MemberEntry {
+    let entry = MemberEntry {
         id: format!("{}tombstoned-member", PREFIX),
         user_id: team_fixture.user_entry.id.clone(),
         user_nickname: team_fixture.user_entry.nickname.clone(),
@@ -253,13 +242,7 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateMember {
-                entry: &member_entry,
-            },
-        )
-        .await?;
+        repo.step(context, &CreateMember { entry: &entry }).await?;
 
         Ok::<(), BaseError>(())
     })
@@ -299,7 +282,7 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
     let mut conn = shared.get().await.unwrap();
 
     let member_count = t_member::table
-        .filter(t_member::f_id.eq(&member_entry.id))
+        .filter(t_member::f_id.eq(&entry.id))
         .count()
         .get_result::<i64>(&mut conn)
         .await

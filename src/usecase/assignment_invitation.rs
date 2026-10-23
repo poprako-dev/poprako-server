@@ -192,7 +192,7 @@ where
             let (assignment_invitation_id, code) =
                 (gen_assignment_invitation_id(), gen_code());
 
-            let assignment_invitation_entry = AssignmentInvitationEntry {
+            let entry = AssignmentInvitationEntry {
                 id: assignment_invitation_id,
                 chapter_id: instr.chapter_id,
                 inviter_id: token.user_id,
@@ -201,11 +201,10 @@ where
                 roles: instr.roles,
             };
 
-            let assignment_invitation_info = CreateAssignmentInvitation {
-                entry: &assignment_invitation_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let assignment_invitation_info =
+                CreateAssignmentInvitation { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
             let invitation_payload =
                 InvitationPayload::PurgeExpiredAssignmentInvitation {

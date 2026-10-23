@@ -153,7 +153,7 @@ where
                     }
                 };
 
-                let termbase_entry = termbase_complex::build_entry(
+                let entry = termbase_complex::build_entry(
                     team_id,
                     comic_id,
                     std::mem::take(&mut termbase_import.name),
@@ -161,11 +161,9 @@ where
                     token.user_id.clone(),
                 )?;
 
-                let termbase_info = CreateTermbase {
-                    entry: &termbase_entry,
-                }
-                .step_on(repo, context)
-                .await?;
+                let termbase_info = CreateTermbase { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
                 return apply_import(
                     repo,

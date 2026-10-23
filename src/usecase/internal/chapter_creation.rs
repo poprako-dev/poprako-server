@@ -176,28 +176,26 @@ where
     C: Context,
     R: ChapterWorkflowRecordRepo<C> + Sync,
 {
-    let mut workflow_record_entries = Vec::with_capacity(2);
+    let mut entries = Vec::with_capacity(2);
 
     if let Some(prev_pinned_chapter_id) = prev_pinned_chapter_id {
         //
-        workflow_record_entries.push(ChapterWorkflowRecordEntryShape::new(
+        entries.push(ChapterWorkflowRecordEntryShape::new(
             prev_pinned_chapter_id,
             Some(user_id),
             ChapterWorkflowRecordPayload::ChapterUnpinned,
         ));
     }
 
-    workflow_record_entries.push(ChapterWorkflowRecordEntryShape::new(
+    entries.push(ChapterWorkflowRecordEntryShape::new(
         chapter_id,
         Some(user_id),
         ChapterWorkflowRecordPayload::ChapterCreated,
     ));
 
-    CreateChapterWorkflowRecords {
-        entries: &workflow_record_entries,
-    }
-    .step_on(repo, context)
-    .await?;
+    CreateChapterWorkflowRecords { entries: &entries }
+        .step_on(repo, context)
+        .await?;
 
     accept(())
 }

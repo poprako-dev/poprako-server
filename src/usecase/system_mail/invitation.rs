@@ -48,23 +48,21 @@ pub async fn notify_invitor<C, R>(
         FluentValue::from(team_info.name.as_str()),
     );
 
-    let system_mail_entry = SystemMailEntry {
+    let entry = SystemMailEntry {
         id: system_mail_complex::gen_id(),
         receiver_id: invitor_id.to_string(),
         title: trl("mail-invitation-used-title"),
         content: trl_kv("mail-invitation-used-body", &args),
     };
 
-    if (SendSystemMail {
-        entry: &system_mail_entry,
-    })
-    .run_on(repo)
-    .await
-    .is_err()
+    if (SendSystemMail { entry: &entry })
+        .run_on(repo)
+        .await
+        .is_err()
     {
         tracing::warn!(
             team_id,
-            receiver_id = %system_mail_entry.receiver_id,
+            receiver_id = %entry.receiver_id,
             "failed to send signup notification",
         );
     }

@@ -36,31 +36,31 @@ pub async fn user_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let user_info = repo
         .run(&GetUserInfo {
-            id: &user_fixture.user_entry.id,
+            id: &user_fixture.entry.id,
         })
         .await
         .unwrap();
 
-    assert_eq!(user_info.id, user_fixture.user_entry.id);
+    assert_eq!(user_info.id, user_fixture.entry.id);
 
     let user_credential = repo
         .run(&GetUserCredential {
-            qid: &user_fixture.user_entry.qid,
+            qid: &user_fixture.entry.qid,
         })
         .await
         .unwrap();
 
-    assert_eq!(user_credential.user_id, user_fixture.user_entry.id);
+    assert_eq!(user_credential.user_id, user_fixture.entry.id);
 
     let found_user_info = repo
         .run(&FindUserInfo {
-            qid: &user_fixture.user_entry.qid,
+            qid: &user_fixture.entry.qid,
         })
         .await
         .unwrap()
         .unwrap();
 
-    assert_eq!(found_user_info.id, user_fixture.user_entry.id);
+    assert_eq!(found_user_info.id, user_fixture.entry.id);
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 

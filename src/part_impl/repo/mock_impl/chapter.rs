@@ -93,13 +93,13 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 /// Returns the expected already-exists error for a duplicate chapter identifier.
 pub fn create_chapter(
     state: &mut MockState,
-    chapter_entry: &ChapterEntryShape<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     if state
         .chapters
         .iter()
-        .any(|chapter_info| chapter_info.id == chapter_entry.id)
+        .any(|chapter_info| chapter_info.id == entry.id)
     {
         return Err(expected("error-already-exists"));
     }
@@ -108,18 +108,18 @@ pub fn create_chapter(
 
     let chapter_info = ChapterInfo {
         confirmed_artwork_ver: None,
-        id: chapter_entry.id.clone(),
-        comic_id: chapter_entry.comic_id.to_string(),
+        id: entry.id.clone(),
+        comic_id: entry.comic_id.to_string(),
         comic: None,
-        is_pinned: chapter_entry.is_pinned,
-        index: chapter_entry.index,
-        subtitle: chapter_entry.trimmed_subtitle().to_string(),
+        is_pinned: entry.is_pinned,
+        index: entry.index,
+        subtitle: entry.trimmed_subtitle().to_string(),
         page_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).ok().unwrap(),
-        creator_id: chapter_entry.creator_id.to_string(),
+        creator_id: entry.creator_id.to_string(),
         creator: None,
         created_at: time,
         updated_at: time,

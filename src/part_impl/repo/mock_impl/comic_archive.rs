@@ -313,7 +313,7 @@ fn get_snapshot_excluded(
 // After persisting the archive entry, retain the comic and remove its active descendants.
 fn commit(
     context: &mut MockContext,
-    comic_archive_entry: &ComicArchiveEntry,
+    entry: &ComicArchiveEntry,
 ) -> BaseRest<()> {
     //
     // Internal implementation detail.
@@ -328,29 +328,26 @@ fn commit(
     if context
         .state
         .deleted_comic_ids
-        .contains(&comic_archive_entry.record.source_comic_id)
+        .contains(&entry.record.source_comic_id)
     {
         return Err(expected("error-comic-not-found"));
     }
 
-    context
-        .state
-        .comic_archives
-        .push(comic_archive_entry.record.clone());
+    context.state.comic_archives.push(entry.record.clone());
 
     context
         .state
         .assignment_invitations
         .retain(|assignment_invitation_info| {
             //
-            !comic_archive_entry
+            !entry
                 .source_chapter_ids
                 .contains(&assignment_invitation_info.chapter_id)
         });
 
     context.state.assignments.retain(|assignment_info| {
         //
-        !comic_archive_entry
+        !entry
             .source_chapter_ids
             .contains(&assignment_info.chapter_id)
     });
@@ -359,10 +356,7 @@ fn commit(
         .state
         .chapter_workflow_records
         .retain(|record_info| {
-            //
-            !comic_archive_entry
-                .source_chapter_ids
-                .contains(&record_info.chapter_id)
+            !entry.source_chapter_ids.contains(&record_info.chapter_id)
         });
 
     let termbase_ids = context
@@ -372,7 +366,7 @@ fn commit(
         .filter(|termbase_info| {
             //
             termbase_info.comic_id.as_deref()
-                == Some(comic_archive_entry.record.source_comic_id.as_str())
+                == Some(entry.record.source_comic_id.as_str())
         })
         .map(|termbase_info| termbase_info.id.clone())
         .collect::<Vec<_>>();
@@ -385,57 +379,45 @@ fn commit(
     context.state.termbases.retain(|termbase_info| {
         //
         termbase_info.comic_id.as_deref()
-            != Some(comic_archive_entry.record.source_comic_id.as_str())
+            != Some(entry.record.source_comic_id.as_str())
     });
 
     context.state.issues.retain(|issue| {
         //
-        !comic_archive_entry
+        !entry
             .source_page_artwork_ids
             .contains(&issue.page_artwork_id)
     });
 
-    context.state.page_artworks.retain(|info| {
-        //
-        !comic_archive_entry
-            .source_page_artwork_ids
-            .contains(&info.id)
-    });
+    context
+        .state
+        .page_artworks
+        .retain(|info| !entry.source_page_artwork_ids.contains(&info.id));
 
     context.state.units.retain(|unit_info| {
-        //
-        !comic_archive_entry
-            .source_page_ids
-            .contains(&unit_info.page_id)
+        !entry.source_page_ids.contains(&unit_info.page_id)
     });
 
     context.state.pages.retain(|page_info| {
-        //
-        !comic_archive_entry
-            .source_chapter_ids
-            .contains(&page_info.chapter_id)
+        !entry.source_chapter_ids.contains(&page_info.chapter_id)
     });
 
-    context.state.page_raw_idents.retain(|page_id, _| {
-        !comic_archive_entry.source_page_ids.contains(page_id)
-    });
+    context
+        .state
+        .page_raw_idents
+        .retain(|page_id, _| !entry.source_page_ids.contains(page_id));
 
     context.state.chapters.retain(|chapter_info| {
-        //
-        !comic_archive_entry
-            .source_chapter_ids
-            .contains(&chapter_info.id)
+        !entry.source_chapter_ids.contains(&chapter_info.id)
     });
 
-    let archived_at = comic_archive_entry.record.created_at;
+    let archived_at = entry.record.created_at;
 
     let comic_info = context
         .state
         .comics
         .iter_mut()
-        .find(|comic_info| {
-            comic_info.id == comic_archive_entry.record.source_comic_id
-        })
+        .find(|comic_info| comic_info.id == entry.record.source_comic_id)
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
     comic_info.archived_at = Some(archived_at);

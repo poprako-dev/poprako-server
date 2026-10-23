@@ -22,7 +22,7 @@ use crate::value::page_artwork::PageArtworkImageKey;
 pub async fn alloc_image_slot<C, O>(
     (obj_dept, image_config): (&O, &ImageConfig),
     context: &mut C,
-    page_artwork_entry: &PageArtworkEntry,
+    entry: &PageArtworkEntry,
     (hash, ext, byte_len): (ImageHash, ImageExt, Option<u64>),
 ) -> BaseRest<AllocatedPageArtworkVal>
 where
@@ -38,14 +38,12 @@ where
         )?;
     }
 
-    let metas = ListObjMetas::<PageArtworkImage>::new(&[page_artwork_entry
-        .id
-        .as_str()])
-    .step_on(obj_dept, context)
-    .await
-    .map_err(BaseError::from)?;
+    let metas = ListObjMetas::<PageArtworkImage>::new(&[entry.id.as_str()])
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
-    let avail_meta = metas.get(&page_artwork_entry.id).filter(|meta| {
+    let avail_meta = metas.get(&entry.id).filter(|meta| {
         //
         meta.is_avail
             && meta.hash == hash.as_bytes()
@@ -55,8 +53,8 @@ where
     if let Some(meta) = avail_meta {
         //
         return accept(AllocatedPageArtworkVal {
-            page_artwork_id: page_artwork_entry.id.clone(),
-            index: page_artwork_entry.index,
+            page_artwork_id: entry.id.clone(),
+            index: entry.index,
             image_ver: meta.key.ver,
             image_hash: hash,
             ext,
@@ -75,8 +73,8 @@ where
 
     let spec = ObjSlotSpec {
         dom: PageArtworkImageKey {
-            chapter_id: page_artwork_entry.chapter_id.clone(),
-            page_artwork_id: page_artwork_entry.id.clone(),
+            chapter_id: entry.chapter_id.clone(),
+            page_artwork_id: entry.id.clone(),
             ext,
         },
         hash: hash.as_bytes(),
@@ -90,8 +88,8 @@ where
         .map_err(BaseError::from)?;
 
     accept(AllocatedPageArtworkVal {
-        page_artwork_id: page_artwork_entry.id.clone(),
-        index: page_artwork_entry.index,
+        page_artwork_id: entry.id.clone(),
+        index: entry.index,
         image_ver: alloc.key().ver,
         image_hash: hash,
         ext,

@@ -99,13 +99,13 @@ where
 
             let imported_page_count = pages.len();
 
-            let mut issue_entries = Vec::new();
+            let mut entries = Vec::new();
 
             for page in pages {
                 //
                 for (index, issue) in page.issues.into_iter().enumerate() {
                     //
-                    let issue_entry = IssueEntry {
+                    let entry = IssueEntry {
                         id: next_snowflake_id(),
                         page_artwork_id: page.page_artwork_id.clone(),
                         index,
@@ -115,15 +115,15 @@ where
                         note: issue.note,
                     };
 
-                    issue_entries.push(issue_entry);
+                    entries.push(entry);
                 }
             }
 
-            let imported_issue_count = issue_entries.len();
+            let imported_issue_count = entries.len();
 
             let chapter_issues_repl = ChapterIssuesRepl {
                 chapter_id: chapter_info.id,
-                entries: issue_entries,
+                entries,
             };
 
             ReplaceChapterIssues {

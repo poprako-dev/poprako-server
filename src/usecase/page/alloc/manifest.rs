@@ -128,7 +128,7 @@ where
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    let manifest_entries = manifest_plan
+    let entries = manifest_plan
         .matches
         .iter()
         .enumerate()
@@ -158,13 +158,11 @@ where
     .step_on(repo, context)
     .await?;
 
-    let page_infos = ApplyPageManifest {
-        entries: &manifest_entries,
-    }
-    .step_on(repo, context)
-    .await?;
+    let page_infos = ApplyPageManifest { entries: &entries }
+        .step_on(repo, context)
+        .await?;
 
-    let raw_ident_repls = manifest_entries
+    let raw_ident_repls = entries
         .iter()
         .zip(page_specs)
         .map(|(entry, spec)| (entry.id.as_str(), spec.raw_ident.as_deref()))
@@ -189,11 +187,11 @@ where
         return Err(page_manifest_result_missing());
     }
 
-    let retained_page_ids = manifest_entries
+    let retained_page_ids = entries
         .iter()
         .zip(page_specs)
         .filter(|(_, page_spec)| page_spec.new_byte_len.is_none())
-        .map(|(manifest_entry, _)| manifest_entry.id.as_str())
+        .map(|(entry, _)| entry.id.as_str())
         .collect::<Vec<_>>();
 
     let retained_obj_metas = ListObjMetas::<PageImage>::new(&retained_page_ids)
@@ -201,34 +199,34 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    for (manifest_entry, page_spec) in manifest_entries.iter().zip(page_specs) {
+    for (entry, page_spec) in entries.iter().zip(page_specs) {
         //
         let None = page_spec.new_byte_len else {
             continue;
         };
 
         let page_info = page_infos_by_id
-            .get(manifest_entry.id.as_str())
+            .get(entry.id.as_str())
             .ok_or_else(page_manifest_result_missing)?;
 
         ensure_retained_obj(
             page_info,
             page_spec,
-            retained_obj_metas.get(&manifest_entry.id),
+            retained_obj_metas.get(&entry.id),
         )?;
     }
 
-    let obj_specs = manifest_entries
+    let obj_specs = entries
         .iter()
         .zip(page_specs)
-        .filter_map(|(manifest_entry, page_spec)| {
+        .filter_map(|(entry, page_spec)| {
             //
             let byte_len = page_spec.new_byte_len?;
 
             Some(ObjSlotSpec {
                 dom: PageImageKey {
                     chapter_id: chapter_info.id.clone(),
-                    page_id: manifest_entry.id.clone(),
+                    page_id: entry.id.clone(),
                     ext: page_spec.ext,
                 },
                 hash: page_spec.image_hash.as_bytes(),
@@ -243,19 +241,19 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let page_allocs = manifest_entries
+    let page_allocs = entries
         .iter()
         .zip(page_specs)
-        .map(|(manifest_entry, page_spec)| {
+        .map(|(entry, page_spec)| {
             //
             let page_info = page_infos_by_id
-                .get(manifest_entry.id.as_str())
+                .get(entry.id.as_str())
                 .ok_or_else(page_manifest_result_missing)?;
 
             let obj_slot = match page_spec.new_byte_len {
                 //
                 Some(_) => obj_allocs
-                    .remove(&manifest_entry.id)
+                    .remove(&entry.id)
                     .ok_or_else(page_manifest_result_missing)?
                     .into_slot(),
 

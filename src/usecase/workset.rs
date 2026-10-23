@@ -77,7 +77,7 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            let workset_entry = WorksetEntry {
+            let entry = WorksetEntry {
                 id: workset_complex::gen_id(),
                 team_id: instr.team_id,
                 index,
@@ -85,11 +85,9 @@ where
                 description: instr.description,
             };
 
-            let workset_info = CreateWorkset {
-                entry: &workset_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let workset_info = CreateWorkset { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
             accept(workset_info.id)
         })

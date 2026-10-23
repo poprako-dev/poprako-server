@@ -250,7 +250,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+            let entry = ChapterWorkflowRecordEntryShape::new(
                 chapter_info.id.as_str(),
                 Some(&token.user_id),
                 ChapterWorkflowRecordPayload::StageTransitioned {
@@ -262,7 +262,7 @@ where
             );
 
             CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
+                entries: std::slice::from_ref(&entry),
             }
             .step_on(repo, context)
             .await?;
@@ -383,7 +383,7 @@ where
         download_url: download_url.to_string(),
     };
 
-    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+    let entry = ChapterWorkflowRecordEntryShape::new(
         &chapter_info.id,
         Some(&token.user_id),
         ChapterWorkflowRecordPayload::ArtworkExported {
@@ -392,7 +392,7 @@ where
     );
 
     CreateChapterWorkflowRecords {
-        entries: std::slice::from_ref(&workflow_record_entry),
+        entries: std::slice::from_ref(&entry),
     }
     .run_on(repo)
     .await?;

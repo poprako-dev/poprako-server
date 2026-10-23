@@ -161,7 +161,7 @@ where
                 member_invitation_complex::gen_code(),
             );
 
-            let member_invitation_entry = MemberInvitationEntry {
+            let entry = MemberInvitationEntry {
                 id: member_invitation_id,
                 team_id: instr.team_id,
                 invitor_id: token.user_id,
@@ -170,11 +170,10 @@ where
                 roles,
             };
 
-            let member_invitation_info = CreateMemberInvitation {
-                entry: &member_invitation_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let member_invitation_info =
+                CreateMemberInvitation { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
             let invitation_payload =
                 InvitationPayload::PurgeExpiredMemberInvitation {

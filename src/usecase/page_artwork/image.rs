@@ -112,7 +112,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let page_artwork_entry = PageArtworkEntry {
+            let entry = PageArtworkEntry {
                 id: page_artwork_patch.id,
                 chapter_id: page_artwork_info.chapter_id,
                 index: page_artwork_info.index,
@@ -122,7 +122,7 @@ where
             let allocated_page_artwork_val = alloc_image_slot(
                 (obj_dept, image_config),
                 context,
-                &page_artwork_entry,
+                &entry,
                 (instr.image_hash, instr.ext, Some(instr.new_byte_len)),
             )
             .await?;

@@ -86,10 +86,10 @@ pub async fn prepare_entry(
     //
     tokio::task::spawn_blocking(move || {
         //
-        let comic_archive_entry =
+        let entry =
             build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
 
-        accept(comic_archive_entry)
+        accept(entry)
     })
     .await
     .map_err(|error| {

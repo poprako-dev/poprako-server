@@ -122,7 +122,7 @@ where
 
     announcement_perm_complex::ensure_user_can_create(&member_info)?;
 
-    let announcement_entry = AnnouncementEntry {
+    let entry = AnnouncementEntry {
         id: announcement_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
@@ -130,11 +130,8 @@ where
         content: instr.content,
     };
 
-    let announcement_info = CreateAnnouncement {
-        entry: &announcement_entry,
-    }
-    .run_on(repo)
-    .await?;
+    let announcement_info =
+        CreateAnnouncement { entry: &entry }.run_on(repo).await?;
 
     accept(CreateAnnouncementVal {
         id: announcement_info.id,
