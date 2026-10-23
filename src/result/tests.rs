@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 
+use time::OffsetDateTime;
 use tracing::field::{Field, Visit};
 use tracing::level_filters::LevelFilter;
 use tracing::{Event, Level, Subscriber};
@@ -18,9 +19,12 @@ use tracing_subscriber::Layer;
 use tracing_subscriber::layer::{Context, SubscriberExt as _};
 use tracing_subscriber::registry::LookupSpan;
 
+use crate::complex::chapter_port::perm as chapter_port_perm_complex;
+use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::test_util::assert_expected_variant;
 use crate::test_util::http_logging::capture_dispatch;
+use crate::test_util::{assert_expected_message, assert_expected_variant};
+use crate::value::role::RoleField;
 
 #[derive(Default)]
 struct Fields(BTreeMap<String, String>);
@@ -287,6 +291,34 @@ fn propagation_does_not_record_another_event() {
     let (result, events) = capture(LevelFilter::WARN, propagate_rejection);
 
     assert_expected_variant(&result.unwrap_err(), ExpectedVariant::Perm);
+
+    assert_eq!(events.len(), 1);
+}
+
+#[test]
+fn permission_message_remapping_preserves_one_source_event() {
+    let assignment_info = AssignmentInfo {
+        id: "assignment-1".into(),
+        chapter_id: "chapter-1".into(),
+        user_id: "user-1".into(),
+        user: None,
+        chapter: None,
+        roles: RoleField::RAW_PROVIDER.into(),
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        updated_at: OffsetDateTime::UNIX_EPOCH,
+    };
+
+    let (result, events) = capture(LevelFilter::WARN, || {
+        chapter_port_perm_complex::ensure_user_can_import_translation(
+            &assignment_info,
+        )
+    });
+
+    assert_expected_message(
+        result.unwrap_err(),
+        ExpectedVariant::Perm,
+        "error-chapter-port-import-perm-required",
+    );
 
     assert_eq!(events.len(), 1);
 }
