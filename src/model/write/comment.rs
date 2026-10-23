@@ -2,7 +2,7 @@
 
 /// The data needed to insert a team board comment row.
 #[cfg_attr(test, derive(Clone))]
-pub struct CommentEntry<'a> {
+pub struct CommentEntry {
     /// Unique identifier for the new comment.
     pub id: String,
 
@@ -12,5 +12,12 @@ pub struct CommentEntry<'a> {
     pub user_id: String,
 
     /// The text body of the comment being posted.
-    pub content: &'a str,
+    pub content: String,
+}
+
+impl CommentEntry {
+    /// Borrows normalized content without copying its storage.
+    pub fn trimmed_content(&self) -> &str {
+        self.content.trim()
+    }
 }

@@ -1,5 +1,4 @@
 // normalize_fuzzy_source(normalize_fuzzy_source)(positive): Unicode trimming borrows the original source and omits blank filters.
-// build_entry(build_entry)(positive): normalized write fields borrow input buffers without modifying them.
 
 #![allow(
     clippy::unwrap_used,
@@ -8,47 +7,46 @@
 
 use super::*;
 
+// build_entry(build_entry)(positive): input buffers move into the model and normalized accessors borrow them.
 #[test]
-fn entry_borrows_normalized_source_targets_and_comment() {
-    //
+fn entry_owns_input_and_borrows_normalized_fields() {
     let source = "\u{2003}Source\u{00a0}".to_string();
 
     let target = "\u{3000}Target\u{2009}".to_string();
 
     let comment = "\nComment\t".to_string();
 
+    let source_ptr = source.as_ptr();
+
+    let target_ptr = target.as_ptr();
+
+    let comment_ptr = comment.as_ptr();
+
     let entry = build_entry(
         "termbase-1".into(),
-        &source,
-        vec![&target],
-        Some(&comment),
+        source,
+        vec![target],
+        Some(comment),
         "creator-1".into(),
     )
     .unwrap();
 
-    assert_eq!(entry.source, "Source");
+    assert_eq!(entry.source.as_ptr(), source_ptr);
 
-    assert_eq!(entry.source.as_ptr(), source.trim().as_ptr());
+    assert_eq!(entry.targets.first().unwrap().as_ptr(), target_ptr);
 
-    assert_eq!(entry.targets, ["Target"]);
+    assert_eq!(entry.comment.as_ref().unwrap().as_ptr(), comment_ptr);
+
+    assert_eq!(entry.trimmed_source(), "Source");
+
+    assert_eq!(entry.trimmed_targets().collect::<Vec<_>>(), ["Target"]);
+
+    assert_eq!(entry.trimmed_comment(), Some("Comment"));
 
     assert_eq!(
-        entry.targets.first().unwrap().as_ptr(),
-        target.trim().as_ptr()
+        entry.trimmed_source().as_ptr(),
+        entry.source.trim().as_ptr()
     );
-
-    assert_eq!(entry.comment, Some("Comment"));
-
-    assert_eq!(
-        entry.comment.map(str::as_ptr),
-        Some(comment.trim().as_ptr())
-    );
-
-    assert_eq!(source, "\u{2003}Source\u{00a0}");
-
-    assert_eq!(target, "\u{3000}Target\u{2009}");
-
-    assert_eq!(comment, "\nComment\t");
 }
 
 #[test]

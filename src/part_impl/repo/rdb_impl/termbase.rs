@@ -130,30 +130,30 @@ async fn get_info_excluded(
 )]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermbaseListSpec<'_>,
+    spec: &TermbaseListSpec,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
     let mut query =
         t_termbase.select(TermbaseInfoRow::as_select()).into_boxed();
 
-    let (fuzzy_name, offset, limit) = match spec {
+    let (offset, limit) = match spec {
         //
         TermbaseListSpec::Team {
             team_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => {
             //
             query = query.filter(f_team_id.eq(team_id));
 
-            (fuzzy_name, offset, limit)
+            (offset, limit)
         }
 
         TermbaseListSpec::Comic {
             comic_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => {
@@ -169,11 +169,11 @@ async fn list_infos(
                     .or(f_comic_id.eq(comic_id)),
             );
 
-            (fuzzy_name, offset, limit)
+            (offset, limit)
         }
     };
 
-    if let Some(fuzzy_name) = fuzzy_name {
+    if let Some(fuzzy_name) = spec.trimmed_fuzzy_name() {
         //
         let escaped = escape_ilike_pattern(fuzzy_name);
 
@@ -227,7 +227,7 @@ async fn list_infos_excluded(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    termbase_entry: &TermbaseEntry<'_>,
+    termbase_entry: &TermbaseEntry,
 ) -> BaseRest<TermbaseInfo> {
     //
     // Convert API entry into insert row shape and fetch persisted row.
@@ -247,14 +247,14 @@ async fn create(
 #[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
-    update: &TermbaseRepl<'_>,
+    update: &TermbaseRepl,
 ) -> BaseRest<()> {
     //
     // Keep `updated_at` current while applying partial name/description updates.
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
         .set((
-            f_name.eq(&update.name),
-            f_description.eq(update.description),
+            f_name.eq(update.trimmed_name()),
+            f_description.eq(update.trimmed_description()),
             f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(conn)

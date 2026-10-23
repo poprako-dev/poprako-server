@@ -68,11 +68,12 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
             .find(|comic| comic.id == oper.update.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        comic.title = oper.update.title.to_owned();
+        comic.title = oper.update.trimmed_title().to_owned();
 
-        comic.author = oper.update.author.to_owned();
+        comic.author = oper.update.trimmed_author().to_owned();
 
-        comic.description = oper.update.description.map(str::to_owned);
+        comic.description =
+            oper.update.trimmed_description().map(str::to_owned);
 
         comic.updated_at = now();
 

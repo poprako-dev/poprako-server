@@ -5,47 +5,33 @@
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
 
-use std::borrow::Cow;
-
-/// The data needed to insert a new comic row.
-///
-/// Supplied at comic-creation time. The `id` is typically generated via
-/// [`comic_complex::gen_id`]; the `index` is allocated by the repo layer.
-///
-/// Existing foreign identifiers may borrow their caller-owned storage.
-///
-/// [`comic_complex::gen_id`]: crate::complex::comic::gen_id
-#[cfg_attr(test, derive(Clone))]
-pub struct ComicEntry<'a> {
-    /// Unique identifier for the new comic.
-    pub id: String,
-
-    /// The workset this comic will be created under.
-    pub workset_id: Cow<'a, str>,
-    /// Sorting position assigned by the insertion logic.
-    pub index: usize,
-
-    /// Display title of the comic series or volume.
-    pub title: &'a str,
-    /// Name of the author or artist responsible for this comic.
-    pub author: &'a str,
-    /// Optional synopsis or editorial notes to accompany the comic.
-    pub description: Option<&'a str>,
-
-    /// The user who creates this comic record.
-    pub creator_id: Cow<'a, str>,
-}
-
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicRepl<'a> {
+pub struct ComicRepl {
     /// Identifies which comic record to update.
     pub id: String,
 
     /// Updated display title of the comic series or volume.
-    pub title: &'a str,
+    pub title: String,
     /// Updated name of the author or artist.
-    pub author: &'a str,
+    pub author: String,
     /// Updated synopsis or editorial notes.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
+}
+
+impl ComicRepl {
+    /// Borrows normalized title without copying its storage.
+    pub fn trimmed_title(&self) -> &str {
+        self.title.trim()
+    }
+
+    /// Borrows normalized author without copying its storage.
+    pub fn trimmed_author(&self) -> &str {
+        self.author.trim()
+    }
+
+    /// Borrows normalized description without copying its storage.
+    pub fn trimmed_description(&self) -> Option<&str> {
+        self.description.as_deref().map(str::trim)
+    }
 }

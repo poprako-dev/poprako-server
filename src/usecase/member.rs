@@ -275,7 +275,7 @@ where
     R: MemberRepo<C> + Sync,
     O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let member_list_spec = (&instr).try_into()?;
+    let member_list_spec = instr.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         //

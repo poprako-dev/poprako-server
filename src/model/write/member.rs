@@ -31,10 +31,17 @@ pub struct MemberRoleRepl {
 }
 
 /// An updated cached member nickname.
-pub struct MemberNicknameRepl<'a> {
+pub struct MemberNicknameRepl {
     /// The user whose memberships are being updated.
     pub user_id: String,
 
     /// The nickname to cache on each membership.
-    pub user_nickname: &'a str,
+    pub user_nickname: String,
+}
+
+impl MemberNicknameRepl {
+    /// Borrows normalized user nickname without copying its storage.
+    pub fn trimmed_user_nickname(&self) -> &str {
+        self.user_nickname.trim()
+    }
 }

@@ -64,12 +64,9 @@ async fn list_infos(
 
 // Chunk the validated replacement below PostgreSQL's bind parameter limit.
 #[instrument(level = "info", skip_all)]
-async fn replace(
-    conn: &mut RdbConn,
-    repl: &ChapterIssuesRepl<'_>,
-) -> BaseRest<()> {
+async fn replace(conn: &mut RdbConn, repl: &ChapterIssuesRepl) -> BaseRest<()> {
     //
-    clear(conn, repl.chapter_id).await?;
+    clear(conn, &repl.chapter_id).await?;
 
     for entries in repl.entries.chunks(2000) {
         //

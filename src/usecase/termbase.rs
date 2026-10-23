@@ -67,8 +67,8 @@ where
     let termbase_entry = termbase_complex::build_entry(
         instr.team_id,
         instr.comic_id,
-        &instr.name,
-        instr.description.as_deref(),
+        instr.name,
+        instr.description,
         token.user_id.clone(),
     )?;
 
@@ -224,10 +224,8 @@ where
     termbase_perm_complex::ensure_user_can_read_team(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Team {
-        team_id: &instr.team_id,
-        fuzzy_name: termbase_complex::normalize_fuzzy_name(
-            instr.fuzzy_name.as_deref(),
-        ),
+        team_id: instr.team_id,
+        fuzzy_name: instr.fuzzy_name,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -269,10 +267,8 @@ where
     termbase_perm_complex::ensure_user_can_read_comic(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Comic {
-        comic_id: &instr.comic_id,
-        fuzzy_name: termbase_complex::normalize_fuzzy_name(
-            instr.fuzzy_name.as_deref(),
-        ),
+        comic_id: instr.comic_id,
+        fuzzy_name: instr.fuzzy_name,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -307,8 +303,8 @@ where
 {
     let termbase_info_update = termbase_complex::build_update(
         instr.id,
-        &instr.name,
-        instr.description.as_deref(),
+        instr.name,
+        instr.description,
     )?;
 
     nucl.coord(async move |context| {

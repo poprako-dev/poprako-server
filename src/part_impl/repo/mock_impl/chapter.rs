@@ -10,9 +10,9 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
 use crate::value::incl::expand_incl_opts;
@@ -93,7 +93,7 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 /// Returns the expected already-exists error for a duplicate chapter identifier.
 pub fn create_chapter(
     state: &mut MockState,
-    chapter_entry: &ChapterEntry<'_>,
+    chapter_entry: &ChapterEntryShape<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     if state
@@ -113,7 +113,7 @@ pub fn create_chapter(
         comic: None,
         is_pinned: chapter_entry.is_pinned,
         index: chapter_entry.index,
-        subtitle: chapter_entry.subtitle.to_string(),
+        subtitle: chapter_entry.trimmed_subtitle().to_string(),
         page_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,

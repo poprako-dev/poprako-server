@@ -27,7 +27,7 @@ use crate::data::instr::page::{AllocChapterPagesInstr, AllocPageImageInstr};
 use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
-use crate::model::write::page::{PageImageSpec, PageRawIdentsRepl};
+use crate::model::write::page::PageImageSpec;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
@@ -43,6 +43,7 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::usecase::page::alloc::manifest::apply_manifest;
 use crate::usecase::page::alloc::validation as page_alloc_validation_usecase;
 use crate::util::next_snowflake_id;
@@ -196,8 +197,8 @@ where
                 .map_err(BaseError::from)?
                 .into_slot();
 
-            let raw_ident_repl = PageRawIdentsRepl {
-                idents: &[(id.as_str(), instr.raw_ident.as_deref())],
+            let raw_ident_repl = PageRawIdentsReplShape {
+                idents: vec![(id.as_str(), instr.raw_ident.as_deref())],
             };
 
             UpdatePageRawIdents {

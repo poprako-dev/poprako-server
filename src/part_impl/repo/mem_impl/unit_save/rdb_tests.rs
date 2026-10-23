@@ -11,7 +11,6 @@ use crate::data::instr::unit::{
     SavePageUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
 };
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
 use crate::part::nucl::Serial;
 use crate::part::repo::oper::assignment::CreateAssignment;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -19,6 +18,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::accept;
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::test_rdb::start;
 use crate::usecase::unit as unit_usecase;
 use crate::value::role::{RoleField, RoleMask};
@@ -63,14 +63,14 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
-    let user_id = fixture.chapter_entry.creator_id.clone().into_owned();
+    let user_id = fixture.chapter_info.creator_id.clone();
 
     let page_id = fixture.page_entry.id.clone();
 
-    let entry = AssignmentEntry {
+    let entry = AssignmentEntryShape {
         id: "save-token-assignment".into(),
-        chapter_id: fixture.chapter_entry.id.as_str().into(),
-        user_id: user_id.as_str().into(),
+        chapter_id: fixture.chapter_info.id.as_str(),
+        user_id: user_id.as_str(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };
 

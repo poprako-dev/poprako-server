@@ -59,9 +59,9 @@ where
 {
     let term_entry = term_complex::build_entry(
         instr.termbase_id,
-        &instr.source,
-        instr.targets.iter().map(String::as_str).collect(),
-        instr.comment.as_deref(),
+        instr.source,
+        instr.targets,
+        instr.comment,
         token.user_id.clone(),
     )?;
 
@@ -224,9 +224,9 @@ where
 {
     let term_info_update = term_complex::build_update(
         instr.id,
-        &instr.source,
-        instr.targets.iter().map(String::as_str).collect(),
-        instr.comment.as_deref(),
+        instr.source,
+        instr.targets,
+        instr.comment,
     )?;
 
     let term_info = GetTermInfo {

@@ -60,7 +60,7 @@ async fn list_infos(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entry: &CommentEntry<'_>,
+    entry: &CommentEntry,
 ) -> BaseRest<CommentInfo> {
     //
     let entry = CommentEntryRow::from(entry);

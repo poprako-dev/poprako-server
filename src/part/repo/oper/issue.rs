@@ -18,5 +18,5 @@ pub struct ListIssueInfos<'a> {
 #[oper(output = ())]
 pub struct ReplaceChapterIssues<'a> {
     /// Complete validated replacement.
-    pub repl: &'a ChapterIssuesRepl<'a>,
+    pub repl: &'a ChapterIssuesRepl,
 }

@@ -57,7 +57,7 @@ async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
     let member_entry = MemberEntry {
         id: format!("{prefix}member"),
         user_id: user_entry.id.clone(),
-        user_nickname: user_entry.nickname.into_owned(),
+        user_nickname: user_entry.nickname,
         team_id: workset_fixture.team_entry.id,
         roles: RoleMask::from(RoleField::ADMIN)
             .union(RoleMask::from(RoleField::TRANSLATOR)),

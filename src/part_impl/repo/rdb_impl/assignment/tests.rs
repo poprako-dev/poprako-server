@@ -13,7 +13,7 @@ use poprako_rdb_core::RdbCore;
 
 use crate::config::AppConfig;
 use crate::model::read::spec::assignment::AssignmentListSpec;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
@@ -24,6 +24,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
 use crate::result::BaseError;
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -33,7 +34,7 @@ const PREFIX: &str = "rdb-test-assignment-domain-";
 async fn verify_assignment_ancestor_inclusions(
     repo: &HybRepo,
     chapter_fixture: &ChapterFixture,
-    assignment_entry: &AssignmentEntry<'_>,
+    assignment_entry: &AssignmentEntryShape<'_>,
 ) {
     let assignment_info = repo
         .run(&GetAssignmentInfo {
@@ -47,9 +48,9 @@ async fn verify_assignment_ancestor_inclusions(
 
     let comic_info = chapter_info.comic.as_ref().unwrap();
 
-    assert_eq!(chapter_info.id, chapter_fixture.chapter_entry.id);
+    assert_eq!(chapter_info.id, chapter_fixture.chapter_info.id);
 
-    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
+    assert_eq!(comic_info.id, chapter_fixture.comic_info.id);
 
     assert_eq!(
         comic_info.workset.as_ref().unwrap().id,
@@ -87,10 +88,10 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
-    let assignment_entry = AssignmentEntry {
+    let assignment_entry = AssignmentEntryShape {
         id: format!("{}assignment", PREFIX),
-        chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
-        user_id: assignee_form.id.clone().into(),
+        chapter_id: &chapter_fixture.chapter_info.id,
+        user_id: &assignee_form.id,
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };
 
@@ -110,7 +111,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     .unwrap();
 
     let assignment_list_spec = AssignmentListSpec::Chapter {
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
         offset: 0,
@@ -136,7 +137,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         assignee_form.id
     );
 
-    let chapter_ids = vec![chapter_fixture.chapter_entry.id.as_str()];
+    let chapter_ids = vec![chapter_fixture.chapter_info.id.as_str()];
 
     let assignment_infos = repo
         .run(&ListAssignmentInfos::Chapters {

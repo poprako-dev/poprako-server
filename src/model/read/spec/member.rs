@@ -5,13 +5,13 @@ use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing memberships.
-pub enum MemberListSpec<'a> {
+pub enum MemberListSpec {
     /// List teams/memberships owned by a specific user.
     User {
         /// ID of the user whose memberships to list.
-        owner_id: &'a str,
+        owner_id: String,
         /// Optional include flags for related data.
-        incl_opt: &'a [MemberInclOpt],
+        incl_opt: Vec<MemberInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -21,13 +21,13 @@ pub enum MemberListSpec<'a> {
     /// List members of a specific team, optionally narrowed by role or nickname.
     Team {
         /// ID of the team whose members to list.
-        team_id: &'a str,
+        team_id: String,
         /// Fuzzy filter by member nickname.
-        fuzzy_nickname: Option<&'a str>,
+        fuzzy_nickname: Option<String>,
         /// Optional role filter.
         role: Option<RoleField>,
         /// Optional include flags for related data.
-        incl_opt: &'a [MemberInclOpt],
+        incl_opt: Vec<MemberInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -35,9 +35,22 @@ pub enum MemberListSpec<'a> {
     },
 }
 
-impl MemberListSpec<'_> {
+impl MemberListSpec {
+    /// Borrows the team nickname filter without copying its storage.
+    pub fn trimmed_fuzzy_nickname(&self) -> Option<&str> {
+        //
+        match self {
+            //
+            Self::Team { fuzzy_nickname, .. } => {
+                fuzzy_nickname.as_deref().map(str::trim)
+            }
+
+            Self::User { .. } => None,
+        }
+    }
+
     /// Returns the include options regardless of which variant the spec is.
-    pub const fn incl_opt(&self) -> &[MemberInclOpt] {
+    pub fn incl_opt(&self) -> &[MemberInclOpt] {
         //
         match self {
             //

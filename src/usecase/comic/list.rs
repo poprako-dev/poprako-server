@@ -77,7 +77,7 @@ where
 
     comic_perm_complex::ensure_user_can_list_infos(&member_info)?;
 
-    let spec = (&instr).try_into()?;
+    let spec = instr.try_into()?;
 
     let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 

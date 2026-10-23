@@ -182,7 +182,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
             &context.state,
             None,
             &oper.entry.termbase_id,
-            oper.entry.source,
+            oper.entry.trimmed_source(),
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -201,14 +201,9 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
         let term_info = TermInfo {
             id: oper.entry.id.clone(),
             termbase_id: oper.entry.termbase_id.clone(),
-            source: oper.entry.source.to_owned(),
-            targets: oper
-                .entry
-                .targets
-                .iter()
-                .map(|target| (*target).to_owned())
-                .collect(),
-            comment: oper.entry.comment.map(str::to_owned),
+            source: oper.entry.trimmed_source().to_owned(),
+            targets: oper.entry.trimmed_targets().map(str::to_owned).collect(),
+            comment: oper.entry.trimmed_comment().map(str::to_owned),
             creator_id: oper.entry.creator_id.clone(),
             created_at: time,
             updated_at: time,
@@ -305,7 +300,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
             &context.state,
             Some(&oper.update.id),
             &current.termbase_id,
-            oper.update.source,
+            oper.update.trimmed_source(),
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -317,16 +312,12 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
             .find(|term_info| term_info.id == oper.update.id)
             .ok_or_else(|| expected("error-term-not-found"))?;
 
-        term_info.source = oper.update.source.to_owned();
+        term_info.source = oper.update.trimmed_source().to_owned();
 
-        term_info.targets = oper
-            .update
-            .targets
-            .iter()
-            .map(|target| (*target).to_owned())
-            .collect();
+        term_info.targets =
+            oper.update.trimmed_targets().map(str::to_owned).collect();
 
-        term_info.comment = oper.update.comment.map(str::to_owned);
+        term_info.comment = oper.update.trimmed_comment().map(str::to_owned);
 
         term_info.updated_at = now();
 
@@ -371,7 +362,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
             .entries
             .iter()
             .map(|entry| entry.id.as_str())
-            .chain(oper.updates.iter().map(|update| update.id.as_str()))
+            .chain(oper.updates.iter().map(|update| update.id))
             .all(|id| ids.insert(id));
 
         if !(entries_in_scope && updates_in_scope && ids_unique) {
@@ -386,7 +377,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
             if source_conflicts(
                 &context.state,
                 None,
-                &entry.termbase_id,
+                entry.termbase_id,
                 entry.source,
             ) {
                 return Err(expected("error-already-exists"));
@@ -396,7 +387,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
 
             context.state.terms.push(TermInfo {
                 id: entry.id.clone(),
-                termbase_id: entry.termbase_id.clone(),
+                termbase_id: entry.termbase_id.to_owned(),
                 source: entry.source.to_owned(),
                 targets: entry
                     .targets
@@ -404,7 +395,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
                     .map(|target| (*target).to_owned())
                     .collect(),
                 comment: entry.comment.map(str::to_owned),
-                creator_id: entry.creator_id.clone(),
+                creator_id: entry.creator_id.to_owned(),
                 created_at: time,
                 updated_at: time,
             });
@@ -412,11 +403,11 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
 
         for update in oper.updates {
             //
-            let current = get_info(&context.state, &update.id)?;
+            let current = get_info(&context.state, update.id)?;
 
             if source_conflicts(
                 &context.state,
-                Some(&update.id),
+                Some(update.id),
                 &current.termbase_id,
                 update.source,
             ) {

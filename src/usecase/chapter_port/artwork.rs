@@ -27,7 +27,6 @@ use crate::data::val::chapter_port::{
 use crate::data::view::chapter_port::ChapterArtworkUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterStageRepl;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
@@ -47,6 +46,7 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -250,9 +250,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+            let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
                 chapter_info.id.as_str(),
-                Some(token.user_id.into()),
+                Some(&token.user_id),
                 ChapterWorkflowRecordPayload::StageTransitioned {
                     stage: Stage::TypesetRedraw,
                     previous_phase,
@@ -383,9 +383,9 @@ where
         download_url: download_url.to_string(),
     };
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-        chapter_info.id,
-        Some(token.user_id.into()),
+    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+        &chapter_info.id,
+        Some(&token.user_id),
         ChapterWorkflowRecordPayload::ArtworkExported {
             artwork_ver: artwork_meta.key.ver,
         },

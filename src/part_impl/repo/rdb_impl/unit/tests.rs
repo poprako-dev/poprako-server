@@ -122,7 +122,7 @@ async fn verify_restore(
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let creator_id = page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let creator_id = page_fixture.chapter_info.creator_id.clone();
 
     let restore_edits = [UnitEdit::Save {
         id: first_id.to_owned(),
@@ -265,10 +265,9 @@ async fn verify_mixed_patches(
                 value: UnitTranslation {
                     translated_text: "\u{3000}".to_string(),
                     last_translator_id: page_fixture
-                        .chapter_entry
+                        .chapter_info
                         .creator_id
-                        .clone()
-                        .into_owned(),
+                        .clone(),
                 },
             },
             revision: Patch::Skip,
@@ -320,7 +319,7 @@ async fn verify_stale_edit_rollback(
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let creator_id = page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let creator_id = page_fixture.chapter_info.creator_id.clone();
 
     let missing_id = format!("{}missing", PREFIX);
 
@@ -424,7 +423,7 @@ async fn verify_create_and_save(
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
 ) -> [UnitOrder; 2] {
-    let creator_id = page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let creator_id = page_fixture.chapter_info.creator_id.clone();
 
     let create_edits = [
         create_edit(first_id, &creator_id, "translated"),

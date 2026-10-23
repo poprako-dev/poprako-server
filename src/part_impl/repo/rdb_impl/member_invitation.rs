@@ -142,7 +142,7 @@ async fn get_info_by_id(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entry: &MemberInvitationEntry<'_>,
+    entry: &MemberInvitationEntry,
 ) -> BaseRest<MemberInvitationInfo> {
     //
     let entry = MemberInvitationEntryRow::from(entry);

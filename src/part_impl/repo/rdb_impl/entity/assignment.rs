@@ -4,9 +4,9 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::write::assignment::AssignmentEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment;
 use crate::result::BaseError;
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Raw database row for the `t_assignment` table. Returned by Diesel queries.
@@ -105,7 +105,7 @@ pub struct AssignmentEntryRow<'a> {
 impl<'a> AssignmentEntryRow<'a> {
     #[must_use]
     pub fn from_model_entry(
-        model_entry: &'a AssignmentEntry<'_>,
+        model_entry: &'a AssignmentEntryShape<'_>,
         now: OffsetDateTime,
     ) -> Self {
         //
@@ -114,8 +114,8 @@ impl<'a> AssignmentEntryRow<'a> {
 
         Self {
             f_id: &model_entry.id,
-            f_chapter_id: &model_entry.chapter_id,
-            f_user_id: &model_entry.user_id,
+            f_chapter_id: model_entry.chapter_id,
+            f_user_id: model_entry.user_id,
             f_assigned_raw_provider_at: timestamps.f_raw_provider,
             f_assigned_translator_at: timestamps.f_translator,
             f_assigned_proofreader_at: timestamps.f_proofreader,
@@ -184,7 +184,7 @@ impl AssignmentAspectRow {
 }
 
 /// Timestamps for each role on an assignment, used to build the role-timestamp
-/// mapping for `AssignmentAspectRow` or `AssignmentEntry`.
+/// mapping for `AssignmentAspectRow` or `AssignmentEntryShape`.
 pub struct AssignmentRoleTimestamps {
     pub f_raw_provider: Option<OffsetDateTime>,
     pub f_translator: Option<OffsetDateTime>,

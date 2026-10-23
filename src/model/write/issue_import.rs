@@ -14,6 +14,13 @@ pub struct IssueImport {
     pub note: String,
 }
 
+impl IssueImport {
+    /// Borrows normalized variant without copying its storage.
+    pub fn trimmed_variant(&self) -> &str {
+        self.variant.trim()
+    }
+}
+
 /// An explicit composite page and its ordered issues, including empty reviews.
 pub struct PageIssueImport {
     /// Stable identity of the reviewed composite page.

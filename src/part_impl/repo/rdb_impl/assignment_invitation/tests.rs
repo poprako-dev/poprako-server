@@ -52,9 +52,9 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let assignment_invitation_entry = AssignmentInvitationEntry {
         id: format!("{}assignment-invitation", PREFIX),
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         inviter_id: chapter_fixture.creator_form.id.clone(),
-        invitee_qid: &format!("{}invitee", PREFIX),
+        invitee_qid: format!("{}invitee", PREFIX),
         code: format!("{}code", PREFIX),
         roles: RoleMask::from(RoleField::REVIEWER),
     };
@@ -83,7 +83,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
     .unwrap();
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         is_pending: Some(false),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),

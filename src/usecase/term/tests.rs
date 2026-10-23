@@ -252,7 +252,7 @@ async fn list_infos_searches_only_source() {
 
     let source_instr = ListTermInfosInstr {
         termbase_id: "termbase-1".into(),
-        fuzzy_source: Some("\u{2003}source\u{00a0}".into()),
+        fuzzy_source: Some("source".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };

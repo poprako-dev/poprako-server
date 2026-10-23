@@ -14,7 +14,7 @@ use poprako_util::i18n::trl;
 use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::comic::{ComicEntry, ComicRepl};
+use crate::model::write::comic::ComicRepl;
 use crate::part_impl::repo::rdb_impl::comic::stage_filter::{
     StageFilter, stage_filter,
 };
@@ -29,6 +29,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_deleted_at, f_id, f_index, f_last_active_at, f_workset_id, t_comic,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::comic::ComicEntryShape;
 use crate::shared::result::diesel;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::{ComicInclOpt, ComicStatus};
@@ -104,11 +105,11 @@ pub async fn get_info_by_id(
 #[expect(clippy::too_many_lines, reason = "builds the typed Comic list query")]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ComicListSpec<'_>,
+    spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
     let mut query = t_comic
-        .filter(f_workset_id.eq(spec.workset_id))
+        .filter(f_workset_id.eq(&spec.workset_id))
         .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .into_boxed();
@@ -126,7 +127,7 @@ pub async fn list_infos(
         None => {}
     }
 
-    if let Some(fuzzy_title) = &spec.fuzzy_title {
+    if let Some(fuzzy_title) = spec.trimmed_fuzzy_title() {
         //
         let pattern = format!("%{}%", escape_ilike_pattern(fuzzy_title));
 
@@ -270,7 +271,7 @@ pub async fn list_infos(
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<ComicInfo>>>()?;
 
-    incl::comic::populate_comic_incls(conn, &mut infos, spec.incl_opt).await?;
+    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
     accept(infos)
 }
@@ -279,7 +280,7 @@ pub async fn list_infos(
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ComicRepl<'_>,
+    update: &ComicRepl,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -288,14 +289,14 @@ pub async fn update_info(
 
     let composed_title = comic_complex::compose_title(
         comic_info.index,
-        update.author,
-        update.title,
+        update.trimmed_author(),
+        update.trimmed_title(),
     );
 
     let aspect = ComicAspectRow::new(now)
-        .title(update.title)
-        .author(update.author)
-        .description(update.description)
+        .title(update.trimmed_title())
+        .author(update.trimmed_author())
+        .description(update.trimmed_description())
         .composed_title(composed_title);
 
     let updated_count = diesel::update(
@@ -319,7 +320,7 @@ pub async fn update_info(
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    comic_entry: &ComicEntry<'_>,
+    comic_entry: &ComicEntryShape<'_>,
 ) -> BaseRest<ComicInfo> {
     //
     let entry = ComicEntryRow::try_from(comic_entry)?;

@@ -22,7 +22,7 @@ pub enum UpdateMember<'a> {
     /// Updates the member's nickname.
     UserNickname {
         /// The nickname replacement payload.
-        repl: &'a MemberNicknameRepl<'a>,
+        repl: &'a MemberNicknameRepl,
     },
 
     /// Updates the member's role.
@@ -39,7 +39,7 @@ pub enum ListMemberInfos<'a> {
     /// Lists members matching the given spec.
     Spec {
         /// The filter and pagination specification.
-        spec: &'a MemberListSpec<'a>,
+        spec: &'a MemberListSpec,
     },
 
     /// Lists all memberships for a user.

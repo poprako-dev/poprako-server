@@ -14,9 +14,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
-use crate::model::write::chapter::{
-    ChapterEntry, ChapterPatch, ChapterStageRepl,
-};
+use crate::model::write::chapter::{ChapterPatch, ChapterStageRepl};
 use crate::part::repo::oper::chapter::SetChapterPageCountMetrics;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspectRow, ChapterEntryRow, ChapterInfoRow, ChapterUnitEditScopeRow,
@@ -32,6 +30,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shared::result::diesel;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::Stage;
@@ -288,7 +287,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    chapter_entry: &ChapterEntry<'_>,
+    chapter_entry: &ChapterEntryShape<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     let entry = ChapterEntryRow::try_from(chapter_entry)?;
@@ -307,14 +306,14 @@ pub async fn create(
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ChapterPatch<'_>,
+    update: &ChapterPatch,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let mut aspect = ChapterAspectRow::new(now);
 
-    if let Some(subtitle) = &update.subtitle {
+    if let Some(subtitle) = &update.trimmed_subtitle() {
         aspect = aspect.subtitle(subtitle);
     }
 

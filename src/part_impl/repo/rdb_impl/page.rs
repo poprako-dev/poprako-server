@@ -22,7 +22,6 @@ use crate::model::read::proj::page::{
     PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitFlaggedStats,
     PageUnitScope,
 };
-use crate::model::write::page::PageRawIdentsRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
@@ -44,6 +43,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -74,7 +74,7 @@ async fn list_raw_ident_infos(
 #[instrument(level = "info", skip_all)]
 async fn update_raw_idents(
     conn: &mut RdbConn,
-    repl: &PageRawIdentsRepl<'_>,
+    repl: &PageRawIdentsReplShape<'_>,
 ) -> BaseRest<()> {
     //
     let unnamed_ids = repl

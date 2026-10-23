@@ -72,7 +72,7 @@ pub async fn find_info_by_user_id_and_team_id(
 )]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &MemberListSpec<'_>,
+    spec: &MemberListSpec,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
     let rows =
@@ -80,7 +80,7 @@ pub async fn list_infos(
             //
             MemberListSpec::Team {
                 team_id,
-                fuzzy_nickname,
+                fuzzy_nickname: _,
                 role,
                 offset,
                 limit,
@@ -88,12 +88,12 @@ pub async fn list_infos(
             } => {
                 //
                 let mut query = t_member
-                    .filter(f_team_id.eq(*team_id))
+                    .filter(f_team_id.eq(team_id))
                     .filter(f_team_id.eq_any(active_team_ids!()))
                     .select(MemberInfoRow::as_select())
                     .into_boxed();
 
-                if let Some(nickname) = fuzzy_nickname {
+                if let Some(nickname) = spec.trimmed_fuzzy_nickname() {
                     //
                     let escaped = escape_ilike_pattern(nickname);
 
@@ -157,7 +157,7 @@ pub async fn list_infos(
                 limit,
                 ..
             } => t_member
-                .filter(f_user_id.eq(*owner_id))
+                .filter(f_user_id.eq(owner_id))
                 .filter(f_team_id.eq_any(active_team_ids!()))
                 .select(MemberInfoRow::as_select())
                 .order_by((f_user_last_active_at.desc(), f_id.asc()))

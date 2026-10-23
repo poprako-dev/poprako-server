@@ -42,15 +42,15 @@ pub fn missing_team(id: &str, operation: &str) -> BaseError {
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    entry: &TeamEntry<'_>,
+    entry: &TeamEntry,
 ) -> BaseRest<TeamInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
     let entry = TeamEntryRow {
         f_id: &entry.id,
-        f_name: &entry.name,
-        f_description: &entry.description,
+        f_name: entry.trimmed_name(),
+        f_description: entry.trimmed_description(),
         f_workset_next_index: 0,
         f_created_at: now,
         f_updated_at: now,
@@ -137,16 +137,13 @@ pub async fn list_infos(
 // Update mutable team profile fields for the target team.
 /// Apply a team metadata replacement.
 #[instrument(level = "info", skip_all)]
-pub async fn update_info(
-    conn: &mut RdbConn,
-    repl: &TeamRepl<'_>,
-) -> BaseRest<()> {
+pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let aspect = TeamAspectRow::new(now)
-        .name(repl.name)
-        .description(repl.description);
+        .name(repl.trimmed_name())
+        .description(repl.trimmed_description());
 
     let updated_count = diesel::update(
         t_team

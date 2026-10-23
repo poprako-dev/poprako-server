@@ -39,18 +39,14 @@ pub fn gen_id() -> String {
     next_snowflake_id()
 }
 
-/// Returns the trimmed user-supplied subtitle if non-empty, or a generated
-/// default in the format "Ch. N" (1-based).
-pub fn subtitle_or_default(
-    subtitle: Option<&str>,
-    index: usize,
-) -> Cow<'_, str> {
+/// Moves the supplied subtitle when it contains non-whitespace text, or
+/// generates a default in the format "Ch. N" (1-based).
+/// Persistence borrows its trimmed view from the chapter Shape.
+pub fn subtitle_or_default(subtitle: Option<String>, index: usize) -> String {
     //
-    let subtitle = subtitle.map(str::trim);
-
     subtitle
-        .filter(|value| !value.is_empty())
-        .map_or_else(|| Cow::Owned(default_subtitle(index)), Cow::Borrowed)
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| default_subtitle(index))
 }
 
 /// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]

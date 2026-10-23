@@ -8,39 +8,7 @@
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
 //! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
-use std::borrow::Cow;
-
 use crate::value::chapter::mask::StageMask;
-
-/// The data needed to insert a new chapter row.
-///
-/// Supplied at chapter-creation time by the use case layer. The `id` is
-/// typically generated via [`chapter_complex::gen_id`] before constructing
-/// this form. The `is_pinned` initial value is determined by the caller
-/// (usually `true` for the first chapter in a comic, or the new
-/// highest-index chapter).
-///
-/// Existing foreign identifiers may borrow their caller-owned storage.
-///
-/// [`chapter_complex::gen_id`]: crate::complex::chapter::gen_id
-#[cfg_attr(test, derive(Clone))]
-pub struct ChapterEntry<'a> {
-    /// Unique identifier to insert for the new chapter.
-    pub id: String,
-
-    /// Foreign key identifying the parent comic.
-    pub comic_id: Cow<'a, str>,
-
-    /// Whether the new chapter should become the active chapter immediately.
-    pub is_pinned: bool,
-    /// Ordinal position assigned to the new chapter within the comic.
-    pub index: usize,
-    /// Chapter subtitle or number for display.
-    pub subtitle: Cow<'a, str>,
-
-    /// Foreign key identifying the user creating the chapter.
-    pub creator_id: Cow<'a, str>,
-}
 
 /// Mutable non-workflow fields for a chapter.
 ///
@@ -49,14 +17,21 @@ pub struct ChapterEntry<'a> {
 /// the single-pinned-chapter invariant. Workflow phase transitions are
 /// handled via [`ChapterStageRepl`] instead.
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterPatch<'a> {
+pub struct ChapterPatch {
     /// Unique identifier of the chapter whose profile fields are being changed.
     pub id: String,
 
     /// New subtitle value, or `None` to leave unchanged.
-    pub subtitle: Option<&'a str>,
+    pub subtitle: Option<String>,
     /// New pinned state for a dedicated pinning operation.
     pub pin: Option<bool>,
+}
+
+impl ChapterPatch {
+    /// Borrows normalized subtitle without copying its storage.
+    pub fn trimmed_subtitle(&self) -> Option<&str> {
+        self.subtitle.as_deref().map(str::trim)
+    }
 }
 
 /// Mutable workflow stage mask for a chapter.

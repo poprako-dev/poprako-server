@@ -25,7 +25,6 @@ use crate::data::view::chapter::ChapterInfoView;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -44,6 +43,7 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -291,11 +291,11 @@ where
 
         chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-        let subtitle = instr.subtitle.as_deref().map(str::trim);
-
-        match subtitle {
+        match instr.subtitle {
             //
-            Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
+            Some(next_subtitle)
+                if next_subtitle.trim() != chapter_info.subtitle =>
+            {
                 //
                 let chapter_info_update = ChapterPatch {
                     id: instr.id,
@@ -309,14 +309,18 @@ where
                 .step_on(repo, context)
                 .await?;
 
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.as_str(),
-                    Some(token.user_id.as_str().into()),
-                    ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
-                        previous_subtitle: chapter_info.subtitle,
-                        next_subtitle: next_subtitle.to_owned(),
-                    },
-                );
+                let workflow_record_entry =
+                    ChapterWorkflowRecordEntryShape::new(
+                        chapter_info.id.as_str(),
+                        Some(token.user_id.as_str()),
+                        ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
+                            previous_subtitle: chapter_info.subtitle,
+                            next_subtitle: chapter_info_update
+                                .trimmed_subtitle()
+                                .unwrap_or_default()
+                                .to_owned(),
+                        },
+                    );
 
                 CreateChapterWorkflowRecords {
                     entries: std::slice::from_ref(&workflow_record_entry),
@@ -429,24 +433,28 @@ where
 
             let mut workflow_record_entries = Vec::with_capacity(2);
 
-            if let Some(prev_pinned_chapter) = prev_pinned_chapter
+            if let Some(prev_pinned_chapter) = &prev_pinned_chapter
                 && prev_pinned_chapter.id != chapter_info.id
             {
                 //
-                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    prev_pinned_chapter.id,
-                    Some(token.user_id.as_str().into()),
-                    ChapterWorkflowRecordPayload::ChapterUnpinned,
-                ));
+                workflow_record_entries.push(
+                    ChapterWorkflowRecordEntryShape::new(
+                        &prev_pinned_chapter.id,
+                        Some(token.user_id.as_str()),
+                        ChapterWorkflowRecordPayload::ChapterUnpinned,
+                    ),
+                );
             }
 
             if !chapter_info.is_pinned {
                 //
-                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.as_str(),
-                    Some(token.user_id.as_str().into()),
-                    ChapterWorkflowRecordPayload::ChapterPinned,
-                ));
+                workflow_record_entries.push(
+                    ChapterWorkflowRecordEntryShape::new(
+                        chapter_info.id.as_str(),
+                        Some(token.user_id.as_str()),
+                        ChapterWorkflowRecordPayload::ChapterPinned,
+                    ),
+                );
             }
 
             CreateChapterWorkflowRecords {

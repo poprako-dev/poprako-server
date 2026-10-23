@@ -526,7 +526,7 @@ async fn list_infos_non_member_is_rejected() {
 #[test]
 fn list_infos_rejects_invalid_combination() {
     //
-    let err = TryInto::<MemberListSpec>::try_into(&ListMemberInfosInstr {
+    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         fuzzy_nickname: None,
@@ -548,7 +548,7 @@ fn list_infos_rejects_invalid_combination() {
 )]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
-    let instr = ListMemberInfosInstr {
+    let member_list_spec: MemberListSpec = ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: None,
         fuzzy_nickname: None,
@@ -556,9 +556,9 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
         incl_opt: Vec::new(),
         offset: 3,
         limit: crate::value::pagination::PubListLimit::new(5).unwrap(),
-    };
-
-    let member_list_spec: MemberListSpec = (&instr).try_into().unwrap();
+    }
+    .try_into()
+    .unwrap();
 
     let MemberListSpec::User {
         owner_id,

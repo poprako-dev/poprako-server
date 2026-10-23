@@ -24,8 +24,6 @@ use crate::data::instr::assignment::{
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -47,6 +45,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::assignment_info_views;
@@ -197,10 +197,10 @@ where
                 }
             } else {
                 //
-                let assignment_entry = AssignmentEntry {
+                let assignment_entry = AssignmentEntryShape {
                     id: assignment_complex::gen_id(),
-                    chapter_id: instr.chapter_id.into(),
-                    user_id: token.user_id.as_str().into(),
+                    chapter_id: &instr.chapter_id,
+                    user_id: token.user_id.as_str(),
                     roles: instr.roles,
                 };
 
@@ -220,11 +220,12 @@ where
 
             if let Some(payload) = workflow_record_payload {
                 //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id,
-                    Some(token.user_id.into()),
-                    payload,
-                );
+                let workflow_record_entry =
+                    ChapterWorkflowRecordEntryShape::new(
+                        &chapter_info.id,
+                        Some(&token.user_id),
+                        payload,
+                    );
 
                 CreateChapterWorkflowRecords {
                     entries: std::slice::from_ref(&workflow_record_entry),
@@ -311,9 +312,9 @@ where
             .step_on(repo, context)
             .await?;
 
-        let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-            chapter_info.id,
-            Some(token.user_id.into()),
+        let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
+            &chapter_info.id,
+            Some(&token.user_id),
             ChapterWorkflowRecordPayload::AssignmentDeleted {
                 subject_user_id: assignment_info.user_id,
                 previous_roles: assignment_info.roles,

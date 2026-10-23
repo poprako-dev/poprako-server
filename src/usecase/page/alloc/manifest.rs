@@ -14,9 +14,7 @@ use poprako_obj_dept::oper::{DeleteObjs, GenObjSlots, ListObjMetas};
 
 use crate::complex::{chapter as chapter_complex, page as page_complex};
 use crate::model::read::proj::page::PageInfo;
-use crate::model::write::page::{
-    PageImageSpec, PageManifestEntry, PageRawIdentsRepl,
-};
+use crate::model::write::page::{PageImageSpec, PageManifestEntry};
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::PromPayload;
@@ -33,6 +31,7 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash, PageImageKey};
 
@@ -171,8 +170,8 @@ where
         .map(|(entry, spec)| (entry.id.as_str(), spec.raw_ident.as_deref()))
         .collect::<Vec<_>>();
 
-    let raw_ident_repl = PageRawIdentsRepl {
-        idents: &raw_ident_repls,
+    let raw_ident_repl = PageRawIdentsReplShape {
+        idents: raw_ident_repls,
     };
 
     UpdatePageRawIdents {

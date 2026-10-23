@@ -127,7 +127,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     let member_entry = MemberEntry {
         id: format!("{}member", PREFIX),
         user_id: team_fixture.user_entry.id.clone(),
-        user_nickname: team_fixture.user_entry.nickname.to_string(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
         roles: admin_role,
     };
@@ -155,10 +155,10 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     .await;
 
     let member_list_spec = MemberListSpec::Team {
-        team_id: &team_fixture.team_entry.id,
-        fuzzy_nickname: Some("RDB"),
+        team_id: team_fixture.team_entry.id.clone(),
+        fuzzy_nickname: Some("RDB".into()),
         role: Some(RoleField::ADMIN),
-        incl_opt: &[MemberInclOpt::User],
+        incl_opt: vec![MemberInclOpt::User],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -239,7 +239,7 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
     let member_entry = MemberEntry {
         id: format!("{}tombstoned-member", PREFIX),
         user_id: team_fixture.user_entry.id.clone(),
-        user_nickname: team_fixture.user_entry.nickname.to_string(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
         roles: RoleMask::from(RoleField::ADMIN),
     };
@@ -335,7 +335,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
 
     let second_user_entry = UserEntry {
         id: format!("{}second-user", PREFIX),
-        qid: format!("{}second-qid", PREFIX).into(),
+        qid: format!("{}second-qid", PREFIX),
         nickname: "RDB second admin".into(),
         password_hash: "password-hash".into(),
     };
@@ -345,7 +345,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     let first_member_entry = MemberEntry {
         id: format!("{}first-admin-member", PREFIX),
         user_id: team_fixture.user_entry.id.clone(),
-        user_nickname: team_fixture.user_entry.nickname.to_string(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
         roles: RoleMask::from(RoleField::ADMIN),
     };
@@ -353,7 +353,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     let second_member_entry = MemberEntry {
         id: format!("{}second-admin-member", PREFIX),
         user_id: second_user_entry.id,
-        user_nickname: second_user_entry.nickname.into_owned(),
+        user_nickname: second_user_entry.nickname,
         team_id: team_fixture.team_entry.id.clone(),
         roles: RoleMask::from(RoleField::ADMIN),
     };
@@ -431,10 +431,10 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     assert!(matches!(error, BaseError::Retryable { .. }));
 
     let member_list_spec = MemberListSpec::Team {
-        team_id: &team_fixture.team_entry.id,
+        team_id: team_fixture.team_entry.id,
         fuzzy_nickname: None,
         role: Some(RoleField::ADMIN),
-        incl_opt: &[],
+        incl_opt: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -475,10 +475,10 @@ async fn remove_admin_role_after_read(
     nucl.coord(async move |context| {
         //
         let member_list_spec = MemberListSpec::Team {
-            team_id: &team_id,
+            team_id,
             fuzzy_nickname: None,
             role: None,
-            incl_opt: &[],
+            incl_opt: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };

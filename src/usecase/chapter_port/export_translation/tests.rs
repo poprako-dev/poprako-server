@@ -380,15 +380,15 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 {
     use poprako_orchestra::{Nucl as _, OperStep as _};
 
-    use crate::model::write::page::PageRawIdentsRepl;
     use crate::part::repo::oper::page::UpdatePageRawIdents;
+    use crate::shape::write::page::PageRawIdentsReplShape;
 
     let mock = Mock::new();
 
     seed_scope(&mock);
 
-    let repls = PageRawIdentsRepl {
-        idents: &[("page-1", Some("原稿 01.JPG"))],
+    let repls = PageRawIdentsReplShape {
+        idents: vec![("page-1", Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {
@@ -445,8 +445,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
         serde_json::to_value(raw_export.poprako).unwrap()
     );
 
-    let repls = PageRawIdentsRepl {
-        idents: &[("page-2", Some("原稿 01.JPG"))],
+    let repls = PageRawIdentsReplShape {
+        idents: vec![("page-2", Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {

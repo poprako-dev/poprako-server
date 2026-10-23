@@ -1,20 +1,22 @@
-use crate::model::write::chapter::ChapterEntry;
-use crate::model::write::comic::ComicEntry;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::page::PageEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
+use crate::shape::write::chapter::ChapterEntryShape;
+use crate::shape::write::comic::ComicEntryShape;
 
 #[expect(
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn user_entry(prefix: &str, name: &str) -> UserEntry<'static> {
+pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
         id: format!("{}user-{}", prefix, name),
-        nickname: format!("{}user-{}", prefix, name).into(),
-        qid: format!("{}qid-{}", prefix, name).into(),
+        nickname: format!("{}user-{}", prefix, name),
+        qid: format!("{}qid-{}", prefix, name),
         password_hash: "hash".into(),
     }
 }
@@ -24,10 +26,10 @@ pub fn user_entry(prefix: &str, name: &str) -> UserEntry<'static> {
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn team_entry(prefix: &str) -> TeamEntry<'static> {
+pub fn team_entry(prefix: &str) -> TeamEntry {
     TeamEntry {
         id: format!("{}team", prefix),
-        name: format!("{}team", prefix).into(),
+        name: format!("{}team", prefix),
         description: "team".into(),
     }
 }
@@ -37,16 +39,13 @@ pub fn team_entry(prefix: &str) -> TeamEntry<'static> {
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn workset_entry(
-    prefix: &str,
-    team_entry: &TeamEntry<'_>,
-) -> WorksetEntry<'static> {
+pub fn workset_entry(prefix: &str, team_entry: &TeamEntry) -> WorksetEntry {
     WorksetEntry {
         id: format!("{}workset", prefix),
         team_id: team_entry.id.clone(),
         index: 0,
-        name: "RDB Workset",
-        description: Some("workset"),
+        name: "RDB Workset".into(),
+        description: Some("workset".into()),
     }
 }
 
@@ -55,19 +54,19 @@ pub fn workset_entry(
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn comic_entry(
+pub fn comic_entry<'a>(
     prefix: &str,
-    workset_entry: &WorksetEntry<'_>,
-    creator_form: &UserEntry<'_>,
-) -> ComicEntry<'static> {
-    ComicEntry {
+    workset_entry: &'a WorksetEntry,
+    creator_form: &'a UserEntry,
+) -> ComicEntryShape<'a> {
+    ComicEntryShape {
         id: format!("{}comic", prefix),
-        workset_id: workset_entry.id.clone().into(),
+        workset_id: &workset_entry.id,
         index: 0,
-        title: "RDB Comic",
-        author: "RDB Author",
-        description: Some("comic"),
-        creator_id: creator_form.id.clone().into(),
+        title: "RDB Comic".into(),
+        author: "RDB Author".into(),
+        description: Some("comic".into()),
+        creator_id: &creator_form.id,
     }
 }
 
@@ -76,18 +75,18 @@ pub fn comic_entry(
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn chapter_entry(
+pub fn chapter_entry<'a>(
     prefix: &str,
-    comic_entry: &ComicEntry<'_>,
-    creator_form: &UserEntry<'_>,
-) -> ChapterEntry<'static> {
-    ChapterEntry {
+    comic_entry: &'a ComicInfo,
+    creator_form: &'a UserEntry,
+) -> ChapterEntryShape<'a> {
+    ChapterEntryShape {
         id: format!("{}chapter", prefix),
-        comic_id: comic_entry.id.clone().into(),
+        comic_id: &comic_entry.id,
         is_pinned: true,
         index: 0,
         subtitle: "RDB Chapter".into(),
-        creator_id: creator_form.id.clone().into(),
+        creator_id: &creator_form.id,
     }
 }
 
@@ -96,7 +95,7 @@ pub fn chapter_entry(
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 #[must_use]
-pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry<'_>) -> PageEntry {
+pub fn page_entry(prefix: &str, chapter_entry: &ChapterInfo) -> PageEntry {
     PageEntry {
         id: format!("{}page", prefix),
         chapter_id: chapter_entry.id.clone(),

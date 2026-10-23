@@ -78,8 +78,8 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_repl = TeamRepl {
         id: team_fixture.team_entry.id.clone(),
-        name: "RDB Team Updated",
-        description: "updated",
+        name: "RDB Team Updated".into(),
+        description: "updated".into(),
     };
 
     repo.run(&UpdateTeam { repl: &team_repl }).await.unwrap();
@@ -118,7 +118,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
 
     let comic_team_id = repo
         .run(&ResolveTeamId::Comic {
-            id: &chapter_fixture.comic_entry.id,
+            id: &chapter_fixture.comic_info.id,
         })
         .await
         .unwrap();
@@ -127,7 +127,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
 
     let chapter_team_id = repo
         .run(&ResolveTeamId::Chapter {
-            id: &chapter_fixture.chapter_entry.id,
+            id: &chapter_fixture.chapter_info.id,
         })
         .await
         .unwrap();
@@ -152,7 +152,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
             .step(
                 context,
                 &ResolveTeamId::Chapter {
-                    id: &chapter_fixture.chapter_entry.id,
+                    id: &chapter_fixture.chapter_info.id,
                 },
             )
             .await?;
@@ -163,7 +163,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
             .step(
                 context,
                 &ResolveTeamId::Comic {
-                    id: &chapter_fixture.comic_entry.id,
+                    id: &chapter_fixture.comic_info.id,
                 },
             )
             .await?;

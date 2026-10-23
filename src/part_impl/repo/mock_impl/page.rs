@@ -223,7 +223,7 @@ impl Step<UpdatePageRawIdents<'_>, MockContext> for Mock {
         oper: &UpdatePageRawIdents<'_>,
     ) -> BaseRest<()> {
         //
-        for &(page_id, raw_ident) in oper.repl.idents {
+        for &(page_id, raw_ident) in &oper.repl.idents {
             //
             match raw_ident {
                 //

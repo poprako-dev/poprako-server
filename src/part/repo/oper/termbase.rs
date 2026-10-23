@@ -9,7 +9,7 @@ use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
 #[oper(output = TermbaseInfo)]
 pub struct CreateTermbase<'a> {
     /// The termbase entry to insert.
-    pub entry: &'a TermbaseEntry<'a>,
+    pub entry: &'a TermbaseEntry,
 }
 
 /// Looks up a termbase by identifier.
@@ -25,7 +25,7 @@ pub struct GetTermbaseInfo<'a> {
 #[oper(output = Vec<TermbaseInfo>)]
 pub struct ListTermbaseInfos<'a> {
     /// The specification for filtering listed termbases.
-    pub spec: &'a TermbaseListSpec<'a>,
+    pub spec: &'a TermbaseListSpec,
 }
 
 /// Looks up a termbase by identifier, matching deleted rows as well.
@@ -58,7 +58,7 @@ pub enum ListTermbaseInfosExcluded<'a> {
 #[oper(output = ())]
 pub struct UpdateTermbase<'a> {
     /// The update payload for the termbase.
-    pub update: &'a TermbaseRepl<'a>,
+    pub update: &'a TermbaseRepl,
 }
 
 /// Updates a termbase's cached term count.

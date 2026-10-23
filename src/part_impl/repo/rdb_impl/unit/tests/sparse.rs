@@ -59,7 +59,7 @@ async fn sparse_unit_writes_use_testcontainer() {
 
     let page_id = fixture.page_entry.id.as_str();
 
-    let user_id = fixture.chapter_entry.creator_id.as_ref();
+    let user_id = fixture.chapter_info.creator_id.as_str();
 
     let queries = Arc::new(Mutex::new(Vec::<String>::new()));
 

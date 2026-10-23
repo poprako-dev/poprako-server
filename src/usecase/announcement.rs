@@ -126,8 +126,8 @@ where
         id: announcement_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        title: instr.title.trim(),
-        content: instr.content.trim(),
+        title: instr.title,
+        content: instr.content,
     };
 
     let announcement_info = CreateAnnouncement {
@@ -186,8 +186,8 @@ where
 
     let announcement_repl = AnnouncementRepl {
         id: instr.id,
-        title: instr.title.trim(),
-        content: instr.content.trim(),
+        title: instr.title,
+        content: instr.content,
     };
 
     UpdateAnnouncement {

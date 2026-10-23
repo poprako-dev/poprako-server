@@ -13,8 +13,7 @@ use crate::data::instr::assignment::UpdateAssignmentRolesInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -28,6 +27,8 @@ use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
@@ -142,9 +143,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
         instr.chapter_id.as_str(),
-        Some(token.user_id.as_str().into()),
+        Some(token.user_id.as_str()),
         ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
             subject_user_id: assignment_info.user_id.clone(),
             previous_roles: assignment_info.roles,
@@ -177,10 +178,10 @@ where
     C: Context,
     R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
-    let assignment_entry = AssignmentEntry {
+    let assignment_entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
-        chapter_id: instr.chapter_id.into(),
-        user_id: instr.user_id.as_str().into(),
+        chapter_id: &instr.chapter_id,
+        user_id: instr.user_id.as_str(),
         roles: instr.roles,
     };
 
@@ -190,9 +191,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
         chapter_info.id.as_str(),
-        Some(token.user_id.as_str().into()),
+        Some(token.user_id.as_str()),
         ChapterWorkflowRecordPayload::AssignmentCreated {
             subject_user_id: instr.user_id,
             roles: instr.roles,

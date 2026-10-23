@@ -16,8 +16,6 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -41,6 +39,8 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
@@ -158,11 +158,12 @@ where
 
             if let Some(payload) = workflow_record_payload {
                 //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id,
-                    Some(current_user_id.into()),
-                    payload,
-                );
+                let workflow_record_entry =
+                    ChapterWorkflowRecordEntryShape::new(
+                        &chapter_info.id,
+                        Some(&current_user_id),
+                        payload,
+                    );
 
                 CreateChapterWorkflowRecords {
                     entries: std::slice::from_ref(&workflow_record_entry),
@@ -272,10 +273,10 @@ where
         .await;
     }
 
-    let assignment_entry = AssignmentEntry {
+    let assignment_entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
-        chapter_id: assignment_invitation_info.chapter_id.as_str().into(),
-        user_id: current_user_id.into(),
+        chapter_id: assignment_invitation_info.chapter_id.as_str(),
+        user_id: current_user_id,
         roles: assignment_invitation_info.roles,
     };
 

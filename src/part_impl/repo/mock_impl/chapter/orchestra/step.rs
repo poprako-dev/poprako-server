@@ -296,7 +296,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
             .find(|chapter_info| chapter_info.id == oper.update.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        if let Some(subtitle) = &oper.update.subtitle {
+        if let Some(subtitle) = &oper.update.trimmed_subtitle() {
             chapter_info.subtitle = (*subtitle).to_owned();
         }
 

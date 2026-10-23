@@ -2,7 +2,7 @@
 
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
-pub struct TermEntry<'a> {
+pub struct TermEntry {
     /// The unique identifier for the new terminology entry.
     pub id: String,
 
@@ -10,79 +10,100 @@ pub struct TermEntry<'a> {
     pub termbase_id: String,
 
     /// The source-language term or phrase to add.
-    pub source: &'a str,
+    pub source: String,
     /// One or more target-language translations for the new term.
-    pub targets: Vec<&'a str>,
+    pub targets: Vec<String>,
     /// Optional annotation or usage note for the new term.
-    pub comment: Option<&'a str>,
+    pub comment: Option<String>,
 
     /// Foreign key of the user creating this term entry.
     pub creator_id: String,
 }
 
+impl TermEntry {
+    /// Borrows normalized source without copying its storage.
+    pub fn trimmed_source(&self) -> &str {
+        self.source.trim()
+    }
+
+    /// Borrows normalized targets without copying its storage.
+    pub fn trimmed_targets(&self) -> impl ExactSizeIterator<Item = &str> {
+        self.targets.iter().map(|value| value.trim())
+    }
+
+    /// Borrows normalized comment without copying its storage.
+    pub fn trimmed_comment(&self) -> Option<&str> {
+        //
+        self.comment
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+}
+
 /// Portable terminology-entry content before persistence identity is assigned.
 #[cfg_attr(test, derive(Clone))]
-pub struct TermImport<'a> {
+pub struct TermImport {
     /// Source-language term or phrase.
-    pub source: &'a str,
+    pub source: String,
     /// Target-language translations.
-    pub targets: Vec<&'a str>,
+    pub targets: Vec<String>,
     /// Optional annotation or usage note.
-    pub comment: Option<&'a str>,
+    pub comment: Option<String>,
+}
+
+impl TermImport {
+    /// Borrows normalized source without copying its storage.
+    pub fn trimmed_source(&self) -> &str {
+        self.source.trim()
+    }
+
+    /// Borrows normalized targets without copying its storage.
+    pub fn trimmed_targets(&self) -> impl ExactSizeIterator<Item = &str> {
+        self.targets.iter().map(|value| value.trim())
+    }
+
+    /// Borrows normalized comment without copying its storage.
+    pub fn trimmed_comment(&self) -> Option<&str> {
+        //
+        self.comment
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
 }
 
 /// Mutable terminology-entry fields.
 #[cfg_attr(test, derive(Clone))]
-pub struct TermRepl<'a> {
+pub struct TermRepl {
     /// The unique identifier of the term to update.
     pub id: String,
 
     /// Updated source-language term or phrase.
-    pub source: &'a str,
+    pub source: String,
     /// Updated target-language translations for the term.
-    pub targets: Vec<&'a str>,
+    pub targets: Vec<String>,
     /// Updated annotation or usage note for the term.
-    pub comment: Option<&'a str>,
-}
-
-impl<'a> From<&'a TermAppendRepl<'a>> for TermRepl<'a> {
-    // Borrow merged content for the existing typed persistence operation.
-    fn from(update: &'a TermAppendRepl<'a>) -> Self {
-        Self {
-            id: update.id.clone(),
-            source: update.source,
-            targets: update.targets.clone(),
-            comment: update.comment.as_deref(),
-        }
-    }
-}
-
-/// Delivery changes produced by one terminology-base import.
-pub struct TermUpsertPlan<'a> {
-    /// New terminology entries to insert.
-    pub entries: Vec<TermEntry<'a>>,
-
-    /// Existing terminology entries to update.
-    pub updates: Vec<TermRepl<'a>>,
-}
-
-/// A merged terminology replacement owning its combined comment text.
-pub struct TermAppendRepl<'a> {
-    /// Identifier of the existing terminology entry.
-    pub id: String,
-
-    /// Original source spelling retained by the append.
-    pub source: &'a str,
-    /// Existing translations followed by new distinct translations.
-    pub targets: Vec<&'a str>,
-    /// Combined complete comment blocks.
     pub comment: Option<String>,
 }
 
-/// Changes produced by appending a normalized terminology batch.
-pub struct TermAppendPlan<'a> {
-    /// New terminology entries to insert.
-    pub entries: Vec<TermEntry<'a>>,
-    /// Existing entries whose content actually changes.
-    pub updates: Vec<TermAppendRepl<'a>>,
+impl TermRepl {
+    /// Borrows normalized source without copying its storage.
+    pub fn trimmed_source(&self) -> &str {
+        self.source.trim()
+    }
+
+    /// Borrows normalized targets without copying its storage.
+    pub fn trimmed_targets(&self) -> impl ExactSizeIterator<Item = &str> {
+        self.targets.iter().map(|value| value.trim())
+    }
+
+    /// Borrows normalized comment without copying its storage.
+    pub fn trimmed_comment(&self) -> Option<&str> {
+        //
+        self.comment
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
 }

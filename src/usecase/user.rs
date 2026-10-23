@@ -106,10 +106,6 @@ where
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let qid = instr.qid.trim();
-
-    let nickname = instr.nickname.trim();
-
     // Only the user themselves can update their own profile.
     if token.user_id != instr.id {
         //
@@ -124,13 +120,8 @@ where
 
     let user_repl = UserInfoRepl {
         id: token.user_id,
-        qid,
-        nickname,
-    };
-
-    let member_repl = MemberNicknameRepl {
-        user_id: user_repl.id.clone(),
-        user_nickname: user_repl.nickname,
+        qid: instr.qid,
+        nickname: instr.nickname,
     };
 
     nucl.coord(async move |context| {
@@ -138,6 +129,11 @@ where
         UpdateUser::Info { repl: &user_repl }
             .step_on(repo, context)
             .await?;
+
+        let member_repl = MemberNicknameRepl {
+            user_id: user_repl.id,
+            user_nickname: user_repl.nickname,
+        };
 
         UpdateMember::UserNickname { repl: &member_repl }
             .step_on(repo, context)

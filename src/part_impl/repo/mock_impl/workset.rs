@@ -66,10 +66,7 @@ fn list_workset_infos(
 }
 
 // Internal implementation of `update_workset`.
-fn update_workset(
-    state: &mut MockState,
-    update: &WorksetRepl<'_>,
-) -> BaseRest<()> {
+fn update_workset(state: &mut MockState, update: &WorksetRepl) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -83,9 +80,9 @@ fn update_workset(
         .find(|workset_info| workset_info.id == update.id)
         .ok_or_else(|| expected("error-workset-not-found"))?;
 
-    workset_info.name = update.name.to_owned();
+    workset_info.name = update.trimmed_name().to_owned();
 
-    workset_info.description = update.description.map(str::to_owned);
+    workset_info.description = update.trimmed_description().map(str::to_owned);
 
     workset_info.updated_at = now();
 
@@ -214,8 +211,8 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
             id: oper.entry.id.clone(),
             team_id: oper.entry.team_id.clone(),
             index: oper.entry.index,
-            name: oper.entry.name.to_owned(),
-            description: oper.entry.description.map(str::to_owned),
+            name: oper.entry.trimmed_name().to_owned(),
+            description: oper.entry.trimmed_description().map(str::to_owned),
             comic_count: 0,
             created_at: time,
             updated_at: time,

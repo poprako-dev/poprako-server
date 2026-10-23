@@ -4,12 +4,12 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
-use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 
@@ -139,22 +139,22 @@ pub struct ChapterEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ChapterEntry<'_>> for ChapterEntryRow<'a> {
+impl<'a> TryFrom<&'a ChapterEntryShape<'_>> for ChapterEntryRow<'a> {
     type Error = BaseError;
 
     fn try_from(
-        chapter_entry: &'a ChapterEntry<'_>,
+        chapter_entry: &'a ChapterEntryShape<'_>,
     ) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 
         Ok(Self {
             f_id: &chapter_entry.id,
-            f_comic_id: &chapter_entry.comic_id,
+            f_comic_id: chapter_entry.comic_id,
             f_is_pinned: chapter_entry.is_pinned,
             f_index: i32_from_usize(chapter_entry.index, "t_chapter.f_index")?,
-            f_subtitle: &chapter_entry.subtitle,
-            f_creator_id: &chapter_entry.creator_id,
+            f_subtitle: chapter_entry.trimmed_subtitle(),
+            f_creator_id: chapter_entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         })

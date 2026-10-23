@@ -209,9 +209,9 @@ async fn verify_diff_stats(
                     is_proofread: false,
                     proofread_text: Some("appended body".into()),
                     last_proofreader_id: fixture
-                        .chapter_entry
+                        .chapter_info
                         .creator_id
-                        .to_string(),
+                        .clone(),
                 },
             },
         };
@@ -245,7 +245,7 @@ async fn verify_diff_stats(
 
     let stats = repo
         .run(&ListPageUnitDiffStats {
-            chapter_id: &fixture.chapter_entry.id,
+            chapter_id: &fixture.chapter_info.id,
         })
         .await
         .unwrap();

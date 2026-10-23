@@ -120,7 +120,7 @@ pub async fn get_info_by_code_excluded(
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    model_entry: &AssignmentInvitationEntry<'_>,
+    model_entry: &AssignmentInvitationEntry,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
     let entry = AssignmentInvitationEntryRow::from(model_entry);

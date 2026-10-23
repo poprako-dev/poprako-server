@@ -23,7 +23,6 @@ use crate::model::shared::translation_document::{
     UnitTranslationDocument,
 };
 use crate::model::shared::user::UserToken;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -42,6 +41,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter::stage::Stage;
@@ -307,9 +307,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+            let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
                 chapter_info.id.as_str(),
-                Some(actor_user_id.as_str().into()),
+                Some(actor_user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationExported { formats },
             );
 

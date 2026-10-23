@@ -95,7 +95,7 @@ async fn list_infos(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entry: &AnnouncementEntry<'_>,
+    entry: &AnnouncementEntry,
 ) -> BaseRest<AnnouncementInfo> {
     //
     let entry = AnnouncementEntryRow::from(entry);
@@ -114,11 +114,14 @@ async fn create(
 #[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
-    update: &AnnouncementRepl<'_>,
+    update: &AnnouncementRepl,
 ) -> BaseRest<()> {
     //
     diesel::update(t_announcement.filter(f_id.eq(&update.id)))
-        .set((f_title.eq(&update.title), f_content.eq(&update.content)))
+        .set((
+            f_title.eq(update.trimmed_title()),
+            f_content.eq(update.trimmed_content()),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;

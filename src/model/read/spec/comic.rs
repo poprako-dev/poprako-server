@@ -10,22 +10,29 @@ use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing comics within a workset.
-pub struct ComicListSpec<'a> {
+pub struct ComicListSpec {
     /// The workset whose comics should be listed.
-    pub workset_id: &'a str,
+    pub workset_id: String,
 
     /// Optional fuzzy title search to narrow the results.
-    pub fuzzy_title: Option<&'a str>,
+    pub fuzzy_title: Option<String>,
     /// Optional workflow-stage mask filter.
     pub stages: Option<StageMask>,
     /// Optional lifecycle state filter.
     pub status: Option<ComicStatus>,
 
     /// Additional data to include in each result, such as the workset or creator.
-    pub incl_opt: &'a [ComicInclOpt],
+    pub incl_opt: Vec<ComicInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
     pub limit: PubListLimit,
+}
+
+impl ComicListSpec {
+    /// Borrows normalized fuzzy title without copying its storage.
+    pub fn trimmed_fuzzy_title(&self) -> Option<&str> {
+        self.fuzzy_title.as_deref().map(str::trim)
+    }
 }

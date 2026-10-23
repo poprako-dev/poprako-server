@@ -2,7 +2,8 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::model::write::assignment::AssignmentRoleRepl;
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -81,7 +82,7 @@ pub struct ListAssignmentInfosExcluded<'a> {
 #[oper(output = AssignmentInfo)]
 pub struct CreateAssignment<'a> {
     /// The assignment entry data.
-    pub entry: &'a AssignmentEntry<'a>,
+    pub entry: &'a AssignmentEntryShape<'a>,
 }
 
 /// Replaces the roles assigned to an assignment.

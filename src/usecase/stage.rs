@@ -2,12 +2,12 @@
 
 use poprako_orchestra::{Context, OperStep as _};
 
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::oper::chapter::StartChapterStage;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::result::{BaseRest, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
@@ -75,9 +75,9 @@ where
                 origin,
             };
 
-            entries.push(ChapterWorkflowRecordEntry::new(
+            entries.push(ChapterWorkflowRecordEntryShape::new(
                 chapter_id,
-                actor_user_id.map(Into::into),
+                actor_user_id,
                 payload,
             ));
         }

@@ -2,7 +2,7 @@
 
 /// The data needed to create a new workset.
 #[cfg_attr(test, derive(Clone))]
-pub struct WorksetEntry<'a> {
+pub struct WorksetEntry {
     /// Server-assigned unique workset identifier.
     pub id: String,
 
@@ -12,18 +12,42 @@ pub struct WorksetEntry<'a> {
     pub index: usize,
 
     /// Human-readable workset name.
-    pub name: &'a str,
+    pub name: String,
     /// Optional longer description of this workset's purpose.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
+}
+
+impl WorksetEntry {
+    /// Borrows normalized name without copying its storage.
+    pub fn trimmed_name(&self) -> &str {
+        self.name.trim()
+    }
+
+    /// Borrows normalized description without copying its storage.
+    pub fn trimmed_description(&self) -> Option<&str> {
+        self.description.as_deref().map(str::trim)
+    }
 }
 
 /// Mutable profile fields for a workset.
 #[cfg_attr(test, derive(Clone))]
-pub struct WorksetRepl<'a> {
+pub struct WorksetRepl {
     /// Server-assigned identifier of the workset to update.
     pub id: String,
     /// Updated human-readable workset name.
-    pub name: &'a str,
+    pub name: String,
     /// Updated description; `None` means no description.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
+}
+
+impl WorksetRepl {
+    /// Borrows normalized name without copying its storage.
+    pub fn trimmed_name(&self) -> &str {
+        self.name.trim()
+    }
+
+    /// Borrows normalized description without copying its storage.
+    pub fn trimmed_description(&self) -> Option<&str> {
+        self.description.as_deref().map(str::trim)
+    }
 }

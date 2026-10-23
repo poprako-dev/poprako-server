@@ -20,19 +20,17 @@ pub fn normalize_fuzzy_source(fuzzy_source: Option<&str>) -> Option<&str> {
 }
 
 /// Build a validated terminology entry.
-pub fn build_entry<'a>(
+pub fn build_entry(
     termbase_id: String,
-    source: &'a str,
-    targets: Vec<&'a str>,
-    comment: Option<&'a str>,
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
     creator_id: String,
-) -> BaseRest<TermEntry<'a>> {
+) -> BaseRest<TermEntry> {
     //
-    let (source, targets, comment) = (
-        normalize_source(source)?,
-        normalize_targets(targets)?,
-        normalize_comment(comment),
-    );
+    normalize_source(&source)?;
+
+    ensure_targets(&targets)?;
 
     accept(TermEntry {
         id: next_snowflake_id(),
@@ -44,18 +42,16 @@ pub fn build_entry<'a>(
     })
 }
 
-/// Build normalized portable terminology-entry content.
-pub fn build_import<'a>(
-    source: &'a str,
-    targets: Vec<&'a str>,
-    comment: Option<&'a str>,
-) -> BaseRest<TermImport<'a>> {
+/// Validate portable terminology content while retaining its owned buffers.
+pub fn build_import(
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
+) -> BaseRest<TermImport> {
     //
-    let (source, targets, comment) = (
-        normalize_source(source)?,
-        normalize_targets(targets)?,
-        normalize_comment(comment),
-    );
+    normalize_source(&source)?;
+
+    ensure_targets(&targets)?;
 
     accept(TermImport {
         source,
@@ -65,18 +61,16 @@ pub fn build_import<'a>(
 }
 
 /// Build a validated terminology-entry replacement.
-pub fn build_update<'a>(
+pub fn build_update(
     id: String,
-    source: &'a str,
-    targets: Vec<&'a str>,
-    comment: Option<&'a str>,
-) -> BaseRest<TermRepl<'a>> {
+    source: String,
+    targets: Vec<String>,
+    comment: Option<String>,
+) -> BaseRest<TermRepl> {
     //
-    let (source, targets, comment) = (
-        normalize_source(source)?,
-        normalize_targets(targets)?,
-        normalize_comment(comment),
-    );
+    normalize_source(&source)?;
+
+    ensure_targets(&targets)?;
 
     accept(TermRepl {
         id,
@@ -104,8 +98,8 @@ fn normalize_source(source: &str) -> BaseRest<&str> {
     accept(source)
 }
 
-// Normalize all targets and validate required presence, uniqueness and non-empty values.
-fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
+// Validate targets after trimming, preserving the original owned strings.
+fn ensure_targets(targets: &[String]) -> BaseRest<()> {
     //
     if targets.is_empty() {
         //
@@ -119,9 +113,9 @@ fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
 
     let mut seen_targets = HashSet::with_capacity(targets.len());
 
-    for (index, target) in targets.iter_mut().enumerate() {
+    for (index, target) in targets.iter().enumerate() {
         //
-        *target = target.trim();
+        let target = target.trim();
 
         if target.is_empty() {
             //
@@ -146,10 +140,5 @@ fn normalize_targets(mut targets: Vec<&str>) -> BaseRest<Vec<&str>> {
         }
     }
 
-    accept(targets)
-}
-
-// Normalize an optional comment value; empty content becomes `None`.
-fn normalize_comment(comment: Option<&str>) -> Option<&str> {
-    comment.map(str::trim).filter(|comment| !comment.is_empty())
+    accept(())
 }

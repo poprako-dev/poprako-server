@@ -14,12 +14,12 @@ use time::OffsetDateTime;
 
 use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::comic::ComicEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shape::write::comic::ComicEntryShape;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -102,24 +102,26 @@ pub struct ComicEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ComicEntry<'_>> for ComicEntryRow<'a> {
+impl<'a> TryFrom<&'a ComicEntryShape<'_>> for ComicEntryRow<'a> {
     type Error = BaseError;
 
-    fn try_from(comic_entry: &'a ComicEntry<'_>) -> Result<Self, Self::Error> {
+    fn try_from(
+        comic_entry: &'a ComicEntryShape<'_>,
+    ) -> Result<Self, Self::Error> {
         //
         Ok(Self {
             f_id: &comic_entry.id,
-            f_workset_id: &comic_entry.workset_id,
+            f_workset_id: comic_entry.workset_id,
             f_index: i32_from_usize(comic_entry.index, "t_comic.f_index")?,
-            f_title: comic_entry.title,
-            f_author: comic_entry.author,
-            f_description: comic_entry.description,
+            f_title: comic_entry.trimmed_title(),
+            f_author: comic_entry.trimmed_author(),
+            f_description: comic_entry.trimmed_description(),
             f_composed_title: comic_complex::compose_title(
                 comic_entry.index,
-                comic_entry.author,
-                comic_entry.title,
+                comic_entry.trimmed_author(),
+                comic_entry.trimmed_title(),
             ),
-            f_creator_id: &comic_entry.creator_id,
+            f_creator_id: comic_entry.creator_id,
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),

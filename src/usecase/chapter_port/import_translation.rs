@@ -18,7 +18,6 @@ use crate::data::val::chapter_port::ImportChapterTranslationVal;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::shared::user::UserToken;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::translation_import::{
     PageTranslationImport, UnitTranslationImport,
 };
@@ -41,6 +40,7 @@ use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::{
@@ -163,9 +163,9 @@ where
                 imported_unit_count,
             };
 
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+            let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
                 chapter_info.id.as_str(),
-                Some(token.user_id.as_str().into()),
+                Some(token.user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
                     imported_page_count: import_val.imported_page_count,

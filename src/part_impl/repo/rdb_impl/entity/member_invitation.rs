@@ -76,13 +76,13 @@ pub struct MemberInvitationEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a MemberInvitationEntry<'a>> for MemberInvitationEntryRow<'a> {
-    fn from(entry: &'a MemberInvitationEntry<'a>) -> Self {
+impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
+    fn from(entry: &'a MemberInvitationEntry) -> Self {
         Self {
             f_id: &entry.id,
             f_inviter_id: &entry.invitor_id,
             f_team_id: &entry.team_id,
-            f_invitee_qid: entry.invitee_qid,
+            f_invitee_qid: entry.trimmed_invitee_qid(),
             f_code: &entry.code,
             f_pending: true,
             f_role_mask: i64::from(u32::from(entry.roles)),

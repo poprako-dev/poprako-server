@@ -20,7 +20,7 @@ use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -40,6 +40,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 use crate::value::assignment::AssignmentInclOpt;
@@ -190,7 +191,7 @@ async fn list_chapter_assignments_excluded(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    model_entry: &AssignmentEntry<'_>,
+    model_entry: &AssignmentEntryShape<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();

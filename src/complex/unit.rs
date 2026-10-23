@@ -80,7 +80,7 @@ pub fn submitted_stage_advances(edits: &[UnitEdit]) -> Vec<Stage> {
         | UnitEdit::Save {
             translation: Patch::Assign { value: translation },
             ..
-        } => !translation.translated_text.trim().is_empty(),
+        } => !translation.trimmed_translated_text().is_empty(),
 
         _ => false,
     });

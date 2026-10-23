@@ -97,8 +97,6 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let invitee_qid = instr.invitee_qid.trim();
-
     let roles = instr.roles;
 
     let member_info = FindMemberInfo {
@@ -124,6 +122,7 @@ where
     let (member_invitation_id, code) = nucl
         .coord(async move |context| {
             //
+            let invitee_qid = instr.invitee_qid.trim();
 
             LockTeam { id: &instr.team_id }
                 .step_on(repo, context)
@@ -166,7 +165,7 @@ where
                 id: member_invitation_id,
                 team_id: instr.team_id,
                 invitor_id: token.user_id,
-                invitee_qid,
+                invitee_qid: instr.invitee_qid,
                 code,
                 roles,
             };

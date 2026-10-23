@@ -119,7 +119,7 @@ where
         id: comment_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        content: instr.content.trim(),
+        content: instr.content,
     };
 
     let comment_info = CreateComment {

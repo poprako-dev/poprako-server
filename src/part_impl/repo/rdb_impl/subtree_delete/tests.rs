@@ -52,8 +52,6 @@ use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
-use crate::model::write::chapter::ChapterEntry;
-use crate::model::write::comic::ComicEntry;
 use crate::model::write::page::PageEntry;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::Serial;
@@ -73,6 +71,8 @@ use crate::part_impl::repo::rdb_impl::schema::{
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
+use crate::shape::write::chapter::ChapterEntryShape;
+use crate::shape::write::comic::ComicEntryShape;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
 const PREFIX: &str = "rdb-test-subtree-";
@@ -119,33 +119,33 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
     let creator_id = format!("{prefix}user-owner");
 
     let comics = (0..scale.comics)
-        .map(|comic_index| ComicEntry {
+        .map(|comic_index| ComicEntryShape {
             id: format!("{prefix}comic-{comic_index:04}"),
-            workset_id: fixture.workset_entry.id.clone().into(),
+            workset_id: &fixture.workset_entry.id,
             index: comic_index,
-            title: "Benchmark comic",
-            author: "Benchmark author",
+            title: "Benchmark comic".into(),
+            author: "Benchmark author".into(),
             description: None,
-            creator_id: creator_id.clone().into(),
+            creator_id: &creator_id,
         })
         .collect::<Vec<_>>();
 
     let chapters = comics
         .iter()
         .flat_map(|comic| {
-            let creator_id = creator_id.clone();
+            let creator_id = creator_id.as_str();
 
             (0..scale.chapters_per_comic).map(move |chapter_index| {
-                ChapterEntry {
+                ChapterEntryShape {
                     id: format!(
                         "{}chapter-{}-{chapter_index:04}",
                         prefix, comic.id
                     ),
-                    comic_id: comic.id.clone().into(),
+                    comic_id: &comic.id,
                     is_pinned: chapter_index == 0,
                     index: chapter_index,
                     subtitle: "Benchmark chapter".into(),
-                    creator_id: creator_id.clone().into(),
+                    creator_id,
                 }
             })
         })

@@ -95,22 +95,22 @@ pub struct IssueEntryRow<'a> {
     pub f_note: &'a str,
 }
 
-impl<'a> TryFrom<&'a IssueEntry<'a>> for IssueEntryRow<'a> {
+impl<'a> TryFrom<&'a IssueEntry> for IssueEntryRow<'a> {
     type Error = BaseError;
 
-    fn try_from(entry: &'a IssueEntry<'a>) -> BaseRest<Self> {
+    fn try_from(entry: &'a IssueEntry) -> BaseRest<Self> {
         //
         accept(Self {
             f_id: &entry.id,
-            f_page_artwork_id: entry.page_artwork_id,
+            f_page_artwork_id: &entry.page_artwork_id,
             f_index: i32_from_usize(entry.index, "t_issue.f_index")?,
-            f_variant: entry.variant,
-            f_layer_name: entry.layer_name,
+            f_variant: entry.trimmed_variant(),
+            f_layer_name: entry.layer_name.as_deref(),
             f_x_coord: entry.rect.map(|rect| rect.x_coord),
             f_y_coord: entry.rect.map(|rect| rect.y_coord),
             f_width: entry.rect.map(|rect| rect.width),
             f_height: entry.rect.map(|rect| rect.height),
-            f_note: entry.note,
+            f_note: &entry.note,
         })
     }
 }

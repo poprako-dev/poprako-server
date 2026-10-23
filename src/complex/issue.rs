@@ -65,7 +65,7 @@ pub fn ensure_import_issue(
         //
         for issue in &page.issues {
             //
-            if issue.variant.trim().is_empty()
+            if issue.trimmed_variant().is_empty()
                 || issue
                     .layer_name
                     .as_ref()

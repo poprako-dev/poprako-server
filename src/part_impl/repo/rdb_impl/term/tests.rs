@@ -25,6 +25,29 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::result::BaseError;
+use crate::shape::write::term::{TermEntryShape, TermReplShape};
+
+// Borrow an owned test entry for the bulk persistence contract.
+fn entry_shape(entry: &TermEntry) -> TermEntryShape<'_> {
+    TermEntryShape {
+        id: entry.id.clone(),
+        termbase_id: &entry.termbase_id,
+        source: entry.trimmed_source(),
+        targets: entry.trimmed_targets().collect(),
+        comment: entry.trimmed_comment(),
+        creator_id: &entry.creator_id,
+    }
+}
+
+// Borrow an owned test replacement for the bulk persistence contract.
+fn repl_shape(update: &TermRepl) -> TermReplShape<'_> {
+    TermReplShape {
+        id: &update.id,
+        source: update.trimmed_source(),
+        targets: update.trimmed_targets().collect(),
+        comment: update.trimmed_comment(),
+    }
+}
 
 const PREFIX: &str = "rdb-test-term-domain-";
 
@@ -40,11 +63,11 @@ const PREFIX: &str = "rdb-test-term-domain-";
 async fn verify_normalized_duplicate(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
-    term_entry: &TermEntry<'_>,
+    term_entry: &TermEntry,
 ) {
     let duplicate_entry = TermEntry {
         id: format!("{}duplicate", PREFIX),
-        source: " 100%_HERO ",
+        source: " 100%_HERO ".into(),
         ..term_entry.clone()
     };
 
@@ -66,19 +89,24 @@ async fn verify_normalized_duplicate(
 async fn verify_duplicate_updates(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
-    termbase_entry: &TermbaseEntry<'_>,
-    bulk_updates: &[TermRepl<'_>],
+    termbase_entry: &TermbaseEntry,
+    bulk_updates: &[TermRepl],
 ) {
     let duplicate_update = bulk_updates.first().cloned().unwrap();
 
     let duplicate_result = nucl
         .coord(async |context| {
+            let updates_owned = [duplicate_update.clone(), duplicate_update];
+
+            let updates_shapes =
+                updates_owned.iter().map(repl_shape).collect::<Vec<_>>();
+
             repo.step(
                 context,
                 &UpsertTerms {
                     termbase_id: &termbase_entry.id,
                     entries: &[],
-                    updates: &[duplicate_update.clone(), duplicate_update],
+                    updates: &updates_shapes,
                 },
             )
             .await
@@ -100,19 +128,19 @@ async fn verify_wrong_scope_rollback(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    termbase_entry: &TermbaseEntry<'_>,
+    termbase_entry: &TermbaseEntry,
 ) {
     let other_termbase_entry = TermbaseEntry {
         id: format!("{}other-base", PREFIX),
-        name: "Other Glossary",
+        name: "Other Glossary".into(),
         ..termbase_entry.clone()
     };
 
     let other_term_entry = TermEntry {
         id: format!("{}other-term", PREFIX),
         termbase_id: other_termbase_entry.id.clone(),
-        source: "Other",
-        targets: vec!["其他"],
+        source: "Other".into(),
+        targets: vec!["其他".into()],
         comment: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
@@ -142,27 +170,37 @@ async fn verify_wrong_scope_rollback(
     let rollback_entry = TermEntry {
         id: format!("{}rollback", PREFIX),
         termbase_id: termbase_entry.id.clone(),
-        source: "Rollback",
-        targets: vec!["回滚"],
+        source: "Rollback".into(),
+        targets: vec!["回滚".into()],
         comment: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
     let wrong_scope_update = TermRepl {
         id: other_term_entry.id.clone(),
-        source: "Other updated",
-        targets: vec!["其他更新"],
-        comment: Some("must roll back"),
+        source: "Other updated".into(),
+        targets: vec!["其他更新".into()],
+        comment: Some("must roll back".into()),
     };
 
     let wrong_scope_result = nucl
         .coord(async |context| {
+            let entries_shapes = (std::slice::from_ref(&rollback_entry))
+                .iter()
+                .map(entry_shape)
+                .collect::<Vec<_>>();
+
+            let updates_shapes = (std::slice::from_ref(&wrong_scope_update))
+                .iter()
+                .map(repl_shape)
+                .collect::<Vec<_>>();
+
             repo.step(
                 context,
                 &UpsertTerms {
                     termbase_id: &termbase_entry.id,
-                    entries: std::slice::from_ref(&rollback_entry),
-                    updates: std::slice::from_ref(&wrong_scope_update),
+                    entries: &entries_shapes,
+                    updates: &updates_shapes,
                 },
             )
             .await
@@ -201,36 +239,28 @@ async fn verify_bulk_upsert(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    termbase_entry: &TermbaseEntry<'_>,
-) -> Vec<crate::model::read::proj::term::TermInfo> {
-    let sources = (0..200)
-        .map(|index| format!("Bulk {index:03}"))
-        .collect::<Vec<_>>();
-
-    let targets = (0..200)
-        .map(|index| format!("Target {index:03}"))
-        .collect::<Vec<_>>();
-
-    let bulk_entries = sources
-        .iter()
-        .zip(&targets)
-        .enumerate()
-        .map(|(index, (source, target))| TermEntry {
+    termbase_entry: &TermbaseEntry,
+) -> Vec<TermRepl> {
+    let bulk_entries = (0..200)
+        .map(|index| TermEntry {
             id: format!("{}bulk-{index:03}", PREFIX),
             termbase_id: termbase_entry.id.clone(),
-            source,
-            targets: vec![target],
+            source: format!("Bulk {index:03}"),
+            targets: vec![format!("Target {index:03}")],
             comment: None,
             creator_id: comic_fixture.creator_form.id.clone(),
         })
         .collect::<Vec<_>>();
 
     nucl.coord(async |context| {
+        let entries_shapes =
+            bulk_entries.iter().map(entry_shape).collect::<Vec<_>>();
+
         repo.step(
             context,
             &UpsertTerms {
                 termbase_id: &termbase_entry.id,
-                entries: &bulk_entries,
+                entries: &entries_shapes,
                 updates: &[],
             },
         )
@@ -239,34 +269,27 @@ async fn verify_bulk_upsert(
     .await
     .unwrap();
 
-    let updated_sources = sources
-        .iter()
-        .map(|source| format!("{source} updated"))
-        .collect::<Vec<_>>();
-
-    let updated_targets = targets
-        .iter()
-        .map(|target| format!("{target} updated"))
-        .collect::<Vec<_>>();
-
     let bulk_updates = bulk_entries
         .iter()
-        .zip(updated_sources.iter().zip(&updated_targets))
-        .map(|(entry, (source, target))| TermRepl {
+        .enumerate()
+        .map(|(index, entry)| TermRepl {
             id: entry.id.clone(),
-            source,
-            targets: vec![target],
-            comment: Some("batch updated"),
+            source: format!("{} updated", entry.source),
+            targets: vec![format!("Target {index:03} updated")],
+            comment: Some("batch updated".into()),
         })
         .collect::<Vec<_>>();
 
     nucl.coord(async |context| {
+        let updates_shapes =
+            bulk_updates.iter().map(repl_shape).collect::<Vec<_>>();
+
         repo.step(
             context,
             &UpsertTerms {
                 termbase_id: &termbase_entry.id,
                 entries: &[],
-                updates: &bulk_updates,
+                updates: &updates_shapes,
             },
         )
         .await
@@ -300,7 +323,7 @@ async fn verify_bulk_upsert(
     assert!(bulk_terms.iter().all(|term_info| {
         term_info.updated_at == first_bulk_term.updated_at
     }));
-    bulk_terms
+    bulk_updates
 }
 
 #[expect(
@@ -311,32 +334,42 @@ async fn verify_import_upsert(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    termbase_entry: &TermbaseEntry<'_>,
-    term_entry: &TermEntry<'_>,
+    termbase_entry: &TermbaseEntry,
+    term_entry: &TermEntry,
 ) {
     let imported_entry = TermEntry {
         id: format!("{}imported", PREFIX),
         termbase_id: termbase_entry.id.clone(),
-        source: "Alpha",
-        targets: vec!["阿尔法"],
+        source: "Alpha".into(),
+        targets: vec!["阿尔法".into()],
         comment: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
     let imported_update = TermRepl {
         id: term_entry.id.clone(),
-        source: term_entry.source,
-        targets: vec!["勇者", "英雄", "主角"],
-        comment: Some("imported"),
+        source: term_entry.source.clone(),
+        targets: vec!["勇者".into(), "英雄".into(), "主角".into()],
+        comment: Some("imported".into()),
     };
 
     nucl.coord(async |context| {
+        let entries_shapes = (std::slice::from_ref(&imported_entry))
+            .iter()
+            .map(entry_shape)
+            .collect::<Vec<_>>();
+
+        let updates_shapes = (std::slice::from_ref(&imported_update))
+            .iter()
+            .map(repl_shape)
+            .collect::<Vec<_>>();
+
         repo.step(
             context,
             &UpsertTerms {
                 termbase_id: &termbase_entry.id,
-                entries: std::slice::from_ref(&imported_entry),
-                updates: std::slice::from_ref(&imported_update),
+                entries: &entries_shapes,
+                updates: &updates_shapes,
             },
         )
         .await
@@ -391,8 +424,8 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     let termbase_entry = TermbaseEntry {
         id: format!("{}base", PREFIX),
         team_id: None,
-        comic_id: Some(comic_fixture.comic_entry.id.clone()),
-        name: "Glossary",
+        comic_id: Some(comic_fixture.comic_info.id.clone()),
+        name: "Glossary".into(),
         description: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
@@ -415,9 +448,9 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     let term_entry = TermEntry {
         id: format!("{}main", PREFIX),
         termbase_id: termbase_entry.id.clone(),
-        source: "100%_Hero",
-        targets: vec!["勇者", "英雄"],
-        comment: Some("not searchable"),
+        source: "100%_Hero".into(),
+        targets: vec!["勇者".into(), "英雄".into()],
+        comment: Some("not searchable".into()),
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
@@ -457,18 +490,8 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     )
     .await;
 
-    let bulk_terms =
+    let bulk_updates =
         verify_bulk_upsert(&repo, &nucl, &comic_fixture, &termbase_entry).await;
-
-    let bulk_updates = bulk_terms
-        .iter()
-        .map(|term_info| TermRepl {
-            id: term_info.id.clone(),
-            source: &term_info.source,
-            targets: term_info.targets.iter().map(String::as_str).collect(),
-            comment: term_info.comment.as_deref(),
-        })
-        .collect::<Vec<_>>();
 
     verify_wrong_scope_rollback(&repo, &nucl, &comic_fixture, &termbase_entry)
         .await;

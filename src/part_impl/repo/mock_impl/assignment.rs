@@ -8,7 +8,6 @@ use tracing::instrument;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
-use crate::model::write::assignment::AssignmentEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -19,6 +18,7 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::assignment::AssignmentInclOpt;
 
 // Internal implementation of `list_infos`.
@@ -246,7 +246,7 @@ fn find_assignment(
 // Internal implementation of `create_assignment`.
 fn create_assignment(
     state: &mut MockState,
-    entry: &AssignmentEntry<'_>,
+    entry: &AssignmentEntryShape<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
     // Internal implementation detail.

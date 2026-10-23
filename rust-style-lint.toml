@@ -59,6 +59,7 @@ exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
 # Modules whose public struct fields are part of the data contract.
 allow_public_fields = [
     "model",
+    "shape",
     "data",
     "config",
     "value",

@@ -16,7 +16,7 @@ use poprako_rdb_core::RdbConn;
 use crate::part::nucl::ReptRead;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordEntryRow, ChapterWorkflowRecordInfoRow};
@@ -49,7 +49,7 @@ async fn list_infos(
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entries: &[ChapterWorkflowRecordEntry<'_>],
+    entries: &[ChapterWorkflowRecordEntryShape<'_>],
 ) -> BaseRest<()> {
     //
     if entries.is_empty() {

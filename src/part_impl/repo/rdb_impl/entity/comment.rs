@@ -48,13 +48,13 @@ pub struct CommentEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a CommentEntry<'a>> for CommentEntryRow<'a> {
-    fn from(entry: &'a CommentEntry<'a>) -> Self {
+impl<'a> From<&'a CommentEntry> for CommentEntryRow<'a> {
+    fn from(entry: &'a CommentEntry) -> Self {
         Self {
             f_id: &entry.id,
             f_team_id: &entry.team_id,
             f_user_id: &entry.user_id,
-            f_content: entry.content,
+            f_content: entry.trimmed_content(),
             f_created_at: OffsetDateTime::now_utc(),
         }
     }

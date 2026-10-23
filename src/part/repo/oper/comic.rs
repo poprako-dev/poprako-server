@@ -2,7 +2,8 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::comic::{ComicEntry, ComicRepl};
+use crate::model::write::comic::ComicRepl;
+use crate::shape::write::comic::ComicEntryShape;
 use crate::value::comic::ComicInclOpt;
 
 /// Creates a new comic with the given entry.
@@ -10,7 +11,7 @@ use crate::value::comic::ComicInclOpt;
 #[oper(output = ComicInfo)]
 pub struct CreateComic<'a> {
     /// The comic entry to insert.
-    pub entry: &'a ComicEntry<'a>,
+    pub entry: &'a ComicEntryShape<'a>,
 }
 
 /// Retrieves a single comic's info by ID with optional includes.
@@ -28,7 +29,7 @@ pub struct GetComicInfo<'a, 'b> {
 #[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfos<'a> {
     /// The filter and pagination specification.
-    pub spec: &'a ComicListSpec<'a>,
+    pub spec: &'a ComicListSpec,
 }
 
 /// Retrieves a single comic's info with excluded relations omitted.
@@ -46,7 +47,7 @@ pub struct GetComicInfoExcluded<'a, 'b> {
 #[oper(output = ())]
 pub struct UpdateComic<'a> {
     /// The update payload.
-    pub update: &'a ComicRepl<'a>,
+    pub update: &'a ComicRepl,
 }
 
 /// Allocates a new chapter index for a comic.

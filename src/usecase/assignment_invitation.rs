@@ -141,8 +141,6 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let invitee_qid = instr.invitee_qid.trim();
-
     validate_roles(instr.roles, &token.user_id, &instr.chapter_id)?;
 
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
@@ -150,6 +148,8 @@ where
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| {
             //
+            let invitee_qid = instr.invitee_qid.trim();
+
             let chapter_info = GetChapterInfoExcluded {
                 id: &instr.chapter_id,
                 incls: &[],
@@ -196,7 +196,7 @@ where
                 id: assignment_invitation_id,
                 chapter_id: instr.chapter_id,
                 inviter_id: token.user_id,
-                invitee_qid,
+                invitee_qid: instr.invitee_qid,
                 code,
                 roles: instr.roles,
             };

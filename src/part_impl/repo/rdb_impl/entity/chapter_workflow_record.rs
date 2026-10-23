@@ -8,9 +8,9 @@ use serde_json::json;
 use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record;
 use crate::result::BaseError;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordKind, ChapterWorkflowRecordPayload,
@@ -276,14 +276,14 @@ pub struct ChapterWorkflowRecordEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ChapterWorkflowRecordEntry<'_>>
+impl<'a> From<&'a ChapterWorkflowRecordEntryShape<'_>>
     for ChapterWorkflowRecordEntryRow<'a>
 {
-    fn from(entry: &'a ChapterWorkflowRecordEntry<'_>) -> Self {
+    fn from(entry: &'a ChapterWorkflowRecordEntryShape<'_>) -> Self {
         Self {
             f_id: &entry.id,
-            f_chapter_id: &entry.chapter_id,
-            f_actor_user_id: entry.actor_user_id.as_deref(),
+            f_chapter_id: entry.chapter_id,
+            f_actor_user_id: entry.actor_user_id,
             f_kind: entry.payload.kind().as_str().to_string(),
             f_payload: encode_payload(&entry.payload),
             f_created_at: entry.created_at,

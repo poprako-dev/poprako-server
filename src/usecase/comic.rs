@@ -25,7 +25,7 @@ use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
-use crate::model::write::comic::{ComicEntry, ComicRepl};
+use crate::model::write::comic::ComicRepl;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -46,6 +46,7 @@ use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::comic::ComicEntryShape;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -97,14 +98,14 @@ where
             .step_on(repo, context)
             .await?;
 
-            let comic_entry = ComicEntry {
+            let comic_entry = ComicEntryShape {
                 id: comic_complex::gen_id(),
-                workset_id: instr.workset_id.into(),
+                workset_id: &instr.workset_id,
                 index,
-                title: instr.title.trim(),
-                author: instr.author.trim(),
-                description: instr.description.as_deref().map(str::trim),
-                creator_id: token.user_id.as_str().into(),
+                title: instr.title,
+                author: instr.author,
+                description: instr.description,
+                creator_id: token.user_id.as_str(),
             };
 
             let comic_info = CreateComic {
@@ -114,7 +115,7 @@ where
             .await?;
 
             UpdateWorksetComicCount {
-                id: &comic_entry.workset_id,
+                id: comic_entry.workset_id,
                 delta: 1,
             }
             .step_on(repo, context)
@@ -225,9 +226,9 @@ where
 
     let comic_info_update = ComicRepl {
         id: instr.id,
-        title: instr.title.trim(),
-        author: instr.author.trim(),
-        description: instr.description.as_deref().map(str::trim),
+        title: instr.title,
+        author: instr.author,
+        description: instr.description,
     };
 
     UpdateComic {

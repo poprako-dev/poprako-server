@@ -81,8 +81,8 @@ where
                 id: workset_complex::gen_id(),
                 team_id: instr.team_id,
                 index,
-                name: instr.name.trim(),
-                description: instr.description.as_deref().map(str::trim),
+                name: instr.name,
+                description: instr.description,
             };
 
             let workset_info = CreateWorkset {
@@ -199,8 +199,8 @@ where
 
     let workset_info_update = WorksetRepl {
         id: instr.id,
-        name: instr.name.trim(),
-        description: instr.description.as_deref().map(str::trim),
+        name: instr.name,
+        description: instr.description,
     };
 
     UpdateWorkset {

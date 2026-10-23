@@ -287,23 +287,16 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 // Apply a partial update payload to an existing term row.
 #[instrument(level = "info", skip_all)]
-async fn update_info(
-    conn: &mut RdbConn,
-    update: &TermRepl<'_>,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
     //
     // Prepare nullable target entries and write all requested fields in one update.
-    let targets = update
-        .targets
-        .iter()
-        .map(|target| Some(*target))
-        .collect::<Vec<_>>();
+    let targets = update.trimmed_targets().map(Some).collect::<Vec<_>>();
 
     diesel::update(t_term.filter(f_id.eq(&update.id)))
         .set((
-            f_source.eq(&update.source),
+            f_source.eq(update.trimmed_source()),
             f_targets.eq(targets),
-            f_comment.eq(update.comment),
+            f_comment.eq(update.trimmed_comment()),
             f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(conn)
@@ -330,7 +323,7 @@ async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    term_entry: &TermEntry<'_>,
+    term_entry: &TermEntry,
 ) -> BaseRest<TermInfo> {
     //
     // Convert API entry to DB row shape and rely on returning() to fetch the saved state.

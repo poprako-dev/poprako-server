@@ -108,7 +108,7 @@ async fn seed_text_matrix(
     for (index, (translation, revision)) in text_cases.into_iter().enumerate() {
         matrix_edits.push(create_text_edit(
             &format!("{}matrix-{index}", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             translation,
             revision,
             index % 2 == 0,
@@ -118,7 +118,7 @@ async fn seed_text_matrix(
 
         matrix_edits.push(create_text_edit(
             &hidden_id,
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             translation,
             revision,
             index % 2 != 0,
@@ -176,7 +176,7 @@ async fn seed_missing_translation(
 ) {
     let missing_translation_edit = [create_text_edit(
         &format!("{}missing-translation", PREFIX),
-        &page_fixture.chapter_entry.creator_id,
+        &page_fixture.chapter_info.creator_id,
         None,
         Some("proofread"),
         false,
@@ -215,42 +215,42 @@ async fn seed_excluded_diff_cases(
     let excluded_edits = [
         create_text_edit(
             &format!("{}equal", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             Some("same"),
             Some("same"),
             true,
         ),
         create_text_edit(
             &format!("{}empty", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             None,
             Some(""),
             true,
         ),
         create_text_edit(
             &format!("{}ascii-whitespace", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             None,
             Some(" \t\r\n"),
             true,
         ),
         create_text_edit(
             &format!("{}unicode-whitespace", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             None,
             Some("\u{3000}"),
             true,
         ),
         create_text_edit(
             &format!("{}missing-proofread", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             Some("translated"),
             None,
             true,
         ),
         create_text_edit(
             &hidden_diff_id,
-            &page_fixture.chapter_entry.creator_id,
+            &page_fixture.chapter_info.creator_id,
             Some("translated"),
             Some("hidden proofread"),
             true,
@@ -370,7 +370,7 @@ async fn seed_chunked_history(
 
                 create_edit(
                     &unit_id,
-                    &page_fixture.chapter_entry.creator_id,
+                    &page_fixture.chapter_info.creator_id,
                     "chunked",
                 )
             })
@@ -463,7 +463,7 @@ async fn seed_diff_pages(
     .into_iter()
     .map(|(id, index)| PageManifestEntry {
         id: id.to_owned(),
-        chapter_id: page_fixture.chapter_entry.id.clone(),
+        chapter_id: page_fixture.chapter_info.id.clone(),
         index,
     })
     .collect::<Vec<_>>();
@@ -539,7 +539,7 @@ pub(super) async fn verify_chunking_and_diff(
 
     let page_unit_diff_stats = repo
         .run(&ListPageUnitDiffStats {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .unwrap();

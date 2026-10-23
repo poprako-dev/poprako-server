@@ -210,7 +210,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let fixture = test_shared::seed_chapter(&core, "rdb-test-composite-").await;
 
-    let chapter_id = &fixture.chapter_entry.id;
+    let chapter_id = &fixture.chapter_info.id;
 
     let repo = HybRepo::new(
         core.clone(),
@@ -293,19 +293,19 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .map_err(BaseError::from)?
         );
 
-        let issues = [IssueEntry {
+        let issues = vec![IssueEntry {
             id: "composite-issue".into(),
-            page_artwork_id: "composite-a",
+            page_artwork_id: "composite-a".into(),
             index: 0,
-            variant: "custom",
+            variant: "custom".into(),
             layer_name: None,
             rect: None,
-            note: "review",
+            note: "review".into(),
         }];
 
         let repl = ChapterIssuesRepl {
-            chapter_id,
-            entries: &issues,
+            chapter_id: chapter_id.into(),
+            entries: issues,
         };
 
         ReplaceChapterIssues { repl: &repl }

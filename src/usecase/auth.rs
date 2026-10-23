@@ -65,15 +65,12 @@ where
     A: TokenAuth + Sync,
     D: Develop + Send + Sync,
 {
-    let qid = instr.qid.trim();
-
-    let nickname = instr.nickname.trim();
-
-    let code = instr.code.trim();
-
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
             //
+            let qid = instr.qid.trim();
+
+            let code = instr.code.trim();
 
             let invitation_info = GetMemberInvitationInfoExcluded { code }
                 .step_on(repo, context)
@@ -96,8 +93,8 @@ where
 
             let user_entry = UserEntry {
                 id: user_complex::gen_id(),
-                qid: qid.into(),
-                nickname: nickname.into(),
+                qid: instr.qid,
+                nickname: instr.nickname,
                 password_hash,
             };
 

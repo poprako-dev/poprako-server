@@ -17,7 +17,6 @@ use poprako_rdb_core::RdbCore;
 use crate::complex::comic_archive as comic_archive_complex;
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
@@ -32,6 +31,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 use crate::result::{BaseError, ExpectedVariant};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
@@ -41,14 +41,12 @@ async fn verify_archive_storage(
     shared: &RdbCore,
     page_fixture: &PageFixture,
     comic_archive_entry: &ComicArchiveEntry,
-    workflow_record_entry: &ChapterWorkflowRecordEntry<'_>,
+    workflow_record_entry: &ChapterWorkflowRecordEntryShape<'_>,
     (archive_workset_id, workset_comic_count_before): (&str, i32),
 ) {
-    let source_comic_id =
-        page_fixture.chapter_entry.comic_id.clone().into_owned();
+    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id =
-        page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let archiver_id = page_fixture.chapter_info.creator_id.clone();
 
     let mut conn = shared.get().await.unwrap();
 
@@ -104,7 +102,7 @@ async fn verify_archive_storage(
 
     assert_eq!(
         t_chapter::table
-            .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id))
+            .filter(t_chapter::f_id.eq(&page_fixture.chapter_info.id))
             .count()
             .get_result::<i64>(&mut conn)
             .await
@@ -147,9 +145,9 @@ async fn verify_archive_storage(
 fn verify_archived_payload(
     comic_archived_payload: &str,
     page_fixture: &PageFixture,
-    workflow_record_entry: &ChapterWorkflowRecordEntry<'_>,
+    workflow_record_entry: &ChapterWorkflowRecordEntryShape<'_>,
 ) {
-    let source_comic_id = page_fixture.chapter_entry.comic_id.as_ref();
+    let source_comic_id = page_fixture.chapter_info.comic_id.as_ref();
 
     let archived_comic_payload: serde_json::Value =
         serde_json::from_str(comic_archived_payload).unwrap();
@@ -175,7 +173,7 @@ fn verify_archived_payload(
 
     assert_eq!(
         (*archived_chapter.get("source_chapter_id").unwrap()),
-        page_fixture.chapter_entry.id
+        page_fixture.chapter_info.id
     );
 
     assert_eq!(
@@ -247,16 +245,14 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id =
-        page_fixture.chapter_entry.comic_id.clone().into_owned();
+    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id =
-        page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let archiver_id = page_fixture.chapter_info.creator_id.clone();
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry {
+    let workflow_record_entry = ChapterWorkflowRecordEntryShape {
         id: format!("{}workflow-record", PREFIX),
-        chapter_id: page_fixture.chapter_entry.id.clone().into(),
-        actor_user_id: Some(archiver_id.clone().into()),
+        chapter_id: &page_fixture.chapter_info.id,
+        actor_user_id: Some(&archiver_id),
         payload: ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
             previous_subtitle: "before archive".into(),
             next_subtitle: "after archive".into(),
@@ -357,11 +353,9 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id =
-        page_fixture.chapter_entry.comic_id.clone().into_owned();
+    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id =
-        page_fixture.chapter_entry.creator_id.clone().into_owned();
+    let archiver_id = page_fixture.chapter_info.creator_id.clone();
 
     let comic_archive_snapshot = nucl
         .coord(async |context| {
@@ -450,7 +444,7 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
         .unwrap();
 
     let chapter_count = t_chapter::table
-        .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id))
+        .filter(t_chapter::f_id.eq(&page_fixture.chapter_info.id))
         .count()
         .get_result::<i64>(&mut conn)
         .await

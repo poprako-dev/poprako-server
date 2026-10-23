@@ -1,7 +1,7 @@
 # Ownership and copy audit
 
-Scope: the three architecture fixes on `fix/architecture-review`: Unit sequence
-reconstruction, shared Chapter creation, and request-scoped response presentation.
+Scope: Unit sequence reconstruction, shared Chapter creation, request-scoped
+response presentation, and the Model/Shape ownership migration.
 This audit covers payload copies, including `to_owned`, `to_string`, and container
 copies, rather than only calls spelled `clone`. It does not claim that every
 persisted projection in the application shares a global owner.
@@ -31,9 +31,10 @@ existing contract.
 
 ## Chapter creation
 
-Comic, Chapter, Assignment, and workflow-record entries use `Cow<'a, str>` for
-foreign IDs. Existing model/token IDs are borrowed through the operation's await;
-generated IDs and subtitles move into their entries. Diesel insert records borrow
+Comic, Chapter, Assignment, and workflow-record entries are explicit
+`shape::write` types with `Shape<'a>` names and borrowed foreign IDs.
+Existing model/token IDs are borrowed through the operation's await; generated
+IDs and subtitles move into their Shapes. `Cow` is not used. Diesel insert records borrow
 the entries. The shared creation helper and Comic creation make no ID copies.
 Workflow helpers also borrow actor IDs instead of accepting an owned temporary.
 
@@ -46,9 +47,8 @@ Retained production copies:
 | Borrowed workflow entry → Mock history | The state retains ID, actor, and payload after the input entry slice is destroyed. |
 | Assignment user ID → owned history payload | The returned Assignment and the persisted event both retain the ID. The event's payload has independent persistence/serialization lifetime. |
 
-Existing unrelated ChapterPatch title/ID copies and export/background-job
-snapshots were not redesigned by the three fixes. Adapting their workflow-entry
-constructor calls does not make those workflows part of this audit. SQL payload
+ChapterPatch now moves its owned subtitle from the request. Export/background-job
+snapshots retain their independently owned data. SQL payload
 encoding produces an SQL parameter representation, not a redundant foreign-ID
 copy.
 
@@ -89,13 +89,36 @@ There is no leaked storage, unsafe code, global pool, or custom response seriali
 ## Test-only ownership
 
 Fixtures sometimes clone models to create independent repeated inclusions or
-store owned parent and child entries in one fixture. Borrowing another field of
+store owned parent entries and child projections in one fixture. Borrowing another field of
 the same movable fixture would require self-referential storage. Mock ports copy
 query IDs into call logs so assertions can run after the query input disappears.
 These test copies are separate from production presentation and ordering.
 
 Regression coverage includes non-Clone sequence records; tombstones, corruption,
-multiple pages and cursor boundaries; independent Mock snapshots; borrowed and
-moved workflow-entry buffers; real RDB creation/rollback; pinned relation alignment,
+multiple pages and cursor boundaries; independent Mock snapshots; borrowed workflow-entry identifiers; real RDB creation/rollback; pinned relation alignment,
 partial snapshots and absence; metadata batching and fallback precedence; and
 single/repeated URL pointer identity with unchanged string serialization.
+
+
+## Owned Models and borrowed plans
+
+All Model storage now owns its data; trim getters borrow normalized slices
+without replacing or duplicating the original strings. DTO conversions move
+strings and vectors. Adapters use the same getters, with Mock copying into
+its independently owned state. Empty optional term comments and termbase
+descriptions become absent; profile descriptions retain explicit presence.
+Unit content and review notes retain their original whitespace.
+
+| Shape | Owner and avoided copy |
+| --- | --- |
+| Comic/Chapter/Assignment/workflow entries | Loaded projections and tokens retain foreign IDs through persistence; generated fields move into the Shape. |
+| UnitWritePlanShape and UnitWriteChangeShape | Submitted edits and current sequence retain text/IDs; sparse writes borrow them. New edits remain owned. |
+| PageRawIdentsReplShape | Manifest/page data retain strings; the vector of reference pairs moves into the Shape. |
+| TermEntryShape and TermReplShape | Owned imports and persisted terms retain source, targets, and IDs during bulk writes. Reference vectors are allocated without string copies. |
+| TermAppendReplShape | Existing and imported terms retain targets; merged comments require a new owned string. |
+
+Single-term commands remain owned Models. Normalization iterators allocate no
+string copies; Diesel batch rows may need vectors of string references. Append
+plans also retain case-folded keys for deduplication and reference vectors for
+stable ordering. These allocations implement distinct indexes/sequences and
+are not eliminated by the ownership migration.

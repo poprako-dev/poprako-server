@@ -27,9 +27,13 @@ fn term_info(id: &str, source: &str, targets: &[&str]) -> TermInfo {
 }
 
 // Build an import through the production normalization boundary.
-fn term_import<'a>(source: &'a str, targets: &[&'a str]) -> TermImport<'a> {
-    term_complex::build_import(source, targets.to_vec(), Some("new comment"))
-        .unwrap()
+fn term_import<'a>(source: &'a str, targets: &[&'a str]) -> TermImport {
+    term_complex::build_import(
+        source.into(),
+        targets.iter().map(|target| (*target).into()).collect(),
+        Some("new comment".into()),
+    )
+    .unwrap()
 }
 
 #[test]
@@ -53,7 +57,7 @@ fn upsert_matches_unicode_sources_and_preserves_target_order() {
         "creator-1",
         existing.len(),
         &existing,
-        imported,
+        &imported,
     )
     .unwrap();
 
@@ -77,6 +81,28 @@ fn upsert_matches_unicode_sources_and_preserves_target_order() {
 
     assert_eq!(update.comment, Some("new comment"));
 
+    assert_eq!(update.id.as_ptr(), existing.first().unwrap().id.as_ptr());
+
+    assert_eq!(
+        update.source.as_ptr(),
+        imported.first().unwrap().trimmed_source().as_ptr()
+    );
+
+    assert_eq!(
+        update.targets.first().unwrap().as_ptr(),
+        existing.first().unwrap().targets.first().unwrap().as_ptr()
+    );
+
+    assert_eq!(
+        update.targets.last().unwrap().as_ptr(),
+        imported.first().unwrap().targets.last().unwrap().as_ptr()
+    );
+
+    assert_eq!(
+        entry.source.as_ptr(),
+        imported.get(1).unwrap().source.as_ptr()
+    );
+
     assert_eq!(plan.updates.get(1).unwrap().id, "term-2");
 
     assert_eq!(plan.updates.get(2).unwrap().id, "term-3");
@@ -90,12 +116,14 @@ fn upsert_preserves_first_existing_match_for_duplicate_keys() {
         term_info("second", " source ", &["Second"]),
     ];
 
+    let incoming = vec![term_import("SOURCE", &["New"])];
+
     let plan = build_term_upsert_plan(
         "termbase-1",
         "creator-1",
         existing.len(),
         &existing,
-        vec![term_import("SOURCE", &["New"])],
+        &incoming,
     )
     .unwrap();
 
@@ -127,14 +155,16 @@ fn upsert_matches_a_full_termbase_in_import_order() {
     let imported = sources
         .iter()
         .map(|source| term_import(source, &["old", "New"]))
-        .collect();
+        .collect::<Vec<_>>();
+
+    let incoming = vec![term_import("Added", &["New"])];
 
     let plan = build_term_upsert_plan(
         "termbase-1",
         "creator-1",
         existing.len(),
         &existing,
-        imported,
+        &imported,
     )
     .unwrap();
 
@@ -156,7 +186,7 @@ fn upsert_matches_a_full_termbase_in_import_order() {
         "creator-1",
         existing.len(),
         &existing,
-        vec![term_import("Added", &["New"])],
+        &incoming,
     )
     .err()
     .unwrap();
@@ -174,15 +204,14 @@ fn upsert_matches_a_full_termbase_in_import_order() {
 fn empty_import_preserves_count_validation() {
     //
     let plan =
-        build_term_upsert_plan("termbase-1", "creator-1", 0, &[], Vec::new())
-            .unwrap();
+        build_term_upsert_plan("termbase-1", "creator-1", 0, &[], &[]).unwrap();
 
     assert!(plan.entries.is_empty());
 
     assert!(plan.updates.is_empty());
 
     assert!(matches!(
-        build_term_upsert_plan("termbase-1", "creator-1", 1, &[], Vec::new()),
+        build_term_upsert_plan("termbase-1", "creator-1", 1, &[], &[]),
         Err(BaseError::Unrecoverable { .. }),
     ));
 }
@@ -226,12 +255,14 @@ fn append_plan_preserves_unicode_spelling_and_accepts_full_base_updates() {
         })
         .collect::<Vec<_>>();
 
+    let incoming = vec![term_import("äpfel-0", &["ält", "New"])];
+
     let plan = build_term_append_plan(
         "termbase-1",
         "creator",
         existing.len(),
         &existing,
-        vec![term_import("äpfel-0", &["ält", "New"])],
+        &incoming,
     )
     .unwrap();
 

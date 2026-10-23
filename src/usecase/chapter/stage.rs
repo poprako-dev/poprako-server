@@ -12,8 +12,6 @@ use crate::complex::chapter::perm as chapter_perm_complex;
 use crate::data::instr::chapter::UpdateChapterStageInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::model::write::page::PageRawIdentsRepl;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
@@ -38,6 +36,8 @@ use crate::part::repo::oper::page::{ListPageInfos, UpdatePageRawIdents};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
@@ -124,16 +124,18 @@ where
 
             if is_advanced {
                 //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_id,
-                    actor_user_id.map(Into::into),
-                    ChapterWorkflowRecordPayload::StageTransitioned {
-                        stage: Stage::RawProvide,
-                        previous_phase: StagePhase::Pending,
-                        next_phase: StagePhase::Completed,
-                        origin: ChapterWorkflowRecordOrigin::RawProvideCheck,
-                    },
-                );
+                let workflow_record_entry =
+                    ChapterWorkflowRecordEntryShape::new(
+                        chapter_id,
+                        actor_user_id.as_deref(),
+                        ChapterWorkflowRecordPayload::StageTransitioned {
+                            stage: Stage::RawProvide,
+                            previous_phase: StagePhase::Pending,
+                            next_phase: StagePhase::Completed,
+                            origin:
+                                ChapterWorkflowRecordOrigin::RawProvideCheck,
+                        },
+                    );
 
                 CreateChapterWorkflowRecords {
                     entries: std::slice::from_ref(&workflow_record_entry),
@@ -240,16 +242,17 @@ where
                 .step_on(repo, context)
                 .await?;
 
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id.as_str(),
-                    Some(token.user_id.as_str().into()),
-                    ChapterWorkflowRecordPayload::StageTransitioned {
-                        stage,
-                        previous_phase: prev_phase,
-                        next_phase,
-                        origin: ChapterWorkflowRecordOrigin::Manual,
-                    },
-                );
+                let workflow_record_entry =
+                    ChapterWorkflowRecordEntryShape::new(
+                        chapter_info.id.as_str(),
+                        Some(token.user_id.as_str()),
+                        ChapterWorkflowRecordPayload::StageTransitioned {
+                            stage,
+                            previous_phase: prev_phase,
+                            next_phase,
+                            origin: ChapterWorkflowRecordOrigin::Manual,
+                        },
+                    );
 
                 CreateChapterWorkflowRecords {
                     entries: std::slice::from_ref(&workflow_record_entry),
@@ -404,9 +407,7 @@ where
         .map(|page_id| (page_id.as_str(), None))
         .collect::<Vec<_>>();
 
-    let raw_ident_repl = PageRawIdentsRepl {
-        idents: &raw_idents,
-    };
+    let raw_ident_repl = PageRawIdentsReplShape { idents: raw_idents };
 
     UpdatePageRawIdents {
         repl: &raw_ident_repl,

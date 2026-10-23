@@ -43,7 +43,7 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: format!("{}comment", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
         user_id: team_fixture.user_entry.id.clone(),
-        content: "comment",
+        content: "comment".into(),
     };
 
     repo.run(&CreateComment {

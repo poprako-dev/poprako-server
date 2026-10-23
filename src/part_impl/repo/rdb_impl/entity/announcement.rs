@@ -37,14 +37,14 @@ pub struct AnnouncementEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a AnnouncementEntry<'a>> for AnnouncementEntryRow<'a> {
-    fn from(entry: &'a AnnouncementEntry<'a>) -> Self {
+impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
+    fn from(entry: &'a AnnouncementEntry) -> Self {
         Self {
             f_id: &entry.id,
             f_team_id: &entry.team_id,
             f_user_id: &entry.user_id,
-            f_title: entry.title,
-            f_content: entry.content,
+            f_title: entry.trimmed_title(),
+            f_content: entry.trimmed_content(),
             f_created_at: OffsetDateTime::now_utc(),
         }
     }
