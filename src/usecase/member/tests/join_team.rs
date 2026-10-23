@@ -74,7 +74,7 @@ async fn join_team_mismatched_qid_is_rejected() {
 
     mock.seed_member_invitation(invitation("invitation-1", "other-qid"));
 
-    let err = super::join_team(
+    let error = super::join_team(
         (&mock, &mock, &mock),
         token("target-user"),
         join_team_instr(),
@@ -83,7 +83,7 @@ async fn join_team_mismatched_qid_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -111,7 +111,7 @@ async fn join_team_duplicate_membership_is_rejected() {
 
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    let err = super::join_team(
+    let error = super::join_team(
         (&mock, &mock, &mock),
         token("target-user"),
         join_team_instr(),
@@ -120,7 +120,7 @@ async fn join_team_duplicate_membership_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 

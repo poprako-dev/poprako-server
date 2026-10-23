@@ -340,7 +340,7 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
+    let error = create(
         (&mock, &mock, &mock, &InvitationConfig::default()),
         token("admin-user"),
         create_data("target-qid"),
@@ -349,7 +349,7 @@ async fn create_existing_assignment_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().assignment_invitations.is_empty());
 
@@ -391,13 +391,13 @@ async fn delete_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err =
+    let error =
         delete((&mock, &mock), token("normal-user"), "invitation-1".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }

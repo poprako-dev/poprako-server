@@ -70,7 +70,7 @@ async fn alloc_cover_updates_object_state_enqueues_check_and_returns_put_url() {
 async fn alloc_cover_rolls_back_missing_comic() {
     let mock = Mock::new();
 
-    let err = alloc::alloc_cover::<_, MockContext, _, _>(
+    let error = alloc::alloc_cover::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "missing".into(),
@@ -80,7 +80,7 @@ async fn alloc_cover_rolls_back_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -136,9 +136,9 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
     seed_comic_cover_scope(&mock, 2);
 
-    let err = mark_comic_cover(&mock, 1).await.err().unwrap();
+    let error = mark_comic_cover(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(
         !mock
             .snapshot()
@@ -171,9 +171,9 @@ async fn mark_cover_uploaded_rejects_old_allocation_replay() {
 
     assert_eq!(allocated.slot.unwrap().image_ver, 2);
 
-    let err = mark_comic_cover(&mock, 1).await.err().unwrap();
+    let error = mark_comic_cover(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -239,7 +239,7 @@ async fn delete_rolls_back_missing_comic() {
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = delete::<_, MockContext, _>(
+    let error = delete::<_, MockContext, _>(
         (&mock, &mock),
         token("user-1"),
         "missing".into(),
@@ -248,7 +248,7 @@ async fn delete_rolls_back_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().worksets.len(), 1);
     assert!(mock.snapshot().obj_tasks.is_empty());
 }

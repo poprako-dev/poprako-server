@@ -111,12 +111,12 @@ fn chapter_flow(
 
         Ok(chapter_stage_usecase::RawProvideAdvance::Pending) => {
             DispatchFlow::Wait {
-                err_msg: "page objects are pending".into(),
+                error_message: "page objects are pending".into(),
             }
         }
 
         Err(error) => DispatchFlow::Retry {
-            err_msg: format!("{:?}", error),
+            error_message: format!("{:?}", error),
         },
     }
 }
@@ -133,7 +133,7 @@ fn retry_flow(rest: BaseRest<()>) -> DispatchFlow {
         Ok(()) => DispatchFlow::Complete,
 
         Err(error) => DispatchFlow::Retry {
-            err_msg: format!("{:?}", error),
+            error_message: format!("{:?}", error),
         },
     }
 }

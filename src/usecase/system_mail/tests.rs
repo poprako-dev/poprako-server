@@ -164,7 +164,7 @@ async fn mark_read_rejects_missing_id_without_mutation() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let err = mark_read(
+    let error = mark_read(
         (&mock,),
         token("user-1"),
         vec!["sys_mail-1".into(), "sys_mail-nonexistent".into()],
@@ -173,7 +173,7 @@ async fn mark_read_rejects_missing_id_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -209,12 +209,12 @@ async fn mark_read_rejects_other_user_mail() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let err = mark_read((&mock,), token("user-2"), vec!["sys_mail-1".into()])
+    let error = mark_read((&mock,), token("user-2"), vec!["sys_mail-1".into()])
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 

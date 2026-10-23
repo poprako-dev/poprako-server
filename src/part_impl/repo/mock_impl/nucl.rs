@@ -14,13 +14,13 @@ pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
             //
             let delta = usize::try_from(delta).map_err(|_| {
                 BaseError::Unrecoverable {
-                    msg: "signed delta conversion failed".into(),
+                    message: "signed delta conversion failed".into(),
                 }
             })?;
 
             *value = value.checked_add(delta).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    msg: "counter overflow".into(),
+                    message: "counter overflow".into(),
                 }
             })?;
         }
@@ -35,13 +35,13 @@ pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
             let delta =
                 usize::try_from(delta.unsigned_abs()).map_err(|_| {
                     BaseError::Unrecoverable {
-                        msg: "signed delta conversion failed".into(),
+                        message: "signed delta conversion failed".into(),
                     }
                 })?;
 
             *value = value.checked_sub(delta).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    msg: "counter underflow".into(),
+                    message: "counter underflow".into(),
                 }
             })?;
         }
@@ -90,7 +90,7 @@ impl Nucl for Mock {
                 if flags.commit_failure {
                     //
                     return Err(NuclError::Backend(BaseError::Unrecoverable {
-                        msg: "injected transaction commit failure".into(),
+                        message: "injected transaction commit failure".into(),
                     }));
                 }
 

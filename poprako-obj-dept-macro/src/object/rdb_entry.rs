@@ -214,7 +214,7 @@ pub fn expand(table: &Path) -> TokenStream {
                     .await,
             }
             .optional()
-            .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+            .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(record.map(Into::into))
         }
@@ -246,7 +246,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .first::<ObjPresenceStateRecord>(conn)
                 .await
                 .optional()
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(record.map(|record| {
                 let state = ::poprako_obj_dept::rdb_impl::ObjRdbRecord {
@@ -296,7 +296,7 @@ pub fn expand(table: &Path) -> TokenStream {
                     .load::<ObjStateEntryRecord>(conn)
                     .await,
             }
-            .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+            .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(records.into_iter().map(Into::into).collect())
         }
@@ -330,7 +330,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .get_results::<ObjStateEntryRecord>(conn)
                 .await
                 .map(|records| records.into_iter().map(Into::into).collect())
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)
         }
 
         pub async fn write_many(
@@ -371,7 +371,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 ))
                 .execute(conn)
                 .await
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(())
         }
@@ -404,7 +404,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 ))
                 .execute(conn)
                 .await
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(())
         }
@@ -423,7 +423,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ::diesel::delete(#table::table.filter(#table::f_id.eq_any(ids)))
                 .execute(conn)
                 .await
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
 
             Ok(())
         }
@@ -478,7 +478,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ))
             .execute(conn)
             .await
-            .map_err(::poprako_obj_dept::rdb_impl::diesel_err)
+            .map_err(::poprako_obj_dept::rdb_impl::diesel_error)
         }
 
         async fn set_uploaded_if_revision(
@@ -507,7 +507,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ))
             .execute(conn)
             .await
-            .map_err(::poprako_obj_dept::rdb_impl::diesel_err)
+            .map_err(::poprako_obj_dept::rdb_impl::diesel_error)
         }
 
         #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]

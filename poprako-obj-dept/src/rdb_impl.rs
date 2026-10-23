@@ -59,7 +59,7 @@ where
     //
     let ver =
         u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
-            msg: "object ver is outside u32".into(),
+            message: "object ver is outside u32".into(),
         })?;
 
     match (record.key, record.f_is_uploaded, record.hash, record.ext) {
@@ -84,7 +84,7 @@ where
         }
 
         _ => Err(ObjDeptError::Unrecoverable {
-            msg: format!("invalid object row: {}", id),
+            message: format!("invalid object row: {}", id),
         }),
     }
 }
@@ -117,14 +117,14 @@ pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
                 _ => {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        msg: format!("invalid object row: {}", id),
+                        message: format!("invalid object row: {}", id),
                     });
                 }
             }
 
             u32::try_from(record.ver).map_err(|_| {
                 ObjDeptError::Unrecoverable {
-                    msg: "object ver is outside u32".into(),
+                    message: "object ver is outside u32".into(),
                 }
             })?
         }
@@ -134,7 +134,7 @@ pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
 
     ver.checked_add(1)
         .ok_or_else(|| ObjDeptError::Unrecoverable {
-            msg: "object ver overflow".into(),
+            message: "object ver overflow".into(),
         })
 }
 
@@ -170,7 +170,7 @@ where
             //
             let ver = u32::try_from(record.ver).map_err(|_| {
                 ObjDeptError::Unrecoverable {
-                    msg: "object ver is outside u32".into(),
+                    message: "object ver is outside u32".into(),
                 }
             })?;
 
@@ -186,13 +186,13 @@ where
         (None, None, None, None) => Ok(None),
 
         _ => Err(ObjDeptError::Unrecoverable {
-            msg: format!("invalid object row: {}", id),
+            message: format!("invalid object row: {}", id),
         }),
     }
 }
 
 /// Maps and traces a Diesel adapter failure.
-pub fn diesel_err(source: DieselError) -> ObjDeptError {
+pub fn diesel_error(source: DieselError) -> ObjDeptError {
     //
     match &source {
         //
@@ -203,7 +203,7 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             //
             tracing::warn!(
                 operation = "access_obj_dept_rdb",
-                sdk_err = ?source,
+                sdk_error = ?source,
                 "retryable Diesel SDK error",
             );
         }
@@ -212,7 +212,7 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             //
             tracing::error!(
                 operation = "access_obj_dept_rdb",
-                sdk_err = ?source,
+                sdk_error = ?source,
                 "Diesel SDK error",
             );
         }
@@ -224,11 +224,11 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             DatabaseErrorKind::SerializationFailure,
             info,
         ) => ObjDeptError::Retryable {
-            msg: info.message().to_owned(),
+            message: info.message().to_owned(),
         },
 
         source => ObjDeptError::Unrecoverable {
-            msg: source.to_string(),
+            message: source.to_string(),
         },
     }
 }
@@ -239,20 +239,20 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
-pub fn rdb_err(source: RdbError) -> ObjDeptError {
+pub fn rdb_error(source: RdbError) -> ObjDeptError {
     //
     match source {
         //
         RdbError::PoolBuild { source } => ObjDeptError::Retryable {
-            msg: format!("failed to build RDB pool: {}", source),
+            message: format!("failed to build RDB pool: {}", source),
         },
 
-        RdbError::PoolGet { msg } => ObjDeptError::Retryable {
-            msg: format!("failed to acquire RDB connection: {}", msg),
+        RdbError::PoolGet { message } => ObjDeptError::Retryable {
+            message: format!("failed to acquire RDB connection: {}", message),
         },
 
         RdbError::PoolWaitTimeout => ObjDeptError::Unavailable {
-            msg: "timed out waiting for an RDB connection".into(),
+            message: "timed out waiting for an RDB connection".into(),
         },
     }
 }
@@ -271,7 +271,7 @@ where
 
     let (dom, decoded_ver) =
         K::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
-            msg: format!("invalid object key: {}", id),
+            message: format!("invalid object key: {}", id),
         })?;
 
     let is_consistent = K::id(&dom) == id
@@ -284,7 +284,7 @@ where
         () if is_consistent => Ok(()),
 
         () => Err(ObjDeptError::Unrecoverable {
-            msg: format!("inconsistent object key: {}", id),
+            message: format!("inconsistent object key: {}", id),
         }),
     }
 }

@@ -54,12 +54,12 @@ pub struct HttpError {
     /// Human-readable error detail, omitted when absent.
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
-    msg: Option<String>,
+    message: Option<String>,
 }
 
 impl HttpError {
     /// Builds an error from an expected application variant and message.
-    pub fn expected(variant: ExpectedVariant, msg: &str) -> Self {
+    pub fn expected(variant: ExpectedVariant, message: &str) -> Self {
         //
         let (status, code) = match variant {
             //
@@ -73,24 +73,24 @@ impl HttpError {
         Self {
             status,
             code: nonzero_code(code),
-            msg: Some(msg.to_string()),
+            message: Some(message.to_string()),
         }
     }
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
-    pub fn unprocessable(msg: &str) -> Self {
+    pub fn unprocessable(message: &str) -> Self {
         //
         tracing::warn!(
             status = 422,
-            err_variant = "PathBodyMismatch",
-            err_msg = msg,
+            error_variant = "PathBodyMismatch",
+            error_message = message,
             "HTTP argument error",
         );
 
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: nonzero_code(7),
-            msg: Some(msg.to_string()),
+            message: Some(message.to_string()),
         }
     }
 
@@ -99,7 +99,7 @@ impl HttpError {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: nonzero_code(1),
-            msg: Some(trl("error-internal")),
+            message: Some(trl("error-internal")),
         }
     }
 
@@ -108,7 +108,7 @@ impl HttpError {
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),
-            msg: Some(trl("error-unavailable")),
+            message: Some(trl("error-unavailable")),
         }
     }
 }
@@ -121,7 +121,7 @@ impl std::fmt::Display for HttpError {
             f,
             "HttpError(code={}, message={})",
             self.code,
-            self.msg.as_deref().unwrap_or("(no message)"),
+            self.message.as_deref().unwrap_or("(no message)"),
         )
     }
 }
@@ -132,14 +132,14 @@ impl From<BaseError> for HttpError {
         //
         match source {
             //
-            BaseError::Expected { variant, msg } => {
-                Self::expected(variant, &msg)
+            BaseError::Expected { variant, message } => {
+                Self::expected(variant, &message)
             }
 
-            BaseError::Retryable { msg } => Self {
+            BaseError::Retryable { message } => Self {
                 status: StatusCode::CONFLICT,
                 code: nonzero_code(8),
-                msg: Some(msg),
+                message: Some(message),
             },
 
             BaseError::Unavailable { .. } => Self::unavailable(),

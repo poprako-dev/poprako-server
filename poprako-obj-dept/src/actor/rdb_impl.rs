@@ -60,7 +60,7 @@ pub fn classify(
 
     let watermark =
         u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
-            msg: "object ver is outside u32".into(),
+            message: "object ver is outside u32".into(),
         })?;
 
     match ver.cmp(&watermark) {
@@ -89,7 +89,7 @@ pub fn classify(
                 }
 
                 _ => Err(ObjDeptError::Unrecoverable {
-                    msg: "invalid object row".into(),
+                    message: "invalid object row".into(),
                 }),
             }
         }
@@ -123,7 +123,7 @@ macro_rules! handle_obj_dept_task {
         if !task_key_is_consistent {
             return Ok(
                 ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                    msg: "object task key is inconsistent".into(),
+                    message: "object task key is inconsistent".into(),
                 },
             );
         }
@@ -131,7 +131,7 @@ macro_rules! handle_obj_dept_task {
         let mut conn = core
             .get()
             .await
-            .map_err(::poprako_obj_dept::rdb_impl::rdb_err)?;
+            .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
         let (record, initial_revision) = match task.oper.as_str() {
             ::poprako_obj_dept::model::task::CHECK => {
                 let presence_state =
@@ -167,7 +167,7 @@ macro_rules! handle_obj_dept_task {
         {
             return Ok(
                 ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                    msg: "object task key differs from current generation"
+                    message: "object task key differs from current generation"
                         .into(),
                 },
             );
@@ -203,7 +203,8 @@ macro_rules! handle_obj_dept_task {
                     return Ok(
                         ::poprako_obj_dept::model::task::ObjTaskAction::Operator
                             {
-                            msg: "active object lacks a revision token".into(),
+                            message: "active object lacks a revision token"
+                                .into(),
                         },
                     );
                 };
@@ -223,7 +224,7 @@ macro_rules! handle_obj_dept_task {
                 let mut conn = core
                     .get()
                     .await
-                    .map_err(::poprako_obj_dept::rdb_impl::rdb_err)?;
+                    .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
                 let updated = match exists {
                     true => {
                         $obj_mod::mark_uploaded_if_revision(
@@ -262,7 +263,7 @@ macro_rules! handle_obj_dept_task {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::
                                 Operator {
-                                msg:
+                                message:
                                     "object check changed multiple rows".into(),
                             },
                         );
@@ -304,7 +305,7 @@ macro_rules! handle_obj_dept_task {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::
                                 Retry {
-                                msg: "object changed during check".into(),
+                                message: "object changed during check".into(),
                             },
                         );
                     }
@@ -318,7 +319,7 @@ macro_rules! handle_obj_dept_task {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::
                                 Operator {
-                                msg:
+                                message:
                                     "object changed to an older \
                                         watermark".into(),
                             },
@@ -333,7 +334,7 @@ macro_rules! handle_obj_dept_task {
                 ::poprako_obj_dept::model::task::CHECK,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                msg: "check task is newer than object state".into(),
+                message: "check task is newer than object state".into(),
             }),
             (
                 ::poprako_obj_dept::model::task::DELETE,
@@ -359,10 +360,10 @@ macro_rules! handle_obj_dept_task {
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Avail
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                msg: "delete task targets current object".into(),
+                message: "delete task targets current object".into(),
             }),
             _ => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                msg: "unknown object task operation".into(),
+                message: "unknown object task operation".into(),
             }),
         }
     }};

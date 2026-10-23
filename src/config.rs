@@ -97,7 +97,7 @@ impl AppConfig {
                 //
                 tracing::error!(
                     operation = "read_application_config",
-                    sdk_err = ?error,
+                    sdk_error = ?error,
                     "Tokio SDK file read error",
                 );
 
@@ -111,7 +111,7 @@ impl AppConfig {
                 //
                 tracing::error!(
                     operation = "parse_application_config",
-                    config_err = ?error,
+                    config_error = ?error,
                     "application configuration parsing or validation failed",
                 );
             })

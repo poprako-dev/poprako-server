@@ -124,12 +124,12 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_msg =
+                let error_message =
                     trl("error-team-translator-or-proofreader-required");
 
                 return Err(expected_error! {
                     ExpectedVariant::Perm,
-                    message: err_msg;
+                    message: error_message;
                     team_id = %team_id,
                     user_id = %token.user_id,
                     "termbase creator membership missing",

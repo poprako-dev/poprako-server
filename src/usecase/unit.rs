@@ -202,12 +202,12 @@ where
                     MAX_UNIT_SEARCH_MATCH_COUNT.into(),
                 )]);
 
-                let err_msg =
+                let error_message =
                     trl_kv("error-unit-search-too-many-matches", &args);
 
                 return Err(expected_error! {
                     ExpectedVariant::Args,
-                    message: err_msg;
+                    message: error_message;
                     match_count = search_ids.len(),
                     match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
                     "too many Unit search matches",
@@ -363,10 +363,10 @@ where
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
-fn unit_list_invariant(page_id: &str, msg: &'static str) -> BaseError {
+fn unit_list_invariant(page_id: &str, message: &'static str) -> BaseError {
     //
     unrecoverable_error! {
-        message: msg.into();
+        message: message.into();
         page_id,
         "invalid persisted Page Unit state",
     }

@@ -164,7 +164,7 @@ impl Visit for RejectionFields<'_> {
             return;
         }
 
-        self.result = write!(self.writer, " err_variant={:?}", value);
+        self.result = write!(self.writer, " error_variant={:?}", value);
     }
 
     // Drops all Debug fields without invoking their formatter.

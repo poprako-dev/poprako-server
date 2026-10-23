@@ -36,25 +36,25 @@ pub enum BaseError {
         /// Classification of the expected error variant.
         variant: ExpectedVariant,
         /// Human-readable detail about the error condition.
-        msg: String,
+        message: String,
     },
 
     /// A transient concurrency conflict that the caller may retry.
     Retryable {
         /// Safe client-visible detail describing the retryable condition.
-        msg: String,
+        message: String,
     },
 
     /// A temporarily unavailable dependency that the caller may try again.
     Unavailable {
         /// Generic availability detail retained for non-HTTP callers.
-        msg: String,
+        message: String,
     },
 
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
         /// Safe diagnostic for logging; HTTP responses conceal this detail.
-        msg: String,
+        message: String,
     },
 }
 
@@ -77,12 +77,13 @@ impl From<RdbError> for BaseError {
         match source {
             //
             RdbError::PoolWaitTimeout => Self::Unavailable {
-                msg: "database connection capacity is temporarily unavailable"
-                    .into(),
+                message:
+                    "database connection capacity is temporarily unavailable"
+                        .into(),
             },
 
             source => Self::Unrecoverable {
-                msg: source.to_string(),
+                message: source.to_string(),
             },
         }
     }
@@ -94,17 +95,23 @@ impl From<ObjDeptError> for BaseError {
         //
         match source {
             //
-            ObjDeptError::Invalid { msg } => Self::Expected {
+            ObjDeptError::Invalid { message } => Self::Expected {
                 variant: ExpectedVariant::Args,
-                msg,
+                message,
             },
 
-            ObjDeptError::Conflict { msg }
-            | ObjDeptError::Retryable { msg } => Self::Retryable { msg },
+            ObjDeptError::Conflict { message }
+            | ObjDeptError::Retryable { message } => {
+                Self::Retryable { message }
+            }
 
-            ObjDeptError::Unavailable { msg } => Self::Unavailable { msg },
+            ObjDeptError::Unavailable { message } => {
+                Self::Unavailable { message }
+            }
 
-            ObjDeptError::Unrecoverable { msg } => Self::Unrecoverable { msg },
+            ObjDeptError::Unrecoverable { message } => {
+                Self::Unrecoverable { message }
+            }
         }
     }
 }
@@ -117,19 +124,21 @@ impl From<PromError> for BaseError {
             //
             PromError::AlreadyExists => Self::Expected {
                 variant: ExpectedVariant::Args,
-                msg: trl("error-already-exists"),
+                message: trl("error-already-exists"),
             },
 
             PromError::ConcurrentConflict => Self::Retryable {
-                msg: trl("error-concurrent-conflict"),
+                message: trl("error-concurrent-conflict"),
             },
 
             PromError::NotFound => Self::Expected {
                 variant: ExpectedVariant::Args,
-                msg: trl("error-not-found"),
+                message: trl("error-not-found"),
             },
 
-            PromError::Unrecoverable { msg } => Self::Unrecoverable { msg },
+            PromError::Unrecoverable { message } => {
+                Self::Unrecoverable { message }
+            }
         }
     }
 }

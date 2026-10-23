@@ -85,11 +85,11 @@ pub async fn apply_edits(
     for edit in &write_plan.creates {
         //
         let UnitEdit::Create { next_id, .. } = edit else {
-            return Err(invalid_unit_edit_plan_err());
+            return Err(invalid_unit_edit_plan_error());
         };
 
         let item = UnitItem::from_edit(page_id, edit, next_id.as_deref())
-            .ok_or_else(invalid_unit_edit_plan_err)?;
+            .ok_or_else(invalid_unit_edit_plan_error)?;
 
         items.push(item);
     }
@@ -153,7 +153,7 @@ fn ensure_affected(
 }
 
 // Reports an impossible mismatch between normalized edits and their plan.
-fn invalid_unit_edit_plan_err() -> BaseError {
+fn invalid_unit_edit_plan_error() -> BaseError {
     //
     unrecoverable_error! {
         message: "normalized Unit edits disagree with edit plan".into();

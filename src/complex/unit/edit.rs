@@ -471,10 +471,10 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
 }
 
 // Build an unrecoverable error for a corrupt internal sequence.
-fn invalid_sequence(msg: &'static str) -> BaseError {
+fn invalid_sequence(message: &'static str) -> BaseError {
     //
     unrecoverable_error! {
-        message: msg.into();
+        message: message.into();
         "invalid Unit sequence",
     }
 }

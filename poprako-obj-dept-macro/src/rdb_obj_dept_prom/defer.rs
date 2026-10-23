@@ -129,7 +129,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 .set(#table::f_id.eq(::diesel::upsert::excluded(#table::f_id)))
                 .execute(conn)
                 .await
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
 
             let ids = tasks.iter().map(|task| &task.id).collect::<Vec<_>>();
             let records = #table::table
@@ -137,7 +137,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 .select(TaskIdentityRecord::as_select())
                 .load::<TaskIdentityRecord>(conn)
                 .await
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
             let records = records
                 .into_iter()
                 .map(|record| {
@@ -170,7 +170,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
             if records.len() != tasks.len() {
                 //
                 return Err(ObjDeptError::Unrecoverable {
-                    msg: "object task batch identity is incomplete".into(),
+                    message: "object task batch identity is incomplete".into(),
                 });
             }
 
@@ -179,7 +179,8 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 let Some(record) = records.get(&task.id) else {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        msg: "object task batch identity is incomplete".into(),
+                        message: "object task batch identity is incomplete"
+                            .into(),
                     });
                 };
 
@@ -203,7 +204,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 if !is_same_identity {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        msg: "object task identity conflict".into(),
+                        message: "object task identity conflict".into(),
                     });
                 }
 
@@ -222,7 +223,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     _ => {
                         //
                         return Err(ObjDeptError::Unrecoverable {
-                            msg: "invalid object task status".into(),
+                            message: "invalid object task status".into(),
                         });
                     }
                 }
@@ -285,7 +286,7 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                             .ok_or_else(|| {
                                 ::poprako_obj_dept::rest::ObjDeptError::
                                     Unrecoverable {
-                                    msg:
+                                    message:
                                         "object check visibility \
                                             overflow".into(),
                                 }

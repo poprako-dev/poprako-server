@@ -123,7 +123,7 @@ pub async fn shutdown_workers(mut workers: JoinSet<()>, grace: Duration) {
         while let Some(result) = workers.join_next().await {
             //
             if let Err(error) = result {
-                tracing::error!(err = ?error, "prom worker task failed");
+                tracing::error!(error = ?error, "prom worker task failed");
             }
         }
     };

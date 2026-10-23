@@ -213,7 +213,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
         if context.create_team_failure {
             //
             return Err(BaseError::Unrecoverable {
-                msg: "mock team creation failed".into(),
+                message: "mock team creation failed".into(),
             });
         }
 

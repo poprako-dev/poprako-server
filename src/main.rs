@@ -31,15 +31,15 @@ fn report_shutdown(
         .into_iter()
         .map(|(actor, rest)| {
             //
-            rest.map_err(|err| {
+            rest.map_err(|error| {
                 //
                 tracing::error!(
                     actor,
-                    err = ?err,
+                    error = ?error,
                     "background supervisor failed"
                 );
 
-                anyhow::Error::new(err)
+                anyhow::Error::new(error)
                     .context(format!("{} supervisor failed", actor))
             })
         })
@@ -49,22 +49,22 @@ fn report_shutdown(
 // Load optional local environment before constructing adapters.
 fn load_dotenv() {
     //
-    if let Err(err) = dotenvy::dotenv() {
+    if let Err(error) = dotenvy::dotenv() {
         //
         #[cfg(debug_assertions)]
-        let sdk_err = tracing::field::debug(&err);
+        let sdk_error = tracing::field::debug(&error);
 
         #[cfg(not(debug_assertions))]
-        let sdk_err = {
+        let sdk_error = {
             // Consume parsing diagnostics without formatting private payloads.
-            let _ = err;
+            let _ = error;
 
             tracing::field::display("[REDACTED]")
         };
 
         tracing::warn!(
             operation = "load_dotenv",
-            sdk_err,
+            sdk_error,
             ".env loading failed; continuing with process environment",
         );
     }

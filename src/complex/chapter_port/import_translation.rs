@@ -32,7 +32,7 @@ pub fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
             ExpectedVariant::Args,
             message: trl("error-invalid-chapter-import-content");
             input_length = content.len(),
-            parse_err = ?error,
+            parse_error = ?error,
             operation = "parse_poprako",
             "chapter import JSON is invalid",
         }

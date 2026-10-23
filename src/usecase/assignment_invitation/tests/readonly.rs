@@ -50,13 +50,13 @@ async fn delete_rejects_published_chapter() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err =
+    let error =
         delete((&mock, &mock), token("admin-user"), "invitation-1".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }

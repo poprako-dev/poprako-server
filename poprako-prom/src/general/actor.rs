@@ -107,12 +107,12 @@ where
                 //
                 tracing::error!(
                     operation = "deserialize_prom_payload",
-                    sdk_err = ?error,
+                    sdk_error = ?error,
                     "JSON SDK deserialization error",
                 );
 
                 return DispatchFlow::Dead {
-                    err_msg: format!(
+                    error_message: format!(
                         "failed to deserialize prom payload: {}",
                         error
                     ),
@@ -124,7 +124,7 @@ where
 
         if topic != expected_topic || !H::Payload::TOPICS.contains(&topic) {
             return DispatchFlow::Dead {
-                err_msg: format!(
+                error_message: format!(
                     "prom topic {} does not match registered payload topic {}",
                     topic, expected_topic,
                 ),

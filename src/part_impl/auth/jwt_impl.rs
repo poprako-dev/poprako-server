@@ -97,13 +97,13 @@ impl JwtAuth {
                 || "[JwtAuth::from_env] JWT_EXPIRATION_HOURS must be an integer",
             )?;
 
-        Self::new(&secret, expiration_hours).map_err(|err| match err {
+        Self::new(&secret, expiration_hours).map_err(|error| match error {
             //
-            BaseError::Expected { msg, .. }
-            | BaseError::Retryable { msg }
-            | BaseError::Unavailable { msg }
-            | BaseError::Unrecoverable { msg } => {
-                anyhow::anyhow!("{}", msg)
+            BaseError::Expected { message, .. }
+            | BaseError::Retryable { message }
+            | BaseError::Unavailable { message }
+            | BaseError::Unrecoverable { message } => {
+                anyhow::anyhow!("{}", message)
             }
         })
     }
@@ -165,15 +165,15 @@ impl TokenAuth for JwtAuth {
         let header = Header::new(Algorithm::HS256);
 
         jsonwebtoken::encode(&header, &claims, &self.encoding_key).map_err(
-            |err| {
+            |error| {
                 //
                 unrecoverable_error! {
                     message: format!(
                         "[JwtAuth::sign_token] error when encoding: {}",
-                        err,
+                        error,
                     );
                     operation = "sign_token",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "JWT SDK error",
                 }
             },
@@ -190,13 +190,13 @@ impl TokenAuth for JwtAuth {
             &self.decoding_key,
             &Validation::new(Algorithm::HS256),
         )
-        .map_err(|err| {
+        .map_err(|error| {
             //
             expected_error! {
                 ExpectedVariant::Auth,
                 message: trl("error-unauthorized");
                 operation = "verify_token",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "JWT verification failed",
             }
         })?;

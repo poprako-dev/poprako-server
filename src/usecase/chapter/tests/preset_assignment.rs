@@ -14,7 +14,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
 
-    let err = create(
+    let error = create(
         (&mock, &mock),
         token("user-1"),
         CreateChapterInstr {
@@ -29,7 +29,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().chapters.is_empty());
 
@@ -145,7 +145,7 @@ async fn create_rejects_non_admin() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = create(
+    let error = create(
         (&mock, &mock),
         token("user-1"),
         CreateChapterInstr {
@@ -158,7 +158,7 @@ async fn create_rejects_non_admin() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 

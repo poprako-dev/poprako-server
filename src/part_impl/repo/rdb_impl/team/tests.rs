@@ -32,14 +32,14 @@ const RESOLVE_PREFIX: &str = "rdb-test-team-resolve-";
     clippy::panic,
     reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
 )]
-fn assert_expected(error: BaseError, msg_key: &str) {
-    let BaseError::Expected { variant, msg } = error else {
+fn assert_expected(error: BaseError, message_key: &str) {
+    let BaseError::Expected { variant, message } = error else {
         panic!("expected client-visible resource error");
     };
 
     assert!(matches!(variant, ExpectedVariant::Args));
 
-    assert_eq!(msg, trl(msg_key));
+    assert_eq!(message, trl(message_key));
 }
 
 /// Verifies team roundtrip via testcontainers.

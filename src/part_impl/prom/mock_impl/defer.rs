@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 
 use crate::part::nucl::ReptRead;
 use crate::part::prom::payload::PromPayload;
-use crate::part_impl::prom::mock_impl::json::serialize_payload_err;
+use crate::part_impl::prom::mock_impl::json::serialize_payload_error;
 use crate::part_impl::prom::mock_impl::{Mock, MockPromRecord};
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, accept};
@@ -39,7 +39,7 @@ impl<'a> Step<Defer<'a, String, PromPayload, ()>, MockContext> for Mock {
         //
         // Internal implementation detail.
         let payload_json = serde_json::to_string(oper.task.payload)
-            .map_err(|err| serialize_payload_err(&err))?;
+            .map_err(|error| serialize_payload_error(&error))?;
 
         let now = OffsetDateTime::now_utc();
 

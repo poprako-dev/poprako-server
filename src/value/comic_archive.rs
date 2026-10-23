@@ -250,12 +250,12 @@ impl ComicArchiveMonth {
                 ("max_count".into(), MAX_EXPORT_MONTHS.into()),
             ]);
 
-            let err_msg =
+            let error_message =
                 trl_kv("error-invalid-comic-archive-month-count", &args);
 
             return Err(expected_error! {
                 ExpectedVariant::Args,
-                message: err_msg;
+                message: error_message;
                 label_count = labels.len(),
                 "invalid comic archive month count",
             });

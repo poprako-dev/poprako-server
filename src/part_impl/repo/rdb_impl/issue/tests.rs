@@ -251,7 +251,7 @@ async fn verify_archive(
             assert_eq!(active_count, 0);
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "rollback archive fixture".into(),
+                message: "rollback archive fixture".into(),
             })
         })
         .await;
@@ -408,7 +408,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
                 .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "injected failure after clearing review".into(),
+                message: "injected failure after clearing review".into(),
             })
         })
         .await;

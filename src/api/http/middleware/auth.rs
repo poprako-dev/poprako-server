@@ -35,7 +35,7 @@ pub async fn authorize(
         //
         Ok(token) => token,
 
-        Err(err) => return HttpError::from(err).into_response(),
+        Err(error) => return HttpError::from(error).into_response(),
     };
 
     request.extensions_mut().insert(user_token);

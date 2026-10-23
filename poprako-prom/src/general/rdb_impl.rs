@@ -66,7 +66,7 @@ pub enum PromError {
     /// Serialization, invalid timing, or a permanent database failure.
     Unrecoverable {
         /// Safe diagnostic retained after recording the original source.
-        msg: String,
+        message: String,
     },
 }
 
@@ -86,7 +86,7 @@ impl std::fmt::Display for PromError {
 
             Self::NotFound => formatter.write_str("prom task not found"),
 
-            Self::Unrecoverable { msg } => formatter.write_str(msg),
+            Self::Unrecoverable { message } => formatter.write_str(message),
         }
     }
 }
@@ -112,8 +112,8 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             //
             tracing::warn!(
                 operation = "persist_prom",
-                database_err = "unique violation",
-                database_msg = information.message(),
+                database_error = "unique violation",
+                database_message = information.message(),
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
@@ -130,8 +130,8 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             //
             tracing::warn!(
                 operation = "execute_prom",
-                database_err = "serialization failure",
-                database_msg = information.message(),
+                database_error = "serialization failure",
+                database_message = information.message(),
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
@@ -145,7 +145,7 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             //
             tracing::warn!(
                 operation = "execute_prom",
-                database_err = "not found",
+                database_error = "not found",
                 "unexpected missing prom record"
             );
 
@@ -156,8 +156,8 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             // Database details can contain the entire private task payload.
             tracing::error!(
                 operation = "execute_prom",
-                database_err = ?kind,
-                database_msg = information.message(),
+                database_error = ?kind,
+                database_message = information.message(),
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
@@ -165,17 +165,17 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             );
 
             PromError::Unrecoverable {
-                msg: format!("diesel error: {}", information.message()),
+                message: format!("diesel error: {}", information.message()),
             }
         }
 
         source => {
             //
-            tracing::error!(operation = "execute_prom", sdk_err = ?source,
+            tracing::error!(operation = "execute_prom", sdk_error = ?source,
                 "Diesel SDK error");
 
             PromError::Unrecoverable {
-                msg: format!("diesel error: {}", source),
+                message: format!("diesel error: {}", source),
             }
         }
     }

@@ -50,7 +50,7 @@ pub fn make_label_plus(
             .unwrap_or_else(|error| {
                 //
                 tracing::error!(
-                    err = %error,
+                    error = %error,
                     "[chapter_translation_export_complex::make_label_plus] \
                      failed to write page header",
                 );
@@ -75,7 +75,7 @@ pub fn make_label_plus(
             .unwrap_or_else(|error| {
                 //
                 tracing::error!(
-                    err = %error,
+                    error = %error,
                     concat!(
                         "[chapter_translation_export_complex::",
                         "make_label_plus] ",

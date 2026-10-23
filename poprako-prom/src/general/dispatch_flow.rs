@@ -14,19 +14,19 @@ pub enum DispatchFlow {
     /// Task encountered a transient error; schedule for retry.
     Retry {
         /// Diagnostic message retained for the next attempt.
-        err_msg: String,
+        error_message: String,
     },
 
     /// Task is waiting for external state; reschedule without consuming retry budget.
     Wait {
         /// Diagnostic message retained for the next attempt.
-        err_msg: String,
+        error_message: String,
     },
 
     /// Task encountered a fatal error; move record to Dead status.
     Dead {
         /// Diagnostic message retained with the failed task.
-        err_msg: String,
+        error_message: String,
     },
 }
 
@@ -45,11 +45,14 @@ impl DispatchFlow {
         //
         match self {
             //
-            Self::Wait { err_msg }
+            Self::Wait { error_message }
                 if now >= requested_at.saturating_add(WAIT_TIMEOUT) =>
             {
                 Self::Dead {
-                    err_msg: format!("waiting deadline exceeded: {}", err_msg),
+                    error_message: format!(
+                        "waiting deadline exceeded: {}",
+                        error_message
+                    ),
                 }
             }
 
@@ -71,9 +74,14 @@ pub fn enforce_retry_limit(
     //
     match (dispatch_flow, retried_count >= 3) {
         //
-        (DispatchFlow::Retry { err_msg: error }, true) => {
-            DispatchFlow::Dead { err_msg: error }
-        }
+        (
+            DispatchFlow::Retry {
+                error_message: error,
+            },
+            true,
+        ) => DispatchFlow::Dead {
+            error_message: error,
+        },
 
         (dispatch_flow, _) => dispatch_flow,
     }

@@ -234,7 +234,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRecord> for ChapterWorkflowRecordInfo {
                     .into();
                 operation = "decode_chapter_workflow_record_kind",
                 record_id = %record.f_id,
-                err = ?error,
+                error = ?error,
                 "persisted chapter workflow record is corrupt",
             }
         })?;
@@ -247,7 +247,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRecord> for ChapterWorkflowRecordInfo {
                 operation = "decode_chapter_workflow_record_payload",
                 record_id = %record.f_id,
                 kind = ?kind,
-                err = ?error,
+                error = ?error,
                 "persisted chapter workflow record is corrupt",
             }
         })?;

@@ -247,7 +247,7 @@ async fn create_propagates_repo_failure() {
 
     mock.seed_user(user("user-1", true), credential("user-1"));
 
-    let err = create(
+    let error = create(
         (&mock, &mock, &mock),
         token("user-1"),
         CreateTeamInstr {
@@ -259,7 +259,7 @@ async fn create_propagates_repo_failure() {
     .err()
     .unwrap();
 
-    assert!(matches!(err, BaseError::Unrecoverable { .. }));
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }
 
 #[tokio::test]
@@ -281,12 +281,12 @@ async fn get_info_propagates_missing_team() {
     //
     let mock = Mock::new();
 
-    let err = get_info((&mock, &mock), "team-1".into())
+    let error = get_info((&mock, &mock), "team-1".into())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -346,13 +346,13 @@ async fn list_infos_all_teams_requires_sadmin() {
 
     mock.seed_user(user("user-1", false), credential("user-1"));
 
-    let err =
+    let error =
         list_infos((&mock, &mock), token("user-1"), list_instr(None, 0, 10))
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -364,7 +364,7 @@ async fn list_infos_rejects_another_user_filter() {
 
     mock.seed_member(member("member-1", "user-2", "team-1"));
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("user-1"),
         list_instr(Some("user-2"), 0, 10),
@@ -373,7 +373,7 @@ async fn list_infos_rejects_another_user_filter() {
     .err()
     .unwrap();
 
-    assert_expected_message(err, ExpectedVariant::Perm, "error-forbidden");
+    assert_expected_message(error, ExpectedVariant::Perm, "error-forbidden");
 }
 
 #[tokio::test]
@@ -411,7 +411,7 @@ async fn update_info_propagates_missing_team() {
 
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = update_info(
+    let error = update_info(
         (&mock,),
         token("user-1"),
         update_instr("team-1", "New", "New Desc"),
@@ -420,7 +420,7 @@ async fn update_info_propagates_missing_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -457,9 +457,9 @@ async fn mark_avatar_uploaded_rejects_stale_generation() {
 
     seed_team_avatar(&mock, 3);
 
-    let err = mark_team_avatar(&mock, 2).await.err().unwrap();
+    let error = mark_team_avatar(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(
         !mock

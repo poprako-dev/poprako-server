@@ -438,17 +438,19 @@ impl Mock {
 
 /// Build an expected-args [`RootError`] with a translated message.
 #[must_use]
-pub fn expected(msg: &str) -> BaseError {
+pub fn expected(message: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        msg: trl(msg),
+        message: trl(message),
     }
 }
 
 /// Build an unrecoverable [`RootError`] with the given message.
 #[must_use]
-pub fn unrecoverable(msg: &str) -> BaseError {
-    BaseError::Unrecoverable { msg: msg.into() }
+pub fn unrecoverable(message: &str) -> BaseError {
+    BaseError::Unrecoverable {
+        message: message.into(),
+    }
 }
 
 /// Return the current UTC timestamp.

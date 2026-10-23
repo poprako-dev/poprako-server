@@ -74,7 +74,7 @@ pub async fn run(
             //
             Some(Ok((id, ()))) => id,
 
-            Some(Err(err)) => err.id(),
+            Some(Err(error)) => error.id(),
 
             None => continue,
         };

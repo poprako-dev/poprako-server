@@ -73,11 +73,11 @@ pub fn check_user_is_chapter_translator_or_proofreader(
 }
 
 // Build and log one expected permission error.
-fn reject_perm(msg_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject_perm(message_key: &str, event: &'static str) -> BaseRest<()> {
     //
     Err(expected_error! {
         ExpectedVariant::Perm,
-        message: trl(msg_key);
+        message: trl(message_key);
         event,
         "permission denied",
     })

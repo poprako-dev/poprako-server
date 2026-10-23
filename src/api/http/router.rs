@@ -100,7 +100,7 @@ async fn method_not_allowed() -> StatusCode {
     //
     tracing::warn!(
         status = 405,
-        err_variant = "MethodNotAllowed",
+        error_variant = "MethodNotAllowed",
         "HTTP method not allowed"
     );
 
@@ -112,7 +112,7 @@ async fn not_found() -> StatusCode {
     //
     tracing::warn!(
         status = 404,
-        err_variant = "RouteNotFound",
+        error_variant = "RouteNotFound",
         "HTTP route not found"
     );
 

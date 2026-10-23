@@ -76,7 +76,9 @@ async fn associated_payload_selects_decoding() {
     let actor = PromActor::new(
         (),
         Dispatcher::new((), |(), payload: OtherWork| async move {
-            DispatchFlow::Wait { err_msg: payload.0 }
+            DispatchFlow::Wait {
+                error_message: payload.0,
+            }
         }),
     );
 
@@ -84,9 +86,9 @@ async fn associated_payload_selects_decoding() {
         .dispatch_payload("other", &serde_json::json!("waiting"))
         .await;
 
-    assert!(
-        matches!(flow, DispatchFlow::Wait { err_msg } if err_msg == "waiting")
-    );
+    assert!(matches!(flow,
+            DispatchFlow::Wait { error_message }
+                if error_message == "waiting"));
 }
 
 // invalid_envelopes_never_invoke_handler(Actor)(negative): JSON errors and mismatched queues terminate before business work.
@@ -324,15 +326,15 @@ async fn dispatch_flows_preserve_delivery_policy() {
                 Work::First(0) => DispatchFlow::Complete,
 
                 Work::First(1) => DispatchFlow::Retry {
-                    err_msg: "retry".into(),
+                    error_message: "retry".into(),
                 },
 
                 Work::First(2) => DispatchFlow::Wait {
-                    err_msg: "wait".into(),
+                    error_message: "wait".into(),
                 },
 
                 _ => DispatchFlow::Dead {
-                    err_msg: "fatal".into(),
+                    error_message: "fatal".into(),
                 },
             }
         }),

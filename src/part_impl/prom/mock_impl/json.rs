@@ -5,15 +5,15 @@ use crate::result::BaseError;
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
-pub fn serialize_payload_err(err_serde: &serde_json::Error) -> BaseError {
+pub fn serialize_payload_error(error_serde: &serde_json::Error) -> BaseError {
     //
     tracing::error!(
         operation = "serialize_prom_payload",
-        sdk_err = ?err_serde,
+        sdk_error = ?error_serde,
         "JSON SDK serialization error",
     );
 
     BaseError::Unrecoverable {
-        msg: format!("failed to serialize prom payload: {}", err_serde),
+        message: format!("failed to serialize prom payload: {}", error_serde),
     }
 }

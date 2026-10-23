@@ -154,7 +154,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
         true,
     ));
 
-    let err = register(
+    let error = register(
         (&mock, &mock, &mock, &mock),
         register_data("other-qid", "Nick", "code-1"),
     )
@@ -162,7 +162,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -188,7 +188,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
         true,
     ));
 
-    let err = register(
+    let error = register(
         (&mock, &mock, &mock, &mock),
         register_data("qid-1", "Nick", "code-1"),
     )
@@ -196,7 +196,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
     .err()
     .unwrap();
 
-    assert!(matches!(err, BaseError::Unrecoverable { .. }));
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 
     let snapshot = mock.snapshot();
 
@@ -236,12 +236,12 @@ async fn login_propagates_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = login((&mock, &mock), login_data("qid-1", "password"))
+    let error = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -254,12 +254,12 @@ async fn login_rejects_wrong_password() {
         invalid_credential("user-1"),
     );
 
-    let err = login((&mock, &mock), login_data("qid-1", "password"))
+    let error = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Auth);
+    assert_expected_variant(&error, ExpectedVariant::Auth);
 }
 
 #[tokio::test]
@@ -272,10 +272,10 @@ async fn login_propagates_token_failure() {
         credential("user-1", "password"),
     );
 
-    let err = login((&mock, &mock), login_data("qid-1", "password"))
+    let error = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();
 
-    assert!(matches!(err, BaseError::Unrecoverable { .. }));
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }

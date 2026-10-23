@@ -96,7 +96,7 @@ impl SchedTaskRunner for TestRunner {
             Action::Next(next) => Ok(next),
 
             Action::Fail => Err(BaseError::Unavailable {
-                msg: "injected task failure".into(),
+                message: "injected task failure".into(),
             }),
 
             Action::Panic => panic!("injected attempt panic"),

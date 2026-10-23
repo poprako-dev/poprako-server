@@ -24,16 +24,19 @@ pub const ATTEMPT_TIMEOUT: std::time::Duration =
     std::time::Duration::from_mins(1);
 
 // Maps one adapter failure to its mechanical durable-task action.
-fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
+fn action_from_error(error: ObjDeptError) -> ObjTaskAction {
     //
-    match err {
+    match error {
         //
-        ObjDeptError::Retryable { msg }
-        | ObjDeptError::Unavailable { msg }
-        | ObjDeptError::Conflict { msg } => ObjTaskAction::Retry { msg },
+        ObjDeptError::Retryable { message }
+        | ObjDeptError::Unavailable { message }
+        | ObjDeptError::Conflict { message } => {
+            ObjTaskAction::Retry { message }
+        }
 
-        ObjDeptError::Invalid { msg } | ObjDeptError::Unrecoverable { msg } => {
-            ObjTaskAction::Operator { msg }
+        ObjDeptError::Invalid { message }
+        | ObjDeptError::Unrecoverable { message } => {
+            ObjTaskAction::Operator { message }
         }
     }
 }
@@ -56,10 +59,12 @@ where
         //
         ObjTaskAction::Complete => prom.complete_task(task).await,
 
-        ObjTaskAction::Retry { msg } => prom.retry_task(task, msg).await,
+        ObjTaskAction::Retry { message } => {
+            prom.retry_task(task, message).await
+        }
 
-        ObjTaskAction::Operator { msg } => {
-            prom.mark_task_operator(task, msg).await
+        ObjTaskAction::Operator { message } => {
+            prom.mark_task_operator(task, message).await
         }
     }
 }
@@ -95,17 +100,17 @@ where
             //
             Ok(action) => action,
 
-            Err(err) => action_from_err(err),
+            Err(error) => action_from_error(error),
         },
 
-        Err(err) => action_from_err(err),
+        Err(error) => action_from_error(error),
     };
 
-    if let ObjTaskAction::Operator { msg } = &action {
+    if let ObjTaskAction::Operator { message } = &action {
         //
         tracing::error!(
             task_id = task.id,
-            err_msg = %msg,
+            error_message = %message,
             "ObjDept task requires operator repair",
         );
     }
@@ -148,11 +153,11 @@ where
                 continue;
             }
 
-            Ok(Err(err)) => {
+            Ok(Err(error)) => {
                 //
                 tracing::error!(
                     operation = "claim_obj_task",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "ObjDept task claim failed",
                 );
 
@@ -197,9 +202,9 @@ where
                 "ObjDept task changed multiple rows",
             ),
 
-            Ok(Err(err)) => tracing::error!(
+            Ok(Err(error)) => tracing::error!(
                 task_id = task.id,
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "ObjDept task update failed",
             ),
 
@@ -230,9 +235,9 @@ where
             //
             Ok(Ok(_)) => {}
 
-            Ok(Err(err)) => tracing::error!(
+            Ok(Err(error)) => tracing::error!(
                 operation = "reset_obj_tasks",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "ObjDept task reset failed",
             ),
 

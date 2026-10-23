@@ -18,7 +18,7 @@ pub fn init_prometheus() -> anyhow::Result<()> {
             //
             tracing::error!(
                 operation = "install_prometheus_recorder",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Prometheus SDK initialization error",
             );
         })

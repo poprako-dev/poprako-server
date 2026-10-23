@@ -102,7 +102,7 @@ async fn verify_artwork_rollback(
             assert!(marked);
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "deliberate transaction failure".into(),
+                message: "deliberate transaction failure".into(),
             })
         })
         .await;

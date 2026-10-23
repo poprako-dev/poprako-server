@@ -134,7 +134,7 @@ async fn create_second_page(
 
             page_infos.into_iter().next().ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    msg: "page creation returned no record".into(),
+                    message: "page creation returned no record".into(),
                 }
             })
         })
@@ -273,7 +273,7 @@ async fn verify_manifest_rollback(
             .await?;
 
             Err::<(), BaseError>(BaseError::Unrecoverable {
-                msg: "force page-manifest rollback".into(),
+                message: "force page-manifest rollback".into(),
             })
         })
         .await;

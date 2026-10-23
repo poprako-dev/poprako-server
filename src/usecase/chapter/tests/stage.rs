@@ -111,7 +111,7 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let err = update_stage(
+    let error = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageInstr {
@@ -124,7 +124,7 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -149,7 +149,7 @@ async fn update_stage_rejects_invalid_transition() {
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
-    let err = update_stage(
+    let error = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageInstr {
@@ -162,7 +162,7 @@ async fn update_stage_rejects_invalid_transition() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]

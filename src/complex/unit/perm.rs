@@ -90,12 +90,12 @@ pub fn ensure_user_can_list_infos(access: &UnitListAccess<'_>) -> BaseRest<()> {
             ..
         }) => {
             //
-            let err_msg = trl("error-unit-list-perm-required");
+            let error_message = trl("error-unit-list-perm-required");
 
             // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                message: error_message,
             })
         }
 

@@ -5,7 +5,7 @@
 // Supply the variant, `message: String;`, then native tracing fields and a
 // static business description. The variant and message are evaluated once;
 // additional fields retain tracing's lazy evaluation when logging is disabled.
-// `err_variant`, `err_message`, `source_file`, and `source_line` are reserved.
+// `error_variant`, `error_message`, `source_file`, and `source_line` are reserved.
 // Use `Err(...)` at return sites and the error directly in lazy error closures.
 // Already-logged conversions and test fixtures may construct the enum directly;
 // propagation must not emit another event for the same failure.
@@ -16,14 +16,14 @@ macro_rules! expected_error {
         let message: ::std::string::String = $message;
 
         tracing::warn!(
-            err_variant = ?variant,
-            err_message = %message,
+            error_variant = ?variant,
+            error_message = %message,
             source_file = file!(),
             source_line = line!(),
             $($fields)*
         );
 
-        $crate::result::BaseError::Expected { variant, msg: message }
+        $crate::result::BaseError::Expected { variant, message }
     }};
 }
 
@@ -32,7 +32,7 @@ macro_rules! expected_error {
 // Supply `message: String;`, then native tracing fields and a static business
 // description. The message is evaluated once; additional fields retain tracing's
 // lazy evaluation when logging is disabled. Use safe client-visible messages.
-// `err_variant`, `err_message`, `source_file`, and `source_line` are reserved.
+// `error_variant`, `error_message`, `source_file`, and `source_line` are reserved.
 // The macro returns BaseError without retrying or changing control flow.
 // Already-logged conversions and test fixtures may construct the enum directly.
 macro_rules! retryable_error {
@@ -40,14 +40,14 @@ macro_rules! retryable_error {
         let message: ::std::string::String = $message;
 
         tracing::warn!(
-            err_variant = "Retryable",
-            err_message = %message,
+            error_variant = "Retryable",
+            error_message = %message,
             source_file = file!(),
             source_line = line!(),
             $($fields)*
         );
 
-        $crate::result::BaseError::Retryable { msg: message }
+        $crate::result::BaseError::Retryable { message }
     }};
 }
 
@@ -57,7 +57,7 @@ macro_rules! retryable_error {
 // description. The message is evaluated once; additional fields retain tracing's
 // lazy evaluation when logging is disabled. Messages and fields must be safe to
 // log; external conversions must retain redacted original error diagnostics.
-// `err_variant`, `err_message`, `source_file`, and `source_line` are reserved.
+// `error_variant`, `error_message`, `source_file`, and `source_line` are reserved.
 // The macro returns BaseError; HTTP conversion conceals its internal message.
 // Already-logged conversions and test fixtures may construct the enum directly.
 macro_rules! unrecoverable_error {
@@ -65,13 +65,13 @@ macro_rules! unrecoverable_error {
         let message: ::std::string::String = $message;
 
         tracing::error!(
-            err_variant = "Unrecoverable",
-            err_message = %message,
+            error_variant = "Unrecoverable",
+            error_message = %message,
             source_file = file!(),
             source_line = line!(),
             $($fields)*
         );
 
-        $crate::result::BaseError::Unrecoverable { msg: message }
+        $crate::result::BaseError::Unrecoverable { message }
     }};
 }

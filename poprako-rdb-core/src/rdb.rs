@@ -48,7 +48,7 @@ pub enum RdbError {
     /// A pooled connection could not be acquired.
     PoolGet {
         /// Safe diagnostic from the pool implementation.
-        msg: String,
+        message: String,
     },
 
     /// Waiting for a pooled connection exceeded the configured bound.
@@ -69,8 +69,13 @@ impl std::fmt::Display for RdbError {
                 write!(formatter, "failed to build RDB pool: {}", source)
             }
 
-            Self::PoolGet { msg } => {
-                write!(formatter, "failed to acquire RDB connection: {}", msg)
+            Self::PoolGet { message } => {
+                //
+                write!(
+                    formatter,
+                    "failed to acquire RDB connection: {}",
+                    message
+                )
             }
 
             Self::PoolWaitTimeout => {
@@ -124,7 +129,7 @@ impl RdbCore {
                 //
                 tracing::error!(
                     operation = "build_rdb_pool",
-                    sdk_err = ?source,
+                    sdk_error = ?source,
                     "RDB pool SDK error",
                 );
 
@@ -174,7 +179,7 @@ fn pool_get_error(source: &PoolError) -> RdbError {
 
     tracing::error!(
         operation = "acquire_rdb_connection",
-        sdk_err = ?source,
+        sdk_error = ?source,
         "RDB pool SDK error",
     );
 
@@ -183,7 +188,7 @@ fn pool_get_error(source: &PoolError) -> RdbError {
         PoolError::Timeout(TimeoutType::Wait) => RdbError::PoolWaitTimeout,
 
         _ => RdbError::PoolGet {
-            msg: source.to_string(),
+            message: source.to_string(),
         },
     }
 }

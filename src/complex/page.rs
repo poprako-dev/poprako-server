@@ -99,11 +99,11 @@ pub mod perm {
     }
 
     // Build and log one expected page-role permission error.
-    fn reject_role(msg_key: &str, event: &'static str) -> BaseRest<()> {
+    fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
         //
         Err(expected_error! {
             ExpectedVariant::Perm,
-            message: trl(msg_key);
+            message: trl(message_key);
             event,
             "page permission denied",
         })

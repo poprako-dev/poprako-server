@@ -73,7 +73,7 @@ async fn missing_metrics_recorder_warns_once_at_source() {
     assert!(body.is_empty());
 
     assert!(
-        logs.contains("err_msg=\"metrics recorder unavailable\""),
+        logs.contains("error_message=\"metrics recorder unavailable\""),
         "{logs}"
     );
 

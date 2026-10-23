@@ -15,10 +15,10 @@ async fn list_infos_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos((&mock,), token("normal-user"), list_data())
+    let error = list_infos((&mock,), token("normal-user"), list_data())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }

@@ -129,18 +129,18 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         };
 
         if next_id == &unit_info.id {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
 
         let Some(predecessor_count) = predecessor_counts.get_mut(next_id)
         else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         *predecessor_count += 1;
 
         if *predecessor_count > 1 {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
     }
 
@@ -150,7 +150,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         .collect::<Vec<_>>();
 
     let [head_id] = head_ids.as_slice() else {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     };
 
     let (mut current_id, mut visible_infos) = (
@@ -161,7 +161,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     while let Some(id) = current_id.as_ref() {
         //
         let Some(unit_info) = infos_by_id.remove(id) else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         current_id.clone_from(&unit_info.next_id);
@@ -172,14 +172,14 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     }
 
     if !infos_by_id.is_empty() {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     }
 
     accept(visible_infos)
 }
 
 // Standardize chain-corruption failures for unit graph validation.
-fn corrupt_unit_chain_err() -> BaseError {
+fn corrupt_unit_chain_error() -> BaseError {
     //
     unrecoverable_error! {
         message: "persisted Unit chain is corrupt".to_string();

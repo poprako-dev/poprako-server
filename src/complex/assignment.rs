@@ -172,13 +172,13 @@ pub mod perm {
     // Build and log one expected assignment permission error.
     fn reject(
         variant: ExpectedVariant,
-        msg_key: &str,
+        message_key: &str,
         event: &'static str,
     ) -> BaseRest<()> {
         //
         Err(expected_error! {
             variant,
-            message: trl(msg_key);
+            message: trl(message_key);
             event,
             "assignment permission denied",
         })

@@ -101,7 +101,7 @@ pub async fn prepare_entry(
                 error,
             );
             operation = "prepare_comic_archive",
-            sdk_err = ?error,
+            sdk_error = ?error,
             "Tokio SDK blocking task error",
         }
     })?
@@ -129,7 +129,7 @@ fn build_entry(
                     error,
                 );
                 operation = "serialize_comic_archive",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "JSON SDK serialization error",
             }
         })?

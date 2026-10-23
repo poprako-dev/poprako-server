@@ -49,19 +49,19 @@ macro_rules! __general_prom_writer {
                     now: OffsetDateTime,
                 ) -> Result<Self, PromError> {
                     //
-                    let payload =
-                        serde_json::to_value(task.payload).map_err(|err_serde| {
+                    let payload = serde_json::to_value(task.payload)
+                        .map_err(|error_serde| {
                             //
                             tracing::error!(
                                 operation = "serialize_prom_payload",
-                                sdk_err = ?err_serde,
+                                sdk_error = ?error_serde,
                                 "JSON SDK serialization error",
                             );
 
                             PromError::Unrecoverable {
-                                msg: format!(
+                                message: format!(
                                     "failed to serialize prom payload: {}",
-                                    err_serde,
+                                    error_serde,
                                 ),
                             }
                         })?;
@@ -69,7 +69,7 @@ macro_rules! __general_prom_writer {
                     let delay =
                         time::Duration::try_from(task.delay.unwrap_or_default())
                         .map_err(|_| PromError::Unrecoverable {
-                            msg:
+                            message:
                                 "prom task delay is outside the supported range"
                                 .to_string(),
                         })?;
@@ -77,7 +77,7 @@ macro_rules! __general_prom_writer {
                     let visible_at =
                         now.checked_add(delay)
                             .ok_or_else(|| PromError::Unrecoverable {
-                                msg:
+                                message:
                                     "prom task visibility is outside the \
                                         supported range"
                                         .to_string(),

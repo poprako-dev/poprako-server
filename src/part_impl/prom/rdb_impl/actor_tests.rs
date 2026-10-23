@@ -70,7 +70,7 @@ async fn verify_writer_transactions(
             Defer::new(rolled_back).step_on(writer, context).await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "deliberate rollback".into(),
+                message: "deliberate rollback".into(),
             })
         })
         .await;
@@ -435,7 +435,7 @@ async fn same_topic_batch_is_transactional(core: &RdbCore) {
                 .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "test rollback".into(),
+                message: "test rollback".into(),
             })
         })
         .await;

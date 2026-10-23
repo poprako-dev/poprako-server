@@ -104,11 +104,11 @@ const fn required_roles_for_transition(
 }
 
 // Build and log one expected chapter-role permission error.
-fn reject(msg_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject(message_key: &str, event: &'static str) -> BaseRest<()> {
     //
     Err(expected_error! {
         ExpectedVariant::Perm,
-        message: trl(msg_key);
+        message: trl(message_key);
         event,
         "chapter role requirement not met",
     })

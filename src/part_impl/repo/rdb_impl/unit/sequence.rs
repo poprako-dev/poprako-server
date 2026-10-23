@@ -58,7 +58,7 @@ struct UnitLink {
 }
 
 /// Returns an unrecoverable error for a corrupt Unit chain.
-pub fn corrupt_unit_chain_err() -> BaseError {
+pub fn corrupt_unit_chain_error() -> BaseError {
     //
     unrecoverable_error! {
         message: "persisted Unit chain is corrupt".to_string();
@@ -122,7 +122,7 @@ pub async fn list_infos_in_chapter_order(
         .map_err(diesel)?;
 
     if records.len() != ids.len() {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     }
 
     let mut candidates = records
@@ -144,7 +144,7 @@ pub async fn list_infos_in_chapter_order(
     for candidate in &candidates {
         //
         if !rank_by_unit_id.contains_key(&candidate.unit_info.id) {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
     }
 
@@ -196,11 +196,11 @@ pub async fn list_infos_by_page_ids(
         let position = position_by_page_id
             .get(unit_info.page_id.as_str())
             .copied()
-            .ok_or_else(corrupt_unit_chain_err)?;
+            .ok_or_else(corrupt_unit_chain_error)?;
 
         let page_unit_infos = unit_infos_by_position
             .get_mut(position)
-            .ok_or_else(corrupt_unit_chain_err)?;
+            .ok_or_else(corrupt_unit_chain_error)?;
 
         page_unit_infos.push(unit_info);
     }
@@ -287,7 +287,7 @@ pub async fn list_orders(
         }
 
         if has_next_chunk && chunk.is_empty() {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
 
         records.extend(chunk);

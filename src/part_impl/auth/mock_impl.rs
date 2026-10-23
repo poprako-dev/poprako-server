@@ -23,7 +23,7 @@ impl TokenAuth for Mock {
         // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Unrecoverable {
-                msg: "mock token signing failed".into(),
+                message: "mock token signing failed".into(),
             });
         }
 
@@ -37,7 +37,7 @@ impl TokenAuth for Mock {
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Auth,
-                msg: trl("error-unauthorized"),
+                message: trl("error-unauthorized"),
             });
         }
 
@@ -78,7 +78,7 @@ fn sign_failure_returns_unrecoverable() {
     // Internal implementation detail.
     let mock = Mock::new().with_token_failure();
 
-    let err_token = TokenAuth::sign_token(
+    let error_token = TokenAuth::sign_token(
         &mock,
         &UserToken {
             user_id: "user-1".into(),
@@ -87,5 +87,5 @@ fn sign_failure_returns_unrecoverable() {
     .err()
     .unwrap();
 
-    assert!(matches!(err_token, BaseError::Unrecoverable { .. }));
+    assert!(matches!(error_token, BaseError::Unrecoverable { .. }));
 }

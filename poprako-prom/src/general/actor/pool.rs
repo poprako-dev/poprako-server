@@ -179,7 +179,7 @@ where
 
                     Err(error) => {
                         //
-                        tracing::error!(err = ?error, "prom claim failed");
+                        tracing::error!(error = ?error, "prom claim failed");
 
                         false
                     }
@@ -235,26 +235,32 @@ where
                     //
                     tracing::error!(
                         id = %row.id(),
-                        err = ?error,
+                        error = ?error,
                         "[Actor::process_row] complete failed",
                     );
                 }
             }
 
-            DispatchFlow::Retry { err_msg: error } => {
+            DispatchFlow::Retry {
+                error_message: error,
+            } => {
                 self.log_reschedule(row, &error, 1).await;
             }
 
-            DispatchFlow::Wait { err_msg: error } => {
+            DispatchFlow::Wait {
+                error_message: error,
+            } => {
                 self.log_reschedule(row, &error, 0).await;
             }
 
-            DispatchFlow::Dead { err_msg: error } => {
+            DispatchFlow::Dead {
+                error_message: error,
+            } => {
                 //
                 tracing::error!(
                     id = %row.id(),
                     topic = %row.topic(),
-                    err = %error,
+                    error = %error,
                     "[Actor::process_row] task failed",
                 );
 
@@ -262,8 +268,8 @@ where
                     //
                     tracing::error!(
                         id = %row.id(),
-                        original_err = %error,
-                        err = ?mark_error,
+                        original_error = %error,
+                        error = ?mark_error,
                         "[Actor::process_row] fail mark failed",
                     );
                 }
@@ -288,7 +294,7 @@ where
         if let Err(error) = self.delivery.reset_stuck(topic, before).await {
             //
             tracing::error!(
-                err = ?error,
+                error = ?error,
                 "[Actor::run] reset stuck failed",
             );
         }
@@ -324,7 +330,7 @@ where
             Err(error) => {
                 //
                 tracing::error!(
-                    err = ?error,
+                    error = ?error,
                     "[Actor::run] purge dead failed",
                 );
             }
@@ -335,7 +341,7 @@ where
     async fn log_reschedule(
         &self,
         row: &ClaimedTask,
-        msg: &str,
+        message: &str,
         retry_delta: i64,
     ) {
         //
@@ -349,10 +355,12 @@ where
             return;
         };
 
-        if let Err(error) =
-            self.delivery.retry(row, msg, visible_at, retry_delta).await
+        if let Err(error) = self
+            .delivery
+            .retry(row, message, visible_at, retry_delta)
+            .await
         {
-            tracing::error!(id = %row.id(), err = ?error,
+            tracing::error!(id = %row.id(), error = ?error,
                 "prom reschedule failed");
         }
     }

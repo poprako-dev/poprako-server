@@ -223,7 +223,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
     //
     let mock = Mock::new();
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("user-1"),
         ListComicInfosInstr {
@@ -241,7 +241,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]

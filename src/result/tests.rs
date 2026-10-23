@@ -139,8 +139,8 @@ fn expected_errors_record_classification_fields_and_call_site() {
 
         assert_expected_variant(&error, variant);
 
-        assert!(matches!(error, BaseError::Expected { msg, .. }
-            if msg == "localized detail"));
+        assert!(matches!(error, BaseError::Expected { message, .. }
+            if message == "localized detail"));
 
         assert_eq!(events.len(), 1);
 
@@ -159,8 +159,8 @@ fn expected_errors_record_classification_fields_and_call_site() {
         let fields = &event.fields.0;
 
         for (name, value) in [
-            ("err_variant", format!("{variant:?}")),
-            ("err_message", "localized detail".into()),
+            ("error_variant", format!("{variant:?}")),
+            ("error_message", "localized detail".into()),
             ("source_file", file!().into()),
             ("source_line", source_line.to_string()),
             ("user_id", "user-1".into()),
@@ -209,8 +209,8 @@ fn error_arguments_are_evaluated_once_and_log_fields_are_lazy() {
 
         assert_expected_variant(&error, ExpectedVariant::Args);
 
-        assert!(matches!(error, BaseError::Expected { msg, .. }
-            if msg == "invalid input"));
+        assert!(matches!(error, BaseError::Expected { message, .. }
+            if message == "invalid input"));
 
         assert_eq!(variant_calls.get(), 1);
 

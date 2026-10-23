@@ -73,7 +73,7 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
-            message: invalid_page_count_msg();
+            message: invalid_page_count_message();
             page_count,
             "invalid page count",
         });
@@ -83,7 +83,7 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
 }
 
 // Builds the translated page-count validation message.
-fn invalid_page_count_msg() -> String {
+fn invalid_page_count_message() -> String {
     //
     let args = HashMap::from([
         ("min_count".into(), MIN_CHAPTER_PAGE_COUNT.into()),

@@ -13,12 +13,12 @@ async fn create_rejects_preset_role_missing_from_membership() {
 
     instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = create((&mock, &mock), token("user-1"), instr)
+    let error = create((&mock, &mock), token("user-1"), instr)
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -141,12 +141,12 @@ async fn create_rejects_non_admin_and_management_presets() {
 
         instr.preset_assignment_roles = preset;
 
-        let err = create((&mock, &mock), token("user-1"), instr)
+        let error = create((&mock, &mock), token("user-1"), instr)
             .await
             .err()
             .unwrap();
 
-        assert_expected_variant(&err, expected);
+        assert_expected_variant(&error, expected);
 
         let snapshot = mock.snapshot();
 

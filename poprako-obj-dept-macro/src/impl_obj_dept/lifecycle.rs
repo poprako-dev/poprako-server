@@ -46,7 +46,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::MarkObjUploaded<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<bool> {
                 let mut conn = self.core().get().await.map_err(
-                    ::poprako_obj_dept::rdb_impl::rdb_err,
+                    ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
                 // SAFETY: This endpoint records the client's declaration for
@@ -65,7 +65,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg:
+                            message:
                                 "object upload mark changed multiple \
                                     records".into(),
                         },
@@ -107,7 +107,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg:
+                            message:
                                 "object upload mark changed multiple \
                                     records".into(),
                         },
@@ -181,7 +181,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     //
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg:
+                            message:
                                 "object anchor upsert returned incomplete state"
                                 .into(),
                         },
@@ -344,7 +344,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                                 //
                                 ::poprako_obj_dept::rest::ObjDeptError::
                                     Unrecoverable {
-                                    msg:
+                                    message:
                                         "generated object slot is \
                                             missing".into(),
                                 }
@@ -369,7 +369,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                         .ok_or_else(|| {
                             ::poprako_obj_dept::rest::ObjDeptError::
                                 Unrecoverable {
-                                msg: "generated object slot is missing".into(),
+                                message: "generated object slot is missing"
+                                    .into(),
                             }
                         })?;
 
@@ -427,7 +428,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 allocs.remove(id).ok_or_else(|| {
                     ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                        msg: "object allocation result is missing".into(),
+                        message: "object allocation result is missing".into(),
                     }
                 })
             }

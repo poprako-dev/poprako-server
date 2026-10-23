@@ -426,7 +426,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "rollback composite deletion".into(),
+                message: "rollback composite deletion".into(),
             })
         })
         .await;

@@ -160,7 +160,7 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
                     _ => Ok(
                         ::poprako_obj_dept::model::task::ObjTaskAction::Operator
                             {
-                            msg: "unknown object topic".into(),
+                            message: "unknown object topic".into(),
                         },
                     ),
                 }

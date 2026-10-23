@@ -113,8 +113,8 @@ fn order_units_rejects_corrupt_persisted_graphs() {
         assert!(
             matches!(
                 error,
-                BaseError::Unrecoverable { msg }
-                    if msg == "persisted Unit chain is corrupt"
+                BaseError::Unrecoverable { message }
+                    if message == "persisted Unit chain is corrupt"
             ),
             "{case}"
         );

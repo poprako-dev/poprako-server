@@ -35,7 +35,7 @@ pub async fn hash_password(password: &str) -> BaseRest<String> {
                     error,
                 );
                 operation = "hash_password",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Tokio SDK blocking task error",
             }
         })?
@@ -59,7 +59,7 @@ pub async fn verify_password(password: &str, password_hash: &str) -> bool {
             //
             tracing::error!(
                 operation = "verify_password",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "[user_complex::verify_password] blocking task failed",
             );
 
@@ -92,7 +92,7 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
                     error,
                 );
                 operation = "hash_password",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Argon2 SDK hashing error",
             }
         })
@@ -109,7 +109,7 @@ fn verify_password_sync(password: &str, password_hash: &str) -> bool {
             //
             tracing::warn!(
                 operation = "verify_password",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Argon2 SDK password hash parsing error",
             );
 
@@ -123,7 +123,7 @@ fn verify_password_sync(password: &str, password_hash: &str) -> bool {
             //
             tracing::warn!(
                 operation = "verify_password",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Argon2 SDK password verification error",
             );
         })

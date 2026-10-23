@@ -271,11 +271,11 @@ fn export_response(
         builder
     };
 
-    builder.body(Body::from(body)).map_err(|err| {
+    builder.body(Body::from(body)).map_err(|error| {
         //
         tracing::error!(
             operation = "build_termbase_export_response",
-            sdk_err = ?err,
+            sdk_error = ?error,
             "HTTP SDK response build error",
         );
 
@@ -288,11 +288,11 @@ fn serialize_export(
     export_termbase_val: &ExportTermbaseVal,
 ) -> Result<Bytes, HttpError> {
     //
-    let body = serde_json::to_vec(export_termbase_val).map_err(|err| {
+    let body = serde_json::to_vec(export_termbase_val).map_err(|error| {
         //
         tracing::error!(
             operation = "serialize_termbase_export",
-            sdk_err = ?err,
+            sdk_error = ?error,
             "JSON SDK serialization error",
         );
 

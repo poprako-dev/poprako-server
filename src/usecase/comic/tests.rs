@@ -218,14 +218,15 @@ async fn create_rolls_back_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = create((&mock, &mock), token("user-1"), create_instr("missing"))
-        .await
-        .err()
-        .unwrap();
+    let error =
+        create((&mock, &mock), token("user-1"), create_instr("missing"))
+            .await
+            .err()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(snapshot.comics.is_empty());
 }
@@ -260,9 +261,9 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
     seed_comic_cover_scope(&mock, 3);
 
-    let err = mark_comic_cover(&mock, 2).await.err().unwrap();
+    let error = mark_comic_cover(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(
         !mock
@@ -284,7 +285,7 @@ async fn get_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = get_info(
+    let error = get_info(
         (&mock, &mock),
         token("user-1"),
         "missing".into(),
@@ -294,7 +295,7 @@ async fn get_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -461,7 +462,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("user-1"),
         ListComicInfosInstr {
@@ -479,7 +480,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -577,7 +578,7 @@ async fn update_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = update_info(
+    let error = update_info(
         (&mock,),
         token("user-1"),
         UpdateComicInfoInstr {
@@ -591,5 +592,5 @@ async fn update_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }

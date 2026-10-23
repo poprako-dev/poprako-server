@@ -35,7 +35,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 >,
             > {
                 let mut conn = self.core().get().await.map_err(
-                    ::poprako_obj_dept::rdb_impl::rdb_err,
+                    ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
                 let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
@@ -119,7 +119,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 >,
             > {
                 let mut conn = self.core().get().await.map_err(
-                    ::poprako_obj_dept::rdb_impl::rdb_err,
+                    ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
                 let rows = #obj_module::load_many(&mut conn, oper.ids).await?;

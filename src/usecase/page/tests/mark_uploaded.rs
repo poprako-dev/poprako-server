@@ -108,9 +108,9 @@ async fn stale_generation_does_not_mark_current() {
 
     seed_scope(&mock);
 
-    let err = mark(&mock, 2).await.err().unwrap();
+    let error = mark(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(
         !mock

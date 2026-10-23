@@ -41,7 +41,7 @@ where
             //
             tracing::error!(
                 operation = "bind_http_listener",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Tokio SDK listener bind error",
             );
         })
@@ -61,7 +61,7 @@ where
         //
         tracing::error!(
             operation = "serve_http",
-            sdk_err = ?error,
+            sdk_error = ?error,
             "Axum SDK server error",
         );
     })
@@ -79,7 +79,7 @@ async fn shutdown_signal() {
 
         tracing::error!(
             operation = "install_ctrl_c_handler",
-            sdk_err = %failure,
+            sdk_error = %failure,
             "Tokio signal handler installation failed",
         );
 
@@ -96,11 +96,11 @@ async fn shutdown_signal() {
                 //
                 Ok(terminate_recv) => terminate_recv,
 
-                Err(err) => {
+                Err(error) => {
                     //
                     tracing::error!(
                         operation = "install_sigterm_handler",
-                        sdk_err = ?err,
+                        sdk_error = ?error,
                         "Tokio signal handler installation failed",
                     );
 

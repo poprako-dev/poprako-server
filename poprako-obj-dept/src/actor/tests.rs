@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::Notify;
 
-use super::{ObjDeptActor, POLL_INTERVAL, action_from_err};
+use super::{ObjDeptActor, POLL_INTERVAL, action_from_error};
 use crate::key::ObjKey;
 use crate::model::task::{CHECK, ObjDeptPromTask, ObjTaskAction, obj_task_id};
 use crate::prom::ObjDeptProm;
@@ -85,14 +85,14 @@ impl ObjDeptProm for MockProm {
 
 #[test]
 fn unavailable_dependency_failure_remains_retryable_for_worker() {
-    let action = action_from_err(ObjDeptError::Unavailable {
-        msg: "connection capacity unavailable".into(),
+    let action = action_from_error(ObjDeptError::Unavailable {
+        message: "connection capacity unavailable".into(),
     });
 
     assert!(matches!(
         action,
-        ObjTaskAction::Retry { msg }
-            if msg == "connection capacity unavailable"
+        ObjTaskAction::Retry { message }
+            if message == "connection capacity unavailable"
     ));
 }
 

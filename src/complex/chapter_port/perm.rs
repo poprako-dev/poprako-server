@@ -48,12 +48,12 @@ pub fn ensure_user_can_export_translation(
             ..
         }) => {
             //
-            let err_msg = trl("error-chapter-port-export-perm-required");
+            let error_message = trl("error-chapter-port-export-perm-required");
 
             // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                message: error_message,
             })
         }
 
@@ -75,12 +75,12 @@ pub fn ensure_user_can_import_translation(
             ..
         }) => {
             //
-            let err_msg = trl("error-chapter-port-import-perm-required");
+            let error_message = trl("error-chapter-port-import-perm-required");
 
             // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                message: error_message,
             })
         }
 

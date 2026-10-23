@@ -144,7 +144,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
@@ -157,7 +157,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -175,7 +175,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
 
     mock.seed_member(member("worker-user", role(RoleField::PROOFREADER)));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
@@ -188,7 +188,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -206,7 +206,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
 
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
@@ -219,7 +219,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -233,7 +233,7 @@ async fn update_roles_admin_role_is_rejected() {
 
     mock.seed_member(member("target-user", role(RoleField::ADMIN)));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::ADMIN)),
@@ -242,7 +242,7 @@ async fn update_roles_admin_role_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -256,7 +256,7 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
 
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
         update_roles_data(
@@ -269,7 +269,7 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -403,7 +403,7 @@ async fn update_roles_team_admin_cannot_add_unsupported_worker_roles() {
         roles(RoleField::ADMIN, RoleField::REVIEWER),
     ));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
         update_roles_data(
@@ -415,7 +415,7 @@ async fn update_roles_team_admin_cannot_add_unsupported_worker_roles() {
     .await
     .unwrap_err();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -444,7 +444,7 @@ async fn update_roles_existing_assignment_cannot_gain_admin() {
             roles(RoleField::ADMIN, RoleField::REVIEWER),
         ));
 
-        let err = update_roles(
+        let error = update_roles(
             (&mock, &mock),
             token(actor_user_id),
             update_roles_data(
@@ -456,7 +456,7 @@ async fn update_roles_existing_assignment_cannot_gain_admin() {
         .await
         .unwrap_err();
 
-        assert_expected_variant(&err, ExpectedVariant::Args);
+        assert_expected_variant(&error, ExpectedVariant::Args);
 
         let snapshot = mock.snapshot();
 

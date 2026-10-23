@@ -41,7 +41,7 @@ pub async fn check_health(
         //
         tracing::warn!(
             status = 404,
-            err_variant = "HealthLoopbackRequired",
+            error_variant = "HealthLoopbackRequired",
             "health endpoint requires a loopback caller",
         );
 
@@ -78,7 +78,7 @@ pub async fn detailed_metrics(
         //
         tracing::warn!(
             status = 404,
-            err_variant = "MetricsLoopbackRequired",
+            error_variant = "MetricsLoopbackRequired",
             "metrics endpoint requires a loopback caller",
         );
 
@@ -89,8 +89,8 @@ pub async fn detailed_metrics(
         //
         tracing::warn!(
             status = 503,
-            err_variant = "Unavailable",
-            err_msg = "metrics recorder unavailable",
+            error_variant = "Unavailable",
+            error_message = "metrics recorder unavailable",
             "metrics recorder unavailable",
         );
 

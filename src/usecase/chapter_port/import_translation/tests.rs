@@ -363,7 +363,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "old"));
 
-    let err = import_translation(
+    let error = import_translation(
         (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationInstr {
@@ -379,7 +379,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(snapshot.units.len(), 1);
 

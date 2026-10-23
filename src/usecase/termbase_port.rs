@@ -179,7 +179,10 @@ where
             };
 
             if !force_merge {
-                return Err(already_exists_err(termbase_import.trimmed_name()));
+                //
+                return Err(already_exists_error(
+                    termbase_import.trimmed_name(),
+                ));
             }
 
             apply_import(
@@ -519,7 +522,7 @@ where
 }
 
 // Construct a stable expected error when a target scope already owns the imported name.
-fn already_exists_err(name: &str) -> BaseError {
+fn already_exists_error(name: &str) -> BaseError {
     //
     expected_error! {
         ExpectedVariant::Args,

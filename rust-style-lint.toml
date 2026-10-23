@@ -121,9 +121,10 @@ code = "FBD002"
 message = "'res' is a forbidden abbreviation of 'result'"
 
 [[forbidden-identifiers.words]]
-word = "error"
+word = "err"
 code = "FBD003"
-message = "'error' is forbidden — use 'err' instead"
+replacement = "error"
+message = "'err' is forbidden — use 'error' instead"
 
 [[forbidden-identifiers.words]]
 word = "closure"
@@ -520,8 +521,10 @@ contexts = [
 ]
 
 [[forbidden-identifiers.words]]
-word = "message"
+word = "msg"
 code = "FBD032"
+replacement = "message"
+message = "'msg' is forbidden — use 'message' instead"
 contexts = [
     "module",
     "function",

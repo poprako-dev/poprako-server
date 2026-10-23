@@ -90,7 +90,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             use ::poprako_obj_dept::Uuid;
             use ::poprako_obj_dept::key::ObjKey;
             use ::poprako_obj_dept::model::task::ObjDeptPromTask;
-            use ::poprako_obj_dept::rdb_impl::{diesel_err, rdb_err};
+            use ::poprako_obj_dept::rdb_impl::{diesel_error, rdb_error};
             use ::poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
             use ::poprako_rdb_core::{RdbConn, RdbCore};
 
@@ -182,7 +182,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                             "claimed object task has no execution credential");
 
                         return Err(ObjDeptError::Unrecoverable {
-                            msg:
+                            message:
                                 "claimed object task has no execution \
                                     credential".into(),
                         });
@@ -203,7 +203,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             }
 
             pub async fn reset_tasks(core: &RdbCore) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_err)?;
+                let mut conn = core.get().await.map_err(rdb_error)?;
                 let now = ::time::OffsetDateTime::now_utc();
                 let before = now - PROCESSING_TIMEOUT;
                 let invalid = ::diesel::update(
@@ -220,7 +220,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 ))
                 .execute(&mut conn)
                 .await
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
                 let reset = ::diesel::update(
                     #table::table
                         .filter(#table::f_status.eq(PROCESSING))
@@ -234,7 +234,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 ))
                 .execute(&mut conn)
                 .await
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
 
                 Ok(invalid + reset)
             }
@@ -246,7 +246,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             pub async fn claim_task(
                 core: &RdbCore,
             ) -> ObjDeptRest<Option<ObjDeptPromTask>> {
-                let mut conn = core.get().await.map_err(rdb_err)?;
+                let mut conn = core.get().await.map_err(rdb_error)?;
                 let claim_candidate =
                     ::diesel::alias!(#table as claim_candidate);
                 let candidate = claim_candidate
@@ -277,7 +277,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .get_result::<TaskRecord>(&mut conn)
                 .await
                 .optional()
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
                 record.map(ObjDeptPromTask::try_from).transpose()
             }
 
@@ -285,7 +285,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 core: &RdbCore,
                 task: &ObjDeptPromTask,
             ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_err)?;
+                let mut conn = core.get().await.map_err(rdb_error)?;
 
                 ::diesel::delete(
                     #table::table
@@ -295,15 +295,15 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 )
                 .execute(&mut conn)
                 .await
-                .map_err(diesel_err)
+                .map_err(diesel_error)
             }
 
             pub async fn retry_task(
                 core: &RdbCore,
                 task: &ObjDeptPromTask,
-                msg: &str,
+                message: &str,
             ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_err)?;
+                let mut conn = core.get().await.map_err(rdb_error)?;
 
                 ::diesel::update(
                     #table::table
@@ -319,20 +319,20 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::f_visible_at.eq(
                         ::time::OffsetDateTime::now_utc() + RETRY_DELAY,
                     ),
-                    #table::f_error.eq(Some(msg)),
+                    #table::f_error.eq(Some(message)),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
                 .execute(&mut conn)
                 .await
-                .map_err(diesel_err)
+                .map_err(diesel_error)
             }
 
             pub async fn mark_task_operator(
                 core: &RdbCore,
                 task: &ObjDeptPromTask,
-                msg: &str,
+                message: &str,
             ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_err)?;
+                let mut conn = core.get().await.map_err(rdb_error)?;
 
                 ::diesel::update(
                     #table::table
@@ -343,12 +343,12 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .set((
                     #table::f_status.eq(OPERATOR),
                     #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_error.eq(Some(msg)),
+                    #table::f_error.eq(Some(message)),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
                 .execute(&mut conn)
                 .await
-                .map_err(diesel_err)
+                .map_err(diesel_error)
             }
 
             #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
@@ -416,17 +416,17 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             async fn retry_task<'a>(
                 &'a self,
                 task: &'a ::poprako_obj_dept::model::task::ObjDeptPromTask,
-                msg: &'a str,
+                message: &'a str,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-                #module::retry_task(&self.core, task, msg).await
+                #module::retry_task(&self.core, task, message).await
             }
 
             async fn mark_task_operator<'a>(
                 &'a self,
                 task: &'a ::poprako_obj_dept::model::task::ObjDeptPromTask,
-                msg: &'a str,
+                message: &'a str,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-                #module::mark_task_operator(&self.core, task, msg).await
+                #module::mark_task_operator(&self.core, task, message).await
             }
         }
 

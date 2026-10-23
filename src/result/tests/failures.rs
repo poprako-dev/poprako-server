@@ -73,8 +73,9 @@ fn failure_macros_record_level_fields_and_call_site() {
         ));
 
         assert!(matches!(error,
-            BaseError::Retryable { msg } | BaseError::Unrecoverable { msg }
-                if msg == "safe diagnostic"));
+            BaseError::Retryable { message }
+                | BaseError::Unrecoverable { message }
+                if message == "safe diagnostic"));
 
         assert_eq!(events.len(), 1);
 
@@ -91,8 +92,8 @@ fn failure_macros_record_level_fields_and_call_site() {
         assert_eq!(event.line, Some(source_line));
 
         for (name, value) in [
-            ("err_variant", variant.to_owned()),
-            ("err_message", "safe diagnostic".into()),
+            ("error_variant", variant.to_owned()),
+            ("error_message", "safe diagnostic".into()),
             ("resource_id", "resource-1".into()),
             ("source_file", file!().into()),
             ("source_line", source_line.to_string()),
@@ -149,8 +150,9 @@ fn failure_messages_are_evaluated_once_when_logging_is_filtered() {
             });
 
             assert!(matches!(error,
-                BaseError::Retryable { msg } | BaseError::Unrecoverable { msg }
-                    if msg == "diagnostic"));
+                BaseError::Retryable { message }
+                    | BaseError::Unrecoverable { message }
+                    if message == "diagnostic"));
 
             assert_eq!(message_calls.get(), 1);
 
@@ -170,13 +172,13 @@ fn diesel_conflicts_and_internal_failures_retain_source_diagnostics() {
                 Box::new("serialization diagnostic".to_string()),
             ),
             Level::WARN,
-            "database_msg",
+            "database_message",
             "serialization diagnostic",
         ),
         (
             DieselError::RollbackTransaction,
             Level::ERROR,
-            "sdk_err",
+            "sdk_error",
             "RollbackTransaction",
         ),
     ] {
@@ -196,7 +198,7 @@ fn diesel_conflicts_and_internal_failures_retain_source_diagnostics() {
 
         assert_eq!(event.fields.0.get(field).unwrap(), diagnostic);
 
-        assert!(event.fields.0.contains_key("err_message"));
+        assert!(event.fields.0.contains_key("error_message"));
     }
 }
 
@@ -296,8 +298,8 @@ fn already_logged_retryable_errors_are_converted_without_another_event() {
         BaseError::from(source)
     });
 
-    assert!(matches!(error, BaseError::Retryable { msg }
-        if msg == "retry object operation"));
+    assert!(matches!(error, BaseError::Retryable { message }
+        if message == "retry object operation"));
 
     assert_eq!(events.len(), 1);
 }

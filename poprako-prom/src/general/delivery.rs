@@ -113,7 +113,7 @@ pub trait Delivery {
     fn retry(
         &self,
         task: &ClaimedTask,
-        msg: &str,
+        message: &str,
         visible_at: OffsetDateTime,
         retry_delta: i64,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;
@@ -122,7 +122,7 @@ pub trait Delivery {
     fn dead(
         &self,
         task: &ClaimedTask,
-        msg: &str,
+        message: &str,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;
 
     /// Recovers expired attempts within one topic, consuming the retry budget.

@@ -131,7 +131,7 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
         "team-1",
     ));
 
-    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
+    let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -140,7 +140,7 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -195,7 +195,7 @@ async fn delete_rejects_non_owner_without_mutation() {
         credential("user-1", "password"),
     );
 
-    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
+    let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-2"),
         "user-1".into(),
@@ -204,7 +204,7 @@ async fn delete_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -218,7 +218,7 @@ async fn delete_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = user_delete_usecase::delete::<_, MockContext, _, _>(
+    let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
@@ -227,7 +227,7 @@ async fn delete_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().users.is_empty());
 }
