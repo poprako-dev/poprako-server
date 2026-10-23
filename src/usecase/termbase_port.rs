@@ -44,7 +44,11 @@ use crate::usecase::internal::util::LoadMode;
 use crate::value::termbase::TermbaseScope;
 
 /// Exports one terminology base as a native portable document.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn export<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -94,7 +98,11 @@ where
 }
 
 /// Imports a native portable document into a team or comic scope.
-#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, term_count = instr.terms.len()))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token, instr),
+    fields(actor_user_id = %token.user_id, term_count = instr.terms.len()),
+)]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -194,7 +202,11 @@ where
 }
 
 /// Appends portable terms to a locked existing base without replacing its metadata.
-#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, term_count = instr.terms.len()))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token, instr),
+    fields(actor_user_id = %token.user_id, term_count = instr.terms.len()),
+)]
 pub async fn append<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -236,11 +248,10 @@ where
                 &termbase_info,
             )?;
 
-            let existing_term_infos = ListTermInfos::Termbase {
-                termbase_id: &id,
-            }
-            .step_on(repo, context)
-            .await?;
+            let existing_term_infos =
+                ListTermInfos::Termbase { termbase_id: &id }
+                    .step_on(repo, context)
+                    .await?;
 
             let term_count = terms.len();
 
@@ -256,7 +267,8 @@ where
 
             let updated = term_append_plan.updates.len();
 
-            let term_replacements = term_append_plan.updates
+            let term_replacements = term_append_plan
+                .updates
                 .iter()
                 .map(TermRepl::from)
                 .collect::<Vec<_>>();
@@ -283,11 +295,13 @@ where
                         //
                         tracing::error!(
                             added,
-                            "unrecoverable error: append count exceeds signed delta range",
+                            "unrecoverable error: append count exceeds \
+                                signed delta range",
                         );
 
                         BaseError::Unrecoverable {
-                            msg: "append count exceeds signed delta range".into(),
+                            msg: "append count exceeds signed delta range"
+                                .into(),
                         }
                     })?;
 

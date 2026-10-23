@@ -52,7 +52,8 @@ pub struct CommentListQuery {
     tag = "comments",
     request_body = CreateCommentInstr,
     responses(
-        (status = 201, description = "Comment created", body = HttpBody<CreateCommentVal>),
+        (status = 201, description = "Comment \
+        created", body = HttpBody<CreateCommentVal>),
         (status = 403, description = "No perm to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
@@ -78,10 +79,13 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/comments",
     tag = "comments",
-    description = "Lists a team's board comments. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.",
-    params(("team_id" = String, Path, description = "Team ID"), CommentListQuery),
+    description = "Lists a team's board comments. `incl` embeds related rows. \
+    Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.",
+    params(("team_id" = String, Path, description = "Team ID"),
+        CommentListQuery),
     responses(
-        (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoView>>),
+        (status = 200, description = "Comments listed",
+            body = HttpBody<Vec<CommentInfoView>>),
         (status = 403, description = "No perm to list comments in this team"),
     ),
 ))]

@@ -158,7 +158,8 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
                 match task.topic.as_str() {
                     #(#dispatch_arms)*
                     _ => Ok(
-                        ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
+                        ::poprako_obj_dept::model::task::ObjTaskAction::Operator
+                            {
                             msg: "unknown object topic".into(),
                         },
                     ),

@@ -31,7 +31,13 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::subtree_delete::delete_chapter_objs;
 
 /// Deletes one chapter and its descendant core records.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn delete<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

@@ -11,7 +11,10 @@ use crate::result::BaseError;
 #[drive(
     context = C,
     error = BaseError,
-    run(for<'a> ListChapterWorkflowRecordInfos<'a>, for<'a> CreateChapterWorkflowRecords<'a>),
+    run(
+        for<'a> ListChapterWorkflowRecordInfos<'a>,
+        for<'a> CreateChapterWorkflowRecords<'a>,
+    ),
     step(for<'a> CreateChapterWorkflowRecords<'a>),
 )]
 pub trait ChapterWorkflowRecordRepo<C> {}

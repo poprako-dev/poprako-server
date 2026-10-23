@@ -119,7 +119,11 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
 
         assert!(after.obj_tasks.iter().any(|(topic, task)| {
             *topic == "page_artwork_image"
-                && matches!(task, ObjTask::Delete { key: deleted_key } if deleted_key == &key)
+                && matches!(
+                    task,
+                    ObjTask::Delete { key: deleted_key }
+                        if deleted_key == &key
+                )
         }));
 
         assert_eq!(after.comics.first().unwrap().chapter_count, 1);

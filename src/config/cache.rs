@@ -54,13 +54,15 @@ impl CacheConfig {
         //
         ensure!(
             u32::try_from(self.unit_save_min_entry_weight()).is_ok(),
-            "cache Unit save minimum entry weight exceeds the cache weight range"
+            "cache Unit save minimum entry weight exceeds the cache \
+                weight range"
         );
 
         ensure!(
             !self.unit_save_ttl.is_zero()
                 && self.unit_save_ttl <= Duration::from_hours(1000 * 365 * 24),
-            "cache.unit_save_ttl_secs must be positive and at most 31536000000 (Moka's 1000-year limit)"
+            "cache.unit_save_ttl_secs must be positive and at most 31536000000 \
+                (Moka's 1000-year limit)"
         );
 
         ensure!(

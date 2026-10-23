@@ -319,7 +319,8 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
 fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
     //
     let path = format!(
-        "cdn-cgi/image/width={},fit=scale-down,quality=80,format=auto,metadata=none/{}",
+        "cdn-cgi/image/width={},fit=scale-down,quality=80,format=auto,metadata=\
+            none/{}",
         width, key,
     );
 

@@ -32,7 +32,10 @@ use crate::usecase::auth as auth_usecase;
     tag = "auth",
     request_body = RegisterAuthInstr,
     responses(
-        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterAuthVal>),
+        (
+            status = 201,
+            description = "Registration successful, sets auth cookie",
+            body = HttpBody<RegisterAuthVal>),
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
@@ -72,7 +75,8 @@ pub async fn register(
     tag = "auth",
     request_body = LoginAuthInstr,
     responses(
-        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginAuthVal>),
+        (status = 200, description = "Login \
+        successful, sets auth cookie", body = HttpBody<LoginAuthVal>),
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
@@ -104,7 +108,8 @@ pub async fn login(
     path = "/api/v1/auth/logout",
     tag = "auth",
     responses(
-        (status = 204, description = "Logged out successfully, auth cookie cleared"),
+        (status = 204, description = "Logged out successfully, auth cookie \
+        cleared"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

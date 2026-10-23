@@ -66,7 +66,8 @@ pub async fn run(
 
             () = token.cancelled() => break,
 
-            worker_join = workers.join_next_with_id(), if !workers.is_empty() => worker_join,
+            worker_join = workers.join_next_with_id(), if !workers.is_empty() =>
+                worker_join,
         };
 
         let id = match worker_join {

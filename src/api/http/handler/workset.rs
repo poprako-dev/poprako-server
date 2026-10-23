@@ -33,7 +33,8 @@ use crate::usecase::workset as workset_usecase;
     tag = "worksets",
     request_body = CreateWorksetInstr,
     responses(
-        (status = 201, description = "Workset created", body = HttpBody<CreateWorksetVal>),
+        (status = 201, description = "Workset \
+        created", body = HttpBody<CreateWorksetVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to create worksets in this team"),
         (status = 404, description = "Team not found"),
@@ -62,7 +63,8 @@ pub async fn create(
     tag = "worksets",
     params(("team_id" = String, Path, description = "Team ID"), Pagination),
     responses(
-        (status = 200, description = "Worksets listed", body = HttpBody<Vec<WorksetInfoView>>),
+        (status = 200, description = "Worksets listed",
+            body = HttpBody<Vec<WorksetInfoView>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to list worksets in this team"),
     ),
@@ -97,7 +99,8 @@ pub async fn list_infos(
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
     responses(
-        (status = 200, description = "Workset info retrieved", body = HttpBody<WorksetInfoView>),
+        (status = 200, description = "Workset \
+        info retrieved", body = HttpBody<WorksetInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to view this workset"),
         (status = 404, description = "Workset not found"),

@@ -20,7 +20,8 @@ impl ArtworkConfig {
                 > (i64::MAX as u64) / (1024 * 1024)
         {
             bail!(
-                "chapter_artwork_limit_mib must be positive and fit a signed byte length"
+                "chapter_artwork_limit_mib must be positive and fit a signed \
+                    byte length"
             );
         }
 

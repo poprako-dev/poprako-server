@@ -40,13 +40,17 @@ fn credentials_and_invitation_codes_declare_their_own_redaction()
 
     assert_eq!(login.password, "private-sentinel");
 
-    check_sensitive::<RegisterAuthInstr>(
-        json!({"qid": "safe-id", "nickname": "safe-name", "password": "private-sentinel", "code": "private-sentinel"}),
-    )?;
+    check_sensitive::<RegisterAuthInstr>(json!({
+        "qid": "safe-id",
+        "nickname": "safe-name",
+        "password": "private-sentinel",
+        "code": "private-sentinel",
+    }))?;
 
-    check_sensitive::<UpdateUserPasswordInstr>(
-        json!({"current_password": "private-sentinel", "new_password": "private-sentinel"}),
-    )?;
+    check_sensitive::<UpdateUserPasswordInstr>(json!({
+        "current_password": "private-sentinel",
+        "new_password": "private-sentinel",
+    }))?;
 
     check_sensitive::<JoinTeamInstr>(json!({"code": "private-sentinel"}))?;
 

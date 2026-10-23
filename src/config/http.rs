@@ -41,7 +41,8 @@ impl TryFrom<String> for CorsOrigin {
         ensure!(
             matches!(url.scheme(), "http" | "https")
                 && url.origin().ascii_serialization() == value,
-            "http.cors_origin must be a canonical HTTP(S) origin without credentials, path, query or fragment"
+            "http.cors_origin must be a canonical HTTP(S) origin without \
+                credentials, path, query or fragment"
         );
 
         let header = HeaderValue::try_from(value)

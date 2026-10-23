@@ -299,9 +299,15 @@ async fn artwork_completes_once_from_pending_and_active() {
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 1);
 
-        assert!(
-            matches!(snapshot.chapter_workflow_records.first().unwrap().payload, ChapterWorkflowRecordPayload::StageTransitioned { origin: ChapterWorkflowRecordOrigin::ArtworkUpload, previous_phase, next_phase: StagePhase::Completed, .. } if previous_phase == phase)
-        );
+        assert!(matches!(
+            snapshot.chapter_workflow_records.first().unwrap().payload,
+            ChapterWorkflowRecordPayload::StageTransitioned {
+                origin: ChapterWorkflowRecordOrigin::ArtworkUpload,
+                previous_phase,
+                next_phase: StagePhase::Completed,
+                ..
+            } if previous_phase == phase
+        ));
 
         assert_eq!(mock.event_count(), 1);
 

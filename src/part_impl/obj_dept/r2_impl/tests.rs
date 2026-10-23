@@ -43,14 +43,17 @@ fn gen_urls_includes_selected_cloudflare_image_transforms() {
     assert_eq!(
         urls.optimized_url.as_ref().map(Url::as_str),
         Some(
-            "https://images.example.test/cdn-cgi/image/width=1080,fit=scale-down,quality=80,format=auto,metadata=none/page_image/page-1/1.png",
+            "https://images.example.test/cdn-cgi/image/width=1080,\
+                fit=scale-down,quality=80,\
+                format=auto,metadata=none/page_image/page-1/1.png",
         ),
     );
 
     assert_eq!(
         urls.thumbnail_url.as_ref().map(Url::as_str),
         Some(
-            "https://images.example.test/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/page_image/page-1/1.png",
+            "https://images.example.test/cdn-cgi/image/width=300,fit=scale-down\
+                ,quality=80,format=auto,metadata=none/page_image/page-1/1.png",
         ),
     );
 }

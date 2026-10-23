@@ -48,9 +48,11 @@ async fn create_without_preset_preserves_creation_history() {
     assert!(snapshot.assignments.is_empty());
 
     assert!(snapshot.chapter_workflow_records.iter().any(|record| {
-        record.chapter_id == created.chapter_id && matches!(
+        record.chapter_id == created.chapter_id
+            && matches!(
             record.payload,
-            crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload::ChapterCreated
+            crate::value::chapter_workflow_record::
+                ChapterWorkflowRecordPayload::ChapterCreated
         )
     }));
 }
@@ -106,7 +108,11 @@ async fn create_preserves_first_chapter_title_and_history() {
 
         assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
 
-        assert!(matches!(record.payload, crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload::ChapterCreated));
+        assert!(matches!(
+            record.payload,
+            crate::value::chapter_workflow_record::
+                ChapterWorkflowRecordPayload::ChapterCreated
+        ));
     }
 }
 

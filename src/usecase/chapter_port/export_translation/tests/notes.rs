@@ -53,10 +53,11 @@ fn label_plus_annotations_roundtrip_body_selection_and_blank_lines() {
 
         assert!(imported.translation_note.is_none());
 
-        assert!(
-            matches!(&imported.source, UnitTranslationImportSource::LabelPlus { text }
-            if text.as_deref() == expected_body)
-        );
+        assert!(matches!(
+            &imported.source,
+            UnitTranslationImportSource::LabelPlus { text }
+                if text.as_deref() == expected_body
+        ));
     }
 }
 
@@ -76,7 +77,8 @@ fn label_plus_only_extracts_a_complete_suffix_annotation() {
         ("###注释###", None, Some("注释")),
     ] {
         let content = format!(
-            "1,0\n-\n框内\n框外\n-\nnotes\n>>>>>>>>[000.jpg]<<<<<<<<\n----------------[1]----------------[0.1,0.2,1]\n{text}\n\n"
+            "1,0\n-\n框内\n框外\n-\nnotes\n>>>>>>>>[000.jpg]<<<<<<<<\n\
+                ----------------[1]----------------[0.1,0.2,1]\n{text}\n\n"
         );
 
         for document in [content.clone(), content.replace('\n', "\r\n")] {
@@ -87,10 +89,11 @@ fn label_plus_only_extracts_a_complete_suffix_annotation() {
 
             assert_eq!(imported.typography_note.as_deref(), note);
 
-            assert!(
-                matches!(&imported.source, UnitTranslationImportSource::LabelPlus { text }
-                if text.as_deref() == body)
-            );
+            assert!(matches!(
+                &imported.source,
+                UnitTranslationImportSource::LabelPlus { text }
+                    if text.as_deref() == body
+            ));
         }
     }
 }

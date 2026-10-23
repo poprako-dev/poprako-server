@@ -13,6 +13,10 @@ use crate::result::BaseError;
     context = C,
     error = BaseError,
     run(for<'a> GetPageArtworkInfo<'a>, for<'a> ListPageArtworkInfos<'a>),
-    step(for<'a> ListPageArtworkInfos<'a>, for<'a> ReplacePageArtworkManifest<'a>, for<'a> UpdatePageArtworkInfo<'a>),
+    step(
+        for<'a> ListPageArtworkInfos<'a>,
+        for<'a> ReplacePageArtworkManifest<'a>,
+        for<'a> UpdatePageArtworkInfo<'a>,
+    ),
 )]
 pub trait PageArtworkRepo<C> {}

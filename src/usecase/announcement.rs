@@ -36,7 +36,13 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::announcement::view::announcement_info_views;
 
 /// Lists announcements under a team.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -79,7 +85,15 @@ where
 }
 
 /// Creates an announcement under a team.
-#[instrument(level = "info", skip(repo, token, instr), fields(actor_user_id = %token.user_id, team_id = %instr.team_id, content_byte_len = instr.content.len()))]
+#[instrument(
+    level = "info",
+    skip(repo, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        team_id = %instr.team_id,
+        content_byte_len = instr.content.len(),
+    ),
+)]
 pub async fn create<C, R>(
     repo: &R,
     token: UserToken,
@@ -126,7 +140,15 @@ where
 }
 
 /// Replaces an announcement's editable fields.
-#[instrument(level = "info", skip(repo, token, instr), fields(actor_user_id = %token.user_id, id = %instr.id, content_byte_len = instr.content.len()))]
+#[instrument(
+    level = "info",
+    skip(repo, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        id = %instr.id,
+        content_byte_len = instr.content.len(),
+    ),
+)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -183,7 +205,13 @@ where
 }
 
 /// Deletes an announcement.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn delete<C, R>(
     repo: &R,
     token: UserToken,

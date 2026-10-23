@@ -40,7 +40,8 @@ impl ImageConfig {
             if mib_limit == 0 {
                 //
                 bail!(
-                    "[ImageConfig::validate] {field_name} must be greater than zero",
+                    "[ImageConfig::\
+                        validate] {field_name} must be greater than zero",
                 );
             }
         }

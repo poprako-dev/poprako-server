@@ -155,7 +155,11 @@ fn plan_folds_create_patch_content_after_sequence_planning() {
     assert_eq!(plan.creates.len(), 1);
 
     assert!(matches!(plan.creates.first().unwrap(), UnitEdit::Create {
-        next_id: Some(next_id), is_bubble: false, is_flagged: true, translation: None, ..
+        next_id: Some(next_id),
+        is_bubble: false,
+        is_flagged: true,
+        translation: None,
+        ..
     } if next_id == "a"));
 
     assert!(!plan.changes.contains_key("new"));

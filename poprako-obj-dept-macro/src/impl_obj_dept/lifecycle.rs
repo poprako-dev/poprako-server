@@ -65,7 +65,9 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg: "object upload mark changed multiple rows".into(),
+                            msg:
+                                "object upload mark changed multiple \
+                                    rows".into(),
                         },
                     ),
                 }
@@ -105,7 +107,9 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg: "object upload mark changed multiple rows".into(),
+                            msg:
+                                "object upload mark changed multiple \
+                                    rows".into(),
                         },
                     ),
                 }
@@ -158,7 +162,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 }) {
                     //
                     return Err(
-                        ::poprako_obj_dept::rest::ObjDeptError::invalid("duplicate object slot id".into()),
+                        ::poprako_obj_dept::rest::ObjDeptError::
+                            invalid("duplicate object slot id".into()),
                     );
                 }
 
@@ -176,7 +181,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     //
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            msg: "object anchor upsert returned incomplete state"
+                            msg:
+                                "object anchor upsert returned incomplete state"
                                 .into(),
                         },
                     );
@@ -193,7 +199,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 for spec in &specs {
                     //
                     let id =
-                        <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom);
+                        <#obj as
+                            ::poprako_obj_dept::key::KeyMap>::id(&spec.dom);
 
                     let previous = previous_rows.remove(id);
 
@@ -221,7 +228,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             meta.hash.as_slice() == spec.hash && meta.ext == ext
                         });
 
-                    if let Some(meta) = matching_meta.filter(|meta| meta.is_avail) {
+                    if let Some(meta) = matching_meta.filter(|meta|
+                        meta.is_avail) {
                         //
                         allocs.insert(
                             id.to_owned(),
@@ -251,7 +259,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             previous.as_ref(),
                         )?;
 
-                    let image = <#obj as ::poprako_obj_dept::key::KeyMap>::forward(
+                    let image = <#obj as
+                        ::poprako_obj_dept::key::KeyMap>::forward(
                         &spec.dom,
                         ver,
                     );
@@ -295,13 +304,15 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             //
                             ::poprako_obj_dept::rdb_impl::ObjRdbWrite {
                                 //
-                                id: <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+                                id: <#obj as
+                                    ::poprako_obj_dept::key::KeyMap>::id(
                                     &spec.dom,
                                 ),
                                 ver: key.ver,
                                 key: &key.image,
                                 hash: spec.hash,
-                                ext: <#obj as ::poprako_obj_dept::key::KeyMap>::ext(
+                                ext: <#obj as
+                                    ::poprako_obj_dept::key::KeyMap>::ext(
                                     &spec.dom,
                                 ),
                             }
@@ -331,8 +342,11 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             .get(key.id.as_str())
                             .ok_or_else(|| {
                                 //
-                                ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                                    msg: "generated object slot is missing".into(),
+                                ::poprako_obj_dept::rest::ObjDeptError::
+                                    Unrecoverable {
+                                    msg:
+                                        "generated object slot is \
+                                            missing".into(),
                                 }
                             })?;
 
@@ -341,7 +355,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             pool_slot.expires_at,
                         ))
                     })
-                    .collect::<::poprako_obj_dept::rest::ObjDeptRest<Vec<_>>>()?;
+                    .collect::<::poprako_obj_dept::rest::
+                        ObjDeptRest<Vec<_>>>()?;
 
                 self.prom()
                     .defer_checks(context, #obj_module::TOPIC, &checks)
@@ -352,7 +367,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     let pool_slot = pool_slots
                         .remove(key.id.as_str())
                         .ok_or_else(|| {
-                            ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
+                            ::poprako_obj_dept::rest::ObjDeptError::
+                                Unrecoverable {
                                 msg: "generated object slot is missing".into(),
                             }
                         })?;

@@ -32,8 +32,17 @@ fn patch_fields_distinguish_missing_null_and_value() {
             "edit": "patch",
             "id": "unit-1",
             "next_id": { "type": "assign", "value": "unit-2" },
-            "translation": { "type": "assign", "value": { "translated_text": "translated" } },
-            "revision": { "type": "assign", "value": { "is_proofread": true, "proofread_text": "proofread" } }
+            "translation": {
+                "type": "assign",
+                "value": { "translated_text": "translated" }
+            },
+            "revision": {
+                "type": "assign",
+                "value": {
+                    "is_proofread": true,
+                    "proofread_text": "proofread"
+                }
+            }
         }
     ]))
     .unwrap();
@@ -135,7 +144,10 @@ fn create_requires_structure_and_resolves_local_references() {
         {
             "edit": "patch",
             "id": "local-a",
-            "translation": { "type": "assign", "value": { "translated_text": "text" } }
+            "translation": {
+                "type": "assign",
+                "value": { "translated_text": "text" }
+            }
         }
     ]))
     .unwrap();
@@ -294,9 +306,11 @@ fn flagged_transport_defaults_and_types() {
 
         let instr = serde_json::from_value::<UnitEditInstr>(payload).unwrap();
 
-        assert!(
-            matches!(instr, UnitEditInstr::Create { is_flagged, .. } if Some(is_flagged) == value.as_bool())
-        );
+        assert!(matches!(
+            instr,
+            UnitEditInstr::Create { is_flagged, .. }
+                if Some(is_flagged) == value.as_bool()
+        ));
     }
 
     for value in [json!(null), json!(false), json!(true)] {
@@ -305,9 +319,11 @@ fn flagged_transport_defaults_and_types() {
         }))
         .unwrap();
 
-        assert!(
-            matches!(instr, UnitEditInstr::Patch { is_flagged, .. } if is_flagged == value.as_bool())
-        );
+        assert!(matches!(
+            instr,
+            UnitEditInstr::Patch { is_flagged, .. }
+                if is_flagged == value.as_bool()
+        ));
     }
 
     for value in [json!("true"), json!(1), json!({"type":"clear"})] {

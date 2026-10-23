@@ -113,7 +113,8 @@ where
 
         write!(
             writer,
-            " axum::rejection: HTTP request extraction rejected error_origin=\"axum\""
+            " axum::rejection: HTTP request extraction rejected \
+                error_origin=\"axum\""
         )?;
 
         let mut fields = RejectionFields {

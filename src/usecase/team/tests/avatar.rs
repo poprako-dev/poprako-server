@@ -288,7 +288,10 @@ async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
     assert!(snapshot.teams.is_empty());
     assert!(snapshot.deleted_team_ids.is_empty());
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "team-1" && key.ver == 2)
+        matches!(
+            task,
+            ObjTask::Delete { key } if key.id == "team-1" && key.ver == 2
+        )
     }));
 }
 

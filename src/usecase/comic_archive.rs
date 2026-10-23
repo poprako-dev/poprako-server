@@ -43,7 +43,13 @@ use crate::value::comic_archive::ComicArchiveMonth;
 // Preserve every selected month and payload; resource pressure must fail the
 // export rather than truncate it.
 /// Exports selected retained UTC month slots for one team.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -121,7 +127,13 @@ where
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn archive<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

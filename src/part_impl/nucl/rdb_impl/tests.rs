@@ -55,7 +55,8 @@ async fn verify_cancelled_transaction(
 
     timeout(Duration::from_secs(5), async {
         tokio::select! {
-            result = attempt => panic!("pending transaction finished: {:?}", result),
+            result = attempt => panic!("pending transaction finished: {:?}",
+                result),
 
             started = started_recv => started.unwrap(),
         }

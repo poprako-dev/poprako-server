@@ -444,7 +444,8 @@ fn artwork_config_validates_custom_limits() {
     for limit in [0, u64::MAX] {
         assert!(
             AppConfig::parse(&format!(
-                "{config_prefix}\n[artwork]\nchapter_artwork_limit_mib = {limit}"
+                "{config_prefix}\n[artwork]\
+                    \nchapter_artwork_limit_mib = {limit}"
             ))
             .is_err()
         );

@@ -51,7 +51,11 @@ use crate::usecase::internal::view::chapter_info_views;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -92,7 +96,11 @@ where
 }
 
 /// Fetches a chapter by ID.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -123,7 +131,11 @@ where
 }
 
 /// Fetches the pinned chapter under one comic.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn get_pinned<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -154,7 +166,11 @@ where
 }
 
 /// Creates a new chapter.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -232,7 +248,11 @@ where
 }
 
 /// Updates chapter metadata.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -322,7 +342,11 @@ where
 }
 
 /// Marks a chapter as the pinned chapter for its comic.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn mark_pinned<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

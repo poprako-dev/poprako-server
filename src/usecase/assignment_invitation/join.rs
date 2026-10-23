@@ -46,7 +46,11 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Joins a chapter assignment with a pending invitation code.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn join<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
@@ -191,7 +195,8 @@ fn ensure_invitation_matches(
             invitee_qid = %current_user_info.qid,
             invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
             invitation_code_present = true,
-            "expected error: assignment invitation does not belong to current user",
+            "expected error: assignment invitation does not belong to \
+                current user",
         );
 
         return Err(expected(ExpectedVariant::Args, err_msg));

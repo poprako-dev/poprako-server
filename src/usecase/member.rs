@@ -46,7 +46,13 @@ use crate::usecase::member::view::{member_info_view, member_info_views};
 ///
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"
@@ -142,7 +148,13 @@ where
 }
 
 /// Joins the current user to a team with a pending invitation code.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"
@@ -198,9 +210,11 @@ where
                     err_msg = %err_msg,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
-                    invitation_invitee_qid = %member_invitation_info.invitee_qid,
+                    invitation_invitee_qid =
+                        %member_invitation_info.invitee_qid,
                     team_id = %member_invitation_info.team_id,
-                    "expected error: invitation does not belong to current user",
+                    "expected error: invitation does not belong to \
+                    current user",
                 );
 
                 return Err(BaseError::Expected {
@@ -264,7 +278,13 @@ where
 /// Lists members under one team.
 ///
 /// The caller must already be a member of the target team.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -311,7 +331,13 @@ where
 /// Updates one member's roles.
 ///
 /// The caller must be a team admin of the target member's team.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"
@@ -409,7 +435,13 @@ where
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"

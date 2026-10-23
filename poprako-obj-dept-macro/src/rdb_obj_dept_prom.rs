@@ -82,7 +82,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
         mod #module {
             use super::#table;
 
-            use ::diesel::prelude::{ExpressionMethods as _, NullableExpressionMethods as _, QueryDsl as _};
+            use ::diesel::prelude::{ExpressionMethods as _,
+                NullableExpressionMethods as _, QueryDsl as _};
             use ::diesel::{OptionalExtension as _, SelectableHelper as _};
             use ::diesel_async::RunQueryDsl as _;
 
@@ -177,10 +178,13 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     //
                     let Some(claim_token) = row.claim_token else {
                         //
-                        ::tracing::error!(task_id = row.id, "claimed object task has no execution credential");
+                        ::tracing::error!(task_id = row.id,
+                            "claimed object task has no execution credential");
 
                         return Err(ObjDeptError::Unrecoverable {
-                            msg: "claimed object task has no execution credential".into(),
+                            msg:
+                                "claimed object task has no execution \
+                                    credential".into(),
                         });
                     };
 

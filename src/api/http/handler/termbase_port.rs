@@ -50,7 +50,8 @@ pub struct ImportTermbaseQuery {
     tag = "termbase-port",
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
-        (status = 200, description = "Native terminology-base export", body = ExportTermbaseVal, content_type = "application/json"),
+        (status = 200, description = "Native terminology-base export",
+            body = ExportTermbaseVal, content_type = "application/json"),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -74,7 +75,8 @@ pub async fn export(
     tag = "termbase-port",
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
-        (status = 200, description = "Native terminology-base download", body = ExportTermbaseVal, content_type = "application/json"),
+        (status = 200, description = "Native terminology-base download",
+            body = ExportTermbaseVal, content_type = "application/json"),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -102,10 +104,13 @@ pub async fn export_download(
     ),
     request_body = ImportTermbaseInstr,
     responses(
-        (status = 200, description = "Termbase merged", body = HttpBody<ImportTermbaseVal>),
-        (status = 201, description = "Termbase imported", body = HttpBody<ImportTermbaseVal>),
+        (status = 200, description = "Termbase merged",
+            body = HttpBody<ImportTermbaseVal>),
+        (status = 201, description = "Termbase imported",
+            body = HttpBody<ImportTermbaseVal>),
         (status = 403, description = "Team translator or proofreader required"),
-        (status = 422, description = "Invalid document, capacity, or duplicate name"),
+        (status = 422, description = "Invalid document, capacity, or \
+        duplicate name"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -147,10 +152,13 @@ pub async fn import_team(
     ),
     request_body = ImportTermbaseInstr,
     responses(
-        (status = 200, description = "Termbase merged", body = HttpBody<ImportTermbaseVal>),
-        (status = 201, description = "Termbase imported", body = HttpBody<ImportTermbaseVal>),
+        (status = 200, description = "Termbase merged",
+            body = HttpBody<ImportTermbaseVal>),
+        (status = 201, description = "Termbase imported",
+            body = HttpBody<ImportTermbaseVal>),
         (status = 403, description = "Team translator or proofreader required"),
-        (status = 422, description = "Invalid document, capacity, or duplicate name"),
+        (status = 422, description = "Invalid document, capacity, or \
+        duplicate name"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -186,13 +194,22 @@ pub async fn import_comic(
     post,
     path = "/api/v1/termbases/{termbase_id}/append",
     tag = "termbase-port",
-    description = "Append a strict terms-only document. Match trimmed, case-insensitive sources, preserve existing source spelling and translation order, and append distinct translations. Comments are compared as whole text blocks and joined with a newline when different. Empty or unchanged batches preserve timestamps. This operation is not idempotent when different comment blocks are combined; do not blindly replay after an uncertain response.",
-    params(("termbase_id" = String, Path, description = "Existing termbase ID")),
+    description = "Append a strict terms-only document. Match trimmed, \
+    case-insensitive sources, preserve existing source spelling and \
+    translation order, and append distinct translations. Comments are compared \
+    as whole text blocks and joined with a newline when different. Empty or \
+    unchanged batches preserve timestamps. This operation is not idempotent \
+    when different comment blocks are combined; do not blindly replay after an \
+    uncertain response.",
+    params(("termbase_id" = String, Path,
+        description = "Existing termbase ID")),
     request_body = AppendTermbaseInstr,
     responses(
-        (status = 200, description = "Atomic append counts", body = HttpBody<AppendTermbaseVal>),
+        (status = 200, description = "Atomic \
+        append counts", body = HttpBody<AppendTermbaseVal>),
         (status = 403, description = "Team translator or proofreader required"),
-        (status = 422, description = "Invalid document, missing termbase, or capacity exceeded"),
+        (status = 422, description = "Invalid document, missing termbase, or \
+        capacity exceeded"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

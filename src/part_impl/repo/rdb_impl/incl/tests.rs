@@ -96,7 +96,9 @@ preloadable! {
             inject: with |owner, related| owner.user = related,
         },
         BothEscapes => UserByIds {
-            resolve: with |owner| owner.nested.as_ref().map(|nested| nested.user_id.as_str()),
+            resolve: with |owner| {
+                owner.nested.as_ref().map(|nested| nested.user_id.as_str())
+            },
             inject: with |owner, related| owner.user = related,
         },
     },

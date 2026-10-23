@@ -59,8 +59,10 @@ pub struct AnnouncementListQuery {
     tag = "announcements",
     request_body = CreateAnnouncementInstr,
     responses(
-        (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementVal>),
-        (status = 403, description = "No perm to create announcements in this team"),
+        (status = 201, description = "Announcement created",
+            body = HttpBody<CreateAnnouncementVal>),
+        (status = 403, description = "No perm to create announcements in \
+        this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
@@ -85,11 +87,16 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/announcements",
     tag = "announcements",
-    description = "Lists a team's announcements. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
-    params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
+    description = "Lists a team's announcements. `incl` embeds related rows. \
+    Example: \
+    `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
+    params(("team_id" = String, Path, description = "Team ID"),
+        AnnouncementListQuery),
     responses(
-        (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoView>>),
-        (status = 403, description = "No perm to list announcements in this team"),
+        (status = 200, description = "Announcements listed",
+            body = HttpBody<Vec<AnnouncementInfoView>>),
+        (status = 403, description = "No perm to list announcements in this \
+        team"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

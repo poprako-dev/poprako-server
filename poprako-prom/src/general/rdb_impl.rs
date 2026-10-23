@@ -171,7 +171,8 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
 
         source => {
             //
-            tracing::error!(operation = "execute_prom", sdk_err = ?source, "Diesel SDK error");
+            tracing::error!(operation = "execute_prom", sdk_err = ?source,
+                "Diesel SDK error");
 
             PromError::Unrecoverable {
                 msg: format!("diesel error: {}", source),

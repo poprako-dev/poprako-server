@@ -102,7 +102,8 @@ pub async fn run_worker<T, F, Fut>(
             Err(_) => {
                 //
                 tracing::warn!(
-                    "prom attempt deadline elapsed; timeout recovery will retry it"
+                    "prom attempt deadline elapsed; timeout recovery will \
+                        retry it"
                 );
             }
         }

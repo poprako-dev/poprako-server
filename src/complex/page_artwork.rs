@@ -15,7 +15,11 @@ pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
     let msg = trl(key);
 
-    tracing::warn!(err_variant = ?variant, err_msg = %msg, "composite page rejected");
+    tracing::warn!(
+        err_variant = ?variant,
+        err_msg = %msg,
+        "composite page rejected"
+    );
 
     BaseError::Expected { variant, msg }
 }

@@ -47,9 +47,11 @@ use crate::usecase::chapter_port::{
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = ImportChapterTranslationInstr,
     responses(
-        (status = 200, description = "Translations imported", body = HttpBody<ImportChapterTranslationVal>),
+        (status = 200, description = "Translations imported",
+            body = HttpBody<ImportChapterTranslationVal>),
         (status = 403, description = "No perm to import into this chapter"),
-        (status = 422, description = "Invalid import content for the selected format"),
+        (status = 422, description = "Invalid import content for the \
+        selected format"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -80,15 +82,22 @@ pub async fn import_translation(
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
-    description = "Team members and chapter assignees may export. Only a chapter TYPESETTER or REDRAWER assignment triggers the pending typeset/redraw stage.",
+    description = "Team members and chapter assignees may export. Only a \
+    chapter TYPESETTER or REDRAWER assignment triggers the pending \
+    typeset/redraw stage.",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = String, Query, description = "Comma-separated export formats: poprako,label_plus"),
-        ("with_raw_ident" = Option<bool>, Query, description = "Use original filenames in LabelPlus; defaults to false"),
+        ("format" = String, Query,
+            description = "Comma-separated export formats: poprako,label_plus"),
+        ("with_raw_ident" = Option<bool>, Query,
+            description = "Use original filenames in LabelPlus; defaults to \
+            false"),
     ),
     responses(
-        (status = 200, description = "Selected translation exports", body = ExportChapterTranslationsVal, content_type = "application/json"),
+        (status = 200, description = "Selected translation exports",
+            body = ExportChapterTranslationsVal,
+                content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
@@ -118,15 +127,22 @@ pub async fn export_translation(
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
-    description = "Uses the same permissions and TYPESETTER/REDRAWER stage trigger as translation export.",
+    description = "Uses the same permissions and TYPESETTER/REDRAWER stage \
+    trigger as translation export.",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = String, Query, description = "Comma-separated export formats: poprako,label_plus"),
-        ("with_raw_ident" = Option<bool>, Query, description = "Use original filenames in LabelPlus; defaults to false"),
+        ("format" = String, Query,
+            description = "Comma-separated export formats: poprako,label_plus"),
+        ("with_raw_ident" = Option<bool>, Query,
+            description = "Use original filenames in LabelPlus; defaults to \
+            false"),
     ),
     responses(
-        (status = 200, description = "Selected translation exports download", body = ExportChapterTranslationsVal, content_type = "application/json"),
+        (status = 200,
+            description = "Selected translation exports download",
+                body = ExportChapterTranslationsVal,
+                    content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
@@ -158,11 +174,14 @@ pub async fn export_translation_download(
 
 /// Allocates a direct chapter artwork upload; an available duplicate has no slot.
 #[cfg_attr(feature = "swagger", utoipa::path(
-    post, path = "/api/v1/chapters/{chapter_id}/artwork/alloc", tag = "chapter-port",
+    post, path = "/api/v1/chapters/{chapter_id}/artwork/alloc",
+        tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = AllocChapterArtworkInstr,
     responses(
-        (status = 200, description = "Current artwork version and optional PUT capability", body = HttpBody<AllocChapterArtworkVal>),
+        (status = 200, description = "Current \
+        artwork version and optional PUT capability",
+            body = HttpBody<AllocChapterArtworkVal>),
         (status = 403, description = "Chapter artwork role required"),
         (status = 422, description = "Invalid allocation or frozen chapter"),
     ),
@@ -197,13 +216,16 @@ pub async fn alloc_artwork(
 
 /// Optimistically confirms artwork and atomically completes typesetting/redraw.
 #[cfg_attr(feature = "swagger", utoipa::path(
-    post, path = "/api/v1/chapters/{chapter_id}/artwork/mark-uploaded", tag = "chapter-port",
+    post, path = "/api/v1/chapters/{chapter_id}/artwork/mark-uploaded",
+        tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = MarkChapterArtworkUploadedInstr,
     responses(
-        (status = 204, description = "Current artwork confirmed and typesetting completed"),
+        (status = 204, description = "Current artwork confirmed and \
+        typesetting completed"),
         (status = 403, description = "Chapter artwork role required"),
-        (status = 422, description = "Missing or stale artwork version, or frozen chapter"),
+        (status = 422, description = "Missing or stale artwork version, or \
+        frozen chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -238,10 +260,13 @@ pub async fn mark_artwork_uploaded(
 
 /// Returns the original object URL of the current available artwork.
 #[cfg_attr(feature = "swagger", utoipa::path(
-    get, path = "/api/v1/chapters/{chapter_id}/artwork/export", tag = "chapter-port",
+    get, path = "/api/v1/chapters/{chapter_id}/artwork/export",
+        tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Artwork identity and original download URL", body = HttpBody<ExportChapterArtworkVal>),
+        (status = 200, description = "Artwork \
+        identity and original download URL",
+            body = HttpBody<ExportChapterArtworkVal>),
         (status = 403, description = "Chapter export access required"),
         (status = 422, description = "Chapter artwork is unavailable"),
     ),

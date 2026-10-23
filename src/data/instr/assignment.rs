@@ -76,7 +76,11 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             //
             let msg = trl("error-chapter-role-not-assignable");
 
-            tracing::warn!(err_variant = ?ExpectedVariant::Args, err_msg = %msg, "assignment filter requires a worker role");
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_msg = %msg,
+                "assignment filter requires a worker role"
+            );
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,

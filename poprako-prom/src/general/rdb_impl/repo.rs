@@ -3,7 +3,7 @@
 #[macro_export]
 // Expands typed task lifecycle repository operations.
 macro_rules! __general_prom_repo {
-    ($repo:ident, $table:ident, $write_level:ty, $claim_level:ty, $error:ty) => {
+    ($repo:ident, $table:ident, $write_level:ty, $claim_level:ty, $err:ty) => {
         /// Typed delivery lifecycle operations.
         pub mod repo {
             use diesel::dsl::{exists, not};
@@ -25,7 +25,7 @@ macro_rules! __general_prom_repo {
             use $crate::general::rdb_impl::LocalTaskStatus;
             type WriteLevel = $write_level;
             type ClaimLevel = $claim_level;
-            type AppError = $error;
+            type AppError = $err;
             type AppRest<T> = Result<T, AppError>;
 
             fn database_error(error: diesel::result::Error) -> AppError {

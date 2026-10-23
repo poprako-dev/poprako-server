@@ -64,7 +64,8 @@ pub struct MemberMeListQuery {
     tag = "members",
     request_body = CreateMemberInstr,
     responses(
-        (status = 201, description = "Member created", body = HttpBody<CreateMemberVal>),
+        (status = 201, description = "Member \
+        created", body = HttpBody<CreateMemberVal>),
         (status = 403, description = "No perm to create members in this team"),
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
@@ -91,11 +92,18 @@ pub async fn create(
     get,
     path = "/api/v1/members",
     tag = "members",
-    description = "Lists members. Exactly one of `owner_id` or `team_id` is required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user`, `/api/v1/members?owner_id=u_1&incl=team`.",
+    description = "Lists members. Exactly one of `owner_id` or `team_id` is \
+    required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. \
+    In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds \
+    related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&\
+    role=1&incl=user`, \
+    `/api/v1/members?owner_id=u_1&incl=team`.",
     params(ListMemberInfosInstr),
     responses(
-        (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoView>>),
-        (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
+        (status = 200, description = "Members \
+        listed", body = HttpBody<Vec<MemberInfoView>>),
+        (status = 422, description = "Exactly one of owner_id or team_id is \
+        required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No perm to list members in this team"),
     ),
 ))]
@@ -122,7 +130,8 @@ pub async fn list_infos(
     tag = "members",
     params(MemberMeListQuery),
     responses(
-        (status = 200, description = "Current user memberships", body = HttpBody<Vec<MemberInfoView>>),
+        (status = 200, description = "Current \
+        user memberships", body = HttpBody<Vec<MemberInfoView>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -162,8 +171,10 @@ pub async fn list_my_infos(
     responses(
         (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No perm or the team would lose its last admin"),
-        (status = 409, description = "Serializable conflict; retry the complete request"),
+        (status = 403, description = "No perm or the team would lose its \
+        last admin"),
+        (status = 409, description = "Serializable conflict; retry the \
+        complete request"),
         (status = 404, description = "Member not found"),
     ),
 ))]
@@ -195,8 +206,10 @@ pub async fn update_roles(
     params(("member_id" = String, Path, description = "Member ID")),
     responses(
         (status = 204, description = "Member deleted"),
-        (status = 403, description = "No perm or the team would lose its last admin"),
-        (status = 409, description = "Serializable conflict; retry the complete request"),
+        (status = 403, description = "No perm or the team would lose its \
+        last admin"),
+        (status = 409, description = "Serializable conflict; retry the \
+        complete request"),
         (status = 404, description = "Member not found"),
     ),
 ))]
@@ -224,8 +237,10 @@ pub async fn delete(
     tag = "members",
     request_body = JoinTeamInstr,
     responses(
-        (status = 201, description = "Joined team", body = HttpBody<MemberInfoView>),
-        (status = 422, description = "Invitation does not target this user or already a member"),
+        (status = 201, description = "Joined \
+        team", body = HttpBody<MemberInfoView>),
+        (status = 422, description = "Invitation does not target this user \
+        or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),
 ))]

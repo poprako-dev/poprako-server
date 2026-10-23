@@ -73,7 +73,13 @@ where
 }
 
 /// Creates a pending invitation for a team.
-#[instrument(level = "info", skip(nucl, repo, prom, invitation_config, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, prom, invitation_config, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom, invitation_config): (&N, &R, &P, &InvitationConfig),
     token: UserToken,
@@ -216,7 +222,13 @@ where
 }
 
 /// Lists invitations for a team.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -275,7 +287,13 @@ where
 }
 
 /// Updates the roles of an invitation.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn update_roles<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -310,7 +328,13 @@ where
 }
 
 /// Deletes an invitation.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn delete<C, R>(
     (repo,): (&R,),
     token: UserToken,

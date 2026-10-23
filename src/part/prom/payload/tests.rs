@@ -42,9 +42,13 @@ fn round_trips_current_contract() {
                 },
             },
             serde_json::json!({
-                "Invitation": { "payload": { "PurgeExpiredAssignmentInvitation": {
-                    "invitation_id": "invitation-1"
-                } } }
+                "Invitation": {
+                    "payload": {
+                        "PurgeExpiredAssignmentInvitation": {
+                            "invitation_id": "invitation-1"
+                        }
+                    }
+                }
             }),
         ),
     ];
@@ -66,21 +70,44 @@ fn round_trips_current_contract() {
 fn rejects_obsolete_or_incomplete_payloads() {
     //
     let invalid = [
-        serde_json::json!({ "AdvanceRawProvide": { "chapter_id": "chapter-1" } }),
         serde_json::json!({
-            "PurgeExpiredInvitation": { "Member": { "invitation_id": "invitation-1" } }
+            "AdvanceRawProvide": { "chapter_id": "chapter-1" }
         }),
         serde_json::json!({
-            "Chapter": { "payload": { "chapter_id": "chapter-1", "actor_user_id": "user-1" } }
+            "PurgeExpiredInvitation": {
+                "Member": { "invitation_id": "invitation-1" }
+            }
         }),
         serde_json::json!({
-            "Chapter": { "payload": { "TryAdvanceRawProvideStage": { "chapter_id": "chapter-1" } } }
+            "Chapter": {
+                "payload": {
+                    "chapter_id": "chapter-1",
+                    "actor_user_id": "user-1"
+                }
+            }
         }),
         serde_json::json!({
-            "Invitation": { "payload": { "Member": { "invitation_id": "invitation-1" } } }
+            "Chapter": {
+                "payload": {
+                    "TryAdvanceRawProvideStage": {
+                        "chapter_id": "chapter-1"
+                    }
+                }
+            }
         }),
         serde_json::json!({
-            "Invitation": { "payload": { "Assignment": { "invitation_id": "invitation-1" } } }
+            "Invitation": {
+                "payload": {
+                    "Member": { "invitation_id": "invitation-1" }
+                }
+            }
+        }),
+        serde_json::json!({
+            "Invitation": {
+                "payload": {
+                    "Assignment": { "invitation_id": "invitation-1" }
+                }
+            }
         }),
     ];
 

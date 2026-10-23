@@ -399,7 +399,10 @@ pub fn build_term_append_plan<'a>(
         // Every replacement was resolved from these persisted entries by the shared planner.
         let Some(existing) = existing_terms.get(update.id.as_str()) else {
             //
-            tracing::error!(term_id = %update.id, "unrecoverable error: append replacement has no existing term");
+            tracing::error!(
+                term_id = %update.id,
+                "unrecoverable error: append replacement has no existing term"
+            );
 
             return Err(BaseError::Unrecoverable {
                 msg: "append replacement has no existing term".into(),

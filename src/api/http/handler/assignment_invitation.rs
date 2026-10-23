@@ -54,11 +54,14 @@ pub struct AssignmentInvitationListQuery {
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
-    description = "Requires owning-team administrator membership, without a chapter assignment. Invitations contain worker roles only.",
+    description = "Requires owning-team administrator membership, without a \
+    chapter assignment. Invitations contain worker roles only.",
     request_body = CreateAssignmentInvitationInstr,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
-        (status = 403, description = "No perm to create invitations in this chapter"),
+        (status = 201, description = "Invitation created",
+            body = HttpBody<CreateAssignmentInvitationVal>),
+        (status = 403, description = "No perm to create invitations in this \
+        chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
 ))]
@@ -93,11 +96,18 @@ pub async fn create(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
-    description = "Lists a chapter's assignment invitations. Requires owning-team administrator membership. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
-    params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
+    description = "Lists a chapter's assignment invitations. Requires \
+    owning-team administrator membership. `is_pending` filters by consumption \
+    state. Example: \
+    `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&\
+    offset=0&limit=20`.",
+    params(("chapter_id" = String, Path, description = "Chapter ID"),
+        AssignmentInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),
-        (status = 403, description = "No perm to list invitations in this chapter"),
+        (status = 200, description = "Invitations listed",
+            body = HttpBody<Vec<AssignmentInvitationInfoView>>),
+        (status = 403, description = "No perm to list invitations in this \
+        chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -129,7 +139,8 @@ pub async fn list_infos(
     delete,
     path = "/api/v1/assignment-invitations/{assignment_invitation_id}",
     tag = "assignment-invitations",
-    params(("assignment_invitation_id" = String, Path, description = "Invitation ID")),
+    params(("assignment_invitation_id" = String, Path,
+        description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
         (status = 403, description = "No perm to delete this invitation"),
@@ -160,7 +171,8 @@ pub async fn delete(
     tag = "assignment-invitations",
     request_body = JoinAssignmentInvitationInstr,
     responses(
-        (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoView>),
+        (status = 201, description = "Joined \
+        assignment", body = HttpBody<AssignmentInfoView>),
         (status = 422, description = "Invitation does not target this user"),
         (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Invitation code not found"),

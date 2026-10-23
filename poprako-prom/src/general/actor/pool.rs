@@ -343,7 +343,8 @@ where
             OffsetDateTime::now_utc().checked_add(RETRY_DELAY)
         else {
             //
-            tracing::error!(id = %row.id(), "prom retry timestamp is outside the supported range");
+            tracing::error!(id = %row.id(),
+                "prom retry timestamp is outside the supported range");
 
             return;
         };
@@ -351,7 +352,8 @@ where
         if let Err(error) =
             self.delivery.retry(row, msg, visible_at, retry_delta).await
         {
-            tracing::error!(id = %row.id(), err = ?error, "prom reschedule failed");
+            tracing::error!(id = %row.id(), err = ?error,
+                "prom reschedule failed");
         }
     }
 }

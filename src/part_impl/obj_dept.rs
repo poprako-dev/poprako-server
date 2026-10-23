@@ -40,7 +40,8 @@ use crate::value::image::{
 
 // Implements image-key mapping with kind-specific builders and parsers.
 macro_rules! impl_image_key_map {
-    ($marker:ty, $dom:ty, $id:ident, $kind:literal, $forward:path, $reverse:path) => {
+    ($marker:ty, $dom:ty, $id:ident, $kind:literal, $forward:path,
+        $reverse:path) => {
         impl KeyMap for $marker {
             type Dom = $dom;
             type Img = String;

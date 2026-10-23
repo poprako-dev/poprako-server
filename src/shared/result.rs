@@ -75,7 +75,8 @@ pub fn diesel(source: DieselError) -> BaseError {
                 err_variant = ?ExpectedVariant::Args,
                 err_msg = %msg,
                 database_err = "not found",
-                "[shared::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
+                "[shared::diesel] unexpected Diesel NotFound; use optional() \
+                    and map None at call site"
             );
 
             BaseError::Expected {

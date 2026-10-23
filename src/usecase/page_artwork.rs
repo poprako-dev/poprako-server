@@ -32,7 +32,13 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::page::list as page_list_usecase;
 
 /// Reads ordered composite pages independently of source Pages.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
