@@ -13,7 +13,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[derive(::diesel::Queryable, ::diesel::Selectable)]
         #[diesel(table_name = #table)]
         #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct FullRow {
+        struct FullRecord {
             #[diesel(column_name = f_id)]
             id: String,
 
@@ -38,7 +38,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[derive(::diesel::Queryable, ::diesel::Selectable)]
         #[diesel(table_name = #table)]
         #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct ObjStateRow {
+        struct ObjStateRecord {
             #[diesel(column_name = f_version)]
             ver: i64,
 
@@ -55,7 +55,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[derive(::diesel::Queryable, ::diesel::Selectable)]
         #[diesel(table_name = #table)]
         #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct ObjPresenceStateRow {
+        struct ObjPresenceStateRecord {
             #[diesel(column_name = f_version)]
             ver: i64,
 
@@ -72,15 +72,17 @@ pub fn expand(table: &Path) -> TokenStream {
             revision: ::time::OffsetDateTime,
         }
 
-        impl From<ObjStateRow> for ::poprako_obj_dept::rdb_impl::ObjRdbRow {
+        impl From<ObjStateRecord>
+            for ::poprako_obj_dept::rdb_impl::ObjRdbRecord
+        {
             //
-            fn from(row: ObjStateRow) -> Self {
+            fn from(record: ObjStateRecord) -> Self {
                 Self {
-                    ver: row.ver,
-                    key: row.key,
-                    f_is_uploaded: row.f_is_uploaded,
-                    hash: row.hash,
-                    ext: row.ext,
+                    ver: record.ver,
+                    key: record.key,
+                    f_is_uploaded: record.f_is_uploaded,
+                    hash: record.hash,
+                    ext: record.ext,
                 }
             }
         }
@@ -88,7 +90,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[derive(::diesel::Queryable, ::diesel::Selectable)]
         #[diesel(table_name = #table)]
         #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct ObjStateEntryRow {
+        struct ObjStateEntryRecord {
             #[diesel(column_name = f_id)]
             id: String,
 
@@ -106,27 +108,27 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub struct ObjRdbEntry {
             pub id: String,
-            pub row: ::poprako_obj_dept::rdb_impl::ObjRdbRow,
+            pub record: ::poprako_obj_dept::rdb_impl::ObjRdbRecord,
         }
 
-        impl From<ObjStateEntryRow> for ObjRdbEntry {
+        impl From<ObjStateEntryRecord> for ObjRdbEntry {
             //
-            fn from(row: ObjStateEntryRow) -> Self {
+            fn from(record: ObjStateEntryRecord) -> Self {
                 Self {
-                    id: row.id,
-                    row: ::poprako_obj_dept::rdb_impl::ObjRdbRow {
-                        ver: row.ver,
-                        key: row.key,
-                        f_is_uploaded: row.f_is_uploaded,
-                        hash: row.hash,
-                        ext: row.ext,
+                    id: record.id,
+                    record: ::poprako_obj_dept::rdb_impl::ObjRdbRecord {
+                        ver: record.ver,
+                        key: record.key,
+                        f_is_uploaded: record.f_is_uploaded,
+                        hash: record.hash,
+                        ext: record.ext,
                     },
                 }
             }
         }
 
         pub fn decode_many<K>(
-            rows: Vec<ObjRdbEntry>,
+            records: Vec<ObjRdbEntry>,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
             ::std::collections::HashMap<
                 String,
@@ -139,14 +141,14 @@ pub fn expand(table: &Path) -> TokenStream {
             //
             let mut obj_metas = ::std::collections::HashMap::new();
 
-            for row_entry in rows {
+            for entry in records {
                 //
-                let id = row_entry.id;
+                let id = entry.id;
 
                 let Some(obj_meta) =
-                    ::poprako_obj_dept::rdb_impl::decode_row::<K>(
+                    ::poprako_obj_dept::rdb_impl::decode_record::<K>(
                         &id,
-                        row_entry.row,
+                        entry.record,
                     )?
                 else {
                     continue;
@@ -160,7 +162,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         #[derive(::diesel::Insertable)]
         #[diesel(table_name = #table)]
-        struct ObjAnchorRow<'a> {
+        struct ObjAnchorItem<'a> {
             #[diesel(column_name = f_id)]
             id: &'a str,
             #[diesel(column_name = f_version)]
@@ -169,7 +171,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         #[derive(::diesel::Insertable)]
         #[diesel(table_name = #table)]
-        struct ObjWriteRow<'a> {
+        struct ObjWriteItem<'a> {
             #[diesel(column_name = f_id)]
             id: &'a str,
 
@@ -191,30 +193,30 @@ pub fn expand(table: &Path) -> TokenStream {
             id: &str,
             lock: bool,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-            Option<::poprako_obj_dept::rdb_impl::ObjRdbRow>,
+            Option<::poprako_obj_dept::rdb_impl::ObjRdbRecord>,
         > {
             use ::diesel::OptionalExtension as _;
             use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
             use ::diesel::SelectableHelper as _;
             use ::diesel_async::RunQueryDsl as _;
 
-            let row = match lock {
+            let record = match lock {
                 true => #table::table
                     .filter(#table::f_id.eq(id))
                     .for_update()
-                    .select(ObjStateRow::as_select())
-                    .first::<ObjStateRow>(conn)
+                    .select(ObjStateRecord::as_select())
+                    .first::<ObjStateRecord>(conn)
                     .await,
                 false => #table::table
                     .filter(#table::f_id.eq(id))
-                    .select(ObjStateRow::as_select())
-                    .first::<ObjStateRow>(conn)
+                    .select(ObjStateRecord::as_select())
+                    .first::<ObjStateRecord>(conn)
                     .await,
             }
             .optional()
             .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
 
-            Ok(row.map(Into::into))
+            Ok(record.map(Into::into))
         }
 
         pub async fn load_many(
@@ -229,7 +231,7 @@ pub fn expand(table: &Path) -> TokenStream {
             id: &str,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
             Option<(
-                ::poprako_obj_dept::rdb_impl::ObjRdbRow,
+                ::poprako_obj_dept::rdb_impl::ObjRdbRecord,
                 ::time::OffsetDateTime,
             )>,
         > {
@@ -238,24 +240,24 @@ pub fn expand(table: &Path) -> TokenStream {
             use ::diesel::SelectableHelper as _;
             use ::diesel_async::RunQueryDsl as _;
 
-            let row = #table::table
+            let record = #table::table
                 .filter(#table::f_id.eq(id))
-                .select(ObjPresenceStateRow::as_select())
-                .first::<ObjPresenceStateRow>(conn)
+                .select(ObjPresenceStateRecord::as_select())
+                .first::<ObjPresenceStateRecord>(conn)
                 .await
                 .optional()
                 .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
 
-            Ok(row.map(|row| {
-                let state = ::poprako_obj_dept::rdb_impl::ObjRdbRow {
-                    ver: row.ver,
-                    key: row.key,
-                    f_is_uploaded: row.f_is_uploaded,
-                    hash: row.hash,
-                    ext: row.ext,
+            Ok(record.map(|record| {
+                let state = ::poprako_obj_dept::rdb_impl::ObjRdbRecord {
+                    ver: record.ver,
+                    key: record.key,
+                    f_is_uploaded: record.f_is_uploaded,
+                    hash: record.hash,
+                    ext: record.ext,
                 };
 
-                (state, row.revision)
+                (state, record.revision)
             }))
         }
 
@@ -279,24 +281,24 @@ pub fn expand(table: &Path) -> TokenStream {
                 return Ok(Vec::new());
             }
 
-            let rows = match lock {
+            let records = match lock {
                 true => #table::table
                     .filter(#table::f_id.eq_any(ids))
                     .order(#table::f_id.asc())
                     .for_update()
-                    .select(ObjStateEntryRow::as_select())
-                    .load::<ObjStateEntryRow>(conn)
+                    .select(ObjStateEntryRecord::as_select())
+                    .load::<ObjStateEntryRecord>(conn)
                     .await,
                 false => #table::table
                     .filter(#table::f_id.eq_any(ids))
                     .order(#table::f_id.asc())
-                    .select(ObjStateEntryRow::as_select())
-                    .load::<ObjStateEntryRow>(conn)
+                    .select(ObjStateEntryRecord::as_select())
+                    .load::<ObjStateEntryRecord>(conn)
                     .await,
             }
             .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
 
-            Ok(rows.into_iter().map(Into::into).collect())
+            Ok(records.into_iter().map(Into::into).collect())
         }
 
         pub async fn ensure_anchors(
@@ -313,7 +315,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
             let anchors = ids
                 .iter()
-                .map(|id| ObjAnchorRow {
+                .map(|id| ObjAnchorItem {
                     id,
                     ver: 0,
                 })
@@ -324,10 +326,10 @@ pub fn expand(table: &Path) -> TokenStream {
                 .on_conflict(#table::f_id)
                 .do_update()
                 .set(#table::f_version.eq(#table::f_version))
-                .returning(ObjStateEntryRow::as_returning())
-                .get_results::<ObjStateEntryRow>(conn)
+                .returning(ObjStateEntryRecord::as_returning())
+                .get_results::<ObjStateEntryRecord>(conn)
                 .await
-                .map(|rows| rows.into_iter().map(Into::into).collect())
+                .map(|records| records.into_iter().map(Into::into).collect())
                 .map_err(::poprako_obj_dept::rdb_impl::diesel_err)
         }
 
@@ -343,9 +345,9 @@ pub fn expand(table: &Path) -> TokenStream {
                 return Ok(());
             }
 
-            let rows = writes
+            let items = writes
                 .iter()
-                .map(|write| ObjWriteRow {
+                .map(|write| ObjWriteItem {
                     id: write.id,
                     ver: i64::from(write.ver),
                     key: write.key,
@@ -356,7 +358,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .collect::<Vec<_>>();
 
             ::diesel::insert_into(#table::table)
-                .values(&rows)
+                .values(&items)
                 .on_conflict(#table::f_id)
                 .do_update()
                 .set((
@@ -509,8 +511,8 @@ pub fn expand(table: &Path) -> TokenStream {
         }
 
         #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
-        fn assert_full_schema(row: FullRow) {
-            drop(row);
+        fn assert_full_schema(record: FullRecord) {
+            drop(record);
         }
     }
 }

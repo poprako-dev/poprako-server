@@ -12,8 +12,8 @@ use poprako_rdb_core::RdbConn;
 use crate::model::read::proj::comic_archive::ComicArchivePageArtworkSnapshot;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
-use crate::part_impl::repo::rdb_impl::entity::issue::IssueRow;
-use crate::part_impl::repo::rdb_impl::entity::page_artwork::PageArtworkRow;
+use crate::part_impl::repo::rdb_impl::entity::issue::IssueRecord;
+use crate::part_impl::repo::rdb_impl::entity::page_artwork::PageArtworkRecord;
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
 use crate::result::{BaseRest, accept};
 use crate::shared::result::diesel;
@@ -24,19 +24,19 @@ pub async fn load_archive_page_artworks(
     chapter_ids: &[String],
 ) -> BaseRest<HashMap<String, Vec<ComicArchivePageArtworkSnapshot>>> {
     //
-    let rows = t_page_artwork::table
+    let records = t_page_artwork::table
         .filter(t_page_artwork::f_chapter_id.eq_any(chapter_ids))
         .order((
             t_page_artwork::f_chapter_id.asc(),
             t_page_artwork::f_index.asc(),
         ))
-        .select(PageArtworkRow::as_select())
+        .select(PageArtworkRecord::as_select())
         .for_update()
-        .load::<PageArtworkRow>(conn)
+        .load::<PageArtworkRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let page_artwork_infos = rows
+    let page_artwork_infos = records
         .into_iter()
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<PageArtworkInfo>>>()?;
@@ -46,16 +46,16 @@ pub async fn load_archive_page_artworks(
         .map(|page_artwork_info| page_artwork_info.id.as_str())
         .collect::<Vec<_>>();
 
-    let rows = t_issue::table
+    let records = t_issue::table
         .filter(t_issue::f_page_artwork_id.eq_any(&page_artwork_ids))
         .order(t_issue::f_index.asc())
-        .select(IssueRow::as_select())
+        .select(IssueRecord::as_select())
         .for_update()
-        .load::<IssueRow>(conn)
+        .load::<IssueRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let issue_infos = rows
+    let issue_infos = records
         .into_iter()
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<IssueInfo>>>()?;

@@ -9,10 +9,10 @@ use crate::result::BaseError;
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::role::{RoleField, RoleMask};
 
-/// Raw database row for the `t_assignment` table. Returned by Diesel queries.
+/// Raw database record for the `t_assignment` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentInfoRow {
+pub struct AssignmentInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -30,53 +30,53 @@ pub struct AssignmentInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
+impl TryFrom<AssignmentInfoRecord> for AssignmentInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(row: AssignmentInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(record: AssignmentInfoRecord) -> Result<Self, Self::Error> {
         //
         let mut bits = 0;
 
-        if row.f_assigned_raw_provider_at.is_some() {
+        if record.f_assigned_raw_provider_at.is_some() {
             bits |= u32::from(RoleField::RAW_PROVIDER);
         }
 
-        if row.f_assigned_translator_at.is_some() {
+        if record.f_assigned_translator_at.is_some() {
             bits |= u32::from(RoleField::TRANSLATOR);
         }
 
-        if row.f_assigned_proofreader_at.is_some() {
+        if record.f_assigned_proofreader_at.is_some() {
             bits |= u32::from(RoleField::PROOFREADER);
         }
 
-        if row.f_assigned_typesetter_at.is_some() {
+        if record.f_assigned_typesetter_at.is_some() {
             bits |= u32::from(RoleField::TYPESETTER);
         }
 
-        if row.f_assigned_redrawer_at.is_some() {
+        if record.f_assigned_redrawer_at.is_some() {
             bits |= u32::from(RoleField::REDRAWER);
         }
 
-        if row.f_assigned_reviewer_at.is_some() {
+        if record.f_assigned_reviewer_at.is_some() {
             bits |= u32::from(RoleField::REVIEWER);
         }
 
-        if row.f_assigned_publisher_at.is_some() {
+        if record.f_assigned_publisher_at.is_some() {
             bits |= u32::from(RoleField::PUBLISHER);
         }
 
         let roles = RoleMask::try_from(bits)?;
 
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            user_id: row.f_user_id,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            user_id: record.f_user_id,
             user: None,
             chapter: None,
             roles,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
@@ -84,7 +84,7 @@ impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
 /// Insertable struct for creating a new record in the `t_assignment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentEntryRow<'a> {
+pub struct AssignmentItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -102,20 +102,19 @@ pub struct AssignmentEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> AssignmentEntryRow<'a> {
+impl<'a> AssignmentItem<'a> {
     #[must_use]
-    pub fn from_model_entry(
-        model_entry: &'a AssignmentEntryShape<'_>,
+    pub fn from_entry(
+        entry: &'a AssignmentEntryShape<'_>,
         now: OffsetDateTime,
     ) -> Self {
         //
-        let timestamps =
-            AssignmentRoleTimestamps::from_mask(model_entry.roles, now);
+        let timestamps = AssignmentRoleTimestamps::from_mask(entry.roles, now);
 
         Self {
-            f_id: &model_entry.id,
-            f_chapter_id: model_entry.chapter_id,
-            f_user_id: model_entry.user_id,
+            f_id: &entry.id,
+            f_chapter_id: entry.chapter_id,
+            f_user_id: entry.user_id,
             f_assigned_raw_provider_at: timestamps.f_raw_provider,
             f_assigned_translator_at: timestamps.f_translator,
             f_assigned_proofreader_at: timestamps.f_proofreader,
@@ -132,7 +131,7 @@ impl<'a> AssignmentEntryRow<'a> {
 /// Aspect struct for updating specific assignment role-timestamp fields by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentAspectRow {
+pub struct AssignmentPack {
     pub f_assigned_raw_provider_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_translator_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_proofreader_at: Option<Option<OffsetDateTime>>,
@@ -144,7 +143,7 @@ pub struct AssignmentAspectRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl AssignmentAspectRow {
+impl AssignmentPack {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -184,7 +183,7 @@ impl AssignmentAspectRow {
 }
 
 /// Timestamps for each role on an assignment, used to build the role-timestamp
-/// mapping for `AssignmentAspectRow` or `AssignmentEntryShape`.
+/// mapping for `AssignmentPack` or `AssignmentEntryShape`.
 pub struct AssignmentRoleTimestamps {
     pub f_raw_provider: Option<OffsetDateTime>,
     pub f_translator: Option<OffsetDateTime>,

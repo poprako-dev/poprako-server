@@ -30,7 +30,7 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page::DeletePages;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::issue::IssueEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, BaseRest, accept};
@@ -107,24 +107,24 @@ async fn verify_storage_validation_boundary(
         "blank-variant",
         "blank-layer",
     ] {
-        let issue_entry = entry("review-invalid", chapter_id, 3);
+        let entry = entry("review-invalid", chapter_id, 3);
 
-        let mut row = IssueEntryRow::try_from(&issue_entry).unwrap();
+        let mut item = IssueItem::try_from(&entry).unwrap();
 
         match variant {
-            "partial" => row.f_height = None,
-            "negative-index" => row.f_index = -1,
-            "infinite" => row.f_width = Some(f64::INFINITY),
-            "nan" => row.f_x_coord = Some(f64::NAN),
-            "outside" => row.f_width = Some(1.0),
-            "blank-variant" => row.f_variant = " \n\t",
-            "blank-layer" => row.f_layer_name = Some(" \n\t"),
-            _ => row.f_width = Some(0.0),
+            "partial" => item.f_height = None,
+            "negative-index" => item.f_index = -1,
+            "infinite" => item.f_width = Some(f64::INFINITY),
+            "nan" => item.f_x_coord = Some(f64::NAN),
+            "outside" => item.f_width = Some(1.0),
+            "blank-variant" => item.f_variant = " \n\t",
+            "blank-layer" => item.f_layer_name = Some(" \n\t"),
+            _ => item.f_width = Some(0.0),
         }
 
         assert_eq!(
             diesel::insert_into(t_issue::table)
-                .values(&row)
+                .values(&item)
                 .execute(&mut conn)
                 .await
                 .unwrap(),
@@ -132,7 +132,7 @@ async fn verify_storage_validation_boundary(
         );
 
         assert_eq!(
-            diesel::delete(t_issue::table.filter(t_issue::f_id.eq(&row.f_id)))
+            diesel::delete(t_issue::table.filter(t_issue::f_id.eq(&item.f_id)))
                 .execute(&mut conn)
                 .await
                 .unwrap(),

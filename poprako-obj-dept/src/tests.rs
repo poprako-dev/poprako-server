@@ -363,14 +363,14 @@ fn rdb_pool_wait_timeout_preserves_unavailable_classification() {
 #[test]
 fn upload_evidence_classification_preserves_active_metadata()
 -> crate::rest::ObjDeptRest<()> {
-    let unavailable = crate::rdb_impl::ObjRdbRow {
+    let unavailable = crate::rdb_impl::ObjRdbRecord {
         ver: 4,
         key: Some("page/page-1-4.png".into()),
         f_is_uploaded: Some(false),
         hash: Some(vec![7; 32]),
         ext: Some(String::from("png")),
     };
-    let available = crate::rdb_impl::ObjRdbRow {
+    let available = crate::rdb_impl::ObjRdbRecord {
         f_is_uploaded: Some(true),
         ..unavailable.clone()
     };

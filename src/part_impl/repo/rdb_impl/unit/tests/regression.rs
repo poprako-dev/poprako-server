@@ -17,7 +17,7 @@ use crate::result::accept;
 
 use super::{PREFIX, create_edit};
 
-// Verify repeated page identifiers preserve history ordering without duplicate rows.
+// Verify repeated page identifiers preserve history ordering without duplicate records.
 #[expect(
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"

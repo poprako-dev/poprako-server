@@ -67,7 +67,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                             msg:
                                 "object upload mark changed multiple \
-                                    rows".into(),
+                                    records".into(),
                         },
                     ),
                 }
@@ -109,7 +109,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                             msg:
                                 "object upload mark changed multiple \
-                                    rows".into(),
+                                    records".into(),
                         },
                     ),
                 }
@@ -174,10 +174,10 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     })
                     .collect::<Vec<_>>();
 
-                let rows =
+                let records =
                     #obj_module::ensure_anchors(context.conn(), &ids).await?;
 
-                if rows.len() != ids.len() {
+                if records.len() != ids.len() {
                     //
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
@@ -188,9 +188,9 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     );
                 }
 
-                let mut previous_rows = rows
+                let mut previous_records = records
                     .into_iter()
-                    .map(|entry| (entry.id, entry.row))
+                    .map(|entry| (entry.id, entry.record))
                     .collect::<::std::collections::HashMap<_, _>>();
                 let mut planned = Vec::with_capacity(specs.len());
 
@@ -202,15 +202,15 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                         <#obj as
                             ::poprako_obj_dept::key::KeyMap>::id(&spec.dom);
 
-                    let previous = previous_rows.remove(id);
+                    let previous = previous_records.remove(id);
 
                     let current_meta = previous
                         .clone()
-                        .map(|row| {
+                        .map(|record| {
                             //
-                            ::poprako_obj_dept::rdb_impl::decode_row::<#obj>(
+                            ::poprako_obj_dept::rdb_impl::decode_record::<#obj>(
                                 id,
-                                row,
+                                record,
                             )
                         })
                         .transpose()?
@@ -481,17 +481,17 @@ fn cleanup_step(
                 ids.sort_unstable();
                 ids.dedup();
 
-                let rows = #obj_module::load_many_for_update(
+                let records = #obj_module::load_many_for_update(
                     context.conn(),
                     &ids,
                 )
                 .await?;
-                let delete_keys = rows
+                let delete_keys = records
                     .into_iter()
                     .map(|entry| {
                         ::poprako_obj_dept::rdb_impl::active_key::<#obj>(
                             &entry.id,
-                            Some(&entry.row),
+                            Some(&entry.record),
                         )
                     })
                     .collect::<::poprako_obj_dept::rest::ObjDeptRest<Vec<_>>>()?

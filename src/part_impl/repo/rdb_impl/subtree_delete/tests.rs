@@ -5,17 +5,17 @@
 
 //! PostgreSQL correctness coverage for hierarchy mark-and-sweep deletion.
 
-// Generate typed Unit insert rows for each page in the requested subtree scale.
-fn subtree_unit_rows(
+// Generate typed Unit insert records for each page in the requested subtree scale.
+fn subtree_unit_items(
     pages: &[PageEntry],
     prefix: &str,
     scale: Scale,
-) -> Vec<UnitRow> {
+) -> Vec<UnitItem> {
     let now = OffsetDateTime::now_utc();
     pages
         .iter()
         .flat_map(|page| {
-            (0..scale.units_per_page).map(move |unit_index| UnitRow {
+            (0..scale.units_per_page).map(move |unit_index| UnitItem {
                 f_id: format!("{}unit-{}-{unit_index:04}", prefix, page.id),
                 f_page_id: page.id.clone(),
                 f_next_id: None,
@@ -61,11 +61,11 @@ use crate::part::repo::oper::subtree_delete::{
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterEntryRow;
-use crate::part_impl::repo::rdb_impl::entity::comic::ComicEntryRow;
-use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntryRow;
-use crate::part_impl::repo::rdb_impl::entity::page::PageEntryRow;
-use crate::part_impl::repo::rdb_impl::entity::workset::WorksetEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterItem;
+use crate::part_impl::repo::rdb_impl::entity::comic::ComicItem;
+use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
+use crate::part_impl::repo::rdb_impl::entity::page::PageItem;
+use crate::part_impl::repo::rdb_impl::entity::workset::WorksetItem;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_team, t_unit, t_workset,
 };
@@ -83,7 +83,7 @@ const PREFIX: &str = "rdb-test-subtree-";
     clippy::struct_field_names,
     reason = "This test projection retains the exact typed Diesel column names"
 )]
-struct UnitRow {
+struct UnitItem {
     f_id: String,
 
     f_page_id: String,
@@ -162,51 +162,51 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
         })
         .collect::<Vec<_>>();
 
-    let units = subtree_unit_rows(&pages, prefix, scale);
+    let units = subtree_unit_items(&pages, prefix, scale);
 
-    let comic_rows = comics
+    let comic_items = comics
         .iter()
-        .map(ComicEntryRow::try_from)
+        .map(ComicItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
-    let chapter_rows = chapters
+    let chapter_items = chapters
         .iter()
-        .map(ChapterEntryRow::try_from)
+        .map(ChapterItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
-    let page_rows = pages
+    let page_items = pages
         .iter()
-        .map(PageEntryRow::try_from)
+        .map(PageItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
 
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_comic::table)
-        .values(&comic_rows)
+        .values(&comic_items)
         .execute(&mut conn)
         .await
         .unwrap();
 
-    for rows in chapter_rows.chunks(1_000) {
+    for items in chapter_items.chunks(1_000) {
         diesel::insert_into(t_chapter::table)
-            .values(rows)
+            .values(items)
             .execute(&mut conn)
             .await
             .unwrap();
     }
 
-    for rows in page_rows.chunks(2_000) {
+    for items in page_items.chunks(2_000) {
         diesel::insert_into(t_page::table)
-            .values(rows)
+            .values(items)
             .execute(&mut conn)
             .await
             .unwrap();
     }
 
-    for rows in units.chunks(2_000) {
+    for records in units.chunks(2_000) {
         diesel::insert_into(t_unit::table)
-            .values(rows)
+            .values(records)
             .execute(&mut conn)
             .await
             .unwrap();

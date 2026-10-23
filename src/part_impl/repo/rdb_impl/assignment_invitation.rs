@@ -59,7 +59,7 @@ impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Create invitation rows and return resulting invitation info in tx scope.
+    // Create invitation records and return resulting invitation info in tx scope.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -99,7 +99,7 @@ impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Transactional lookup for invitation by code while skipping soft-excluded rows.
+    // Transactional lookup for invitation by code while skipping soft-excluded records.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.

@@ -9,10 +9,10 @@ use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_termbase;
 use crate::result::BaseError;
 
-/// Raw database row for a terminology base.
+/// Raw database record for a terminology base.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_termbase)]
-pub struct TermbaseInfoRow {
+pub struct TermbaseInfoRecord {
     pub f_id: String,
 
     pub f_team_id: Option<String>,
@@ -29,32 +29,32 @@ pub struct TermbaseInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<TermbaseInfoRow> for TermbaseInfo {
+impl TryFrom<TermbaseInfoRecord> for TermbaseInfo {
     type Error = BaseError;
 
-    fn try_from(row: TermbaseInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(record: TermbaseInfoRecord) -> Result<Self, Self::Error> {
         //
         Ok(Self {
-            id: row.f_id,
-            team_id: row.f_team_id,
-            comic_id: row.f_comic_id,
-            name: row.f_name,
-            description: row.f_description,
+            id: record.f_id,
+            team_id: record.f_team_id,
+            comic_id: record.f_comic_id,
+            name: record.f_name,
+            description: record.f_description,
             term_count: usize_from_i32(
-                row.f_term_count,
+                record.f_term_count,
                 "t_termbase.f_term_count",
             )?,
-            creator_id: row.f_creator_id,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            creator_id: record.f_creator_id,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
 
-/// Insertable terminology-base row.
+/// Insertable terminology-base record.
 #[derive(Insertable)]
 #[diesel(table_name = t_termbase)]
-pub struct TermbaseEntryRow<'a> {
+pub struct TermbaseItem<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: Option<&'a str>,
@@ -69,18 +69,18 @@ pub struct TermbaseEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a TermbaseEntry> for TermbaseEntryRow<'a> {
-    fn from(termbase_entry: &'a TermbaseEntry) -> Self {
+impl<'a> From<&'a TermbaseEntry> for TermbaseItem<'a> {
+    fn from(entry: &'a TermbaseEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &termbase_entry.id,
-            f_team_id: termbase_entry.team_id.as_deref(),
-            f_comic_id: termbase_entry.comic_id.as_deref(),
-            f_name: termbase_entry.trimmed_name(),
-            f_description: termbase_entry.trimmed_description(),
-            f_creator_id: &termbase_entry.creator_id,
+            f_id: &entry.id,
+            f_team_id: entry.team_id.as_deref(),
+            f_comic_id: entry.comic_id.as_deref(),
+            f_name: entry.trimmed_name(),
+            f_description: entry.trimmed_description(),
+            f_creator_id: &entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         }

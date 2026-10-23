@@ -12,8 +12,8 @@ use poprako_rdb_core::RdbConn;
 use crate::model::read::proj::comic_archive::ComicArchivePageSnapshot;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRecord;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
     t_page,
@@ -30,16 +30,16 @@ pub async fn load_archive_pages(
     source_chapter_ids: &[String],
 ) -> BaseRest<(Vec<PageInfo>, Vec<UnitInfo>)> {
     //
-    let page_rows = t_page
+    let page_records = t_page
         .filter(page_chapter_id.eq_any(source_chapter_ids))
-        .select(PageInfoRow::as_select())
+        .select(PageInfoRecord::as_select())
         .order_by((page_chapter_id.asc(), page_index.asc(), page_id.asc()))
         .for_update()
-        .load::<PageInfoRow>(conn)
+        .load::<PageInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let page_infos = page_rows
+    let page_infos = page_records
         .into_iter()
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<PageInfo>>>()?;
@@ -49,16 +49,16 @@ pub async fn load_archive_pages(
         .map(|page_info| page_info.id.clone())
         .collect::<Vec<_>>();
 
-    let unit_rows = t_unit
+    let unit_records = t_unit
         .filter(unit_page_id.eq_any(&source_page_ids))
-        .select(UnitInfoRow::as_select())
+        .select(UnitInfoRecord::as_select())
         .order_by(unit_page_id.asc())
         .for_update()
-        .load::<UnitInfoRow>(conn)
+        .load::<UnitInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let unit_infos = unit_rows
+    let unit_infos = unit_records
         .into_iter()
         .map(Into::into)
         .collect::<Vec<UnitInfo>>();
@@ -66,7 +66,7 @@ pub async fn load_archive_pages(
     accept((page_infos, unit_infos))
 }
 
-/// Assembles ordered Page details after all descendant rows have been locked.
+/// Assembles ordered Page details after all descendant records have been locked.
 pub fn assemble_page_snapshots(
     page_infos: Vec<PageInfo>,
     unit_infos: Vec<UnitInfo>,

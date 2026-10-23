@@ -8,10 +8,10 @@ use crate::model::write::term::TermEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_term;
 use crate::shape::write::term::TermEntryShape;
 
-/// Raw database row for a terminology entry.
+/// Raw database record for a terminology entry.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_term)]
-pub struct TermInfoRow {
+pub struct TermInfoRecord {
     pub f_id: String,
 
     pub f_termbase_id: String,
@@ -26,25 +26,25 @@ pub struct TermInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<TermInfoRow> for TermInfo {
-    fn from(row: TermInfoRow) -> Self {
+impl From<TermInfoRecord> for TermInfo {
+    fn from(record: TermInfoRecord) -> Self {
         Self {
-            id: row.f_id,
-            termbase_id: row.f_termbase_id,
-            source: row.f_source,
-            targets: row.f_targets.into_iter().flatten().collect(),
-            comment: row.f_comment,
-            creator_id: row.f_creator_id,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            id: record.f_id,
+            termbase_id: record.f_termbase_id,
+            source: record.f_source,
+            targets: record.f_targets.into_iter().flatten().collect(),
+            comment: record.f_comment,
+            creator_id: record.f_creator_id,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         }
     }
 }
 
-/// Insertable terminology-entry row.
+/// Insertable terminology item.
 #[derive(Insertable)]
 #[diesel(table_name = t_term)]
-pub struct TermEntryRow<'a> {
+pub struct TermItem<'a> {
     pub f_id: &'a str,
 
     pub f_termbase_id: &'a str,
@@ -59,40 +59,40 @@ pub struct TermEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a TermEntry> for TermEntryRow<'a> {
-    fn from(term_entry: &'a TermEntry) -> Self {
+impl<'a> From<&'a TermEntry> for TermItem<'a> {
+    fn from(entry: &'a TermEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &term_entry.id,
-            f_termbase_id: &term_entry.termbase_id,
-            f_source: term_entry.trimmed_source(),
-            f_targets: term_entry.trimmed_targets().map(Some).collect(),
-            f_comment: term_entry.trimmed_comment(),
-            f_creator_id: &term_entry.creator_id,
+            f_id: &entry.id,
+            f_termbase_id: &entry.termbase_id,
+            f_source: entry.trimmed_source(),
+            f_targets: entry.trimmed_targets().map(Some).collect(),
+            f_comment: entry.trimmed_comment(),
+            f_creator_id: &entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         }
     }
 }
 
-impl<'a> From<&'a TermEntryShape<'_>> for TermEntryRow<'a> {
-    fn from(term_entry: &'a TermEntryShape<'_>) -> Self {
+impl<'a> From<&'a TermEntryShape<'_>> for TermItem<'a> {
+    fn from(entry: &'a TermEntryShape<'_>) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &term_entry.id,
-            f_termbase_id: term_entry.termbase_id,
-            f_source: term_entry.source,
-            f_targets: term_entry
+            f_id: &entry.id,
+            f_termbase_id: entry.termbase_id,
+            f_source: entry.source,
+            f_targets: entry
                 .targets
                 .iter()
                 .map(|target| Some(*target))
                 .collect(),
-            f_comment: term_entry.comment,
-            f_creator_id: term_entry.creator_id,
+            f_comment: entry.comment,
+            f_creator_id: entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         }

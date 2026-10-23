@@ -20,7 +20,7 @@ use crate::result::{BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
-/// Delete relational rows owned by one chapter.
+/// Delete relational records owned by one chapter.
 pub async fn delete_chapter_rows(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -71,7 +71,7 @@ pub async fn delete_chapter_rows(
     accept(())
 }
 
-/// Delete relational rows owned by one comic.
+/// Delete relational records owned by one comic.
 pub async fn delete_comic_rows(
     conn: &mut RdbConn,
     comic_ids: &[String],
@@ -111,7 +111,7 @@ pub async fn delete_comic_rows(
     accept(())
 }
 
-/// Delete relational rows owned by one team.
+/// Delete relational records owned by one team.
 pub async fn delete_team_rows(
     conn: &mut RdbConn,
     team_id: &str,

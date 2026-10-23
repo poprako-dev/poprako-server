@@ -24,7 +24,7 @@ use crate::part::repo::oper::system_mail::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
-    SystemMailEntryRow, SystemMailInfoRow,
+    SystemMailInfoRecord, SystemMailItem,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::{
     f_created_at, f_id, f_read, f_receiver_id, t_system_mail,
@@ -34,14 +34,14 @@ use crate::shared::result::diesel;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-// Insert one system mail row and return nothing when persistence succeeds.
+// Insert one system mail item and return nothing when persistence succeeds.
 #[instrument(level = "info", skip_all)]
 async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
     //
-    let entry = SystemMailEntryRow::from(entry);
+    let item = SystemMailItem::from(entry);
 
     diesel::insert_into(t_system_mail)
-        .values(&entry)
+        .values(&item)
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -49,20 +49,20 @@ async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
     accept(())
 }
 
-// Insert one or more system mail rows with a single bulk database write.
+// Insert one or more system mail records with a single bulk database write.
 #[instrument(level = "info", skip_all)]
 async fn send_batch(
     conn: &mut RdbConn,
     entries: &[SystemMailEntry],
 ) -> BaseRest<()> {
     //
-    let entries = entries
+    let items = entries
         .iter()
-        .map(SystemMailEntryRow::from)
-        .collect::<Vec<SystemMailEntryRow<'_>>>();
+        .map(SystemMailItem::from)
+        .collect::<Vec<SystemMailItem<'_>>>();
 
     diesel::insert_into(t_system_mail)
-        .values(&entries)
+        .values(&items)
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -79,7 +79,7 @@ async fn list_infos(
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(spec.receiver_id.as_str()))
-        .select(SystemMailInfoRow::as_select())
+        .select(SystemMailInfoRecord::as_select())
         .into_boxed();
 
     query = match spec.is_read {
@@ -89,15 +89,15 @@ async fn list_infos(
         None => query,
     };
 
-    let rows = query
+    let records = query
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<SystemMailInfoRow>(conn)
+        .load::<SystemMailInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    accept(records.into_iter().map(Into::into).collect())
 }
 
 // Validate ownership for the complete batch, then mark it read with one update.

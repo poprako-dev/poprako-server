@@ -3,7 +3,7 @@ macro_rules! preload_by_ids {
     (
         $(
             $loader:ident {
-                row: $row:ty,
+                record: $record:ty,
                 info: $info:ty,
                 table: $table:ident,
                 convert: $convert:ident,
@@ -14,28 +14,28 @@ macro_rules! preload_by_ids {
             pub struct $loader;
 
             impl BatchByIds for $loader {
-                type Row = $row;
+                type Record = $record;
                 type Info = $info;
 
                 #[tracing::instrument(level = "info", skip_all)]
                 async fn load(
                     conn: &mut RdbConn,
                     ids: Vec<&str>,
-                ) -> BaseRest<Vec<$row>> {
+                ) -> BaseRest<Vec<$record>> {
                     $table::table
                         .filter($table::f_id.eq_any(ids))
-                        .select(<$row>::as_select())
+                        .select(<$record>::as_select())
                         .load(conn)
                         .await
                         .map_err(diesel)
                 }
 
-                fn into_entry(row: $row) -> BaseRest<(String, $info)> {
-                    let id = row.f_id.clone();
+                fn into_entry(record: $record) -> BaseRest<(String, $info)> {
+                    let id = record.f_id.clone();
 
                     let info: $info = preload_by_ids!(
                         @convert $convert $info,
-                        row
+                        record
                     );
 
                     Ok((id, info))
@@ -44,12 +44,12 @@ macro_rules! preload_by_ids {
         )*
     };
 
-    (@convert From $info:ty, $row:ident) => {
-        <$info>::from($row)
+    (@convert From $info:ty, $record:ident) => {
+        <$info>::from($record)
     };
 
-    (@convert TryFrom $info:ty, $row:ident) => {
-        <$info>::try_from($row)?
+    (@convert TryFrom $info:ty, $record:ident) => {
+        <$info>::try_from($record)?
     };
 }
 

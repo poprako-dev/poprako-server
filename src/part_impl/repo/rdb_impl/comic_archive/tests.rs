@@ -3,7 +3,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while the archived comic marker remains and active descendants are removed without changing workset counts.
+// comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive records persist as decodable bytes while the archived comic marker remains and active descendants are removed without changing workset counts.
 
 use super::*;
 
@@ -370,7 +370,7 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
         .await
         .unwrap();
 
-    let comic_archive_entry = comic_archive_complex::prepare_entry(
+    let entry = comic_archive_complex::prepare_entry(
         comic_archive_snapshot,
         archiver_id,
         OffsetDateTime::now_utc(),
@@ -413,13 +413,8 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
 
     let commit_error = nucl
         .coord(async |context| {
-            repo.step(
-                context,
-                &CommitComicArchive {
-                    entry: &comic_archive_entry,
-                },
-            )
-            .await
+            repo.step(context, &CommitComicArchive { entry: &entry })
+                .await
         })
         .await
         .map_err(BaseError::from)
@@ -437,7 +432,7 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
     let mut conn = shared.get().await.unwrap();
 
     let archive_count = t_comic_archive::table
-        .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
+        .filter(t_comic_archive::f_id.eq(&entry.record.id))
         .count()
         .get_result::<i64>(&mut conn)
         .await

@@ -12,10 +12,10 @@ use crate::value::role::RoleMask;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_member_invitation` table. Returned by Diesel queries.
+/// Raw database record for the `t_member_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationInfoRow {
+pub struct MemberInvitationInfoRecord {
     pub f_id: String,
 
     pub f_inviter_id: String,
@@ -31,11 +31,11 @@ pub struct MemberInvitationInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
+impl TryFrom<MemberInvitationInfoRecord> for MemberInvitationInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(v: MemberInvitationInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(v: MemberInvitationInfoRecord) -> Result<Self, Self::Error> {
         //
         let roles = RoleMask::try_from(u32_from_i64(
             v.f_role_mask,
@@ -60,7 +60,7 @@ impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
 /// Insertable struct for creating a new record in the `t_member_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationEntryRow<'a> {
+pub struct MemberInvitationItem<'a> {
     pub f_id: &'a str,
 
     pub f_inviter_id: &'a str,
@@ -76,7 +76,7 @@ pub struct MemberInvitationEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
+impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationItem<'a> {
     fn from(entry: &'a MemberInvitationEntry) -> Self {
         Self {
             f_id: &entry.id,
@@ -94,18 +94,18 @@ impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
-/// Aspect struct for updating specific fields of a member-invitation record
+/// Pack struct for updating specific fields of a member-invitation record
 /// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationAspectRow {
+pub struct MemberInvitationPack {
     pub f_pending: Option<bool>,
     pub f_role_mask: Option<i64>,
 
     pub f_updated_at: OffsetDateTime,
 }
 
-impl MemberInvitationAspectRow {
+impl MemberInvitationPack {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {

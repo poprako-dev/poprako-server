@@ -14,7 +14,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::write::user::UserInfoRepl;
 use crate::part_impl::repo::rdb_impl::entity::user::{
-    UserAspectRow, UserInfoRow,
+    UserInfoRecord, UserPack,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_qid, t_user,
@@ -29,15 +29,15 @@ pub async fn find_info_by_qid(
     qid: &str,
 ) -> BaseRest<Option<UserInfo>> {
     //
-    let row = t_user
+    let record = t_user
         .filter(f_qid.eq(qid))
-        .select(UserInfoRow::as_select())
-        .get_result::<UserInfoRow>(conn)
+        .select(UserInfoRecord::as_select())
+        .get_result::<UserInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    row.map(TryInto::try_into).transpose()
+    record.map(TryInto::try_into).transpose()
 }
 
 /// Apply a user info replacement.
@@ -49,12 +49,12 @@ pub async fn update_info(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = UserAspectRow::new(now)
+    let pack = UserPack::new(now)
         .nickname(repl.trimmed_nickname())
         .qid(repl.trimmed_qid());
 
     diesel::update(t_user.filter(f_id.eq(&repl.id)))
-        .set(&aspect)
+        .set(&pack)
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -62,7 +62,7 @@ pub async fn update_info(
     accept(())
 }
 
-/// Load user info by ID, locking the row for update.
+/// Load user info by ID, locking the record for update.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
@@ -80,27 +80,29 @@ pub async fn get_info_by_id(
     get_info(conn, id, false).await
 }
 
-// Load user info with optional row locking.
+// Load user info with optional record locking.
 async fn get_info(
     conn: &mut RdbConn,
     id: &str,
     excluded: bool,
 ) -> BaseRest<UserInfo> {
     //
-    let query = t_user.filter(f_id.eq(id)).select(UserInfoRow::as_select());
+    let query = t_user
+        .filter(f_id.eq(id))
+        .select(UserInfoRecord::as_select());
 
-    let row = if excluded {
+    let record = if excluded {
         //
         query
             .for_update()
-            .get_result::<UserInfoRow>(conn)
+            .get_result::<UserInfoRecord>(conn)
             .await
             .optional()
             .map_err(diesel)?
     } else {
         //
         query
-            .get_result::<UserInfoRow>(conn)
+            .get_result::<UserInfoRecord>(conn)
             .await
             .optional()
             .map_err(diesel)?
@@ -112,7 +114,7 @@ async fn get_info(
         "get user info"
     };
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -124,5 +126,5 @@ async fn get_info(
         });
     };
 
-    row.try_into()
+    record.try_into()
 }

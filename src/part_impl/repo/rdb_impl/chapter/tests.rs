@@ -3,7 +3,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
+// chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter records in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 

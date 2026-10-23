@@ -1,6 +1,6 @@
 //! RDB-backed team repository.
 
-// Row locking and workset index allocation.
+// Record locking and workset index allocation.
 mod coordination;
 // Team lifecycle and profile persistence.
 mod info;
@@ -98,7 +98,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Persist a new team row within an open transaction and return persisted info.
+    // Persist a new team record within an open transaction and return persisted info.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -140,7 +140,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Load team info with row lock and exclusion rules for transactional safety.
+    // Load team info with record lock and exclusion rules for transactional safety.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -161,7 +161,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Acquire row lock for update sequencing before sensitive team writes.
+    // Acquire record lock for update sequencing before sensitive team writes.
     async fn step(
         &self,
         context: &mut RdbContext<L>,

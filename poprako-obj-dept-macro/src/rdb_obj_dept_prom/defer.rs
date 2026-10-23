@@ -13,7 +13,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
         #[derive(::diesel::Queryable, ::diesel::Selectable)]
         #[diesel(table_name = #table)]
         #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct TaskIdentityRow {
+        struct TaskIdentityRecord {
             #[diesel(column_name = f_id)]
             id: String,
 
@@ -37,7 +37,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
         #[derive(::diesel::Insertable)]
         #[diesel(table_name = #table)]
-        struct TaskInsertRow<'a> {
+        struct TaskItem<'a> {
             #[diesel(column_name = f_id)]
             id: &'a str,
 
@@ -107,9 +107,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 return Ok(());
             }
 
-            let rows = tasks
+            let items = tasks
                 .iter()
-                .map(|task| TaskInsertRow {
+                .map(|task| TaskItem {
                     id: &task.id,
                     topic,
                     oper: task.oper,
@@ -123,7 +123,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 .collect::<Vec<_>>();
 
             ::diesel::insert_into(#table::table)
-                .values(&rows)
+                .values(&items)
                 .on_conflict(#table::f_id)
                 .do_update()
                 .set(#table::f_id.eq(::diesel::upsert::excluded(#table::f_id)))
@@ -132,16 +132,16 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 .map_err(diesel_err)?;
 
             let ids = tasks.iter().map(|task| &task.id).collect::<Vec<_>>();
-            let rows = #table::table
+            let records = #table::table
                 .filter(#table::f_id.eq_any(ids))
-                .select(TaskIdentityRow::as_select())
-                .load::<TaskIdentityRow>(conn)
+                .select(TaskIdentityRecord::as_select())
+                .load::<TaskIdentityRecord>(conn)
                 .await
                 .map_err(diesel_err)?;
-            let rows = rows
+            let records = records
                 .into_iter()
-                .map(|row| {
-                    let TaskIdentityRow {
+                .map(|record| {
+                    let TaskIdentityRecord {
                         id,
                         topic,
                         oper,
@@ -150,7 +150,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                         image,
                         gen_no: gen_value,
                         status,
-                    } = row;
+                    } = record;
 
                     (
                         id,
@@ -167,7 +167,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 })
                 .collect::<HashMap<_, _>>();
 
-            if rows.len() != tasks.len() {
+            if records.len() != tasks.len() {
                 //
                 return Err(ObjDeptError::Unrecoverable {
                     msg: "object task batch identity is incomplete".into(),
@@ -176,7 +176,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
             for task in tasks {
                 //
-                let Some(row) = rows.get(&task.id) else {
+                let Some(record) = records.get(&task.id) else {
                     //
                     return Err(ObjDeptError::Unrecoverable {
                         msg: "object task batch identity is incomplete".into(),
@@ -184,21 +184,21 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 };
 
                 let (
-                    row_topic,
-                    row_oper,
-                    row_obj_id,
-                    row_ver,
-                    row_image,
-                    row_gen,
-                    row_status,
-                ) = row;
+                    record_topic,
+                    record_oper,
+                    record_obj_id,
+                    record_ver,
+                    record_image,
+                    record_gen,
+                    record_status,
+                ) = record;
 
-                let is_same_identity = row_topic == topic
-                    && row_oper == task.oper
-                    && row_obj_id == &task.key.id
-                    && *row_ver == i64::from(task.key.ver)
-                    && row_image == &task.key.image
-                    && *row_gen == ORDINARY_GENERATION;
+                let is_same_identity = record_topic == topic
+                    && record_oper == task.oper
+                    && record_obj_id == &task.key.id
+                    && *record_ver == i64::from(task.key.ver)
+                    && record_image == &task.key.image
+                    && *record_gen == ORDINARY_GENERATION;
 
                 if !is_same_identity {
                     //
@@ -207,11 +207,12 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     });
                 }
 
-                match row_status.as_str() {
+                match record_status.as_str() {
                     //
                     PENDING | PROCESSING => {}
 
                     OPERATOR => {
+                        //
                         return
                             Err(ObjDeptError::
                                 conflict("object task requires operator \

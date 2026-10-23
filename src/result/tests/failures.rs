@@ -11,12 +11,12 @@ use super::capture;
 use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::part_impl::auth::jwt_impl::JwtAuth;
-use crate::part_impl::repo::rdb_impl::entity::issue::IssueRow;
+use crate::part_impl::repo::rdb_impl::entity::issue::IssueRecord;
 use crate::result::BaseError;
 use crate::shared::result::diesel;
 
-fn issue_row(index: i32) -> IssueRow {
-    IssueRow {
+fn issue_record(index: i32) -> IssueRecord {
+    IssueRecord {
         f_id: "issue-1".into(),
         f_page_artwork_id: "artwork-1".into(),
         f_index: index,
@@ -228,7 +228,7 @@ fn invalid_jwt_lifetimes_log_without_the_signing_secret() {
 
 #[test]
 fn incomplete_stored_rectangles_log_ids_without_private_content() {
-    let mut row = issue_row(0);
+    let mut row = issue_record(0);
 
     row.f_x_coord = Some(0.1);
 
@@ -272,7 +272,7 @@ fn corrupt_unit_chains_record_one_internal_failure() {
 
 #[test]
 fn invalid_database_counts_keep_the_field_and_value() {
-    let row = issue_row(-1);
+    let row = issue_record(-1);
 
     let (result, events) =
         capture(LevelFilter::ERROR, || IssueInfo::try_from(row));

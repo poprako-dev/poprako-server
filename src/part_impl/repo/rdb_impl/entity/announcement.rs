@@ -7,10 +7,10 @@ use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::write::announcement::AnnouncementEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 
-/// Raw database row for the `t_announcement` table. Returned by Diesel queries.
+/// Raw database record for the `t_announcement` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_announcement)]
-pub struct AnnouncementInfoRow {
+pub struct AnnouncementInfoRecord {
     pub f_id: String,
 
     pub f_team_id: String,
@@ -25,7 +25,7 @@ pub struct AnnouncementInfoRow {
 /// Insertable struct for creating a new record in the `t_announcement` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_announcement)]
-pub struct AnnouncementEntryRow<'a> {
+pub struct AnnouncementItem<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
@@ -37,7 +37,7 @@ pub struct AnnouncementEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
+impl<'a> From<&'a AnnouncementEntry> for AnnouncementItem<'a> {
     fn from(entry: &'a AnnouncementEntry) -> Self {
         Self {
             f_id: &entry.id,
@@ -50,16 +50,16 @@ impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
     }
 }
 
-impl From<AnnouncementInfoRow> for AnnouncementInfo {
-    fn from(row: AnnouncementInfoRow) -> Self {
+impl From<AnnouncementInfoRecord> for AnnouncementInfo {
+    fn from(record: AnnouncementInfoRecord) -> Self {
         Self {
-            id: row.f_id,
-            team_id: row.f_team_id,
-            user_id: row.f_user_id,
+            id: record.f_id,
+            team_id: record.f_team_id,
+            user_id: record.f_user_id,
             user: None,
-            title: row.f_title,
-            content: row.f_content,
-            created_at: row.f_created_at,
+            title: record.f_title,
+            content: record.f_content,
+            created_at: record.f_created_at,
         }
     }
 }

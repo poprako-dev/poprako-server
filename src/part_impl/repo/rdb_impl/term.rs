@@ -28,7 +28,7 @@ use crate::part::repo::oper::term::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
-    TermEntryRow, TermInfoRow,
+    TermInfoRecord, TermItem,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
@@ -90,7 +90,7 @@ impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Create a term row inside an active transaction boundary.
+    // Create a term record inside an active transaction boundary.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -155,7 +155,7 @@ impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Acquire a row-level lock for a term within a transaction.
+    // Acquire a record-level lock for a term within a transaction.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -225,7 +225,7 @@ impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Remove one term row inside an active transaction boundary.
+    // Remove one term record inside an active transaction boundary.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -267,7 +267,7 @@ where
 #[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    // Remove the single term row and return once persistence succeeds.
+    // Remove the single term record and return once persistence succeeds.
     diesel::delete(t_term.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -285,7 +285,7 @@ fn escape_ilike_pattern(input: &str) -> String {
         .replace('_', "\\_")
 }
 
-// Apply a partial update payload to an existing term row.
+// Apply a partial update payload to an existing term record.
 #[instrument(level = "info", skip_all)]
 async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
     //
@@ -310,7 +310,7 @@ async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
 #[instrument(level = "info", skip_all)]
 async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
     //
-    // Remove dependency rows in bulk when the parent termbase is being cleaned up.
+    // Remove dependency records in bulk when the parent termbase is being cleaned up.
     diesel::delete(t_term.filter(f_termbase_id.eq(termbase_id)))
         .execute(conn)
         .await
@@ -319,24 +319,21 @@ async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
     accept(())
 }
 
-// Insert a new term row and return the inserted row as response info.
+// Insert a new term record and return the inserted record as response info.
 #[instrument(level = "info", skip_all)]
-async fn create(
-    conn: &mut RdbConn,
-    term_entry: &TermEntry,
-) -> BaseRest<TermInfo> {
+async fn create(conn: &mut RdbConn, entry: &TermEntry) -> BaseRest<TermInfo> {
     //
-    // Convert API entry to DB row shape and rely on returning() to fetch the saved state.
-    let entry = TermEntryRow::from(term_entry);
+    // Convert API entry to DB record shape and rely on returning() to fetch the saved state.
+    let item = TermItem::from(entry);
 
-    let row = diesel::insert_into(t_term)
-        .values(&entry)
-        .returning(TermInfoRow::as_returning())
-        .get_result::<TermInfoRow>(conn)
+    let record = diesel::insert_into(t_term)
+        .values(&item)
+        .returning(TermInfoRecord::as_returning())
+        .get_result::<TermInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept(record.into())
 }
 
 // Load every terminology entry in deterministic source order.
@@ -346,23 +343,23 @@ async fn list_all_infos(
     termbase_id: &str,
 ) -> BaseRest<Vec<TermInfo>> {
     //
-    let rows = t_term
+    let records = t_term
         .filter(f_termbase_id.eq(termbase_id))
         .order_by((f_source.asc(), f_id.asc()))
-        .select(TermInfoRow::as_select())
-        .load::<TermInfoRow>(conn)
+        .select(TermInfoRecord::as_select())
+        .load::<TermInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    accept(records.into_iter().map(Into::into).collect())
 }
 
-// Locks a term row for mutation safety.
+// Locks a term record for mutation safety.
 #[instrument(level = "info", skip_all)]
 async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    // Confirm existence and keep the row locked until the current transaction ends.
-    let row = t_term
+    // Confirm existence and keep the record locked until the current transaction ends.
+    let record = t_term
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
@@ -371,14 +368,14 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .optional()
         .map_err(diesel)?;
 
-    let Some(_) = row else {
+    let Some(_) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
             message: trl("error-term-not-found");
             error_variant = ?ExpectedVariant::Args,
             term_id = %id,
-            operation = "lock term row",
+            operation = "lock term record",
             "term operation rejected",
         });
     };
@@ -403,7 +400,7 @@ async fn list_infos(
     // Start with a termbase constraint, then apply optional fuzzy source matching.
     let mut query = t_term
         .filter(f_termbase_id.eq(termbase_id))
-        .select(TermInfoRow::as_select())
+        .select(TermInfoRecord::as_select())
         .into_boxed();
 
     if let Some(fuzzy_source) = fuzzy_source {
@@ -415,31 +412,31 @@ async fn list_infos(
         query = query.filter(f_source.ilike(pattern));
     }
 
-    let rows = query
+    let records = query
         .order_by(f_updated_at.desc())
         .offset(i64::from(offset))
         .limit(i64::from(limit.get()))
-        .load::<TermInfoRow>(conn)
+        .load::<TermInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    accept(records.into_iter().map(Into::into).collect())
 }
 
-// Load one term row by id and convert it into response info.
+// Load one term record by id and convert it into response info.
 #[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
-    // Read the row with strict id match and convert it to a rich term view.
-    let row = t_term
+    // Read the record with strict id match and convert it to a rich term view.
+    let record = t_term
         .filter(f_id.eq(id))
-        .select(TermInfoRow::as_select())
-        .get_result::<TermInfoRow>(conn)
+        .select(TermInfoRecord::as_select())
+        .get_result::<TermInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -451,5 +448,5 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
         });
     };
 
-    accept(row.into())
+    accept(record.into())
 }

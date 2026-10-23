@@ -16,7 +16,7 @@ use poprako_rdb_core::RdbConn;
 
 use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
-use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRecord;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_index as page_index, t_page,
@@ -112,29 +112,29 @@ pub async fn list_infos_in_chapter_order(
         return accept(Vec::new());
     }
 
-    let rows = t_unit
+    let records = t_unit
         .inner_join(t_page)
         .filter(unit_id.eq_any(ids))
         .filter(f_hidden_at.is_null())
-        .select((page_index, UnitInfoRow::as_select()))
-        .load::<(i32, UnitInfoRow)>(conn)
+        .select((page_index, UnitInfoRecord::as_select()))
+        .load::<(i32, UnitInfoRecord)>(conn)
         .await
         .map_err(diesel)?;
 
-    if rows.len() != ids.len() {
+    if records.len() != ids.len() {
         return Err(corrupt_unit_chain_err());
     }
 
-    let mut candidates = rows
+    let mut candidates = records
         .into_iter()
-        .map(|(persisted_page_index, row)| {
+        .map(|(persisted_page_index, record)| {
             //
             Ok(RankedUnitInfo {
                 page_index: usize_from_i32(
                     persisted_page_index,
                     "t_page.f_index",
                 )?,
-                unit_info: UnitInfo::from(row),
+                unit_info: UnitInfo::from(record),
             })
         })
         .collect::<BaseRest<Vec<_>>>()?;
@@ -173,10 +173,10 @@ pub async fn list_infos_by_page_ids(
     page_ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
-    let rows = t_unit
+    let records = t_unit
         .filter(f_page_id.eq_any(page_ids))
-        .select(UnitInfoRow::as_select())
-        .load::<UnitInfoRow>(conn)
+        .select(UnitInfoRecord::as_select())
+        .load::<UnitInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
@@ -189,9 +189,9 @@ pub async fn list_infos_by_page_ids(
     let mut unit_infos_by_position =
         (0..page_ids.len()).map(|_| Vec::new()).collect::<Vec<_>>();
 
-    for row in rows {
+    for record in records {
         //
-        let unit_info = UnitInfo::from(row);
+        let unit_info = UnitInfo::from(record);
 
         let position = position_by_page_id
             .get(unit_info.page_id.as_str())
@@ -228,14 +228,14 @@ pub async fn list_infos_by_ids(
     ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
-    let rows = t_unit
+    let records = t_unit
         .filter(unit_id.eq_any(ids))
-        .select(UnitInfoRow::as_select())
-        .load::<UnitInfoRow>(conn)
+        .select(UnitInfoRecord::as_select())
+        .load::<UnitInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(UnitInfo::from).collect())
+    accept(records.into_iter().map(UnitInfo::from).collect())
 }
 
 /// Lists the complete Unit chain, including tombstones.
@@ -248,13 +248,13 @@ pub async fn list_orders(
     //
     let sentinel_limit = i64::from(batch_size.get()) + 1;
 
-    let mut rows =
+    let mut records =
         Vec::<(String, Option<String>, Option<OffsetDateTime>)>::new();
 
     loop {
         //
         let mut chunk =
-            match rows.last().map(|(id, _, _)| id.as_str()) {
+            match records.last().map(|(id, _, _)| id.as_str()) {
                 //
                 Some(after_id) => t_unit
                     .filter(f_page_id.eq(page_id))
@@ -290,14 +290,14 @@ pub async fn list_orders(
             return Err(corrupt_unit_chain_err());
         }
 
-        rows.extend(chunk);
+        records.extend(chunk);
 
         if !has_next_chunk {
             break;
         }
     }
 
-    let mut orders = rows
+    let mut orders = records
         .into_iter()
         .map(|(id, next_id, hidden_at)| UnitOrder {
             id,
@@ -343,7 +343,7 @@ async fn load_unit_ranks(
 
     page_ids.sort_unstable();
 
-    let rows = t_unit
+    let records = t_unit
         .filter(f_page_id.eq_any(&page_ids))
         .select((f_page_id, unit_id, unit_next_id))
         .load::<(String, String, Option<String>)>(conn)
@@ -352,7 +352,7 @@ async fn load_unit_ranks(
 
     let mut links_by_page_id = HashMap::<String, Vec<UnitLink>>::new();
 
-    for (page_id, id, next_id) in rows {
+    for (page_id, id, next_id) in records {
         //
         links_by_page_id
             .entry(page_id)

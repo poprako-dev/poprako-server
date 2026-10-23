@@ -134,7 +134,7 @@ async fn create_second_page(
 
             page_infos.into_iter().next().ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    msg: "page creation returned no row".into(),
+                    msg: "page creation returned no record".into(),
                 }
             })
         })

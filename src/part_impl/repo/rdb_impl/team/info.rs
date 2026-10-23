@@ -15,7 +15,7 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::spec::team::TeamListSpec;
 use crate::model::write::team::{TeamEntry, TeamRepl};
 use crate::part_impl::repo::rdb_impl::entity::team::{
-    TeamAspectRow, TeamEntryRow, TeamInfoRow,
+    TeamInfoRecord, TeamItem, TeamPack,
 };
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
@@ -37,8 +37,8 @@ pub fn missing_team(id: &str, operation: &str) -> BaseError {
     }
 }
 
-// Insert a team entry and return the persisted team info.
-/// Insert a new team row from an entry.
+// Insert a team domain entry and return the persisted team info.
+/// Insert a new team record from a domain entry.
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
@@ -47,7 +47,7 @@ pub async fn create(
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = TeamEntryRow {
+    let item = TeamItem {
         f_id: &entry.id,
         f_name: entry.trimmed_name(),
         f_description: entry.trimmed_description(),
@@ -56,14 +56,14 @@ pub async fn create(
         f_updated_at: now,
     };
 
-    let row = diesel::insert_into(t_team)
-        .values(&entry)
-        .returning(TeamInfoRow::as_returning())
-        .get_result::<TeamInfoRow>(conn)
+    let record = diesel::insert_into(t_team)
+        .values(&item)
+        .returning(TeamInfoRecord::as_returning())
+        .get_result::<TeamInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    row.try_into()
+    record.try_into()
 }
 
 // Load one team by id and convert it into DTO view model.
@@ -74,16 +74,16 @@ pub async fn get_info_by_id(
     id: &str,
 ) -> BaseRest<TeamInfo> {
     //
-    let row = t_team
+    let record = t_team
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(TeamInfoRow::as_select())
-        .get_result::<TeamInfoRow>(conn)
+        .select(TeamInfoRecord::as_select())
+        .get_result::<TeamInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -95,7 +95,7 @@ pub async fn get_info_by_id(
         });
     };
 
-    row.try_into()
+    record.try_into()
 }
 
 // Query teams using an optional membership filter, ordering and pagination.
@@ -122,16 +122,16 @@ pub async fn list_infos(
         None => query,
     };
 
-    let rows = query
-        .select(TeamInfoRow::as_select())
+    let records = query
+        .select(TeamInfoRecord::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<TeamInfoRow>(conn)
+        .load::<TeamInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows.into_iter().map(TryInto::try_into).collect()
+    records.into_iter().map(TryInto::try_into).collect()
 }
 
 // Update mutable team profile fields for the target team.
@@ -141,7 +141,7 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = TeamAspectRow::new(now)
+    let pack = TeamPack::new(now)
         .name(repl.trimmed_name())
         .description(repl.trimmed_description());
 
@@ -150,7 +150,7 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
             .filter(f_id.eq(&repl.id))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -162,25 +162,25 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     accept(())
 }
 
-// Load one team info and lock the row for transactional updates.
-/// Load a team info by ID, locking the row for update.
+// Load one team info and lock the record for transactional updates.
+/// Load a team info by ID, locking the record for update.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseRest<TeamInfo> {
     //
-    let row = t_team
+    let record = t_team
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(TeamInfoRow::as_select())
+        .select(TeamInfoRecord::as_select())
         .for_update()
-        .get_result::<TeamInfoRow>(conn)
+        .get_result::<TeamInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -192,15 +192,15 @@ pub async fn get_info_excluded(
         });
     };
 
-    row.try_into()
+    record.try_into()
 }
 
-// Lock a team row to serialize concurrent writes in the current transaction.
-/// Lock a team row for a transactional update.
+// Lock a team record to serialize concurrent writes in the current transaction.
+/// Lock a team record for a transactional update.
 #[instrument(level = "info", skip_all)]
 pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    let row = t_team
+    let record = t_team
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
         .select(f_id)
@@ -210,14 +210,14 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .optional()
         .map_err(diesel)?;
 
-    let Some(_) = row else {
+    let Some(_) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
             message: trl("error-team-not-found");
             error_variant = ?ExpectedVariant::Args,
             team_id = %id,
-            operation = "lock team row",
+            operation = "lock team record",
             "team operation rejected",
         });
     };

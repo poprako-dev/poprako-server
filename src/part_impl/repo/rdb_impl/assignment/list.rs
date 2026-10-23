@@ -9,7 +9,7 @@ use poprako_rdb_core::RdbConn;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
-use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRecord;
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
     f_assigned_proofreader_at, f_assigned_publisher_at,
@@ -126,27 +126,27 @@ pub async fn list_infos(
     }
 
     let query = query
-        .select(AssignmentInfoRow::as_select())
+        .select(AssignmentInfoRecord::as_select())
         .order_by((f_created_at.desc(), f_id.asc()));
 
     // Pull one page when pagination is set; otherwise return the full list.
-    let rows = match page {
+    let records = match page {
         //
         Some((offset, limit)) => {
             //
             query
                 .offset(i64::from(offset))
                 .limit(i64::from(limit.get()))
-                .load::<AssignmentInfoRow>(conn)
+                .load::<AssignmentInfoRecord>(conn)
                 .await
         }
 
-        None => query.load::<AssignmentInfoRow>(conn).await,
+        None => query.load::<AssignmentInfoRecord>(conn).await,
     }
     .map_err(diesel)?;
 
-    // Convert DB rows to domain values, then hydrate the configured eager relations.
-    let mut infos = rows_into_infos(rows)?;
+    // Convert DB records to domain values, then hydrate the configured eager relations.
+    let mut infos = records_into_infos(records)?;
 
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
         .await?;
@@ -154,15 +154,15 @@ pub async fn list_infos(
     accept(infos)
 }
 
-// Map query rows into public-facing assignment infos by converting each row and
+// Map query records into public-facing assignment infos by converting each record and
 // bubbling mapping errors immediately.
-fn rows_into_infos(
-    rows: Vec<AssignmentInfoRow>,
+fn records_into_infos(
+    records: Vec<AssignmentInfoRecord>,
 ) -> BaseRest<Vec<AssignmentInfo>> {
-    rows.into_iter().map(row_into_info).collect()
+    records.into_iter().map(record_into_info).collect()
 }
 
-// Convert one persisted assignment row into the API-facing info DTO.
-fn row_into_info(row: AssignmentInfoRow) -> BaseRest<AssignmentInfo> {
-    row.try_into()
+// Convert one persisted assignment record into the API-facing info DTO.
+fn record_into_info(record: AssignmentInfoRecord) -> BaseRest<AssignmentInfo> {
+    record.try_into()
 }

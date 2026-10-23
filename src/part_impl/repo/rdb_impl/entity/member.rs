@@ -9,10 +9,10 @@ use crate::value::role::{RoleField, RoleMask};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_member` table. Returned by Diesel queries.
+/// Raw database record for the `t_member` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member)]
-pub struct MemberInfoRow {
+pub struct MemberInfoRecord {
     pub f_id: String,
 
     pub f_user_id: String,
@@ -40,7 +40,7 @@ pub struct MemberInfoRow {
 /// Insertable struct for creating a new record in the `t_member` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
-pub struct MemberEntryRow<'a> {
+pub struct MemberItem<'a> {
     pub f_id: &'a str,
 
     pub f_user_id: &'a str,
@@ -68,7 +68,7 @@ pub struct MemberEntryRow<'a> {
 /// Aspect struct for updating specific fields of a member record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member)]
-pub struct MemberAspectRow<'a> {
+pub struct MemberPack<'a> {
     pub f_user_nickname: Option<&'a str>,
 
     pub f_user_last_active_at: Option<OffsetDateTime>,
@@ -86,7 +86,7 @@ pub struct MemberAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> MemberAspectRow<'a> {
+impl<'a> MemberPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -223,8 +223,8 @@ impl<'a> MemberAspectRow<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberInfoRow> for MemberInfo {
-    fn from(v: MemberInfoRow) -> Self {
+impl From<MemberInfoRecord> for MemberInfo {
+    fn from(v: MemberInfoRecord) -> Self {
         //
         let mut bits = 0;
 

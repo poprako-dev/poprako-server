@@ -23,10 +23,10 @@ use crate::shape::write::comic::ComicEntryShape;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_comic` table. Returned by Diesel queries.
+/// Raw database record for the `t_comic` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
-pub struct ComicInfoRow {
+pub struct ComicInfoRecord {
     pub f_id: String,
 
     pub f_workset_id: String,
@@ -49,11 +49,11 @@ pub struct ComicInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<ComicInfoRow> for ComicInfo {
+impl TryFrom<ComicInfoRecord> for ComicInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(v: ComicInfoRow) -> BaseRest<Self> {
+    fn try_from(v: ComicInfoRecord) -> BaseRest<Self> {
         //
         accept(Self {
             id: v.f_id,
@@ -83,7 +83,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 /// Insertable struct for creating a new record in the `t_comic` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
-pub struct ComicEntryRow<'a> {
+pub struct ComicItem<'a> {
     pub f_id: &'a str,
 
     pub f_workset_id: &'a str,
@@ -102,26 +102,24 @@ pub struct ComicEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ComicEntryShape<'_>> for ComicEntryRow<'a> {
+impl<'a> TryFrom<&'a ComicEntryShape<'_>> for ComicItem<'a> {
     type Error = BaseError;
 
-    fn try_from(
-        comic_entry: &'a ComicEntryShape<'_>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(entry: &'a ComicEntryShape<'_>) -> Result<Self, Self::Error> {
         //
         Ok(Self {
-            f_id: &comic_entry.id,
-            f_workset_id: comic_entry.workset_id,
-            f_index: i32_from_usize(comic_entry.index, "t_comic.f_index")?,
-            f_title: comic_entry.trimmed_title(),
-            f_author: comic_entry.trimmed_author(),
-            f_description: comic_entry.trimmed_description(),
+            f_id: &entry.id,
+            f_workset_id: entry.workset_id,
+            f_index: i32_from_usize(entry.index, "t_comic.f_index")?,
+            f_title: entry.trimmed_title(),
+            f_author: entry.trimmed_author(),
+            f_description: entry.trimmed_description(),
             f_composed_title: comic_complex::compose_title(
-                comic_entry.index,
-                comic_entry.trimmed_author(),
-                comic_entry.trimmed_title(),
+                entry.index,
+                entry.trimmed_author(),
+                entry.trimmed_title(),
             ),
-            f_creator_id: comic_entry.creator_id,
+            f_creator_id: entry.creator_id,
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
@@ -131,10 +129,10 @@ impl<'a> TryFrom<&'a ComicEntryShape<'_>> for ComicEntryRow<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
-/// Aspect struct for updating specific fields of a comic record identified by id.
+/// Pack struct for updating specific fields of a comic record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
-pub struct ComicAspectRow<'a> {
+pub struct ComicPack<'a> {
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
@@ -148,7 +146,7 @@ pub struct ComicAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> ComicAspectRow<'a> {
+impl<'a> ComicPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {

@@ -106,7 +106,7 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
 
     assert!(manifest.contains("f_updated_at . eq (revision)"));
 
-    assert!(implementations.contains("rows . len () != ids . len ()"));
+    assert!(implementations.contains("records . len () != ids . len ()"));
 
     Ok(())
 }

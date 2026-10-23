@@ -20,7 +20,7 @@ use crate::util::Patch;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
-pub struct UnitInfoRow {
+pub struct UnitInfoRecord {
     pub f_id: String,
 
     pub f_page_id: String,
@@ -47,35 +47,35 @@ pub struct UnitInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<UnitInfoRow> for UnitInfo {
-    fn from(row: UnitInfoRow) -> Self {
+impl From<UnitInfoRecord> for UnitInfo {
+    fn from(record: UnitInfoRecord) -> Self {
         Self {
-            id: row.f_id,
-            page_id: row.f_page_id,
-            next_id: row.f_next_id,
-            is_bubble: row.f_is_bubble,
-            is_flagged: row.f_is_flagged,
+            id: record.f_id,
+            page_id: record.f_page_id,
+            next_id: record.f_next_id,
+            is_bubble: record.f_is_bubble,
+            is_flagged: record.f_is_flagged,
             coord: UnitCoord {
-                x_coord: row.f_x_coord,
-                y_coord: row.f_y_coord,
+                x_coord: record.f_x_coord,
+                y_coord: record.f_y_coord,
             },
-            typography_note: row.f_typography_note,
-            translation_note: row.f_translation_note,
-            translated_text: row.f_translated_text,
-            last_translator_id: row.f_last_translator_id,
-            is_proofread: row.f_is_proofread,
-            proofread_text: row.f_proofread_text,
-            last_proofreader_id: row.f_last_proofreader_id,
-            hidden_at: row.f_hidden_at,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            typography_note: record.f_typography_note,
+            translation_note: record.f_translation_note,
+            translated_text: record.f_translated_text,
+            last_translator_id: record.f_last_translator_id,
+            is_proofread: record.f_is_proofread,
+            proofread_text: record.f_proofread_text,
+            last_proofreader_id: record.f_last_proofreader_id,
+            hidden_at: record.f_hidden_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         }
     }
 }
 
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
-pub struct UnitEntryRow<'a> {
+pub struct UnitItem<'a> {
     pub f_id: &'a str,
 
     pub f_page_id: &'a str,
@@ -102,7 +102,7 @@ pub struct UnitEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UnitEntryRow<'a> {
+impl<'a> UnitItem<'a> {
     #[must_use]
     pub fn from_edit(
         page_id: &'a str,
@@ -170,7 +170,7 @@ impl<'a> UnitEntryRow<'a> {
 
 #[derive(AsChangeset)]
 #[diesel(table_name = t_unit)]
-pub struct UnitAspectRow<'a> {
+pub struct UnitPack<'a> {
     pub f_next_id: Option<Option<&'a str>>,
     pub f_hidden_at: Option<Option<OffsetDateTime>>,
 
@@ -193,7 +193,7 @@ pub struct UnitAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UnitAspectRow<'a> {
+impl<'a> UnitPack<'a> {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -310,7 +310,7 @@ impl<'a> UnitAspectRow<'a> {
     }
 }
 
-impl Default for UnitAspectRow<'_> {
+impl Default for UnitPack<'_> {
     fn default() -> Self {
         Self::new()
     }

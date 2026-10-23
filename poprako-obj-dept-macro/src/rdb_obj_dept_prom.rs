@@ -108,7 +108,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             #[derive(::diesel::Queryable, ::diesel::Selectable)]
             #[diesel(table_name = #table)]
             #[diesel(check_for_backend(::diesel::pg::Pg))]
-            struct FullRow {
+            struct FullRecord {
                 #[diesel(column_name = f_id)]
                 id: String,
 
@@ -146,7 +146,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             #[derive(::diesel::Queryable, ::diesel::Selectable)]
             #[diesel(table_name = #table)]
             #[diesel(check_for_backend(::diesel::pg::Pg))]
-            struct TaskRow {
+            struct TaskRecord {
                 #[diesel(column_name = f_id)]
                 id: String,
 
@@ -170,15 +170,15 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 claim_token: Option<Uuid>,
             }
 
-            impl TryFrom<TaskRow> for ObjDeptPromTask {
+            impl TryFrom<TaskRecord> for ObjDeptPromTask {
                 //
                 type Error = ObjDeptError;
 
-                fn try_from(row: TaskRow) -> ObjDeptRest<Self> {
+                fn try_from(record: TaskRecord) -> ObjDeptRest<Self> {
                     //
-                    let Some(claim_token) = row.claim_token else {
+                    let Some(claim_token) = record.claim_token else {
                         //
-                        ::tracing::error!(task_id = row.id,
+                        ::tracing::error!(task_id = record.id,
                             "claimed object task has no execution credential");
 
                         return Err(ObjDeptError::Unrecoverable {
@@ -189,14 +189,14 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     };
 
                     Ok(Self {
-                        id: row.id,
-                        topic: row.topic,
-                        oper: row.oper,
-                        obj_id: row.obj_id,
-                        ver: row.ver,
-                        image: row.image,
-                        gen_no: row.gen_no,
-                        retried_count: row.retried_count,
+                        id: record.id,
+                        topic: record.topic,
+                        oper: record.oper,
+                        obj_id: record.obj_id,
+                        ver: record.ver,
+                        image: record.image,
+                        gen_no: record.gen_no,
+                        retried_count: record.retried_count,
                         claim_token,
                     })
                 }
@@ -265,7 +265,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     .for_update()
                     .skip_locked()
                     .limit(1);
-                let row = ::diesel::update(
+                let record = ::diesel::update(
                     #table::table.filter(#table::f_id.eq_any(candidate)),
                 )
                 .set((
@@ -273,12 +273,12 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::f_claim_token.eq(gen_random_uuid().nullable()),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
-                .returning(TaskRow::as_returning())
-                .get_result::<TaskRow>(&mut conn)
+                .returning(TaskRecord::as_returning())
+                .get_result::<TaskRecord>(&mut conn)
                 .await
                 .optional()
                 .map_err(diesel_err)?;
-                row.map(ObjDeptPromTask::try_from).transpose()
+                record.map(ObjDeptPromTask::try_from).transpose()
             }
 
             pub async fn complete_task(
@@ -352,9 +352,9 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             }
 
             #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
-            fn assert_full_schema(row: FullRow) {
+            fn assert_full_schema(record: FullRecord) {
                 //
-                let FullRow {
+                let FullRecord {
                     //
                     id,
                     topic,
@@ -370,7 +370,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     error,
                     created_at,
                     updated_at,
-                } = row;
+                } = record;
 
                 drop((
                     id,

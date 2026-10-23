@@ -38,7 +38,7 @@ macro_rules! assert_fixture_table_empty {
     }};
 }
 
-/// Removes fixture rows in dependency order for one test prefix.
+/// Removes fixture records in dependency order for one test prefix.
 ///
 /// # Errors
 /// Returns database connection or typed query errors.
@@ -96,7 +96,7 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     accept(())
 }
 
-/// Verifies cleanup removed every fixture row covered by the prefix.
+/// Verifies cleanup removed every fixture record covered by the prefix.
 ///
 /// # Panics
 /// Panics if matching fixture records remain after cleanup.

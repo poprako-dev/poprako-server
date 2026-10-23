@@ -204,10 +204,10 @@ fn decode_payload(
     serde_json::from_value(serde_json::Value::Object(payload_fields))
 }
 
-/// Raw database row returned from `t_chapter_workflow_record`.
+/// Raw database record returned from `t_chapter_workflow_record`.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter_workflow_record)]
-pub struct ChapterWorkflowRecordInfoRow {
+pub struct ChapterWorkflowRecordInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -217,15 +217,15 @@ pub struct ChapterWorkflowRecordInfoRow {
     pub f_created_at: OffsetDateTime,
 }
 
-impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
+impl TryFrom<ChapterWorkflowRecordInfoRecord> for ChapterWorkflowRecordInfo {
     type Error = BaseError;
 
     fn try_from(
-        row: ChapterWorkflowRecordInfoRow,
+        record: ChapterWorkflowRecordInfoRecord,
     ) -> Result<Self, Self::Error> {
         //
         let kind = serde_json::from_value::<ChapterWorkflowRecordKind>(
-            serde_json::Value::String(row.f_kind),
+            serde_json::Value::String(record.f_kind),
         )
         .map_err(|error| {
             //
@@ -233,19 +233,19 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
                 message: "persisted chapter workflow record kind is corrupt"
                     .into();
                 operation = "decode_chapter_workflow_record_kind",
-                record_id = %row.f_id,
+                record_id = %record.f_id,
                 err = ?error,
                 "persisted chapter workflow record is corrupt",
             }
         })?;
 
-        let payload = decode_payload(kind, row.f_payload).map_err(|error| {
+        let payload = decode_payload(kind, record.f_payload).map_err(|error| {
             //
             unrecoverable_error! {
                 message: "persisted chapter workflow record payload is corrupt"
                     .into();
                 operation = "decode_chapter_workflow_record_payload",
-                record_id = %row.f_id,
+                record_id = %record.f_id,
                 kind = ?kind,
                 err = ?error,
                 "persisted chapter workflow record is corrupt",
@@ -253,20 +253,20 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
         })?;
 
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            actor_user_id: row.f_actor_user_id,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            actor_user_id: record.f_actor_user_id,
             kind,
             payload,
-            created_at: row.f_created_at,
+            created_at: record.f_created_at,
         })
     }
 }
 
-/// Insertable immutable workflow record row.
+/// Insertable immutable workflow record.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter_workflow_record)]
-pub struct ChapterWorkflowRecordEntryRow<'a> {
+pub struct ChapterWorkflowRecordItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -277,7 +277,7 @@ pub struct ChapterWorkflowRecordEntryRow<'a> {
 }
 
 impl<'a> From<&'a ChapterWorkflowRecordEntryShape<'_>>
-    for ChapterWorkflowRecordEntryRow<'a>
+    for ChapterWorkflowRecordItem<'a>
 {
     fn from(entry: &'a ChapterWorkflowRecordEntryShape<'_>) -> Self {
         Self {

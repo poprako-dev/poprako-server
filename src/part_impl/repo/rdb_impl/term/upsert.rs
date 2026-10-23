@@ -11,7 +11,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::part_impl::repo::rdb_impl::entity::term::TermEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::term::TermItem;
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
@@ -36,10 +36,10 @@ pub async fn upsert_terms(
 
     if !entries.is_empty() {
         //
-        let rows = entries.iter().map(TermEntryRow::from).collect::<Vec<_>>();
+        let items = entries.iter().map(TermItem::from).collect::<Vec<_>>();
 
         let affected = diesel::insert_into(t_term)
-            .values(&rows)
+            .values(&items)
             .execute(conn)
             .await
             .map_err(diesel)?;
@@ -118,7 +118,7 @@ fn ensure_upsert_ids(
 }
 
 // Builds a typed CASE expression for text replacements.
-// Verifies that a batch operation changed exactly the requested rows.
+// Verifies that a batch operation changed exactly the requested items.
 fn ensure_upsert_affected(
     operation: &str,
     affected: usize,

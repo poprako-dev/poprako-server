@@ -13,7 +13,7 @@ use crate::value::comic_archive::ComicArchiveMonth;
 
 // TODO: Replace this materialized payload Vec with typed keyset chunks ordered
 // by `(created_at, id)`, and push the exact selected month intervals into the
-// Diesel predicate before rows are written to the export artifact.
+// Diesel predicate before records are written to the export artifact.
 // Load archive payloads by month window and return timestamped serialized blobs.
 /// Lists serialized archive payloads in the requested months.
 #[instrument(level = "info", skip_all)]
@@ -22,9 +22,9 @@ pub async fn list_payloads(
     team_id: &str,
     months: &[ComicArchiveMonth],
 ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-    // Queryable projection row for one archive slot.
+    // Queryable projection record for one archive slot.
     #[derive(Queryable)]
-    struct ArchivePayloadRow {
+    struct ArchivePayloadRecord {
         // UTC timestamp when the archive slot was created.
         created_at: OffsetDateTime,
         // Serialized payload snapshot JSON for a retention slot.
@@ -50,21 +50,24 @@ pub async fn list_payloads(
         .select((f_created_at, f_archived_payload))
         .into_boxed();
 
-    let rows = query
+    let records = query
         .order_by(f_created_at.asc())
-        .load::<ArchivePayloadRow>(conn)
+        .load::<ArchivePayloadRecord>(conn)
         .await
         .map_err(diesel)?;
 
     accept(
-        rows.into_iter()
-            .filter(|row| {
+        records
+            .into_iter()
+            .filter(|record| {
                 //
                 months.iter().any(|month| {
-                    row.created_at >= month.start && row.created_at < month.end
+                    //
+                    record.created_at >= month.start
+                        && record.created_at < month.end
                 })
             })
-            .map(|row| (row.created_at, row.payload))
+            .map(|record| (record.created_at, record.payload))
             .collect(),
     )
 }

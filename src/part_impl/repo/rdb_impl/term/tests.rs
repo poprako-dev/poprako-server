@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::result::BaseError;
 use crate::shape::write::term::{TermEntryShape, TermReplShape};
 
-// Borrow an owned test entry for the bulk persistence contract.
+// Borrow an owned test term for the bulk persistence contract.
 fn entry_shape(entry: &TermEntry) -> TermEntryShape<'_> {
     TermEntryShape {
         id: entry.id.clone(),
@@ -239,12 +239,12 @@ async fn verify_bulk_upsert(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    termbase_entry: &TermbaseEntry,
+    entry: &TermbaseEntry,
 ) -> Vec<TermRepl> {
     let bulk_entries = (0..200)
         .map(|index| TermEntry {
             id: format!("{}bulk-{index:03}", PREFIX),
-            termbase_id: termbase_entry.id.clone(),
+            termbase_id: entry.id.clone(),
             source: format!("Bulk {index:03}"),
             targets: vec![format!("Target {index:03}")],
             comment: None,
@@ -259,7 +259,7 @@ async fn verify_bulk_upsert(
         repo.step(
             context,
             &UpsertTerms {
-                termbase_id: &termbase_entry.id,
+                termbase_id: &entry.id,
                 entries: &entries_shapes,
                 updates: &[],
             },
@@ -272,9 +272,9 @@ async fn verify_bulk_upsert(
     let bulk_updates = bulk_entries
         .iter()
         .enumerate()
-        .map(|(index, entry)| TermRepl {
-            id: entry.id.clone(),
-            source: format!("{} updated", entry.source),
+        .map(|(index, term_entry)| TermRepl {
+            id: term_entry.id.clone(),
+            source: format!("{} updated", term_entry.source),
             targets: vec![format!("Target {index:03} updated")],
             comment: Some("batch updated".into()),
         })
@@ -287,7 +287,7 @@ async fn verify_bulk_upsert(
         repo.step(
             context,
             &UpsertTerms {
-                termbase_id: &termbase_entry.id,
+                termbase_id: &entry.id,
                 entries: &[],
                 updates: &updates_shapes,
             },
@@ -302,7 +302,7 @@ async fn verify_bulk_upsert(
             repo.step(
                 context,
                 &ListTermInfos::Termbase {
-                    termbase_id: &termbase_entry.id,
+                    termbase_id: &entry.id,
                 },
             )
             .await

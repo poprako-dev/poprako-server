@@ -1,4 +1,4 @@
-/// Expands the typed entry and transactional producer for one table.
+/// Expands the typed item and transactional producer for one table.
 #[doc(hidden)]
 #[macro_export]
 // Expands transactional deferred-task writers.
@@ -19,7 +19,7 @@ macro_rules! __general_prom_writer {
             /// Insertable values for the bound task table.
             #[derive(Insertable)]
             #[diesel(table_name = $table)]
-            pub struct LocalTaskEntryRow<'a> {
+            pub struct LocalTaskItem<'a> {
                 /// Stable task identity supplied by its producer.
                 pub f_id: &'a str,
 
@@ -42,7 +42,7 @@ macro_rules! __general_prom_writer {
                 pub f_updated_at: OffsetDateTime,
             }
 
-            impl<'a> LocalTaskEntryRow<'a> {
+            impl<'a> LocalTaskItem<'a> {
                 /// Serializes one task and checks its visibility timestamp.
                 pub fn from_task<P: Payload>(
                     task: &Task<'a, String, P>,
@@ -110,7 +110,7 @@ macro_rules! __general_prom_writer {
             use $crate::general::handler::Payload;
             use poprako_orchestra_extra::prom::Prom;
             use poprako_orchestra_extra::prom::task::Task;
-            use super::entity::LocalTaskEntryRow;
+            use super::entity::LocalTaskItem;
             use super::$table;
 
             type WriteLevel = $write_level;
@@ -204,10 +204,10 @@ macro_rules! __general_prom_writer {
                 //
                 let now = OffsetDateTime::now_utc();
 
-                let entry = LocalTaskEntryRow::from_task(task, now)?;
+                let item = LocalTaskItem::from_task(task, now)?;
 
                 diesel::insert_into($table::table)
-                    .values(&entry)
+                    .values(&item)
                     .execute(conn)
                     .await
                     .map_err(database_error)?;
@@ -232,13 +232,13 @@ macro_rules! __general_prom_writer {
 
                 let now = OffsetDateTime::now_utc();
 
-                let entries = tasks
+                let items = tasks
                     .iter()
-                    .map(|task| LocalTaskEntryRow::from_task(task, now))
+                    .map(|task| LocalTaskItem::from_task(task, now))
                     .collect::<Result<Vec<_>, _>>()?;
 
                 diesel::insert_into($table::table)
-                    .values(&entries)
+                    .values(&items)
                     .execute(conn)
                     .await
                     .map_err(database_error)?;

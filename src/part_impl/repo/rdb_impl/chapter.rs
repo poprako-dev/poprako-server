@@ -111,7 +111,7 @@ impl Run<StartChapterStage<'_>> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Enter a chapter state transition request and return whether any row changed.
+    // Enter a chapter state transition request and return whether any record changed.
     async fn run(&self, oper: &StartChapterStage<'_>) -> BaseRest<bool> {
         submit_query!(self.rdb_core, start_stage, oper.id, oper.stage)
     }
@@ -199,7 +199,7 @@ impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Align error type for read queries that intentionally exclude soft-deleted rows.
+    // Align error type for read queries that intentionally exclude soft-deleted records.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.

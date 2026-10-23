@@ -2,24 +2,24 @@
 
 use std::cmp::Ordering;
 
-use crate::rdb_impl::ObjRdbRow;
+use crate::rdb_impl::ObjRdbRecord;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Maximum duration of one remote request.
 pub const REMOTE_TIMEOUT: std::time::Duration =
     std::time::Duration::from_secs(45);
 
-/// Relative position of a task key against the latest object row.
+/// Relative position of a task key against the latest object record.
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]
 pub enum ObjKeyState {
-    /// No row remains.
+    /// No record remains.
     Missing,
 
     /// The task precedes the current version.
     Stale,
 
-    /// The current row retains only its watermark.
+    /// The current record retains only its watermark.
     Retired,
 
     /// The current version is not known to be remotely present.
@@ -44,19 +44,22 @@ pub const fn presence_cas_conflict_requires_retry(state: ObjKeyState) -> bool {
     matches!(state, ObjKeyState::Unavailable | ObjKeyState::Avail)
 }
 
-/// Classifies a task version against the latest object row.
+/// Classifies a task version against the latest object record.
 ///
 /// # Errors
 ///
 /// Returns an error when persisted object state is invalid.
-pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
+pub fn classify(
+    ver: u32,
+    record: Option<&ObjRdbRecord>,
+) -> ObjDeptRest<ObjKeyState> {
     //
-    let Some(row) = row else {
+    let Some(record) = record else {
         return Ok(ObjKeyState::Missing);
     };
 
     let watermark =
-        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
+        u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
             msg: "object ver is outside u32".into(),
         })?;
 
@@ -68,7 +71,12 @@ pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
 
         Ordering::Equal => {
             //
-            match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+            match (
+                &record.key,
+                &record.f_is_uploaded,
+                &record.hash,
+                &record.ext,
+            ) {
                 //
                 (None, None, None, None) => Ok(ObjKeyState::Retired),
 
@@ -124,7 +132,7 @@ macro_rules! handle_obj_dept_task {
             .get()
             .await
             .map_err(::poprako_obj_dept::rdb_impl::rdb_err)?;
-        let (row, initial_revision) = match task.oper.as_str() {
+        let (record, initial_revision) = match task.oper.as_str() {
             ::poprako_obj_dept::model::task::CHECK => {
                 let presence_state =
                     $obj_mod::load_for_presence_reconciliation(
@@ -134,7 +142,7 @@ macro_rules! handle_obj_dept_task {
                     .await?;
 
                 match presence_state {
-                    Some((row, revision)) => (Some(row), Some(revision)),
+                    Some((record, revision)) => (Some(record), Some(revision)),
                     None => (None, None),
                 }
             }
@@ -142,12 +150,12 @@ macro_rules! handle_obj_dept_task {
         };
         let state = ::poprako_obj_dept::actor::rdb_impl::classify(
             key.ver,
-            row.as_ref(),
+            record.as_ref(),
         )?;
 
         let active_key = ::poprako_obj_dept::rdb_impl::active_key::<$obj>(
             &key.id,
-            row.as_ref(),
+            record.as_ref(),
         )?;
 
         if active_key
@@ -239,12 +247,12 @@ macro_rules! handle_obj_dept_task {
 
                 let changed_state = match updated {
                     0 => {
-                        let row = $obj_mod::load(&mut conn, &key.id, false)
+                        let record = $obj_mod::load(&mut conn, &key.id, false)
                             .await?;
 
                         Some(::poprako_obj_dept::actor::rdb_impl::classify(
                             key.ver,
-                            row.as_ref(),
+                            record.as_ref(),
                         )?)
                     }
                     1 => None,

@@ -23,10 +23,10 @@ use crate::part_impl::repo::rdb_impl::numeric::{
 use crate::part_impl::repo::rdb_impl::schema::{t_page, t_page_raw_ident};
 use crate::result::BaseError;
 
-/// Raw database row for the `t_page` table. Returned by Diesel queries.
+/// Raw database record for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
-pub struct PageInfoRow {
+pub struct PageInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -40,10 +40,10 @@ pub struct PageInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-/// Minimal database row selected for Page-scoped Unit operations.
+/// Minimal database record selected for Page-scoped Unit operations.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
-pub struct PageUnitScopeRow {
+pub struct PageUnitScopeRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -53,25 +53,25 @@ pub struct PageUnitScopeRow {
     pub f_proofread_unit_count: i32,
 }
 
-impl TryFrom<PageUnitScopeRow> for PageUnitScope {
+impl TryFrom<PageUnitScopeRecord> for PageUnitScope {
     type Error = BaseError;
 
-    fn try_from(row: PageUnitScopeRow) -> Result<Self, Self::Error> {
+    fn try_from(record: PageUnitScopeRecord) -> Result<Self, Self::Error> {
         //
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
             count_metrics: UnitCountMetrics {
                 total: usize_from_i32(
-                    row.f_total_unit_count,
+                    record.f_total_unit_count,
                     "t_page.f_total_unit_count",
                 )?,
                 translated: usize_from_i32(
-                    row.f_translated_unit_count,
+                    record.f_translated_unit_count,
                     "t_page.f_translated_unit_count",
                 )?,
                 proofread: usize_from_i32(
-                    row.f_proofread_unit_count,
+                    record.f_proofread_unit_count,
                     "t_page.f_proofread_unit_count",
                 )?,
             },
@@ -79,30 +79,30 @@ impl TryFrom<PageUnitScopeRow> for PageUnitScope {
     }
 }
 
-impl TryFrom<PageInfoRow> for PageInfo {
+impl TryFrom<PageInfoRecord> for PageInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(row: PageInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(record: PageInfoRecord) -> Result<Self, Self::Error> {
         //
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            index: usize_from_i32(row.f_index, "t_page.f_index")?,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            index: usize_from_i32(record.f_index, "t_page.f_index")?,
             total_unit_count: usize_from_i32(
-                row.f_total_unit_count,
+                record.f_total_unit_count,
                 "t_page.f_total_unit_count",
             )?,
             translated_unit_count: usize_from_i32(
-                row.f_translated_unit_count,
+                record.f_translated_unit_count,
                 "t_page.f_translated_unit_count",
             )?,
             proofread_unit_count: usize_from_i32(
-                row.f_proofread_unit_count,
+                record.f_proofread_unit_count,
                 "t_page.f_proofread_unit_count",
             )?,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
@@ -110,7 +110,7 @@ impl TryFrom<PageInfoRow> for PageInfo {
 /// Insertable struct for creating a new record in the `t_page` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
-pub struct PageEntryRow<'a> {
+pub struct PageItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -120,7 +120,7 @@ pub struct PageEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
+impl<'a> TryFrom<&'a PageEntry> for PageItem<'a> {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -138,7 +138,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
     }
 }
 
-impl<'a> TryFrom<&'a PageManifestEntry> for PageEntryRow<'a> {
+impl<'a> TryFrom<&'a PageManifestEntry> for PageItem<'a> {
     type Error = BaseError;
 
     fn try_from(entry: &'a PageManifestEntry) -> Result<Self, Self::Error> {
@@ -158,7 +158,7 @@ impl<'a> TryFrom<&'a PageManifestEntry> for PageEntryRow<'a> {
 /// Aspect struct for updating specific fields of a page record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
-pub struct PageAspectRow {
+pub struct PagePack {
     pub f_index: Option<i32>,
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
@@ -167,7 +167,7 @@ pub struct PageAspectRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl PageAspectRow {
+impl PagePack {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -215,7 +215,7 @@ impl PageAspectRow {
 /// Persisted original filename and its lifecycle timestamps.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page_raw_ident)]
-pub struct PageRawIdentInfoRow {
+pub struct PageRawIdentInfoRecord {
     /// Owning page identifier.
     pub f_page_id: String,
     /// Complete source filename.
@@ -227,14 +227,14 @@ pub struct PageRawIdentInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<PageRawIdentInfoRow> for PageRawIdentInfo {
+impl From<PageRawIdentInfoRecord> for PageRawIdentInfo {
     // Converts the stored filename association into a domain projection.
-    fn from(row: PageRawIdentInfoRow) -> Self {
+    fn from(record: PageRawIdentInfoRecord) -> Self {
         Self {
-            page_id: row.f_page_id,
-            raw_ident: row.f_raw_ident,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            page_id: record.f_page_id,
+            raw_ident: record.f_raw_ident,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         }
     }
 }
@@ -242,7 +242,7 @@ impl From<PageRawIdentInfoRow> for PageRawIdentInfo {
 /// Filename assignment used by the batch upsert.
 #[derive(Insertable)]
 #[diesel(table_name = t_page_raw_ident)]
-pub struct PageRawIdentEntryRow<'a> {
+pub struct PageRawIdentItem<'a> {
     /// Owning page identifier.
     pub f_page_id: &'a str,
     /// Complete source filename.

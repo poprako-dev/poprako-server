@@ -318,16 +318,16 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
             description: None,
         })
         .collect::<Vec<_>>();
-    let rows = entries
+    let items = entries
         .iter()
-        .map(WorksetEntryRow::try_from)
+        .map(WorksetItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
     let deleted_at = OffsetDateTime::now_utc();
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_workset::table)
-        .values(&rows)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -341,10 +341,10 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
         description: None,
         creator_id: &format!("{PREFIX}user-owner"),
     };
-    let comic_row = ComicEntryRow::try_from(&comic_entry).unwrap();
+    let comic_item = ComicItem::try_from(&comic_entry).unwrap();
 
     diesel::insert_into(t_comic::table)
-        .values(&comic_row)
+        .values(&comic_item)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -502,11 +502,11 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
         archiver_id: format!("{PREFIX}user-owner"),
         created_at: OffsetDateTime::now_utc(),
     };
-    let archive_row = ComicArchiveEntryRow::from(&archive_record);
+    let archive_item = ComicArchiveItem::from(&archive_record);
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_comic_archive::table)
-        .values(&archive_row)
+        .values(&archive_item)
         .execute(&mut conn)
         .await
         .unwrap();

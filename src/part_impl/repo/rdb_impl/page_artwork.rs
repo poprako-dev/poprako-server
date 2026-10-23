@@ -24,7 +24,7 @@ use crate::part::repo::oper::page_artwork::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::page_artwork::{
-    PageArtworkEntryRow, PageArtworkRow,
+    PageArtworkItem, PageArtworkRecord,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -38,15 +38,15 @@ async fn list_infos(
     chapter_id: &str,
 ) -> BaseRest<Vec<PageArtworkInfo>> {
     //
-    let rows = t_page_artwork::table
+    let records = t_page_artwork::table
         .filter(t_page_artwork::f_chapter_id.eq(chapter_id))
         .order(t_page_artwork::f_index.asc())
-        .select(PageArtworkRow::as_select())
-        .load::<PageArtworkRow>(conn)
+        .select(PageArtworkRecord::as_select())
+        .load::<PageArtworkRecord>(conn)
         .await
         .map_err(map_diesel)?;
 
-    rows.into_iter().map(TryInto::try_into).collect()
+    records.into_iter().map(TryInto::try_into).collect()
 }
 
 impl Run<GetPageArtworkInfo<'_>> for HybRepo {
@@ -62,10 +62,10 @@ impl Run<GetPageArtworkInfo<'_>> for HybRepo {
         //
         let mut conn = self.rdb_core.get().await?;
 
-        let row = t_page_artwork::table
+        let record = t_page_artwork::table
             .find(oper.id)
-            .select(PageArtworkRow::as_select())
-            .first::<PageArtworkRow>(&mut *conn)
+            .select(PageArtworkRecord::as_select())
+            .first::<PageArtworkRecord>(&mut *conn)
             .await
             .optional()
             .map_err(map_diesel)?
@@ -77,7 +77,7 @@ impl Run<GetPageArtworkInfo<'_>> for HybRepo {
                 )
             })?;
 
-        row.try_into()
+        record.try_into()
     }
 }
 
@@ -139,7 +139,7 @@ where
         let retained_ids = oper
             .entries
             .iter()
-            .map(|entry| entry.id.as_str())
+            .map(|page_artwork_entry| page_artwork_entry.id.as_str())
             .collect::<Vec<_>>();
 
         diesel::delete(
@@ -160,15 +160,15 @@ where
         .await
         .map_err(map_diesel)?;
 
-        for entries in oper.entries.chunks(2000) {
+        for page_artwork_entries in oper.entries.chunks(2000) {
             //
-            let rows = entries
+            let items = page_artwork_entries
                 .iter()
-                .map(PageArtworkEntryRow::try_from)
+                .map(PageArtworkItem::try_from)
                 .collect::<BaseRest<Vec<_>>>()?;
 
             let upsert = diesel::insert_into(t_page_artwork::table)
-                .values(&rows)
+                .values(&items)
                 .on_conflict(t_page_artwork::f_id)
                 .do_update()
                 .set((
@@ -189,7 +189,7 @@ where
             .await
             .map_err(map_diesel)?;
 
-            if count != entries.len() {
+            if count != page_artwork_entries.len() {
                 //
                 return Err(unrecoverable_error! {
                     message: "composite manifest identity conflict".into();

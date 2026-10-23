@@ -8,19 +8,19 @@ use crate::key::{KeyMap, ObjKey};
 use crate::model::meta::ObjMeta;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
-/// Standardized latest object row decoded from a concrete Diesel table.
+/// Standardized latest object record decoded from a concrete Diesel table.
 #[derive(Clone, PartialEq, Eq)]
-pub struct ObjRdbRow {
+pub struct ObjRdbRecord {
     /// Stored generation watermark.
     pub ver: i64,
 
-    /// Complete physical key, or none for a detached row.
+    /// Complete physical key, or none for a detached record.
     pub key: Option<String>,
-    /// Current upload evidence, or none for a detached row.
+    /// Current upload evidence, or none for a detached record.
     pub f_is_uploaded: Option<bool>,
-    /// Current content hash, or none for a detached row.
+    /// Current content hash, or none for a detached record.
     pub hash: Option<Vec<u8>>,
-    /// Current object suffix, or none for a detached row.
+    /// Current object suffix, or none for a detached record.
     pub ext: Option<String>,
 }
 
@@ -40,26 +40,29 @@ pub struct ObjRdbWrite<'a> {
     pub ext: &'a str,
 }
 
-/// Converts one concrete typed row into public object metadata.
+/// Converts one concrete typed record into public object metadata.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error when the row is inconsistent or out of range.
+/// Returns an unrecoverable error when the record is inconsistent or out of range.
 #[expect(
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
-pub fn decode_row<K>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
+pub fn decode_record<K>(
+    id: &str,
+    record: ObjRdbRecord,
+) -> ObjDeptRest<Option<ObjMeta>>
 where
     K: KeyMap<Img = String>,
 {
     //
     let ver =
-        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
+        u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
             msg: "object ver is outside u32".into(),
         })?;
 
-    match (row.key, row.f_is_uploaded, row.hash, row.ext) {
+    match (record.key, record.f_is_uploaded, record.hash, record.ext) {
         //
         (None, None, None, None) => Ok(None),
 
@@ -86,22 +89,27 @@ where
     }
 }
 
-/// Allocates the next ver after validating the current row.
+/// Allocates the next ver after validating the current record.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error for an invalid row or ver overflow.
+/// Returns an unrecoverable error for an invalid record or ver overflow.
 #[expect(
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
-pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
+pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
     //
-    let ver = match row {
+    let ver = match record {
         //
-        Some(row) => {
+        Some(record) => {
             //
-            match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+            match (
+                &record.key,
+                &record.f_is_uploaded,
+                &record.hash,
+                &record.ext,
+            ) {
                 //
                 (None, None, None, None)
                 | (Some(_), Some(_), Some(_), Some(_)) => {}
@@ -114,8 +122,10 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
                 }
             }
 
-            u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
-                msg: "object ver is outside u32".into(),
+            u32::try_from(record.ver).map_err(|_| {
+                ObjDeptError::Unrecoverable {
+                    msg: "object ver is outside u32".into(),
+                }
             })?
         }
 
@@ -128,32 +138,37 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
         })
 }
 
-/// Rebuilds the exact active logical key from a validated row.
+/// Rebuilds the exact active logical key from a validated record.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error when the row is inconsistent or out of range.
+/// Returns an unrecoverable error when the record is inconsistent or out of range.
 #[expect(
     clippy::uninlined_format_args,
     reason = "Repository formatting keeps interpolation arguments explicit"
 )]
 pub fn active_key<K>(
     id: &str,
-    row: Option<&ObjRdbRow>,
+    record: Option<&ObjRdbRecord>,
 ) -> ObjDeptRest<Option<ObjKey>>
 where
     K: KeyMap<Img = String>,
 {
     //
-    let Some(row) = row else {
+    let Some(record) = record else {
         return Ok(None);
     };
 
-    match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+    match (
+        &record.key,
+        &record.f_is_uploaded,
+        &record.hash,
+        &record.ext,
+    ) {
         //
         (Some(key), Some(_), Some(_), Some(ext)) => {
             //
-            let ver = u32::try_from(row.ver).map_err(|_| {
+            let ver = u32::try_from(record.ver).map_err(|_| {
                 ObjDeptError::Unrecoverable {
                     msg: "object ver is outside u32".into(),
                 }
