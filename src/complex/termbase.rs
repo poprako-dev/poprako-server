@@ -254,15 +254,12 @@ pub fn build_term_upsert_plan<'a>(
 
     if loaded_term_count != current_term_count {
         //
-        tracing::error!(
+        return Err(unrecoverable_error! {
+            message: "cached termbase term count mismatch".into();
             termbase_id,
             current_term_count,
             loaded_term_count,
-            "unrecoverable error: cached termbase term count mismatch",
-        );
-
-        return Err(BaseError::Unrecoverable {
-            msg: "cached termbase term count mismatch".into(),
+            "cached termbase term count mismatch",
         });
     }
 
@@ -371,13 +368,10 @@ pub fn build_term_append_plan<'a>(
         // Every replacement was resolved from these persisted entries by the shared planner.
         let Some(existing) = existing_terms.get(update.id.as_str()) else {
             //
-            tracing::error!(
+            return Err(unrecoverable_error! {
+                message: "append replacement has no existing term".into();
                 term_id = %update.id,
-                "unrecoverable error: append replacement has no existing term"
-            );
-
-            return Err(BaseError::Unrecoverable {
-                msg: "append replacement has no existing term".into(),
+                "append replacement has no existing term",
             });
         };
 

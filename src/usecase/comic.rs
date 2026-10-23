@@ -292,8 +292,11 @@ where
             let SubtreeDeleteScope::Comic { workset_id, .. } = delete_scope
             else {
                 //
-                return Err(BaseError::Unrecoverable {
-                    msg: "comic deletion returned a different scope".into(),
+                return Err(unrecoverable_error! {
+                    message: "comic deletion returned a different scope".into();
+                    comic_id = %id,
+                    team_id = %delete_scope.team_id(),
+                    "comic deletion returned a different scope",
                 });
             };
 

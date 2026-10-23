@@ -130,8 +130,15 @@ fn transform_text(
     for (start, end, target) in matches {
         //
         let unchanged = original.get(cursor..start).ok_or_else(|| {
-            BaseError::Unrecoverable {
-                msg: "Unit transform text boundary is invalid".into(),
+            //
+            unrecoverable_error! {
+                message: "Unit transform text boundary is invalid".into();
+                unit_id = %unit_transform.unit_id,
+                text_byte_len = original.len(),
+                cursor,
+                start,
+                end,
+                "Unit transform text boundary is invalid",
             }
         })?;
 
@@ -142,12 +149,16 @@ fn transform_text(
         cursor = end;
     }
 
-    let unchanged =
-        original
-            .get(cursor..)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                msg: "Unit transform final text boundary is invalid".into(),
-            })?;
+    let unchanged = original.get(cursor..).ok_or_else(|| {
+        //
+        unrecoverable_error! {
+            message: "Unit transform final text boundary is invalid".into();
+            unit_id = %unit_transform.unit_id,
+            text_byte_len = original.len(),
+            cursor,
+            "Unit transform final text boundary is invalid",
+        }
+    })?;
 
     transformed.push_str(unchanged);
 

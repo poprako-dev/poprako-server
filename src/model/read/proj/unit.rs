@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 use crate::model::shared::unit::UnitCoord;
-use crate::result::{BaseError, BaseRest};
+use crate::result::BaseRest;
 
 /// One Unit node in the complete persisted page chain.
 #[derive(Clone, PartialEq, Eq)]
@@ -115,22 +115,15 @@ pub struct UnitCountDelta {
 }
 
 // Convert a unit count into the signed representation used by counter deltas.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn signed_count(value: usize, field: &str) -> BaseRest<i32> {
     //
     i32::try_from(value).map_err(|_| {
         //
-        tracing::error!(
+        unrecoverable_error! {
+            message: format!("unit count {} exceeds signed delta range", field);
             field,
             value,
-            "unrecoverable error: unit count exceeds signed delta range"
-        );
-
-        BaseError::Unrecoverable {
-            msg: format!("unit count {} exceeds signed delta range", field),
+            "unit count exceeds signed delta range",
         }
     })
 }

@@ -155,7 +155,9 @@ where
 
 // Returns an unrecoverable error for a corrupt Unit chain.
 fn corrupt_unit_chain_err() -> BaseError {
-    BaseError::Unrecoverable {
-        msg: "persisted Unit chain is corrupt".to_string(),
+    //
+    unrecoverable_error! {
+        message: "persisted Unit chain is corrupt".to_string();
+        "persisted Unit chain is corrupt",
     }
 }

@@ -420,8 +420,12 @@ pub async fn start_stage(
 
         Stage::RawProvide | Stage::Review | Stage::Publish => {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "only two-step chapter stages can be started".to_string(),
+            return Err(unrecoverable_error! {
+                message:
+                    "only two-step chapter stages can be started".to_string();
+                chapter_id = %id,
+                stage = ?stage,
+                "only two-step chapter stages can be started",
             });
         }
     };

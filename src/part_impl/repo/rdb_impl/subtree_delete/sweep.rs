@@ -16,7 +16,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter_workflow_record, t_comic, t_comic_archive, t_comment, t_member,
     t_member_invitation, t_page, t_team, t_term, t_termbase, t_unit, t_workset,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
@@ -299,8 +299,11 @@ pub async fn delete_active_scope(
     //
     let SubtreeDeleteScope::Chapter { chapter_id, .. } = scope else {
         //
-        return Err(BaseError::Unrecoverable {
-            msg: "only a direct chapter may bypass subtree tombstones".into(),
+        return Err(unrecoverable_error! {
+            message: "only a direct chapter may bypass subtree tombstones"
+                .into();
+            team_id = %scope.team_id(),
+            "only a direct chapter may bypass subtree tombstones",
         });
     };
 

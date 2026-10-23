@@ -191,10 +191,9 @@ where
 
             if count != entries.len() {
                 //
-                tracing::error!("composite manifest identity conflict");
-
-                return Err(BaseError::Unrecoverable {
-                    msg: "composite manifest identity conflict".into(),
+                return Err(unrecoverable_error! {
+                    message: "composite manifest identity conflict".into();
+                    "composite manifest identity conflict",
                 });
             }
         }

@@ -75,43 +75,48 @@ where
     let termbase_id = nucl
         .coord(async move |context| {
             //
-            let team_id =
-                match (&termbase_entry.team_id, &termbase_entry.comic_id) {
+            let team_id = match (
+                &termbase_entry.team_id,
+                &termbase_entry.comic_id,
+            ) {
+                //
+                (Some(team_id), None) => {
                     //
-                    (Some(team_id), None) => {
-                        //
-                        LockTeam { id: team_id }.step_on(repo, context).await?;
+                    LockTeam { id: team_id }.step_on(repo, context).await?;
 
-                        team_id.clone()
+                    team_id.clone()
+                }
+
+                (None, Some(comic_id)) => {
+                    //
+                    let comic_info = GetComicInfoExcluded {
+                        id: comic_id,
+                        incls: &[],
                     }
+                    .step_on(repo, context)
+                    .await?;
 
-                    (None, Some(comic_id)) => {
-                        //
-                        let comic_info = GetComicInfoExcluded {
-                            id: comic_id,
-                            incls: &[],
-                        }
-                        .step_on(repo, context)
-                        .await?;
+                    comic_complex::ensure_comic_writable(&comic_info)?;
 
-                        comic_complex::ensure_comic_writable(&comic_info)?;
-
-                        let workset_info = GetWorksetInfo {
-                            id: &comic_info.workset_id,
-                        }
-                        .step_on(repo, context)
-                        .await?;
-
-                        workset_info.team_id
+                    let workset_info = GetWorksetInfo {
+                        id: &comic_info.workset_id,
                     }
+                    .step_on(repo, context)
+                    .await?;
 
-                    _ => {
-                        //
-                        return Err(BaseError::Unrecoverable {
-                            msg: "validated termbase scope is invalid".into(),
-                        });
-                    }
-                };
+                    workset_info.team_id
+                }
+
+                _ => {
+                    //
+                    return Err(unrecoverable_error! {
+                        message: "validated termbase scope is invalid".into();
+                        team_id = ?termbase_entry.team_id,
+                        comic_id = ?termbase_entry.comic_id,
+                        "validated termbase scope is invalid",
+                    });
+                }
+            };
 
             let member_info = FindMemberInfo {
                 user_id: &token.user_id,

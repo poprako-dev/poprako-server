@@ -55,8 +55,11 @@ impl TryFrom<IssueRow> for IssueInfo {
 
                 _ => {
                     //
-                    return Err(BaseError::Unrecoverable {
-                        msg: "incomplete stored issue rectangle".into(),
+                    return Err(unrecoverable_error! {
+                        message: "incomplete stored issue rectangle".into();
+                        issue_id = %row.f_id,
+                        page_artwork_id = %row.f_page_artwork_id,
+                        "incomplete stored issue rectangle",
                     });
                 }
             };

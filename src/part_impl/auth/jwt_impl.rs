@@ -42,18 +42,22 @@ impl JwtAuth {
         // Internal implementation detail.
         if expiration_hours <= 0 {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
-                    .to_string(),
+            return Err(unrecoverable_error! {
+                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
+                    .to_string();
+                expiration_hours,
+                "JWT_EXPIRATION_HOURS must be positive",
             });
         }
 
         let Some(expiration_seconds) = expiration_hours.checked_mul(3600)
         else {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "[JwtAuth::new] JWT_EXPIRATION_HOURS is too large"
-                    .to_string(),
+            return Err(unrecoverable_error! {
+                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS is too large"
+                    .to_string();
+                expiration_hours,
+                "JWT_EXPIRATION_HOURS is too large",
             });
         };
 
@@ -108,10 +112,6 @@ impl JwtAuth {
 impl TokenAuth for JwtAuth {
     // Signs a user token by encoding JWT claims with configured expiration.
     #[instrument(level = "info", skip_all)]
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.
@@ -120,26 +120,37 @@ impl TokenAuth for JwtAuth {
         let timestamp = now.unix_timestamp();
 
         let issued_at = usize::try_from(timestamp).map_err(|_| {
-            BaseError::Unrecoverable {
-                msg: "JWT issue timestamp is outside the supported range"
-                    .to_string(),
+            //
+            unrecoverable_error! {
+                message: "JWT issue timestamp is outside the supported range"
+                    .to_string();
+                timestamp,
+                "JWT issue timestamp is outside the supported range",
             }
         })?;
 
         let expiration_timestamp = timestamp
             .checked_add(self.expiration_seconds)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                msg: "JWT expiration timestamp is outside the supported range"
-                    .to_string(),
+            .ok_or_else(|| unrecoverable_error! {
+                message:
+                    "JWT expiration timestamp is outside the supported range"
+                    .to_string();
+                timestamp,
+                expiration_seconds = self.expiration_seconds,
+                "JWT expiration timestamp is outside the supported range",
             })?;
 
         let expiration =
             usize::try_from(expiration_timestamp).map_err(|_| {
-                BaseError::Unrecoverable {
-                msg:
-                    "JWT expiration timestamp is outside the supported range"
-                        .to_string(),
-            }
+                //
+                unrecoverable_error! {
+                    message:
+                        "JWT expiration timestamp is outside \
+                            the supported range"
+                        .to_string();
+                    expiration_timestamp,
+                    "JWT expiration timestamp is outside the supported range",
+                }
             })?;
 
         let claims = SignClaims {
@@ -156,17 +167,14 @@ impl TokenAuth for JwtAuth {
         jsonwebtoken::encode(&header, &claims, &self.encoding_key).map_err(
             |err| {
                 //
-                tracing::error!(
+                unrecoverable_error! {
+                    message: format!(
+                        "[JwtAuth::sign_token] error when encoding: {}",
+                        err,
+                    );
                     operation = "sign_token",
                     sdk_err = ?err,
                     "JWT SDK error",
-                );
-
-                BaseError::Unrecoverable {
-                    msg: format!(
-                        "[JwtAuth::sign_token] error when encoding: {}",
-                        err,
-                    ),
                 }
             },
         )

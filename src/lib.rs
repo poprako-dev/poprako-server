@@ -3,9 +3,9 @@
 //! Crate root: explicit public re-exports and internal module organization for
 //! the `PopRaKo` application core.
 
-// Shared expected-error macro in lexical scope for all application modules.
+// Shared error types and macros, declared first for application-wide lexical scope.
 #[macro_use]
-mod expected_error;
+mod result;
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
 // Core business-logic helpers that coordinate domain rules across models.
@@ -25,8 +25,6 @@ mod model;
 // Port trait definitions (repo, auth, image, prom, effect) for the application
 // core.
 mod part;
-// Root error and result types used across all layers.
-mod result;
 // Shared RDB infrastructure used by port implementations.
 mod shared;
 

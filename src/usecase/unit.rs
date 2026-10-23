@@ -302,8 +302,13 @@ where
 
             if page_scope.chapter_id != chapter_scope.id {
                 //
-                return Err(BaseError::Unrecoverable {
-                    msg: "locked Page does not belong to locked Chapter".into(),
+                return Err(unrecoverable_error! {
+                    message: "locked Page does not belong to locked Chapter"
+                        .into();
+                    page_id = %page_id,
+                    page_chapter_id = %page_scope.chapter_id,
+                    locked_chapter_id = %chapter_scope.id,
+                    "locked Page does not belong to locked Chapter",
                 });
             }
 
@@ -360,13 +365,11 @@ where
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
 fn unit_list_invariant(page_id: &str, msg: &'static str) -> BaseError {
     //
-    tracing::error!(
+    unrecoverable_error! {
+        message: msg.into();
         page_id,
-        err_msg = msg,
-        "unrecoverable error: invalid persisted Page Unit state",
-    );
-
-    BaseError::Unrecoverable { msg: msg.into() }
+        "invalid persisted Page Unit state",
+    }
 }
 
 // Loads and verifies every visible Unit in linked-list order.

@@ -6,7 +6,7 @@ use argon2::password_hash::{
     PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
 };
 
-use crate::result::{BaseError, BaseRest};
+use crate::result::BaseRest;
 use crate::util::next_snowflake_id;
 
 /// Generates a unique user identifier backed by a snowflake value.
@@ -21,10 +21,6 @@ pub fn gen_id() -> String {
 ///
 /// Returns an unrecoverable error when the blocking task cannot complete
 /// or Argon2id fails to produce a password hash.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn hash_password(password: &str) -> BaseRest<String> {
     //
     let password = password.to_owned();
@@ -33,17 +29,14 @@ pub async fn hash_password(password: &str) -> BaseRest<String> {
         .await
         .map_err(|error| {
             //
-            tracing::error!(
+            unrecoverable_error! {
+                message: format!(
+                    "[user_complex::hash_password] blocking task failed: {}",
+                    error,
+                );
                 operation = "hash_password",
                 sdk_err = ?error,
                 "Tokio SDK blocking task error",
-            );
-
-            BaseError::Unrecoverable {
-                msg: format!(
-                    "[user_complex::hash_password] blocking task failed: {}",
-                    error,
-                ),
             }
         })?
 }
@@ -84,10 +77,6 @@ pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
 }
 
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn hash_password_sync(password: &str) -> BaseRest<String> {
     //
     let salt = SaltString::generate(OsRng);
@@ -97,17 +86,14 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
         .map(|h| h.to_string())
         .map_err(|error| {
             //
-            tracing::error!(
+            unrecoverable_error! {
+                message: format!(
+                    "[user_complex::hash_password] argon2 hashing failed: {}",
+                    error,
+                );
                 operation = "hash_password",
                 sdk_err = ?error,
                 "Argon2 SDK hashing error",
-            );
-
-            BaseError::Unrecoverable {
-                msg: format!(
-                    "[user_complex::hash_password] argon2 hashing failed: {}",
-                    error,
-                ),
             }
         })
 }

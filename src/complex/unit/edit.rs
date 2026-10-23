@@ -473,9 +473,10 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
 // Build an unrecoverable error for a corrupt internal sequence.
 fn invalid_sequence(msg: &'static str) -> BaseError {
     //
-    tracing::error!(msg, "unrecoverable error: invalid Unit sequence");
-
-    BaseError::Unrecoverable { msg: msg.into() }
+    unrecoverable_error! {
+        message: msg.into();
+        "invalid Unit sequence",
+    }
 }
 
 // Build the client-visible error for an invalid edit sequence.

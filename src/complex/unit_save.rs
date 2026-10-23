@@ -203,10 +203,9 @@ const fn has_content(edit: &UnitEdit) -> bool {
 // Reports a mismatch between normalized edits and their persisted sequence.
 fn invalid_plan() -> BaseError {
     //
-    tracing::error!("normalized Unit edits disagree with persistence plan");
-
-    BaseError::Unrecoverable {
-        msg: "normalized Unit edits disagree with persistence plan".into(),
+    unrecoverable_error! {
+        message: "normalized Unit edits disagree with persistence plan".into();
+        "normalized Unit edits disagree with persistence plan",
     }
 }
 

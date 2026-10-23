@@ -362,8 +362,12 @@ pub async fn apply_manifest(
 
     if rows.len() != model_entries.len() {
         //
-        return Err(BaseError::Unrecoverable {
-            msg: "page manifest upsert returned an unexpected row count".into(),
+        return Err(unrecoverable_error! {
+            message: "page manifest upsert returned an unexpected row count"
+                .into();
+            expected_row_count = model_entries.len(),
+            actual_row_count = rows.len(),
+            "page manifest upsert returned an unexpected row count",
         });
     }
 
@@ -536,17 +540,14 @@ fn ensure_chapter_page_count<T>(
     //
     if rows.len() > MAX_CHAPTER_PAGE_COUNT {
         //
-        tracing::error!(
+        return Err(unrecoverable_error! {
+            message: "persisted Chapter Page count exceeds the business maximum"
+                .into();
             chapter_id = %chapter_id,
             page_count_lower_bound = rows.len(),
             max_page_count = MAX_CHAPTER_PAGE_COUNT,
             operation,
             "persisted Chapter Page count exceeds the business maximum",
-        );
-
-        return Err(BaseError::Unrecoverable {
-            msg: "persisted Chapter Page count exceeds the business maximum"
-                .into(),
         });
     }
 

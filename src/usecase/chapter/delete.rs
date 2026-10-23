@@ -101,8 +101,11 @@ where
         } = delete_scope
         else {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "chapter deletion returned a different scope".into(),
+            return Err(unrecoverable_error! {
+                message: "chapter deletion returned a different scope".into();
+                chapter_id = %id,
+                team_id = %delete_scope.team_id(),
+                "chapter deletion returned a different scope",
             });
         };
 

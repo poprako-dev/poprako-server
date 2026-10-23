@@ -143,30 +143,24 @@ fn ensure_affected(
         return accept(());
     }
 
-    tracing::error!(
+    Err(unrecoverable_error! {
+        message: "Unit batch affected an unexpected row count".into();
         page_id,
         unit_id,
         operation,
         affected,
         expected,
         stage = "apply_edits",
-        "unrecoverable error: Unit batch affected an unexpected row count",
-    );
-
-    Err(BaseError::Unrecoverable {
-        msg: "Unit batch affected an unexpected row count".into(),
+        "Unit batch affected an unexpected row count",
     })
 }
 
 // Reports an impossible mismatch between normalized edits and their plan.
 fn invalid_unit_edit_plan_err() -> BaseError {
     //
-    tracing::error!(
-        "unrecoverable error: normalized Unit edits disagree with edit plan"
-    );
-
-    BaseError::Unrecoverable {
-        msg: "normalized Unit edits disagree with edit plan".into(),
+    unrecoverable_error! {
+        message: "normalized Unit edits disagree with edit plan".into();
+        "normalized Unit edits disagree with edit plan",
     }
 }
 

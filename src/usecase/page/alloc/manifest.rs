@@ -325,8 +325,10 @@ where
 
 // Builds an internal error for an incomplete page manifest result.
 fn page_manifest_result_missing() -> BaseError {
-    BaseError::Unrecoverable {
-        msg: "page manifest result is incomplete".into(),
+    //
+    unrecoverable_error! {
+        message: "page manifest result is incomplete".into();
+        "page manifest result is incomplete",
     }
 }
 

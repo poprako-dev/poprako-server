@@ -105,8 +105,13 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
                 .f_confirmed_artwork_version
                 .map(u32::try_from)
                 .transpose()
-                .map_err(|_| BaseError::Unrecoverable {
-                    msg: "invalid confirmed artwork version".into(),
+                .map_err(|_| {
+                    //
+                    unrecoverable_error! {
+                        message: "invalid confirmed artwork version".into();
+                        artwork_ver = ?row.f_confirmed_artwork_version,
+                        "invalid confirmed artwork version",
+                    }
                 })?,
             creator_id: row.f_creator_id,
             creator: None,

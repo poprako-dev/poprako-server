@@ -312,9 +312,11 @@ pub async fn mark_scope(
 
         SubtreeDeleteScope::Chapter { .. } => {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "direct chapter deletion must not create a tombstone"
-                    .into(),
+            return Err(unrecoverable_error! {
+                message: "direct chapter deletion must not create a tombstone"
+                    .into();
+                team_id = %scope.team_id(),
+                "direct chapter deletion must not create a tombstone",
             });
         }
     }

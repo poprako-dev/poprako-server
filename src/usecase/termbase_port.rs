@@ -293,15 +293,12 @@ where
                     // The shared capacity guard bounds additions to the termbase limit.
                     let delta = i32::try_from(added).map_err(|_| {
                         //
-                        tracing::error!(
+                        unrecoverable_error! {
+                            message: "append count exceeds signed delta range"
+                                .into();
                             added,
-                            "unrecoverable error: append count exceeds \
+                            "append count exceeds \
                                 signed delta range",
-                        );
-
-                        BaseError::Unrecoverable {
-                            msg: "append count exceeds signed delta range"
-                                .into(),
                         }
                     })?;
 
@@ -501,8 +498,13 @@ where
         UpdateTermbaseTermCount {
             id: &termbase_info.id,
             delta: i32::try_from(created_term_count).map_err(|_| {
-                BaseError::Unrecoverable {
-                    msg: "created term count exceeds signed delta range".into(),
+                //
+                unrecoverable_error! {
+                    message: "created term count exceeds signed delta range"
+                        .into();
+                    termbase_id = %termbase_info.id,
+                    created_term_count,
+                    "created term count exceeds signed delta range",
                 }
             })?,
         }
