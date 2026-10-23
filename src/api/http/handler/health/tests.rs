@@ -55,3 +55,29 @@ async fn private_health_endpoints_warn_on_non_loopback_rejections() {
         assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
     }
 }
+
+#[tokio::test]
+async fn missing_metrics_recorder_warns_once_at_source() {
+    let router = Router::new().route("/metrics", get(detailed_metrics));
+
+    let request = Request::builder()
+        .uri("/metrics")
+        .extension(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))))
+        .body(Body::empty())
+        .unwrap();
+
+    let (status, body, logs) = capture_request(router, request).await;
+
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+
+    assert!(body.is_empty());
+
+    assert!(
+        logs.contains("err_msg=\"metrics recorder unavailable\""),
+        "{logs}"
+    );
+
+    assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
+
+    assert!(!logs.contains(" ERROR "), "{logs}");
+}
