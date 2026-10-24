@@ -40,7 +40,13 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Creates a terminology base scoped to a team or comic.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -149,7 +155,13 @@ where
 }
 
 /// Fetches a terminology base by ID.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -175,7 +187,13 @@ where
 }
 
 /// Lists terminology bases directly owned by a team.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_team_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -231,7 +249,13 @@ where
 }
 
 /// Lists team and comic terminology bases visible from a comic.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_comic_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -270,7 +294,13 @@ where
 }
 
 /// Replaces a terminology base's name and description.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -323,7 +353,13 @@ where
 }
 
 /// Deletes a terminology base and all child terms.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

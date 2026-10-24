@@ -66,9 +66,11 @@ macro_rules! __general_prom_writer {
                             }
                         })?;
 
-                    let delay = time::Duration::try_from(task.delay.unwrap_or_default())
+                    let delay =
+                        time::Duration::try_from(task.delay.unwrap_or_default())
                         .map_err(|_| PromError::Unrecoverable {
-                            msg: "prom task delay is outside the supported range"
+                            msg:
+                                "prom task delay is outside the supported range"
                                 .to_string(),
                         })?;
 
@@ -76,7 +78,8 @@ macro_rules! __general_prom_writer {
                         now.checked_add(delay)
                             .ok_or_else(|| PromError::Unrecoverable {
                                 msg:
-                                    "prom task visibility is outside the supported range"
+                                    "prom task visibility is outside the \
+                                        supported range"
                                         .to_string(),
                             })?;
 
@@ -145,7 +148,8 @@ macro_rules! __general_prom_writer {
                 type BatchOutput = ();
             }
 
-            impl<'a, L, P> Step<Defer<'a, String, P, ()>, RdbContext<L>> for $writer
+            impl<'a, L, P> Step<Defer<'a, String, P, ()>, RdbContext<L>> for
+                $writer
             where
                 L: Level + Send + AtLeast<WriteLevel>,
                 P: Payload + Sync,
@@ -165,7 +169,8 @@ macro_rules! __general_prom_writer {
                 }
             }
 
-            impl<'t, 'a, L, P> Step<DeferBatch<'t, 'a, String, P, ()>, RdbContext<L>>
+            impl<'t, 'a, L, P> Step<DeferBatch<'t, 'a, String, P, ()>,
+                RdbContext<L>>
                 for $writer
             where
                 L: Level + Send + AtLeast<WriteLevel>,

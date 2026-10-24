@@ -24,9 +24,12 @@ use crate::usecase::issue as issue_usecase;
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = ImportChapterIssuesInstr,
     responses(
-        (status = 200, description = "Current review replaced completely", body = HttpBody<ImportChapterIssuesVal>),
-        (status = 403, description = "Current REVIEWER assignment required; administrator status alone does not authorize import"),
-        (status = 422, description = "Missing Chapter, published Chapter, or invalid issue input"),
+        (status = 200, description = "Current \
+        review replaced completely", body = HttpBody<ImportChapterIssuesVal>),
+        (status = 403, description = "Current REVIEWER assignment required; \
+        administrator status alone does not authorize import"),
+        (status = 422, description = "Missing Chapter, published Chapter, or \
+        invalid issue input"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -52,8 +55,10 @@ pub async fn import_issue(
     get, path = "/api/v1/chapters/{chapter_id}/issues", tag = "issues",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Ordered current Chapter issues", body = HttpBody<Vec<IssueInfoView>>),
-        (status = 403, description = "Team membership or chapter assignment required"),
+        (status = 200, description = "Ordered \
+        current Chapter issues", body = HttpBody<Vec<IssueInfoView>>),
+        (status = 403, description = "Team membership or chapter assignment \
+        required"),
         (status = 422, description = "Chapter not found"),
     ),
 ))]

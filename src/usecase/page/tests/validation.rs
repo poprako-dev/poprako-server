@@ -75,7 +75,11 @@ fn raw_ident_deserializes_optional_filenames_for_both_allocations() {
         (Some(json!(null)), None),
         (Some(json!("原稿 01.PNG")), Some("原稿 01.PNG".to_owned())),
     ] {
-        let mut body = json!({"image_hash": ImageHash::new([1; 32]), "new_byte_len": 4096, "ext": "png"});
+        let mut body = json!({
+            "image_hash": ImageHash::new([1; 32]),
+            "new_byte_len": 4096,
+            "ext": "png",
+        });
 
         if let Some(input) = input {
             body.as_object_mut()
@@ -101,7 +105,12 @@ fn raw_ident_rejects_patch_objects_and_invalid_filenames() {
         json!({"type": "assign", "value": "name.png"}),
         json!(42),
     ] {
-        let body = json!({"image_hash": ImageHash::new([1; 32]), "new_byte_len": 4096, "ext": "png", "raw_ident": raw_ident});
+        let body = json!({
+            "image_hash": ImageHash::new([1; 32]),
+            "new_byte_len": 4096,
+            "ext": "png",
+            "raw_ident": raw_ident,
+        });
 
         assert!(
             serde_json::from_value::<AllocPageImageInstr>(body.clone())

@@ -64,7 +64,13 @@ use crate::value::unit::{MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT};
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 
 /// Lists visible Units for one Page in final linked-list order.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -137,7 +143,13 @@ where
     accept(ListPageUnitInfosVal::from_models(unit_infos, count_metrics))
 }
 
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 /// Searches one Unit text field across all visible Units in a Chapter.
 pub async fn search_infos<N, C, R>(
     (nucl, repo): (&N, &R),
@@ -224,7 +236,16 @@ where
 }
 
 /// Saves one authorized Unit batch unless its token already completed.
-#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, save_id = %instr.save_id, page_id = %instr.page_id, edit_count = instr.edits.len()))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        save_id = %instr.save_id,
+        page_id = %instr.page_id,
+        edit_count = instr.edits.len(),
+    ),
+)]
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

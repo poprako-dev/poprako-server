@@ -79,8 +79,10 @@ pub struct ChapterWorkflowRecordListQuery {
     tag = "chapters",
     request_body = CreateChapterInstr,
     responses(
-        (status = 201, description = "Chapter created", body = HttpBody<CreateChapterVal>),
-        (status = 403, description = "No perm to create chapters in this comic"),
+        (status = 201, description = "Chapter \
+        created", body = HttpBody<CreateChapterVal>),
+        (status = 403, description = "No perm to create chapters in this \
+        comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -105,10 +107,15 @@ pub async fn create(
     get,
     path = "/api/v1/comics/{comic_id}/chapters",
     tag = "chapters",
-    description = "Lists chapters of a comic. `incl` embeds related rows; dotted values imply their parent segments. Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.",
-    params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
+    description = "Lists chapters of a comic. `incl` embeds related rows; \
+    dotted values imply their parent segments. Example: \
+    `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&\
+    incl=creator&offset=0&limit=20`.",
+    params(("comic_id" = String, Path, description = "Comic ID"),
+        ChapterListQuery),
     responses(
-        (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoView>>),
+        (status = 200, description = "Chapters listed",
+            body = HttpBody<Vec<ChapterInfoView>>),
         (status = 403, description = "No perm to list chapters in this comic"),
     ),
 ))]
@@ -143,8 +150,10 @@ pub async fn list_infos(
     tag = "chapters",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoView>>),
-        (status = 403, description = "No perm to view this comic's pinned chapter"),
+        (status = 200, description = "Pinned \
+        chapter (or null)", body = HttpBody<Option<ChapterInfoView>>),
+        (status = 403, description = "No perm to view this comic's pinned \
+        chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -170,7 +179,8 @@ pub async fn get_pinned(
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoView>),
+        (status = 200, description = "Chapter \
+        info retrieved", body = HttpBody<ChapterInfoView>),
         (status = 403, description = "No perm to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -196,9 +206,12 @@ pub async fn get_info(
     get,
     path = "/api/v1/chapters/{chapter_id}/workflow-records",
     tag = "chapters",
-    params(("chapter_id" = String, Path, description = "Chapter ID"), ChapterWorkflowRecordListQuery),
+    params(("chapter_id" = String, Path, description = "Chapter ID"),
+        ChapterWorkflowRecordListQuery),
     responses(
-        (status = 200, description = "Chapter workflow records listed", body = HttpBody<Vec<ChapterWorkflowRecordInfoView>>),
+        (status = 200, description = "Chapter \
+        workflow records listed",
+            body = HttpBody<Vec<ChapterWorkflowRecordInfoView>>),
         (status = 403, description = "No perm to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -231,7 +244,8 @@ pub async fn list_workflow_record_infos(
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    description = "Requires owning-team administrator membership; no chapter assignment is needed.",
+    description = "Requires owning-team administrator membership; no chapter \
+    assignment is needed.",
     request_body = UpdateChapterInfoInstr,
     responses(
         (status = 204, description = "Chapter updated"),
@@ -264,7 +278,8 @@ pub async fn update_info(
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/mark-pinned",
-    description = "Requires owning-team administrator membership; no chapter assignment is needed.",
+    description = "Requires owning-team administrator membership; no chapter \
+    assignment is needed.",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
@@ -297,7 +312,10 @@ pub async fn mark_pinned(
     path = "/api/v1/chapters/{chapter_id}/stage/advance",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    description = "Owning-team administrators may advance or revert without a chapter assignment or worker role holder. Other callers require the appropriate chapter worker role. State transitions and published freezing still apply.",
+    description = "Owning-team administrators may advance or revert without a \
+    chapter assignment or worker role holder. Other callers require the \
+    appropriate chapter worker role. State transitions and published freezing \
+    still apply.",
     request_body = UpdateChapterStageInstr,
     responses(
         (status = 204, description = "Stage advanced"),

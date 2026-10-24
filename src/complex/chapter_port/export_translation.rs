@@ -46,13 +46,15 @@ pub fn make_label_plus(
             });
 
         // FIXME: why ignore? and similar ones.
-        write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
-            //
-            tracing::error!(
-                err = %error,
-                "[chapter_translation_export_complex::make_label_plus] failed to write page header",
-            );
-        });
+        write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name)
+            .unwrap_or_else(|error| {
+                //
+                tracing::error!(
+                    err = %error,
+                    "[chapter_translation_export_complex::make_label_plus] \
+                     failed to write page header",
+                );
+            });
 
         let units = units_by_page_id
             .get(&page_info.id)
@@ -74,7 +76,11 @@ pub fn make_label_plus(
                 //
                 tracing::error!(
                     err = %error,
-                    "[chapter_translation_export_complex::make_label_plus] failed to write unit line",
+                    concat!(
+                        "[chapter_translation_export_complex::",
+                        "make_label_plus] ",
+                        "failed to write unit line"
+                    ),
                 );
             });
 

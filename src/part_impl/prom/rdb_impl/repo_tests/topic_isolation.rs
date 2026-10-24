@@ -117,7 +117,8 @@ async fn claim_reads_are_bounded() {
 
     assert!(
         reads < 32,
-        "claiming chapter fetched {reads} heap tuples with 8191 unrelated messages"
+        "claiming chapter fetched {reads} heap tuples with 8191 unrelated \
+            messages"
     );
 
     let mut conn = core.get().await.unwrap();

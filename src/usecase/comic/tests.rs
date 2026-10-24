@@ -206,7 +206,11 @@ async fn create_allocates_index_and_updates_count() {
 
     assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
 
-    assert!(matches!(record.payload, crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload::ChapterCreated));
+    assert!(matches!(
+            record.payload,
+            crate::value::chapter_workflow_record::
+                ChapterWorkflowRecordPayload::ChapterCreated
+        ));
 }
 
 #[tokio::test]

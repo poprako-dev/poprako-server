@@ -56,7 +56,9 @@ use crate::value::pagination::PubListLimit;
         ExportComicArchivesInstr,
     ),
     responses(
-        (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesVal>),
+        (status = 200, description = "Archive \
+        JSON strings grouped by UTC month",
+            body = HttpBody<ExportComicArchivesVal>),
         (status = 403, description = "No perm to export this team's archives"),
         (status = 422, description = "Invalid month selection"),
     ),
@@ -124,8 +126,10 @@ pub struct ComicListQuery {
     tag = "comics",
     request_body = CreateComicInstr,
     responses(
-        (status = 201, description = "Comic created", body = HttpBody<CreateComicVal>),
-        (status = 403, description = "No perm to create comics in this workset"),
+        (status = 201, description = "Comic \
+        created", body = HttpBody<CreateComicVal>),
+        (status = 403, description = "No perm to create comics in this \
+        workset"),
         (status = 404, description = "Workset not found"),
     ),
 ))]
@@ -150,12 +154,17 @@ pub async fn create(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
-    description = "Lists active and archived comics in a workset with optional title, lifecycle, and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
-    params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
+    description = "Lists active and archived comics in a workset with \
+    optional title, lifecycle, and workflow-stage filters. `incl` embeds \
+    related rows and `with` populates parallel derived rows.",
+    params(("workset_id" = String, Path, description = "Workset ID"),
+        ComicListQuery),
     responses(
-        (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosVal>),
+        (status = 200, description = "Comics \
+        listed", body = HttpBody<ListComicInfosVal>),
         (status = 403, description = "No perm to list comics in this workset"),
-        (status = 422, description = "Invalid query option combination or workflow-stage filter"),
+        (status = 422, description = "Invalid query option combination or \
+        workflow-stage filter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -191,9 +200,11 @@ pub async fn list_infos(
     get,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
-    params(("comic_id" = String, Path, description = "Comic ID"), GetComicInfoInstr),
+    params(("comic_id" = String, Path, description = "Comic ID"),
+        GetComicInfoInstr),
     responses(
-        (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoView>),
+        (status = 200, description = "Comic \
+        info retrieved", body = HttpBody<ComicInfoView>),
         (status = 403, description = "No perm to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -258,7 +269,8 @@ pub async fn update_info(
     params(("comic_id" = String, Path, description = "Comic ID")),
     request_body = AllocComicCoverInstr,
     responses(
-        (status = 200, description = "Cover upload URL allocated", body = HttpBody<AllocComicCoverVal>),
+        (status = 200, description = "Cover \
+        upload URL allocated", body = HttpBody<AllocComicCoverVal>),
         (status = 403, description = "No perm to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
@@ -325,7 +337,8 @@ pub async fn mark_cover_uploaded(
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 201, description = "Comic archived", body = HttpBody<ArchiveComicVal>),
+        (status = 201, description = "Comic \
+        archived", body = HttpBody<ArchiveComicVal>),
         (status = 403, description = "No perm to archive this comic"),
         (status = 404, description = "Comic not found"),
     ),

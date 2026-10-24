@@ -20,7 +20,13 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Optimistically marks the requested current cover generation as uploaded.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn mark_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

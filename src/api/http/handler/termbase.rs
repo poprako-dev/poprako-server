@@ -51,9 +51,12 @@ pub struct TermbaseListQuery {
     tag = "termbases",
     request_body = CreateTermbaseInstr,
     responses(
-        (status = 201, description = "Termbase created", body = HttpBody<CreateTermbaseVal>),
-        (status = 403, description = "Team translator or proofreader role required"),
-        (status = 422, description = "Invalid scope, parent, or duplicate name"),
+        (status = 201, description = "Termbase created",
+            body = HttpBody<CreateTermbaseVal>),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
+        (status = 422, description = "Invalid scope, parent, or duplicate \
+        name"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -77,9 +80,11 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/termbases",
     tag = "termbases",
-    params(("team_id" = String, Path, description = "Team ID"), TermbaseListQuery),
+    params(("team_id" = String, Path, description = "Team ID"),
+        TermbaseListQuery),
     responses(
-        (status = 200, description = "Team termbases listed", body = HttpBody<Vec<TermbaseInfoView>>),
+        (status = 200, description = "Team \
+        termbases listed", body = HttpBody<Vec<TermbaseInfoView>>),
         (status = 403, description = "Team membership required"),
     ),
 ))]
@@ -112,9 +117,11 @@ pub async fn list_team_infos(
     get,
     path = "/api/v1/comics/{comic_id}/termbases",
     tag = "termbases",
-    params(("comic_id" = String, Path, description = "Comic ID"), TermbaseListQuery),
+    params(("comic_id" = String, Path, description = "Comic ID"),
+        TermbaseListQuery),
     responses(
-        (status = 200, description = "Comic-visible termbases listed", body = HttpBody<Vec<TermbaseInfoView>>),
+        (status = 200, description = "Comic-visible termbases listed",
+            body = HttpBody<Vec<TermbaseInfoView>>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Comic not found"),
     ),
@@ -150,7 +157,8 @@ pub async fn list_comic_infos(
     tag = "termbases",
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
-        (status = 200, description = "Termbase retrieved", body = HttpBody<TermbaseInfoView>),
+        (status = 200, description = "Termbase retrieved",
+            body = HttpBody<TermbaseInfoView>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -180,8 +188,10 @@ pub async fn get_info(
     request_body = UpdateTermbaseInfoInstr,
     responses(
         (status = 204, description = "Termbase updated"),
-        (status = 403, description = "Team translator or proofreader role required"),
-        (status = 422, description = "Invalid input, duplicate name, or path mismatch"),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
+        (status = 422, description = "Invalid input, duplicate name, or path \
+        mismatch"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -212,7 +222,8 @@ pub async fn update_info(
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
         (status = 204, description = "Termbase and terms deleted"),
-        (status = 403, description = "Team translator or proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
         (status = 422, description = "Termbase not found"),
     ),
 ))]

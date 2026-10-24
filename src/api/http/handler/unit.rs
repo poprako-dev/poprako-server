@@ -58,7 +58,8 @@ pub struct UnitSearchQuery {
     tag = "units",
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
-        (status = 200, description = "Units listed", body = HttpBody<ListPageUnitInfosVal>),
+        (status = 200, description = "Units \
+        listed", body = HttpBody<ListPageUnitInfosVal>),
         (status = 403, description = "No perm to list units in this page"),
         (status = 404, description = "Page not found"),
     ),
@@ -91,9 +92,11 @@ pub async fn list_infos(
         UnitSearchQuery,
     ),
     responses(
-        (status = 200, description = "Matching Units listed in page order", body = HttpBody<Vec<UnitInfoView>>),
+        (status = 200, description = "Matching Units listed in page order",
+            body = HttpBody<Vec<UnitInfoView>>),
         (status = 403, description = "No perm to search Units in this Chapter"),
-        (status = 422, description = "Search phrase is empty or more than 100 Units match"),
+        (status = 422, description = "Search phrase is empty or more than \
+        100 Units match"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -127,8 +130,10 @@ pub async fn search_infos(
     params(("page_id" = String, Path, description = "Page ID"), UnitSaveQuery),
     request_body = Vec<UnitEditInstr>,
     responses(
-        (status = 200, description = "Unit edits saved", body = HttpBody<SavePageUnitEditsVal>),
-        (status = 409, description = "Serializable conflict; retry the complete request"),
+        (status = 200, description = "Unit \
+        edits saved", body = HttpBody<SavePageUnitEditsVal>),
+        (status = 409, description = "Serializable conflict; retry the \
+        complete request"),
         (status = 403, description = "No perm to save units in this page"),
         (status = 422, description = "Invalid Unit edit"),
     ),
@@ -167,7 +172,8 @@ pub async fn save_infos(
     responses(
         (status = 204, description = "Unit transforms applied"),
         (status = 403, description = "Matching Chapter role required"),
-        (status = 409, description = "Serializable conflict; retry the complete request"),
+        (status = 409, description = "Serializable conflict; retry the \
+        complete request"),
         (status = 422, description = "Invalid or overlapping Unit transform"),
     ),
 ))]

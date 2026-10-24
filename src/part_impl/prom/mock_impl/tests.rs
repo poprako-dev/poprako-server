@@ -91,7 +91,8 @@ async fn repeated_chapter_requests_remain_independent() {
         snapshot.prom_records.iter().zip(["first", "latest"])
     {
         assert!(matches!(record.payload(), PromPayload::Chapter {
-            payload: ChapterPayload::TryAdvanceRawProvideStage { actor_user_id, .. }
+            payload: ChapterPayload::TryAdvanceRawProvideStage { actor_user_id,
+                .. }
         } if actor_user_id == expected));
 
         assert!(record.visible_at() > OffsetDateTime::now_utc());

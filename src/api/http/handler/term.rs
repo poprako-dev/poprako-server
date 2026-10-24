@@ -50,9 +50,12 @@ pub struct TermListQuery {
     tag = "terms",
     request_body = CreateTermInstr,
     responses(
-        (status = 201, description = "Term created", body = HttpBody<CreateTermVal>),
-        (status = 403, description = "Team translator or proofreader role required"),
-        (status = 422, description = "Invalid term, duplicate source, or missing termbase"),
+        (status = 201, description = "Term \
+        created", body = HttpBody<CreateTermVal>),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
+        (status = 422, description = "Invalid term, duplicate source, or \
+        missing termbase"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -76,9 +79,11 @@ pub async fn create(
     get,
     path = "/api/v1/termbases/{termbase_id}/terms",
     tag = "terms",
-    params(("termbase_id" = String, Path, description = "Termbase ID"), TermListQuery),
+    params(("termbase_id" = String, Path, description = "Termbase ID"),
+        TermListQuery),
     responses(
-        (status = 200, description = "Terms listed", body = HttpBody<Vec<TermInfoView>>),
+        (status = 200, description = "Terms \
+        listed", body = HttpBody<Vec<TermInfoView>>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -114,7 +119,8 @@ pub async fn list_infos(
     tag = "terms",
     params(("term_id" = String, Path, description = "Term ID")),
     responses(
-        (status = 200, description = "Term retrieved", body = HttpBody<TermInfoView>),
+        (status = 200, description = "Term \
+        retrieved", body = HttpBody<TermInfoView>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Term not found"),
     ),
@@ -144,8 +150,10 @@ pub async fn get_info(
     request_body = UpdateTermInfoInstr,
     responses(
         (status = 204, description = "Term updated"),
-        (status = 403, description = "Team translator or proofreader role required"),
-        (status = 422, description = "Invalid term, duplicate source, or path mismatch"),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
+        (status = 422, description = "Invalid term, duplicate source, or \
+        path mismatch"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -176,7 +184,8 @@ pub async fn update_info(
     params(("term_id" = String, Path, description = "Term ID")),
     responses(
         (status = 204, description = "Term deleted"),
-        (status = 403, description = "Team translator or proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role \
+        required"),
         (status = 422, description = "Term not found"),
     ),
 ))]

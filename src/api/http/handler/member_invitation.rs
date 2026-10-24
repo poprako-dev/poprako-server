@@ -64,8 +64,10 @@ pub struct MemberInvitationListQuery {
     tag = "member-invitations",
     request_body = CreateMemberInvitationInstr,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
-        (status = 403, description = "No perm to create invitations in this team"),
+        (status = 201, description = "Invitation created",
+            body = HttpBody<CreateMemberInvitationVal>),
+        (status = 403, description = "No perm to create invitations in this \
+        team"),
         (status = 409, description = "Invitee is already a member"),
     ),
 ))]
@@ -100,11 +102,17 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/member-invitations",
     tag = "member-invitations",
-    description = "Lists a team's member invitations. `is_pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?is_pending=true&incl=invitor&offset=0&limit=20`.",
-    params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
+    description = "Lists a team's member invitations. `is_pending` filters by \
+    consumption state; `incl` embeds related rows. Example: \
+    `/api/v1/teams/{team_id}/member-invitations?is_pending=true&\
+    incl=invitor&offset=0&limit=20`.",
+    params(("team_id" = String, Path, description = "Team ID"),
+        MemberInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoView>>),
-        (status = 403, description = "No perm to list invitations in this team"),
+        (status = 200, description = "Invitations listed",
+            body = HttpBody<Vec<MemberInvitationInfoView>>),
+        (status = 403, description = "No perm to list invitations in this \
+        team"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -137,7 +145,8 @@ pub async fn list_infos(
     put,
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
-    params(("member_invitation_id" = String, Path, description = "Invitation ID")),
+    params(("member_invitation_id" = String, Path,
+        description = "Invitation ID")),
     request_body = UpdateMemberInvitationRolesInstr,
     responses(
         (status = 204, description = "Invitation roles updated"),
@@ -171,7 +180,8 @@ pub async fn update_roles(
     delete,
     path = "/api/v1/member-invitations/{member_invitation_id}",
     tag = "member-invitations",
-    params(("member_invitation_id" = String, Path, description = "Invitation ID")),
+    params(("member_invitation_id" = String, Path,
+        description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
         (status = 403, description = "No perm to delete this invitation"),

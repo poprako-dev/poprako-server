@@ -76,7 +76,11 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
     assert!(snapshot.objs.get("user_avatar").unwrap().is_empty());
 
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "user-1" && key.ver == 2)
+        matches!(
+            task,
+            ObjTask::Delete { key }
+                if key.id == "user-1" && key.ver == 2
+        )
     }));
 }
 
@@ -173,7 +177,11 @@ async fn delete_pending_avatar_enqueues_exact_object_delete() {
     .unwrap();
 
     assert!(mock.snapshot().obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "user-1" && key.ver == 2)
+        matches!(
+            task,
+            ObjTask::Delete { key }
+                if key.id == "user-1" && key.ver == 2
+        )
     }));
 }
 

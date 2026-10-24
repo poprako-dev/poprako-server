@@ -55,7 +55,11 @@ use crate::value::chapter_workflow_record::{
     clippy::too_many_lines,
     reason = "coordinates chapter export assembly"
 )]
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn export_translation<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

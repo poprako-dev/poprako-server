@@ -180,17 +180,21 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
+                    ::poprako_obj_dept::rest::ObjDeptError::
+                        retryable("object delete timed out".into())
                 })??;
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
             }
             (::poprako_obj_dept::model::task::CHECK, state)
-                if ::poprako_obj_dept::actor::rdb_impl::requires_presence_reconciliation(state) =>
+                if
+                    ::poprako_obj_dept::actor::rdb_impl::
+                        requires_presence_reconciliation(state) =>
             {
                 let Some(initial_revision) = initial_revision else {
                     return Ok(
-                        ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
+                        ::poprako_obj_dept::model::task::ObjTaskAction::Operator
+                            {
                             msg: "active object lacks a revision token".into(),
                         },
                     );
@@ -205,7 +209,8 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object check timed out".into())
+                    ::poprako_obj_dept::rest::ObjDeptError::
+                        retryable("object check timed out".into())
                 })??;
                 let mut conn = core
                     .get()
@@ -247,8 +252,10 @@ macro_rules! handle_obj_dept_task {
                         drop(conn);
 
                         return Ok(
-                            ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                                msg: "object check changed multiple rows".into(),
+                            ::poprako_obj_dept::model::task::ObjTaskAction::
+                                Operator {
+                                msg:
+                                    "object check changed multiple rows".into(),
                             },
                         );
                     }
@@ -261,9 +268,14 @@ macro_rules! handle_obj_dept_task {
                     (
                         0,
                         Some(
-                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Missing
-                            | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Stale
-                            | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Retired,
+                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::
+                                Missing
+                            |
+                                ::poprako_obj_dept::actor::rdb_impl::
+                                    ObjKeyState::Stale
+                            |
+                                ::poprako_obj_dept::actor::rdb_impl::
+                                    ObjKeyState::Retired,
                         ),
                     ) => {
                         ::tokio::time::timeout(
@@ -272,14 +284,18 @@ macro_rules! handle_obj_dept_task {
                         )
                         .await
                         .map_err(|_| {
-                            ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
+                            ::poprako_obj_dept::rest::ObjDeptError::
+                                retryable("object delete timed out".into())
                         })??;
                     }
                     (0, Some(state))
-                        if ::poprako_obj_dept::actor::rdb_impl::presence_cas_conflict_requires_retry(state) =>
+                        if
+                            ::poprako_obj_dept::actor::rdb_impl::
+                                presence_cas_conflict_requires_retry(state) =>
                     {
                         return Ok(
-                            ::poprako_obj_dept::model::task::ObjTaskAction::Retry {
+                            ::poprako_obj_dept::model::task::ObjTaskAction::
+                                Retry {
                                 msg: "object changed during check".into(),
                             },
                         );
@@ -287,12 +303,16 @@ macro_rules! handle_obj_dept_task {
                     (
                         0,
                         Some(
-                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
+                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::
+                                Future,
                         ),
                     ) => {
                         return Ok(
-                            ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                                msg: "object changed to an older watermark".into(),
+                            ::poprako_obj_dept::model::task::ObjTaskAction::
+                                Operator {
+                                msg:
+                                    "object changed to an older \
+                                        watermark".into(),
                             },
                         );
                     }
@@ -319,7 +339,8 @@ macro_rules! handle_obj_dept_task {
                 )
                 .await
                 .map_err(|_| {
-                    ::poprako_obj_dept::rest::ObjDeptError::retryable("object delete timed out".into())
+                    ::poprako_obj_dept::rest::ObjDeptError::
+                        retryable("object delete timed out".into())
                 })??;
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)

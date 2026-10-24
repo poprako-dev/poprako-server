@@ -75,7 +75,13 @@ where
 }
 
 /// Lists assignment invitations under one chapter.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -109,7 +115,13 @@ where
 }
 
 /// Creates a pending assignment invitation.
-#[instrument(level = "info", skip(nucl, repo, prom, invitation_config, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, prom, invitation_config, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom, invitation_config): (&N, &R, &P, &InvitationConfig),
     token: UserToken,
@@ -147,11 +159,9 @@ where
 
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-            let invitee_user_info = FindUserInfo {
-                qid: invitee_qid,
-            }
-            .step_on(repo, context)
-            .await?;
+            let invitee_user_info = FindUserInfo { qid: invitee_qid }
+                .step_on(repo, context)
+                .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
@@ -175,7 +185,8 @@ where
                         invitee_user_id = %invitee_user_info.id,
                         invitee_qid = %invitee_qid,
                         roles = ?instr.roles,
-                        "expected error: invitee already has a chapter assignment",
+                        "expected error: invitee already has a chapter \
+                        assignment",
                     );
 
                     return Err(expected(ExpectedVariant::Args, err_msg));
@@ -200,12 +211,17 @@ where
             .step_on(repo, context)
             .await?;
 
-            let invitation_payload = InvitationPayload::PurgeExpiredAssignmentInvitation {
-                invitation_id: assignment_invitation_info.id.clone(),
-            };
+            let invitation_payload =
+                InvitationPayload::PurgeExpiredAssignmentInvitation {
+                    invitation_id: assignment_invitation_info.id.clone(),
+                };
 
-            let (purge_payload, purge_task_id) =
-                (PromPayload::Invitation { payload: invitation_payload }, next_snowflake_id());
+            let (purge_payload, purge_task_id) = (
+                PromPayload::Invitation {
+                    payload: invitation_payload,
+                },
+                next_snowflake_id(),
+            );
 
             let purge_task = Task {
                 id: &purge_task_id,
@@ -229,7 +245,13 @@ where
 }
 
 /// Deletes an assignment invitation.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

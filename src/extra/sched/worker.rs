@@ -49,7 +49,8 @@ async fn wait(token: &CancellationToken, delay: Duration) -> bool {
 }
 
 // Isolate attempts and runner creation without spawning a task per attempt.
-#[instrument(level = "info", skip_all, fields(task_name = config.name, worker_index = index))]
+#[instrument(level = "info", skip_all, fields(task_name = config.name,
+    worker_index = index))]
 async fn run_worker(
     task: Arc<dyn SchedTask + Send + Sync>,
     config: SchedTaskConfig,

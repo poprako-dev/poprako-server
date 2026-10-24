@@ -111,7 +111,11 @@ fn order_units_rejects_corrupt_persisted_graphs() {
         let error = order_test_units(&mut orders).unwrap_err();
 
         assert!(
-            matches!(error, BaseError::Unrecoverable { msg } if msg == "persisted Unit chain is corrupt"),
+            matches!(
+                error,
+                BaseError::Unrecoverable { msg }
+                    if msg == "persisted Unit chain is corrupt"
+            ),
             "{case}"
         );
     }

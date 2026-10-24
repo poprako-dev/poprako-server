@@ -83,7 +83,8 @@ fn default_filter_keeps_rejections_and_errors_without_axum_trace_noise() {
 
         tracing::debug!(target: "axum::serve", "connection debug noise");
 
-        tracing::error!(target: "axum::serve", operation = "accept", "listener failure");
+        tracing::error!(target: "axum::serve", operation = "accept",
+            "listener failure");
 
         tracing::info!(
             resource_id = "safe-resource",
@@ -105,7 +106,8 @@ fn default_filter_keeps_rejections_and_errors_without_axum_trace_noise() {
 #[test]
 fn explicit_rejection_filter_override_disables_native_events() {
     let logs = capture(Some("info,axum::rejection=off"), || {
-        tracing::trace!(target: "axum::rejection", status = 422_u16, rejection_type = "JsonDataError", body = ?Unformattable);
+        tracing::trace!(target: "axum::rejection", status = 422_u16,
+            rejection_type = "JsonDataError", body = ?Unformattable);
     });
 
     assert!(logs.is_empty(), "{logs}");
@@ -120,9 +122,14 @@ fn previously_logged_pool_errors_keep_classification_without_conversion_logs() {
 
         let error = rdb_err(source);
 
-        assert_eq!(error, ObjDeptError::Retryable {
-            msg: "failed to acquire RDB connection: connection creation failed".into(),
-        });
+        assert_eq!(
+            error,
+            ObjDeptError::Retryable {
+                msg: "failed to acquire RDB connection: connection creation \
+                    failed"
+                    .into(),
+            }
+        );
 
         let error = rdb_err(RdbError::PoolBuild {
             source: BuildError::NoRuntimeSpecified,

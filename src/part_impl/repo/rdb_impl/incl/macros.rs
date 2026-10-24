@@ -33,7 +33,10 @@ macro_rules! preload_by_ids {
                 fn into_entry(row: $row) -> BaseRest<(String, $info)> {
                     let id = row.f_id.clone();
 
-                    let info: $info = preload_by_ids!(@convert $convert $info, row);
+                    let info: $info = preload_by_ids!(
+                        @convert $convert $info,
+                        row
+                    );
 
                     Ok((id, info))
                 }
@@ -69,7 +72,11 @@ macro_rules! preloadable_inject_path {
         $owner.$field = $related;
     };
 
-    ($owner:ident, $related:ident; [$head:ident $(, $tail:ident)*] => $field:ident) => {
+    (
+        $owner:ident,
+        $related:ident;
+        [$head:ident $(, $tail:ident)*] => $field:ident
+    ) => {
         let Some($owner) = $owner.$head.as_mut() else {
             return;
         };
@@ -89,10 +96,17 @@ macro_rules! preloadable_variant {
     ) => {
         preloadable_variant!(@generate $owner; $marker => $query {
             resolve: |owner| {
-                preloadable_resolve_path!(owner; [$($resolve_path),*] => $resolve_field)
+                preloadable_resolve_path!(
+                    owner;
+                    [$($resolve_path),*] => $resolve_field
+                )
             },
             inject: |owner, related| {
-                preloadable_inject_path!(owner, related; [$($inject_path),*] => $inject_field);
+                preloadable_inject_path!(
+                    owner,
+                    related;
+                    [$($inject_path),*] => $inject_field
+                );
             },
         });
     };
@@ -107,7 +121,11 @@ macro_rules! preloadable_variant {
         preloadable_variant!(@generate $owner; $marker => $query {
             resolve: |$resolve_owner| { $resolve },
             inject: |owner, related| {
-                preloadable_inject_path!(owner, related; [$($inject_path),*] => $inject_field);
+                preloadable_inject_path!(
+                    owner,
+                    related;
+                    [$($inject_path),*] => $inject_field
+                );
             },
         });
     };
@@ -116,12 +134,16 @@ macro_rules! preloadable_variant {
         $owner:ty;
         $marker:ident => $query:ident {
             resolve: path [$($resolve_path:ident),*] => $resolve_field:ident,
-            inject: with |$inject_owner:ident, $inject_related:ident| $inject:expr,
+            inject: with
+                |$inject_owner:ident, $inject_related:ident| $inject:expr,
         }
     ) => {
         preloadable_variant!(@generate $owner; $marker => $query {
             resolve: |owner| {
-                preloadable_resolve_path!(owner; [$($resolve_path),*] => $resolve_field)
+                preloadable_resolve_path!(
+                    owner;
+                    [$($resolve_path),*] => $resolve_field
+                )
             },
             inject: |$inject_owner, $inject_related| { $inject; },
         });
@@ -131,7 +153,8 @@ macro_rules! preloadable_variant {
         $owner:ty;
         $marker:ident => $query:ident {
             resolve: with |$resolve_owner:ident| $resolve:expr,
-            inject: with |$inject_owner:ident, $inject_related:ident| $inject:expr,
+            inject: with
+                |$inject_owner:ident, $inject_related:ident| $inject:expr,
         }
     ) => {
         preloadable_variant!(@generate $owner; $marker => $query {
@@ -199,7 +222,9 @@ macro_rules! preloadable {
             for incl_opt in expand_incl_opts(incl_opt) {
                 match incl_opt {
                     $(
-                        $opt::$marker => populate::<$marker>(conn, infos).await?,
+                        $opt::$marker => {
+                            populate::<$marker>(conn, infos).await?
+                        }
                     )*
                 }
             }

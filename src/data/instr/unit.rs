@@ -247,11 +247,17 @@ pub enum UnitEditInstr {
 
         /// Three-state typesetting annotation patch.
         #[serde(default, skip_serializing_if = "Patch::is_skip")]
-        #[cfg_attr(feature = "swagger", schema(value_type = Option<PatchInput<String>>))]
+        #[cfg_attr(
+            feature = "swagger",
+            schema(value_type = Option<PatchInput<String>>)
+        )]
         typography_note: Patch<String>,
         /// Three-state translator and proofreader communication patch.
         #[serde(default, skip_serializing_if = "Patch::is_skip")]
-        #[cfg_attr(feature = "swagger", schema(value_type = Option<PatchInput<String>>))]
+        #[cfg_attr(
+            feature = "swagger",
+            schema(value_type = Option<PatchInput<String>>)
+        )]
         translation_note: Patch<String>,
 
         /// Three-state translation patch.

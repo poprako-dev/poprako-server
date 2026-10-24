@@ -36,7 +36,8 @@ use crate::usecase::team::{
     tag = "teams",
     request_body = CreateTeamInstr,
     responses(
-        (status = 201, description = "Team created", body = HttpBody<TeamInfoView>),
+        (status = 201, description = "Team \
+        created", body = HttpBody<TeamInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
@@ -62,12 +63,18 @@ pub async fn create(
     get,
     path = "/api/v1/teams",
     tag = "teams",
-    description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply the authenticated user's ID to list teams they have joined. A different user's ID is rejected with `403`. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
+    description = "Lists teams. Omit `user_id` to list all teams (super-admin \
+    only, otherwise `403`); supply the authenticated user's ID to list teams \
+    they have joined. A different user's ID is rejected with `403`. Examples: \
+    `/api/v1/teams?user_id=u_1&offset=0&limit=20`, \
+    `/api/v1/teams?offset=0&limit=20` (super-admin).",
     params(ListTeamInfosInstr),
     responses(
-        (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoView>>),
+        (status = 200, description = "Teams \
+        listed", body = HttpBody<Vec<TeamInfoView>>),
         (status = 401, description = "Authentication required"),
-        (status = 403, description = "Listing all teams requires super-admin; user filters must match the authenticated user"),
+        (status = 403, description = "Listing all teams requires \
+        super-admin; user filters must match the authenticated user"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -93,7 +100,8 @@ pub async fn list_infos(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 200, description = "Online user IDs listed", body = HttpBody<Vec<String>>),
+        (status = 200, description = "Online \
+        user IDs listed", body = HttpBody<Vec<String>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Team membership required"),
     ),
@@ -121,7 +129,8 @@ pub async fn list_online_user_ids(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 204, description = "User and membership activity updated and online lease refreshed"),
+        (status = 204, description = "User and membership activity updated \
+        and online lease refreshed"),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Team membership required"),
     ),
@@ -150,7 +159,8 @@ pub async fn mark_self_online(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 200, description = "Team info retrieved", body = HttpBody<TeamInfoView>),
+        (status = 200, description = "Team \
+        info retrieved", body = HttpBody<TeamInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
@@ -211,7 +221,8 @@ pub async fn update_info(
     params(("team_id" = String, Path, description = "Team ID")),
     request_body = AllocTeamAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL allocated", body = HttpBody<AllocTeamAvatarVal>),
+        (status = 200, description = "Avatar \
+        upload URL allocated", body = HttpBody<AllocTeamAvatarVal>),
         (status = 403, description = "No perm to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),

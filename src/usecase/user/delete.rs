@@ -24,7 +24,13 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 /// Deletes a user account and all associated instr.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 ///
 /// Transactional cascade:
 ///
@@ -96,7 +102,8 @@ where
                     team_id = %member_info.team_id,
                     user_id = %id,
                     member_id = %member_info.id,
-                    operation = "delete user holding last team administrator role",
+                    operation = "delete user holding last team administrator \
+                    role",
                     "expected error: team administrator retention required",
                 );
 

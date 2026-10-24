@@ -58,7 +58,11 @@ use crate::value::chapter_workflow_record::{
 use crate::value::role::RoleField;
 
 /// Allocates a direct upload or returns the already available content's version.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, config, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, config, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn alloc_artwork<N, C, R, O>(
     (nucl, repo, obj_dept, config): (&N, &R, &O, &ArtworkConfig),
     token: UserToken,
@@ -138,7 +142,11 @@ where
 }
 
 /// Confirms an exact generation and completes typesetting in the same transaction.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, develop, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, develop, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn mark_artwork_uploaded<N, C, R, O, D>(
     (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
     token: UserToken,
@@ -285,7 +293,11 @@ where
 }
 
 /// Exports metadata and the original URL of the current available artwork.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn export_artwork<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

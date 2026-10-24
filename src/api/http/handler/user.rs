@@ -34,7 +34,8 @@ use crate::usecase::user::delete as user_delete_usecase;
     path = "/api/v1/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Current user profile", body = HttpBody<UserInfoView>),
+        (status = 200, description = "Current \
+        user profile", body = HttpBody<UserInfoView>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -62,7 +63,8 @@ pub async fn get_my_info(
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
-        (status = 200, description = "User profile retrieved", body = HttpBody<UserInfoView>),
+        (status = 200, description = "User \
+        profile retrieved", body = HttpBody<UserInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
@@ -122,7 +124,8 @@ pub async fn update_info(
     put,
     path = "/api/v1/users/{user_id}/password",
     tag = "users",
-    params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
+    params(("user_id" = String, Path,
+        description = "Target user ID (must match authenticated user)")),
     request_body = UpdateUserPasswordInstr,
     responses(
         (status = 204, description = "Password updated"),
@@ -157,8 +160,10 @@ pub async fn update_password(
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
         (status = 204, description = "User deleted"),
-        (status = 403, description = "Cannot delete another user or the last admin of a team"),
-        (status = 409, description = "Serializable conflict; retry the complete request"),
+        (status = 403, description = "Cannot delete another user or the last \
+        admin of a team"),
+        (status = 409, description = "Serializable conflict; retry the \
+        complete request"),
         (status = 404, description = "User not found"),
     ),
 ))]
@@ -184,10 +189,12 @@ pub async fn delete(
     post,
     path = "/api/v1/users/{user_id}/avatar/alloc",
     tag = "users",
-    params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
+    params(("user_id" = String, Path,
+        description = "Target user ID (must match authenticated user)")),
     request_body = AllocUserAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL allocated", body = HttpBody<AllocUserAvatarVal>),
+        (status = 200, description = "Avatar \
+        upload URL allocated", body = HttpBody<AllocUserAvatarVal>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
@@ -220,7 +227,8 @@ pub async fn alloc_avatar(
     post,
     path = "/api/v1/users/{user_id}/avatar/mark-uploaded",
     tag = "users",
-    params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
+    params(("user_id" = String, Path,
+        description = "Target user ID (must match authenticated user)")),
     request_body = MarkUserAvatarUploadedInstr,
     responses(
         (status = 204, description = "Avatar upload confirmed"),

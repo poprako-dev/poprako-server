@@ -17,7 +17,11 @@ pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
     let msg = trl(key);
 
-    tracing::warn!(err_variant = ?variant, err_msg = %msg, "review issue rejected");
+    tracing::warn!(
+        err_variant = ?variant,
+        err_msg = %msg,
+        "review issue rejected"
+    );
 
     BaseError::Expected { variant, msg }
 }

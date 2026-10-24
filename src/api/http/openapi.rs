@@ -257,7 +257,8 @@ use crate::value::unit::UnitTextPart;
         ImportChapterIssuesVal, IssueInfoView, IssueRectView,
         AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
         MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
-        AllocChapterPageArtworksVal, AllocatedPageArtworkVal, PageArtworkInfoView,
+        AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
+            PageArtworkInfoView,
         HttpError,
         RegisterAuthInstr,
         RegisterAuthVal,
@@ -387,8 +388,11 @@ use crate::value::unit::UnitTextPart;
         (name = "worksets", description = "Workset management endpoints"),
         (name = "comics", description = "Comic management endpoints"),
         (name = "chapters", description = "Chapter management endpoints"),
-        (name = "chapter-port", description = "Chapter translation and artwork import/export endpoints"),
-        (name = "page-artworks", description = "Composite artwork page endpoints"),
+        (name = "chapter-port",
+            description = "Chapter translation and artwork import/export \
+            endpoints"),
+        (name = "page-artworks",
+            description = "Composite artwork page endpoints"),
         (name = "issues", description = "Composite artwork review endpoints"),
         (name = "pages", description = "Page management endpoints"),
         (name = "units", description = "Page unit endpoints"),
@@ -405,7 +409,8 @@ use crate::value::unit::UnitTextPart;
         (name = "system-mails", description = "System mail endpoints"),
         (name = "announcements", description = "Announcement endpoints"),
         (name = "comments", description = "Comment endpoints"),
-        (name = "termbase-port", description = "Terminology-base import/export endpoints"),
+        (name = "termbase-port",
+            description = "Terminology-base import/export endpoints"),
     )
 )]
 pub struct ApiDoc;

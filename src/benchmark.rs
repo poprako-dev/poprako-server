@@ -281,7 +281,11 @@ fn poprako_content() -> &'static str {
                 .map(|index| {
                     //
                     format!(
-                        "{{\"id\":\"unit-{index}\",\"x\":1.0,\"y\":2.0,\"index_in_page\":{index},\"is_inbox\":true,\"translated_text\":\"translated\",\"prooved_text\":\"proofread\",\"is_prooved\":true}}",
+                        "{{\"id\":\"unit-{index}\",\"x\":1.0,\"y\":2.0,\
+                            \"index_in_page\":{index},\"is_inbox\":true,\
+                            \"translated_text\":\"translated\",\
+                            \"prooved_text\":\"proofread\",\
+                            \"is_prooved\":true}}",
                     )
                 })
                 .collect::<Vec<_>>();
@@ -289,7 +293,8 @@ fn poprako_content() -> &'static str {
             let units = unit_strings.join(",");
 
             format!(
-                "{{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[{{\"image_filename\":\"001.png\",\"units\":[{units}]}}]}}",
+                "{{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[\
+                    {{\"image_filename\":\"001.png\",\"units\":[{units}]}}]}}",
             )
         })
         .as_str()

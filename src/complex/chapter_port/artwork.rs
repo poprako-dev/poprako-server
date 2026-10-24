@@ -22,7 +22,11 @@ pub fn artwork_error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
     let msg = trl(key);
 
-    tracing::warn!(err_variant = ?variant, err_msg = %msg, "chapter artwork rejected");
+    tracing::warn!(
+        err_variant = ?variant,
+        err_msg = %msg,
+        "chapter artwork rejected"
+    );
 
     BaseError::Expected { variant, msg }
 }

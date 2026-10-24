@@ -61,7 +61,13 @@ use crate::value::role::{RoleField, RoleMask};
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `O` — Resolves the avatar signed URL through `ObjDept`.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn create<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
@@ -125,7 +131,13 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -256,7 +268,13 @@ where
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
-#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, obj_dept, token),
+    fields(
+        actor_user_id = %token.user_id,
+    ),
+)]
 #[expect(
     clippy::future_not_send,
     reason = "This locally awaited generic interface does not require its future to be Send"

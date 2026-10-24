@@ -25,7 +25,8 @@ use crate::usecase::system_mail as system_mail_usecase;
     tag = "system-mails",
     params(ListSystemMailInfosInstr),
     responses(
-        (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailInfoView>>),
+        (status = 200, description = "System \
+        mails listed", body = HttpBody<Vec<SystemMailInfoView>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -49,7 +50,8 @@ pub async fn list_infos(
     request_body = MarkSystemMailReadInstr,
     responses(
         (status = 204, description = "Mails marked as read"),
-        (status = 403, description = "One or more mails do not belong to the user"),
+        (status = 403, description = "One or more mails do not belong to the \
+        user"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

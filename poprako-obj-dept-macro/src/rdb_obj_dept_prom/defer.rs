@@ -212,7 +212,10 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     PENDING | PROCESSING => {}
 
                     OPERATOR => {
-                        return Err(ObjDeptError::conflict("object task requires operator repair".into()));
+                        return
+                            Err(ObjDeptError::
+                                conflict("object task requires operator \
+                                    repair".into()));
                     }
 
                     _ => {
@@ -279,8 +282,11 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                             .expires_at()
                             .checked_add(::time::Duration::minutes(1))
                             .ok_or_else(|| {
-                                ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                                    msg: "object check visibility overflow".into(),
+                                ::poprako_obj_dept::rest::ObjDeptError::
+                                    Unrecoverable {
+                                    msg:
+                                        "object check visibility \
+                                            overflow".into(),
                                 }
                             })?;
 
@@ -291,7 +297,8 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                             visible_at,
                         ))
                     })
-                    .collect::<::poprako_obj_dept::rest::ObjDeptRest<Vec<_>>>()?;
+                    .collect::<::poprako_obj_dept::rest::
+                        ObjDeptRest<Vec<_>>>()?;
 
                 tasks.sort_unstable_by(|left, right| left.id.cmp(&right.id));
                 tasks.dedup_by(|left, right| left.id == right.id);

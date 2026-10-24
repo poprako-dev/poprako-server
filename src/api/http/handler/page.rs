@@ -41,7 +41,8 @@ use crate::usecase::page::{
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoView>>),
+        (status = 200, description = "Pages \
+        listed", body = HttpBody<Vec<PageInfoView>>),
         (status = 403, description = "No perm to list pages in this chapter"),
     ),
 ))]
@@ -70,7 +71,9 @@ pub async fn list_infos(
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Visible Unit text counts for Pages with edits or revision-only additions, in original Page order", body = HttpBody<Vec<PageUnitDiffStatsVal>>),
+        (status = 200, description = "Visible Unit text counts for Pages with \
+        edits or revision-only additions, in original Page order",
+                body = HttpBody<Vec<PageUnitDiffStatsVal>>),
         (status = 403, description = "No perm to list Pages in this Chapter"),
         (status = 422, description = "Chapter not found"),
     ),
@@ -100,7 +103,9 @@ pub async fn list_unit_diff_stats(
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Visible flagged Unit counts for Pages, in original Page order", body = HttpBody<Vec<PageUnitFlaggedStatsVal>>),
+        (status = 200, description = "Visible \
+        flagged Unit counts for Pages, in original Page order",
+            body = HttpBody<Vec<PageUnitFlaggedStatsVal>>),
         (status = 403, description = "No perm to list Pages in this Chapter"),
         (status = 422, description = "Chapter not found"),
     ),
@@ -130,7 +135,8 @@ pub async fn list_unit_flagged_stats(
     tag = "pages",
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
-        (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoView>),
+        (status = 200, description = "Page \
+        info retrieved", body = HttpBody<PageInfoView>),
         (status = 403, description = "No perm to view this page"),
         (status = 404, description = "Page not found"),
     ),
@@ -187,10 +193,13 @@ pub async fn delete(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = AllocChapterPagesInstr,
     responses(
-        (status = 200, description = "Page upload slots allocated", body = HttpBody<AllocChapterPagesVal>),
+        (status = 200, description = "Page \
+        upload slots allocated", body = HttpBody<AllocChapterPagesVal>),
         (status = 422, description = "Path id does not match body chapter id"),
-        (status = 403, description = "No perm to allocate pages in this chapter"),
-        (status = 422, description = "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"),
+        (status = 403, description = "No perm to allocate pages in this \
+        chapter"),
+        (status = 422, description = "Invalid authoritative manifest, \
+        duplicate page identity, image metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -232,9 +241,11 @@ pub async fn alloc_chapter_pages(
     params(("page_id" = String, Path, description = "Page ID")),
     request_body = AllocPageImageInstr,
     responses(
-        (status = 200, description = "Page image upload URL allocated", body = HttpBody<AllocatedPageVal>),
+        (status = 200, description = "Page \
+        image upload URL allocated", body = HttpBody<AllocatedPageVal>),
         (status = 403, description = "No perm to modify this page's image"),
-        (status = 422, description = "Page not found, conflicting image metadata, or published chapter"),
+        (status = 422, description = "Page not found, conflicting image \
+        metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -271,7 +282,8 @@ pub async fn alloc_image(
     responses(
         (status = 204, description = "Page image upload confirmed"),
         (status = 403, description = "No perm to modify this page's image"),
-        (status = 422, description = "Page, image identity, storage object, or published chapter is invalid"),
+        (status = 422, description = "Page, image identity, storage object, \
+        or published chapter is invalid"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

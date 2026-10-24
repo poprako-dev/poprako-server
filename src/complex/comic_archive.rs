@@ -119,9 +119,10 @@ pub async fn prepare_entry(
         );
 
         BaseError::Unrecoverable {
-                msg: format!(
-                    "[comic_archive_complex::prepare_entry] blocking task failed: {}",
-                    error,
+            msg: format!(
+                "[comic_archive_complex::prepare_entry] \
+                 blocking task failed: {}",
+                error,
             ),
         }
     })?
@@ -153,9 +154,10 @@ fn build_entry(
             );
 
             BaseError::Unrecoverable {
-                    msg: format!(
-                        "[comic_archive_complex::build_entry] failed to serialize archive payload: {}",
-                        error,
+                msg: format!(
+                    "[comic_archive_complex::build_entry] failed to \
+                     serialize archive payload: {}",
+                    error,
                 ),
             }
         })?

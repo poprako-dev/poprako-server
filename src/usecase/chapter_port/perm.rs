@@ -18,7 +18,11 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::RoleField;
 
 /// Authorizes chapter export and returns whether the caller holds a typesetter or redrawer assignment.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn ensure_export_access<C, R>(
     repo: &R,
     token: &UserToken,

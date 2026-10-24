@@ -28,11 +28,18 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
     for role in [RoleField::TRANSLATOR, RoleField::PROOFREADER] {
         let mock = save_scope(RoleMask::from(role));
 
-        save(&mock, json!({
-            "edit": "create", "local_id": "note", "is_bubble": true,
-            "coord": {"x_coord": 0.1, "y_coord": 0.2},
-            "typography_note": " 小字\n\n保留括号 ", "translation_note": "这句存疑"
-        })).await;
+        save(
+            &mock,
+            json!({
+                "edit": "create",
+                "local_id": "note",
+                "is_bubble": true,
+                "coord": {"x_coord": 0.1, "y_coord": 0.2},
+                "typography_note": " 小字\n\n保留括号 ",
+                "translation_note": "这句存疑"
+            }),
+        )
+        .await;
 
         let snapshot = mock.snapshot();
 
@@ -80,7 +87,11 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
 
         for payload in [
             json!({"edit": "patch", "id": id, "typography_note": null}),
-            json!({"edit": "patch", "id": id, "typography_note": {"type": "skip"}}),
+            json!({
+                "edit": "patch",
+                "id": id,
+                "typography_note": {"type": "skip"},
+            }),
             json!({"edit": "delete", "id": id}),
             json!({"edit": "patch", "id": id}),
         ] {
@@ -145,11 +156,26 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
 async fn note_patches_merge_and_blank_assignments_clear() {
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    save_edits((&mock, &mock), token("translator-1"), save_instr(vec![
-        edit(json!({"edit": "create", "local_id": "note", "is_bubble": true,
-            "coord": {"x_coord": 0.1, "y_coord": 0.2}, "typography_note": " \t\u{3000}"})),
-        edit(json!({"edit": "patch", "id": "note", "translation_note": {"type": "assign", "value": "待确认"}})),
-    ])).await.unwrap();
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_instr(vec![
+            edit(json!({
+                "edit": "create",
+                "local_id": "note",
+                "is_bubble": true,
+                "coord": {"x_coord": 0.1, "y_coord": 0.2},
+                "typography_note": " \t\u{3000}",
+            })),
+            edit(json!({
+                "edit": "patch",
+                "id": "note",
+                "translation_note": {"type": "assign", "value": "待确认"},
+            })),
+        ]),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -161,11 +187,29 @@ async fn note_patches_merge_and_blank_assignments_clear() {
 
     assert!(snapshot.chapter_workflow_records.is_empty());
 
-    save_edits((&mock, &mock), token("translator-1"), save_instr(vec![
-        edit(json!({"edit": "patch", "id": id, "typography_note": {"type": "assign", "value": "first"}})),
-        edit(json!({"edit": "patch", "id": id, "typography_note": {"type": "assign", "value": "last"}})),
-        edit(json!({"edit": "patch", "id": id, "translation_note": {"type": "clear"}})),
-    ])).await.unwrap();
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_instr(vec![
+            edit(json!({
+                "edit": "patch",
+                "id": id,
+                "typography_note": {"type": "assign", "value": "first"},
+            })),
+            edit(json!({
+                "edit": "patch",
+                "id": id,
+                "typography_note": {"type": "assign", "value": "last"},
+            })),
+            edit(json!({
+                "edit": "patch",
+                "id": id,
+                "translation_note": {"type": "clear"},
+            })),
+        ]),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(
         mock.snapshot()
@@ -213,17 +257,23 @@ async fn note_patches_merge_and_blank_assignments_clear() {
 async fn notes_preserve_authorship_and_reject_invalid_batches() {
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    save_edits(
-        (&mock, &mock),
-        token("translator-1"),
-        save_instr(vec![create("unit", None, Some("正文"))]),
-    )
-    .await
-    .unwrap();
+    let instr = save_instr(vec![create("unit", None, Some("正文"))]);
+
+    save_edits((&mock, &mock), token("translator-1"), instr)
+        .await
+        .unwrap();
 
     let id = mock.snapshot().units.first().unwrap().id.clone();
 
-    save(&mock, json!({"edit": "patch", "id": id, "typography_note": {"type": "assign", "value": "小字"}})).await;
+    save(
+        &mock,
+        json!({
+            "edit": "patch",
+            "id": id,
+            "typography_note": {"type": "assign", "value": "小字"},
+        }),
+    )
+    .await;
 
     let before = mock.snapshot();
 
@@ -232,19 +282,25 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
     for (actor, edits) in [
         (
             "outsider",
-            vec![edit(
-                json!({"edit": "patch", "id": id, "typography_note": {"type": "clear"}}),
-            )],
+            vec![edit(json!({
+                "edit": "patch",
+                "id": id,
+                "typography_note": {"type": "clear"},
+            }))],
         ),
         (
             "translator-1",
             vec![
-                edit(
-                    json!({"edit": "patch", "id": id, "typography_note": {"type": "clear"}}),
-                ),
-                edit(
-                    json!({"edit": "patch", "id": "missing", "translation_note": {"type": "clear"}}),
-                ),
+                edit(json!({
+                    "edit": "patch",
+                    "id": id,
+                    "typography_note": {"type": "clear"},
+                })),
+                edit(json!({
+                    "edit": "patch",
+                    "id": "missing",
+                    "translation_note": {"type": "clear"},
+                })),
             ],
         ),
     ] {
@@ -298,16 +354,14 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
         .unwrap()
         .stages = published.stages;
 
+    let instr = save_instr(vec![edit(json!({
+        "edit": "patch", "id": id, "typography_note": {"type": "clear"}
+    }))]);
+
     assert!(
-        save_edits(
-            (&mock, &mock),
-            token("translator-1"),
-            save_instr(vec![edit(json!({
-                "edit": "patch", "id": id, "typography_note": {"type": "clear"}
-            }))])
-        )
-        .await
-        .is_err()
+        save_edits((&mock, &mock), token("translator-1"), instr)
+            .await
+            .is_err()
     );
 
     assert_eq!(
