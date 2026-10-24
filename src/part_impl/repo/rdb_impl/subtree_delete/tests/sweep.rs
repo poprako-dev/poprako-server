@@ -89,7 +89,7 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
         diesel::insert_into(t_page_raw_ident::table)
             .values(
                 t_page::table
-                    .filter(t_page::f_id.like(format!("{PREFIX}%")))
+                    .filter(t_page::f_id.like([PREFIX, "%"].concat()))
                     .select((
                         t_page::f_id,
                         <&str as AsExpression<Text>>::as_expression(
@@ -110,13 +110,13 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
 
     let mut conn = shared.get().await.unwrap();
     let remaining_pages = t_page::table
-        .filter(t_page::f_id.like(format!("{PREFIX}%")))
+        .filter(t_page::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
         .unwrap();
     let remaining_units = t_unit::table
-        .filter(t_unit::f_id.like(format!("{PREFIX}%")))
+        .filter(t_unit::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -126,7 +126,7 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
     assert_eq!(remaining_units, 0);
 
     let remaining_raw_idents = t_page_raw_ident::table
-        .filter(t_page_raw_ident::f_page_id.like(format!("{PREFIX}%")))
+        .filter(t_page_raw_ident::f_page_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -191,7 +191,7 @@ async fn explicit_comic_claim_does_not_short_circuit_on_chapter(
     assert_eq!(
         target,
         Some(SubtreeDeleteSweepTarget::Comics {
-            ids: vec![format!("{PREFIX}comic-0000")],
+            ids: vec![[PREFIX, "comic-0000"].concat()],
         })
     );
 
@@ -258,7 +258,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     assert_eq!(
         concurrent_target,
         Some(SubtreeDeleteSweepTarget::Comics {
-            ids: vec![format!("{PREFIX}comic-0003")],
+            ids: vec![[PREFIX, "comic-0003"].concat()],
         })
     );
 
@@ -274,7 +274,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     };
 
     let expected_ids = (0..3)
-        .map(|index| format!("{PREFIX}comic-{index:04}"))
+        .map(|index| [PREFIX, "comic-", &format!("{:04}", &index)].concat())
         .collect::<Vec<_>>();
 
     assert_eq!(ids, expected_ids);
@@ -282,14 +282,14 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     assert_eq!(
         claim_and_sweep(shared, SubtreeSweepLevel::Comic).await,
         Some(SubtreeDeleteSweepTarget::Comics {
-            ids: vec![format!("{PREFIX}comic-0003")],
+            ids: vec![[PREFIX, "comic-0003"].concat()],
         })
     );
     assert_eq!(claim(shared, SubtreeSweepLevel::Comic).await, None);
 
     let mut conn = shared.get().await.unwrap();
     let comic_count = t_comic::table
-        .filter(t_comic::f_id.like(format!("{PREFIX}%")))
+        .filter(t_comic::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -311,10 +311,10 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
 
     let entries = (1..=4)
         .map(|index| WorksetEntry {
-            id: format!("{PREFIX}workset-{index:04}"),
+            id: [PREFIX, "workset-", &format!("{:04}", &index)].concat(),
             team_id: fixture.team_entry.id.clone(),
             index,
-            name: format!("Workset {index}"),
+            name: ["Workset ", &index.to_string()].concat(),
             description: None,
         })
         .collect::<Vec<_>>();
@@ -333,13 +333,13 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
         .unwrap();
 
     let comic_entry = ComicEntryShape {
-        id: format!("{PREFIX}blocked-comic"),
+        id: [PREFIX, "blocked-comic"].concat(),
         workset_id: &fixture.workset_entry.id,
         index: 0,
         title: "Blocked comic".into(),
         author: "Author".into(),
         description: None,
-        creator_id: &format!("{PREFIX}user-owner"),
+        creator_id: &[PREFIX, "user-owner"].concat(),
     };
     let comic_item = ComicItem::try_from(&comic_entry).unwrap();
 
@@ -350,7 +350,7 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
         .unwrap();
 
     diesel::update(
-        t_workset::table.filter(t_workset::f_id.like(format!("{PREFIX}%"))),
+        t_workset::table.filter(t_workset::f_id.like([PREFIX, "%"].concat())),
     )
     .set(t_workset::f_deleted_at.eq(Some(deleted_at)))
     .execute(&mut conn)
@@ -376,14 +376,14 @@ async fn workset_claim_is_bounded(shared: &RdbCore) {
     assert_eq!(
         claim_and_sweep(shared, SubtreeSweepLevel::Workset).await,
         Some(SubtreeDeleteSweepTarget::Worksets {
-            ids: vec![format!("{PREFIX}workset-0004")],
+            ids: vec![[PREFIX, "workset-0004"].concat()],
         })
     );
     assert_eq!(claim(shared, SubtreeSweepLevel::Workset).await, None);
 
     let mut conn = shared.get().await.unwrap();
     let workset_ids = t_workset::table
-        .filter(t_workset::f_id.like(format!("{PREFIX}%")))
+        .filter(t_workset::f_id.like([PREFIX, "%"].concat()))
         .select(t_workset::f_id)
         .load::<String>(&mut conn)
         .await
@@ -429,9 +429,9 @@ async fn chapter_and_team_claim_one_row(shared: &RdbCore) {
     test_shared::cleanup(shared, PREFIX).await.unwrap();
 
     let first_fixture =
-        test_shared::seed_user_and_team(shared, &format!("{PREFIX}a-")).await;
+        test_shared::seed_user_and_team(shared, &[PREFIX, "a-"].concat()).await;
     let second_fixture =
-        test_shared::seed_user_and_team(shared, &format!("{PREFIX}b-")).await;
+        test_shared::seed_user_and_team(shared, &[PREFIX, "b-"].concat()).await;
     let team_ids =
         vec![first_fixture.team_entry.id, second_fixture.team_entry.id];
     let mut conn = shared.get().await.unwrap();
@@ -495,11 +495,11 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
     .unwrap();
 
     let archive_record = ComicArchiveRecord {
-        id: format!("{PREFIX}archive"),
-        team_id: format!("{PREFIX}team"),
-        source_comic_id: format!("{PREFIX}comic-0000"),
+        id: [PREFIX, "archive"].concat(),
+        team_id: [PREFIX, "team"].concat(),
+        source_comic_id: [PREFIX, "comic-0000"].concat(),
         archived_payload: "{}".into(),
-        archiver_id: format!("{PREFIX}user-owner"),
+        archiver_id: [PREFIX, "user-owner"].concat(),
         created_at: OffsetDateTime::now_utc(),
     };
     let archive_item = ComicArchiveItem::from(&archive_record);
@@ -514,7 +514,10 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
     drop(conn);
 
     let target = SubtreeDeleteSweepTarget::Comics {
-        ids: vec![format!("{PREFIX}comic-0000"), format!("{PREFIX}comic-0001")],
+        ids: vec![
+            [PREFIX, "comic-0000"].concat(),
+            [PREFIX, "comic-0001"].concat(),
+        ],
     };
     let result = nucl
         .coord(async |context| {
@@ -528,7 +531,7 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
 
     let mut conn = shared.get().await.unwrap();
     let comic_count = t_comic::table
-        .filter(t_comic::f_id.like(format!("{PREFIX}%")))
+        .filter(t_comic::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await

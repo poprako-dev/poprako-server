@@ -37,10 +37,6 @@ use crate::value::role::{RoleField, RoleMask};
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
 // Verify comic listings include team and owning-comic bases while excluding siblings.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_comic_termbase_scope(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -48,7 +44,7 @@ async fn verify_comic_termbase_scope(
     termbase_entry: &TermbaseEntry,
 ) {
     let comic_termbase_entry = TermbaseEntry {
-        id: format!("{}comic-base", PREFIX),
+        id: [PREFIX, "comic-base"].concat(),
         team_id: None,
         comic_id: Some(comic_fixture.comic_info.id.clone()),
         name: "Comic Glossary".into(),
@@ -59,7 +55,7 @@ async fn verify_comic_termbase_scope(
     create_termbase(repo, nucl, &comic_termbase_entry).await;
 
     let mut sibling_comic_entry = test_shared::form::comic_entry(
-        &format!("{}sibling-", PREFIX),
+        &[PREFIX, "sibling-"].concat(),
         &comic_fixture.workset_entry,
         &comic_fixture.creator_form,
     );
@@ -79,7 +75,7 @@ async fn verify_comic_termbase_scope(
     .unwrap();
 
     let sibling_termbase_entry = TermbaseEntry {
-        id: format!("{}sibling-base", PREFIX),
+        id: [PREFIX, "sibling-base"].concat(),
         team_id: None,
         comic_id: Some(sibling_comic_entry.id.clone()),
         name: "Sibling Glossary".into(),
@@ -139,10 +135,6 @@ async fn create_termbase(
 /// Verifies termbase unique and query roundtrip.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
@@ -156,7 +148,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
-        id: format!("{}main", PREFIX),
+        id: [PREFIX, "main"].concat(),
         team_id: Some(comic_fixture.team_entry.id.clone()),
         comic_id: None,
         name: "100%_Glossary".into(),
@@ -208,7 +200,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     assert_eq!(counted.term_count, 1);
 
     let duplicate_entry = TermbaseEntry {
-        id: format!("{}duplicate", PREFIX),
+        id: [PREFIX, "duplicate"].concat(),
         name: " 100%_GLOSSARY ".into(),
         ..termbase_entry.clone()
     };

@@ -14,7 +14,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::role::RoleField;
 
 /// Authorizes chapter export and returns whether the caller holds a typesetter or redrawer assignment.
@@ -58,7 +58,7 @@ where
                 &ChapterExportAccess::Member { member_info },
             )?;
 
-            accept(assignment_info.is_some_and(|info| {
+            accept!(assignment_info.is_some_and(|info| {
                 //
                 info.roles
                     .has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
@@ -71,7 +71,7 @@ where
                 &ChapterExportAccess::Assignee { assignment_info },
             )?;
 
-            accept(
+            accept!(
                 assignment_info.roles.has_any_role(&[
                     RoleField::TYPESETTER,
                     RoleField::REDRAWER,

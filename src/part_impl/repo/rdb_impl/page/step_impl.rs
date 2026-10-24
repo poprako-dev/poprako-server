@@ -38,7 +38,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_translated_text as unit_translated_text,
     f_typography_note as unit_typography_note, t_unit,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::value::page::{CHAPTER_PAGE_SENTINEL_LIMIT, MAX_CHAPTER_PAGE_COUNT};
 
@@ -256,7 +256,7 @@ pub async fn list_unit_diff_stats(
         .into_iter()
         .map(|(page_id, index, translated, editted, appended)| {
             //
-            accept(PageUnitDiffStats {
+            accept!(PageUnitDiffStats {
                 page_id,
                 index: usize_from_i32(index, "t_page.f_index")?,
                 translated_unit_count: usize_from_i64(
@@ -275,7 +275,7 @@ pub async fn list_unit_diff_stats(
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(
+    accept!(
         page_unit_diff_stats
             .into_iter()
             .filter(|stats| {
@@ -327,7 +327,7 @@ pub async fn shift_indexes_temporary(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Applies the final manifest with one insert-or-index-update statement.
@@ -423,7 +423,7 @@ pub async fn set_unit_counts(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Delete all pages (and their child units) for a given chapter.
@@ -453,7 +453,7 @@ pub async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes selected pages after deleting their child units.
@@ -461,7 +461,7 @@ pub async fn delete_by_chapter_id(
 pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
     //
     if ids.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     diesel::delete(t_unit.filter(unit_page_id.eq_any(ids)))
@@ -474,7 +474,7 @@ pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Lists flagged Unit counts while retaining the original Chapter Page order.
@@ -511,7 +511,7 @@ pub async fn list_unit_flagged_stats(
         .filter(|(_, _, flagged)| *flagged > 0)
         .map(|(page_id, index, flagged)| {
             //
-            accept(PageUnitFlaggedStats {
+            accept!(PageUnitFlaggedStats {
                 page_id,
                 index: usize_from_i32(index, "t_page.f_index")?,
                 flagged_unit_count: usize_from_i64(
@@ -555,5 +555,5 @@ fn ensure_chapter_page_count<T>(
         });
     }
 
-    accept(records)
+    accept!(records)
 }

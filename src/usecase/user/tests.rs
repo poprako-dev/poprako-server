@@ -80,15 +80,12 @@ fn token(user_id: &str) -> UserToken {
 }
 
 // Seeds one current user-avatar generation that is not yet available.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
         ver: version,
-        image: format!("user_avatar/{}-{}.png", user_id, version),
+        image: ["user_avatar/", user_id, "-", &version.to_string(), ".png"]
+            .concat(),
     };
 
     let meta = ObjMeta {

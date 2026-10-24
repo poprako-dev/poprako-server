@@ -33,10 +33,6 @@ pub enum DispatchFlow {
 impl DispatchFlow {
     /// Stops waiting after the request's deadline, without discarding success.
     #[must_use]
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn limit_wait(
         self,
         requested_at: OffsetDateTime,
@@ -49,10 +45,11 @@ impl DispatchFlow {
                 if now >= requested_at.saturating_add(WAIT_TIMEOUT) =>
             {
                 Self::Dead {
-                    error_message: format!(
-                        "waiting deadline exceeded: {}",
-                        error_message
-                    ),
+                    error_message: [
+                        "waiting deadline exceeded: ",
+                        &error_message,
+                    ]
+                    .concat(),
                 }
             }
 

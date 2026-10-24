@@ -26,7 +26,7 @@ use crate::part::repo::oper::assignment::{
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
@@ -103,20 +103,16 @@ where
             }
         }
 
-        accept(())
+        accept!(())
     })
     .await?;
 
     let () = ();
 
-    accept(())
+    accept!(())
 }
 
 // Persist an existing assignment role change and its workflow record.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn update_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -125,11 +121,11 @@ async fn update_existing_assignment<C, R>(
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()>
 where
-    C: Context,
-    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
     if assignment_info.roles == instr.roles {
-        return accept(());
+        return accept!(());
     }
 
     let assignment_role_update = AssignmentRoleRepl {
@@ -159,14 +155,10 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Create an assignment and record its creation in the chapter workflow.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn create_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -175,8 +167,8 @@ async fn create_assignment<C, R>(
     chapter_info: &ChapterInfo,
 ) -> BaseRest<()>
 where
-    C: Context,
-    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
     let assignment_entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
@@ -206,7 +198,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Ensure the caller may apply the requested role change.

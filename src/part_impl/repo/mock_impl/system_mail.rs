@@ -14,7 +14,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailsRead, SendSystemMail, SendSystemMails,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 // Internal implementation of `insert_mail`.
 fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
@@ -47,7 +47,7 @@ fn send_system_mail(
 
     insert_mail(state, entry);
 
-    accept(())
+    accept!(())
 }
 
 // Internal implementation of `send_system_mails`.
@@ -81,7 +81,7 @@ fn send_system_mails(
         insert_mail(state, system_mail_entry);
     }
 
-    accept(())
+    accept!(())
 }
 
 // Internal implementation of `list_system_mail_infos`.
@@ -150,7 +150,7 @@ fn mark_system_mails_read(
         }
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<SendSystemMail<'_>> for Mock {
@@ -203,7 +203,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_system_mail_infos(&state, oper))
+        accept!(list_system_mail_infos(&state, oper))
     }
 }
 

@@ -99,10 +99,6 @@ fn chapter(id: &str) -> ChapterInfo {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -112,7 +108,7 @@ fn assignment(
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
+        id: ["assignment-", chapter_id, "-", user_id].concat(),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,

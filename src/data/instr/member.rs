@@ -13,7 +13,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::i18n::trl;
 
 use crate::model::read::spec::member::MemberListSpec;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::member::MemberInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
@@ -128,7 +128,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
 
         if let Some(owner_id) = owner_id {
             //
-            return accept(Self::User {
+            return accept!(Self::User {
                 owner_id,
                 incl_opt,
                 offset,
@@ -149,7 +149,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             });
         };
 
-        accept(Self::Team {
+        accept!(Self::Team {
             team_id,
             fuzzy_nickname,
             role,

@@ -10,7 +10,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::part_impl::repo::mock_impl::{MockState, expected};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::incl::expand_incl_opts;
@@ -208,7 +208,7 @@ fn get_comic_info(
 
     apply_comic_incls(state, &mut comic_info, incls);
 
-    accept(comic_info)
+    accept!(comic_info)
 }
 
 // Build filtered, sorted and paginated comic lists.

@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::write::page::PageImageSpec;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Business fields used to match an existing page to an incoming image.
 pub struct PageManifestCand<'a> {
@@ -116,7 +116,7 @@ pub fn build(
         .filter(|existing_index| !consumed_indexes.contains(existing_index))
         .collect();
 
-    accept(ManifestPlan {
+    accept!(ManifestPlan {
         matches,
         deleted_existing_indexes,
     })

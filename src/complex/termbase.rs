@@ -99,7 +99,7 @@ use crate::model::write::term::TermImport;
 use crate::model::write::termbase::{
     TermbaseEntry, TermbaseImport, TermbaseRepl,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::term::{
     TermAppendPlanShape, TermAppendReplShape, TermEntryShape, TermReplShape,
     TermUpsertPlanShape,
@@ -134,7 +134,7 @@ pub fn build_entry(
 
     normalize_name(&name)?;
 
-    accept(TermbaseEntry {
+    accept!(TermbaseEntry {
         id: next_snowflake_id(),
         team_id,
         comic_id,
@@ -176,7 +176,7 @@ pub fn validate_terms(input: Vec<TermImport>) -> BaseRest<Vec<TermImport>> {
         terms.push(term_import);
     }
 
-    accept(terms)
+    accept!(terms)
 }
 
 /// Validate a native terminology-base import document without copying text.
@@ -191,7 +191,7 @@ pub fn validate_import(
     let (name, description) =
         (termbase_import.name, termbase_import.description);
 
-    accept(TermbaseImport {
+    accept!(TermbaseImport {
         name,
         description,
         terms,
@@ -231,7 +231,7 @@ pub fn ensure_term_capacity(
         ));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Build inserts and replacements for a validated terminology-base import.
@@ -264,7 +264,7 @@ pub fn build_term_upsert_plan<'a>(
         //
         ensure_term_capacity(current_term_count, 0)?;
 
-        return accept(TermUpsertPlanShape { entries, updates });
+        return accept!(TermUpsertPlanShape { entries, updates });
     }
 
     let mut existing_terms_by_source =
@@ -313,7 +313,7 @@ pub fn build_term_upsert_plan<'a>(
 
     ensure_term_capacity(current_term_count, entries.len())?;
 
-    accept(TermUpsertPlanShape { entries, updates })
+    accept!(TermUpsertPlanShape { entries, updates })
 }
 
 /// Build a validated terminology-base profile replacement.
@@ -325,7 +325,7 @@ pub fn build_update(
     //
     normalize_name(&name)?;
 
-    accept(TermbaseRepl {
+    accept!(TermbaseRepl {
         id,
         name,
         description,
@@ -382,7 +382,7 @@ pub fn build_term_append_plan<'a>(
         });
     }
 
-    accept(TermAppendPlanShape {
+    accept!(TermAppendPlanShape {
         entries: term_upsert_plan.entries,
         updates,
     })
@@ -403,7 +403,7 @@ fn normalize_name(name: &str) -> BaseRest<&str> {
         });
     }
 
-    accept(name)
+    accept!(name)
 }
 
 // Construct the expected capacity error shared by single and imported creates.

@@ -19,7 +19,7 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, TouchComicLastActive, UpdateComicChapterCount,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
@@ -161,7 +161,7 @@ where
     )
     .await?;
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 // Records creation and any displaced pinned chapter in the workflow history.
@@ -197,5 +197,5 @@ where
         .step_on(repo, context)
         .await?;
 
-    accept(())
+    accept!(())
 }

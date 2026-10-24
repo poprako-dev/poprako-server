@@ -33,7 +33,7 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::{
     f_code, f_created_at, f_id, f_pending, f_team_id, t_member_invitation,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -51,7 +51,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Query member invitations matching the given list spec, with optional includes.
@@ -94,7 +94,7 @@ async fn list_infos(
     )
     .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 // Load a single invitation info by ID with optional includes.
@@ -134,7 +134,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 // Create a new member invitation and return its info.
@@ -235,7 +235,7 @@ async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Update the roles on an existing invitation.
@@ -257,7 +257,7 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Deletes a member invitation only while it remains pending.
@@ -273,7 +273,7 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListMemberInvitationInfos<'_>> for HybRepo {

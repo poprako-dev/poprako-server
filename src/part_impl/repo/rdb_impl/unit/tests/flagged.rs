@@ -70,7 +70,7 @@ async fn verify_flag_patches(
                 Some(fixture.chapter_info.creator_id.as_str())
             );
 
-            accept(())
+            accept!(())
         })
         .await
         .unwrap();
@@ -138,7 +138,7 @@ pub async fn verify_flags(shared: RdbCore) {
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

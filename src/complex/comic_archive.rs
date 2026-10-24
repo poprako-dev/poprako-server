@@ -27,7 +27,7 @@ use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic_archive::artwork::{
@@ -67,7 +67,7 @@ pub fn ensure_snapshot_archivable(
         );
 
     if is_archivable {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {
@@ -89,7 +89,7 @@ pub async fn prepare_entry(
         let entry =
             build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
 
-        accept(entry)
+        accept!(entry)
     })
     .await
     .map_err(|error| {
@@ -174,7 +174,7 @@ fn build_entry(
         );
     }
 
-    accept(ComicArchiveEntry {
+    accept!(ComicArchiveEntry {
         record,
         source_chapter_ids,
         source_page_ids,
@@ -198,7 +198,7 @@ fn build_comic_payload(
         .map(build_chapter_payload)
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ArchivedComicPayload {
+    accept!(ArchivedComicPayload {
         source_comic_id: &comic_info.id,
         workset: ArchivedWorksetPayload {
             id: &workset_info.id,
@@ -290,7 +290,7 @@ fn build_assignment_payload(
         }
     })?;
 
-    accept(ArchivedAssignmentPayload {
+    accept!(ArchivedAssignmentPayload {
         source_assignment_id: &assignment_info.id,
         user_id: &assignment_info.user_id,
         roles: u32::from(assignment_info.roles),
@@ -321,7 +321,7 @@ fn build_chapter_payload(
         .map(build_assignment_payload)
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ArchivedChapterPayload {
+    accept!(ArchivedChapterPayload {
         source_chapter_id: &chapter_info.id,
         is_pinned: chapter_info.is_pinned,
         index: chapter_info.index,

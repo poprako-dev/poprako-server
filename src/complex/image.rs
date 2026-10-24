@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use poprako_util::i18n::trl_kv;
 
 use crate::config::image::ImageConfig;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::image::{
     ComicCoverKey, ImageExt, ImageKind, PageImageKey, TeamAvatarKey,
     UserAvatarKey,
@@ -135,7 +135,7 @@ pub fn ensure_byte_length(
         ));
     }
 
-    accept(())
+    accept!(())
 }
 
 // Builds one canonical non-page physical key.

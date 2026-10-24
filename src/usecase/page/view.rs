@@ -12,7 +12,7 @@ use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 use crate::data::view::page::PageInfoView;
 use crate::model::read::proj::page::PageInfo;
 use crate::part::obj_dept::PageImage;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Image metadata and URLs resolved from one object-version snapshot.
 struct PageImageData {
@@ -40,7 +40,7 @@ where
 
     let image_urls = image_data.image_urls.get(&model.id);
 
-    accept(PageInfoView::from_model(
+    accept!(PageInfoView::from_model(
         model,
         obj_meta,
         image_urls
@@ -71,7 +71,7 @@ where
 
     let image_data = load_image_data::<C, O>(obj_dept, &page_ids).await?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|model| {
@@ -109,7 +109,7 @@ where
 {
     if page_ids.is_empty() {
         //
-        return accept(PageImageData {
+        return accept!(PageImageData {
             obj_metas: HashMap::new(),
             image_urls: HashMap::new(),
         });
@@ -136,7 +136,7 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    accept(PageImageData {
+    accept!(PageImageData {
         obj_metas,
         image_urls,
     })

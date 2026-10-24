@@ -320,21 +320,39 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 }
 
 // Converts total latency microseconds into a millisecond average.
-#[expect(
-    clippy::cast_precision_loss,
-    reason = "Prometheus samples are f64; exact integer precision above the f64 mantissa is immaterial for aggregate latency metrics"
-)]
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     //
     if total == 0 {
         return 0.0;
     }
 
-    let latency = total_latency_micros as f64;
+    let latency = Duration::from_micros(total_latency_micros).as_secs_f64();
 
-    let total = total as f64;
+    let [
+        high_first,
+        high_second,
+        high_third,
+        high_fourth,
+        low_first,
+        low_second,
+        low_third,
+        low_fourth,
+    ] = total.to_be_bytes();
 
-    latency / total / 1_000.0
+    let high = f64::from(u32::from_be_bytes([
+        high_first,
+        high_second,
+        high_third,
+        high_fourth,
+    ]));
+
+    let low = f64::from(u32::from_be_bytes([
+        low_first, low_second, low_third, low_fourth,
+    ]));
+
+    let total = high.mul_add(4_294_967_296.0, low);
+
+    latency / total * 1_000.0
 }
 
 // Merges per-key counters from one map into another without losing existing values.

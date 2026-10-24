@@ -17,7 +17,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
     f_assigned_translator_at, f_assigned_typesetter_at, f_chapter_id,
     f_created_at, f_id, f_user_id, t_assignment,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 use crate::value::role::RoleField;
 
@@ -151,7 +151,7 @@ pub async fn list_infos(
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 // Map query records into public-facing assignment infos by converting each record and

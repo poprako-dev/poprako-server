@@ -9,7 +9,7 @@ use diesel_async::RunQueryDsl as _;
 use poprako_rdb_core::RdbCore;
 
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel as diesel_error;
 
 pub async fn reset(shared: &RdbCore, prefix: &str) {
@@ -19,15 +19,11 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 
-    let id_pattern = format!("{}%", prefix);
+    let id_pattern = [prefix, "%"].concat();
 
     diesel::delete(
         t_local_message::table.filter(t_local_message::f_id.like(&id_pattern)),
@@ -36,13 +32,9 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     .await
     .map_err(diesel_error)?;
 
-    accept(())
+    accept!(())
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
@@ -50,7 +42,7 @@ pub async fn assert_no_leftovers(
     //
     let mut conn = shared.get().await?;
 
-    let id_pattern = format!("{}%", prefix);
+    let id_pattern = [prefix, "%"].concat();
 
     let local_message_count = t_local_message::table
         .filter(t_local_message::f_id.like(&id_pattern))
@@ -61,5 +53,5 @@ pub async fn assert_no_leftovers(
 
     assert_eq!(local_message_count, 0);
 
-    accept(())
+    accept!(())
 }

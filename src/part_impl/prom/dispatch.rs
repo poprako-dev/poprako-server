@@ -93,10 +93,6 @@ where
 }
 
 // Map chapter advancement outcomes to Prom delivery policy.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn chapter_flow(
     rest: BaseRest<chapter_stage_usecase::RawProvideAdvance>,
 ) -> DispatchFlow {
@@ -116,16 +112,12 @@ fn chapter_flow(
         }
 
         Err(error) => DispatchFlow::Retry {
-            error_message: format!("{:?}", error),
+            error_message: format!("{:?}", &error),
         },
     }
 }
 
 // Map generic task outcomes to retry or completion policy.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn retry_flow(rest: BaseRest<()>) -> DispatchFlow {
     //
     match rest {
@@ -133,7 +125,7 @@ fn retry_flow(rest: BaseRest<()>) -> DispatchFlow {
         Ok(()) => DispatchFlow::Complete,
 
         Err(error) => DispatchFlow::Retry {
-            error_message: format!("{:?}", error),
+            error_message: format!("{:?}", &error),
         },
     }
 }

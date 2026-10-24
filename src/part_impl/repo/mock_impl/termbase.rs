@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `same_owner`.
 fn same_owner(
@@ -157,7 +157,7 @@ fn list_infos(
         });
     }
 
-    accept(page_infos(termbase_infos, offset, limit))
+    accept!(page_infos(termbase_infos, offset, limit))
 }
 
 // Resolve one termbase by id and return it with expected-args missing error.
@@ -251,7 +251,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
 
         context.state.termbases.push(termbase_info.clone());
 
-        accept(termbase_info)
+        accept!(termbase_info)
     }
 }
 
@@ -327,7 +327,7 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
             .cloned()
             .collect();
 
-        accept(termbase_infos)
+        accept!(termbase_infos)
     }
 }
 
@@ -374,7 +374,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -406,7 +406,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -436,7 +436,7 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -466,6 +466,6 @@ impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
 
         context.state.termbases.remove(position);
 
-        accept(())
+        accept!(())
     }
 }

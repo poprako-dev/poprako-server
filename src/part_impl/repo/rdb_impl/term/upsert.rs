@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::entity::term::TermItem;
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shape::write::term::{TermEntryShape, TermReplShape};
 use crate::shared::result::diesel;
 
@@ -81,7 +81,7 @@ pub async fn upsert_terms(
         ensure_upsert_affected("update", affected, updates.len())?;
     }
 
-    accept(())
+    accept!(())
 }
 
 // Validates Termbase scope and uniqueness before executing a batch.
@@ -105,7 +105,7 @@ fn ensure_upsert_ids(
         .all(|id| ids.insert(id));
 
     if entries_in_scope && ids_unique {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -126,7 +126,7 @@ fn ensure_upsert_affected(
 ) -> BaseRest<()> {
     //
     if affected == expected {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -141,7 +141,7 @@ fn ensure_upsert_affected(
 // Builds a typed CASE expression for text replacements.
 fn text_case<'a, F>(
     updates: &'a [TermReplShape<'a>],
-    mut expression: TermExpr<'a, Text>,
+    mut expr: TermExpr<'a, Text>,
     field: F,
 ) -> TermExpr<'a, Text>
 where
@@ -149,22 +149,22 @@ where
 {
     for update in updates {
         //
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Text>(
                 f_id.eq(update.id),
                 field(update),
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }
 
 // Builds a typed CASE expression for nullable text replacements.
 fn nullable_text_case<'a, F>(
     updates: &'a [TermReplShape<'a>],
-    mut expression: TermExpr<'a, Nullable<Text>>,
+    mut expr: TermExpr<'a, Nullable<Text>>,
     field: F,
 ) -> TermExpr<'a, Nullable<Text>>
 where
@@ -172,16 +172,16 @@ where
 {
     for update in updates {
         //
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Nullable<Text>>(
                 f_id.eq(update.id),
                 field(update),
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }
 
 // Builds a typed CASE expression for target-array replacements.
@@ -189,8 +189,7 @@ fn targets_case<'a>(
     updates: &'a [TermReplShape<'a>],
 ) -> TermExpr<'a, Array<Nullable<Text>>> {
     //
-    let mut expression =
-        Box::new(f_targets) as TermExpr<'a, Array<Nullable<Text>>>;
+    let mut expr = Box::new(f_targets) as TermExpr<'a, Array<Nullable<Text>>>;
 
     for update in updates {
         //
@@ -200,14 +199,14 @@ fn targets_case<'a>(
             .map(|target| Some(*target))
             .collect::<Vec<_>>();
 
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Array<Nullable<Text>>>(
                 f_id.eq(update.id),
                 targets,
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }

@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Phase a workflow stage can be in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -155,7 +155,7 @@ pub fn try_modify_stage(
         });
     }
 
-    accept(next_phase)
+    accept!(next_phase)
 }
 
 /// A singular stage phase value (pending, active, completed, or ignore).
@@ -231,7 +231,7 @@ impl TryFrom<u8> for StagePhaseField {
             });
         }
 
-        accept(Self(value))
+        accept!(Self(value))
     }
 }
 

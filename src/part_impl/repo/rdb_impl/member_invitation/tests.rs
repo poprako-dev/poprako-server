@@ -31,10 +31,6 @@ const PREFIX: &str = "rdb-test-member-invitation-domain-";
 /// Verifies member invitation roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -50,11 +46,11 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let member_invitation_entry = MemberInvitationEntry {
-        id: format!("{}member-invitation", PREFIX),
+        id: [PREFIX, "member-invitation"].concat(),
         team_id: team_fixture.team_entry.id.clone(),
         invitor_id: team_fixture.user_entry.id.clone(),
-        invitee_qid: format!("{}invitee", PREFIX),
-        code: format!("{}code", PREFIX),
+        invitee_qid: [PREFIX, "invitee"].concat(),
+        code: [PREFIX, "code"].concat(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };
 

@@ -11,7 +11,7 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
@@ -134,7 +134,7 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
         let stages =
             instr.stages.map(StageMask::try_filter_from).transpose()?;
 
-        accept(Self {
+        accept!(Self {
             workset_id: instr.workset_id,
             fuzzy_title: instr.fuzzy_title,
             stages,

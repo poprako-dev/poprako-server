@@ -12,7 +12,7 @@ use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Stored issue projection.
 #[derive(Queryable, Selectable)]
@@ -68,7 +68,7 @@ impl TryFrom<IssueRecord> for IssueInfo {
             }
         };
 
-        accept(Self {
+        accept!(Self {
             id: record.f_id,
             page_artwork_id: record.f_page_artwork_id,
             index: usize_from_i32(record.f_index, "t_issue.f_index")?,
@@ -104,7 +104,7 @@ impl<'a> TryFrom<&'a IssueEntry> for IssueItem<'a> {
 
     fn try_from(entry: &'a IssueEntry) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             f_id: &entry.id,
             f_page_artwork_id: &entry.page_artwork_id,
             f_index: i32_from_usize(entry.index, "t_issue.f_index")?,

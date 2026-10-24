@@ -20,7 +20,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::unit::text_transform as unit_text_transform_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
@@ -44,7 +44,7 @@ pub fn normalize_search_phrase(phrase: &str) -> BaseRest<&str> {
         });
     }
 
-    accept(phrase)
+    accept!(phrase)
 }
 
 /// Builds one content-only edit from non-overlapping literal transforms.
@@ -197,7 +197,7 @@ pub fn normalize_edits(
 
     final_validate_edits(base_ids, &edits)?;
 
-    accept(edits)
+    accept!(edits)
 }
 
 /// Plans one normalized Unit edit batch against the persisted chain.
@@ -431,7 +431,7 @@ fn validate_edit(
 
         _ => None,
     }) else {
-        return accept(());
+        return accept!(());
     };
 
     if next_id == id
@@ -449,7 +449,7 @@ fn validate_edit(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 // Copy the older optional value only when the newer optional is empty.

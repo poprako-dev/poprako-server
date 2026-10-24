@@ -18,7 +18,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfoExcluded;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::image::{ComicCoverKey, ImageKind};
@@ -95,5 +95,5 @@ where
         headers: obj_slot.headers,
     });
 
-    accept(AllocComicCoverVal { slot })
+    accept!(AllocComicCoverVal { slot })
 }

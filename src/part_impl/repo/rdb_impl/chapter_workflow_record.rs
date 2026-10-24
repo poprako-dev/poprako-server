@@ -21,7 +21,7 @@ use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowReco
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordItem, ChapterWorkflowRecordInfoRecord};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
 
@@ -53,7 +53,7 @@ async fn create(
 ) -> BaseRest<()> {
     //
     if entries.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let items = entries
@@ -67,7 +67,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {

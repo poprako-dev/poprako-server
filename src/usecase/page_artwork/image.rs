@@ -30,7 +30,7 @@ use crate::part::repo::oper::page_artwork::{
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
 
@@ -133,11 +133,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(allocated_page_artwork_val)
+            accept!(allocated_page_artwork_val)
         })
         .await?;
 
-    accept(allocated_page_artwork_val)
+    accept!(allocated_page_artwork_val)
 }
 
 /// Confirms the current image generation while preserving all review issues.
@@ -222,9 +222,9 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }

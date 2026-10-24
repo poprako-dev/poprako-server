@@ -27,7 +27,7 @@ use crate::part::repo::oper::page_artwork::{
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
 use crate::util::next_snowflake_id;
@@ -154,11 +154,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(AllocChapterPageArtworksVal {
+            accept!(AllocChapterPageArtworksVal {
                 pages: allocated_page_artwork_vals,
             })
         })
         .await?;
 
-    accept(allocated_page_artworks_val)
+    accept!(allocated_page_artworks_val)
 }

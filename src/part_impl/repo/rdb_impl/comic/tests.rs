@@ -214,17 +214,13 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 }
 
 // Seed another workset to ensure stage filters do not leak across worksets.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_sibling_stages(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
 ) {
     let sibling_workset = WorksetEntry {
-        id: format!("{}sibling-workset", PREFIX),
+        id: [PREFIX, "sibling-workset"].concat(),
         team_id: comic_fixture.team_entry.id.clone(),
         index: 1,
         name: "Sibling Workset".into(),
@@ -232,7 +228,7 @@ async fn seed_sibling_stages(
     };
 
     let sibling_comic = ComicEntryShape {
-        id: format!("{}sibling-comic", PREFIX),
+        id: [PREFIX, "sibling-comic"].concat(),
         workset_id: &sibling_workset.id,
         index: 0,
         title: "Sibling Comic".into(),
@@ -242,7 +238,7 @@ async fn seed_sibling_stages(
     };
 
     let sibling_chapter = ChapterEntryShape {
-        id: format!("{}sibling-chapter", PREFIX),
+        id: [PREFIX, "sibling-chapter"].concat(),
         comic_id: &sibling_comic.id,
         is_pinned: true,
         index: 0,
@@ -449,10 +445,6 @@ async fn verify_combined_stage_filters(
 /// Verifies comic roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -472,7 +464,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     verify_literal_search(&repo, &comic_fixture).await;
 
     let entry = ChapterEntryShape {
-        id: format!("{}stage-chapter", PREFIX),
+        id: [PREFIX, "stage-chapter"].concat(),
         comic_id: &comic_fixture.comic_info.id,
         is_pinned: true,
         index: 0,

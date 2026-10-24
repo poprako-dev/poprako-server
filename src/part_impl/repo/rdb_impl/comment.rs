@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::{
     f_created_at, f_team_id, t_comment,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 
 // Query comment infos matching the given list spec, with optional includes.
@@ -53,7 +53,7 @@ async fn list_infos(
     incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 // Insert a new comment from the given domain entry and return the created info.
@@ -72,7 +72,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 impl Run<ListCommentInfos<'_>> for HybRepo {

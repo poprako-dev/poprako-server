@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 use crate::value::comic_archive::ComicArchiveMonth;
 
@@ -36,11 +36,11 @@ pub async fn list_payloads(
     };
 
     let Some(first_month) = months.first() else {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     };
 
     let Some(last_month) = months.last() else {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     };
 
     let query = t_comic_archive
@@ -56,7 +56,7 @@ pub async fn list_payloads(
         .await
         .map_err(diesel)?;
 
-    accept(
+    accept!(
         records
             .into_iter()
             .filter(|record| {

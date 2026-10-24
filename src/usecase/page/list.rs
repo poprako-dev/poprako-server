@@ -25,7 +25,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::page::view::{page_info_view, page_info_views};
 
 /// Lists pages under one chapter.
@@ -78,7 +78,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(page_unit_diff_stats.into_iter().map(Into::into).collect())
+    accept!(page_unit_diff_stats.into_iter().map(Into::into).collect())
 }
 
 /// Lists flagged Unit statistics for Pages containing visible flagged Units.
@@ -104,7 +104,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(
+    accept!(
         page_unit_flagged_stats
             .into_iter()
             .map(Into::into)

@@ -23,7 +23,7 @@ use tracing_subscriber::registry::LookupSpan;
 
 use crate::complex::chapter_port::perm as chapter_port_perm_complex;
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::test_util::http_logging::capture_dispatch;
 use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::value::role::RoleField;
@@ -108,7 +108,7 @@ fn reject_request() -> BaseRest<()> {
 fn propagate_rejection() -> BaseRest<()> {
     reject_request()?;
 
-    accept(())
+    accept!(())
 }
 
 #[test]

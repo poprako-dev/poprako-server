@@ -39,7 +39,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
@@ -57,7 +57,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Convert a record into assignment info for orchestration return values.
@@ -113,7 +113,7 @@ async fn find_info_by_user_id_and_comic_id(
         .map_err(diesel)?;
 
     let Some(record) = record else {
-        return accept(None);
+        return accept!(None);
     };
 
     let mut assignment_info = record_into_info(record)?;
@@ -125,7 +125,7 @@ async fn find_info_by_user_id_and_comic_id(
     )
     .await?;
 
-    accept(Some(assignment_info))
+    accept!(Some(assignment_info))
 }
 
 // Query assignment by id and populate optional include fields.
@@ -165,7 +165,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 // Query chapter assignments with `FOR UPDATE` for transactional mutation windows.
@@ -461,7 +461,7 @@ async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo

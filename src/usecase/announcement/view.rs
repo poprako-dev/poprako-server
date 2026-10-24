@@ -7,7 +7,7 @@ use poprako_obj_dept::ObjDeptView;
 use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::part::obj_dept::UserAvatar;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::usecase::user::view::{avatar_urls, user_info_view_from_urls};
 
 /// Resolves announcement models with one author-avatar metadata query.
@@ -28,7 +28,7 @@ where
 
     let mut urls = avatar_urls(obj_dept, user_ids).await?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|mut model| {

@@ -35,7 +35,7 @@ use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{ListPageInfos, UpdatePageRawIdents};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::usecase::internal::member::MemberLoader;
@@ -91,7 +91,7 @@ where
                 .has_phase(Stage::RawProvide, StagePhase::Pending)
                 || chapter_info.page_count == 0
             {
-                return accept(Some(false));
+                return accept!(Some(false));
             }
 
             let page_infos =
@@ -115,7 +115,7 @@ where
             });
 
             if !are_images_uploaded {
-                return accept(None);
+                return accept!(None);
             }
 
             let is_advanced = CompleteChapterRawProvide { id: chapter_id }
@@ -142,7 +142,7 @@ where
                 .await?;
             }
 
-            accept(Some(is_advanced))
+            accept!(Some(is_advanced))
         })
         .await?;
 
@@ -159,12 +159,12 @@ where
             .develop_on(develop)
             .await;
 
-            accept(RawProvideAdvance::Advanced)
+            accept!(RawProvideAdvance::Advanced)
         }
 
-        Some(false) => accept(RawProvideAdvance::Unchanged),
+        Some(false) => accept!(RawProvideAdvance::Unchanged),
 
-        None => accept(RawProvideAdvance::Pending),
+        None => accept!(RawProvideAdvance::Pending),
     }
 }
 
@@ -288,7 +288,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept((workflow_completed_chapter_id, published_chapter_id))
+            accept!((workflow_completed_chapter_id, published_chapter_id))
         })
         .await?;
 
@@ -300,7 +300,7 @@ where
     )
     .await;
 
-    accept(())
+    accept!(())
 }
 
 // Validates the caller's assignment and workflow-stage permission.
@@ -412,7 +412,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Develops workflow completion and publication events after commit.

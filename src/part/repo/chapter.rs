@@ -5,7 +5,7 @@ use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfos,
     ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
-    SetChapterConfirmedArtworkVersion, SetChapterPageCountMetrics,
+    SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::result::BaseError;
@@ -26,7 +26,7 @@ use crate::result::BaseError;
         for<'a> CompleteChapterRawProvide<'a>,
     ),
     step(
-        for<'a> SetChapterConfirmedArtworkVersion<'a>,
+        for<'a> SetChapterConfirmedArtworkVer<'a>,
         for<'a, 'b> GetChapterInfo<'a, 'b>,
         for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
         for<'a> GetChapterUnitEditScopeExcluded<'a>,

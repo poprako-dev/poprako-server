@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_password_hash, f_qid, f_updated_at, t_user,
 };
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 /// Remove a user record from persistence.
@@ -36,7 +36,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Insert a new user record from an entry.
@@ -95,7 +95,7 @@ pub async fn get_credential_by_qid(
         });
     };
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 /// Update the user password hash.
@@ -116,7 +116,7 @@ pub async fn update_password_hash(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Update user and membership activity timestamps.
@@ -139,5 +139,5 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }

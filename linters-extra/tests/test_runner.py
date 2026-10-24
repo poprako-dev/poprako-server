@@ -67,8 +67,13 @@ class RunnerTests(unittest.TestCase):
             with patch.object(runner, "load_checker", return_value=module):
                 status = runner.run_extra(root, [Path("direct-struct-import/check.py")])
             self.assertEqual(status, 0)
-            self.assertEqual(len(calls), 4)
+            self.assertEqual(len(calls), 6)
             self.assertEqual({call[1] for call in calls}, {str(root), str(root / "member with spaces")})
+            for crate in (root, root / "member with spaces"):
+                self.assertEqual(
+                    [call[3] for call in calls if call[1] == str(crate)],
+                    ["model", "data", "shape"],
+                )
             self.assertTrue(all("--no-fix" in call for call in calls))
 
     def test_failures_do_not_skip_later_rules(self):

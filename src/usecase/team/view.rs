@@ -7,7 +7,7 @@ use poprako_obj_dept::ObjDeptView;
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
 use crate::part::obj_dept::TeamAvatar;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::usecase::internal::view::obj_urls::{
     ObjUrlBatch, ObjUrlViews, load_obj_urls,
 };
@@ -27,7 +27,7 @@ where
 
     let urls = avatar_urls.take(&model.id);
 
-    accept(team_info_view_from_urls(model, urls))
+    accept!(team_info_view_from_urls(model, urls))
 }
 
 /// Renders one team with URLs from an already-loaded object snapshot.
@@ -54,7 +54,7 @@ where
 
     let mut avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|model| {

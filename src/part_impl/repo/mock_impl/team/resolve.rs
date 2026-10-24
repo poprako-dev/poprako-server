@@ -11,7 +11,7 @@ use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, unrecoverable,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Resolve the owning team for a comic from in-memory state.
 fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
@@ -37,7 +37,7 @@ fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
             )
         })?;
 
-    accept(workset_info.team_id.clone())
+    accept!(workset_info.team_id.clone())
 }
 
 // Resolve the owning team for a chapter from in-memory state.
@@ -75,7 +75,7 @@ fn resolve_chapter_team_id(state: &MockState, id: &str) -> BaseRest<String> {
             )
         })?;
 
-    accept(workset_info.team_id.clone())
+    accept!(workset_info.team_id.clone())
 }
 
 // Dispatch a team-ownership query to the comic or chapter resolver.

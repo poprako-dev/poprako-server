@@ -27,7 +27,7 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::page::list as page_list_usecase;
 use crate::util::next_snowflake_id;
 
@@ -138,14 +138,14 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ImportChapterIssuesVal {
+            accept!(ImportChapterIssuesVal {
                 imported_page_count,
                 imported_issue_count,
             })
         })
         .await?;
 
-    accept(imported)
+    accept!(imported)
 }
 
 /// Reads a Chapter's issues ordered by composite page and issue position.
@@ -176,5 +176,5 @@ where
     .run_on(repo)
     .await?;
 
-    accept(issue_infos.into_iter().map(Into::into).collect())
+    accept!(issue_infos.into_iter().map(Into::into).collect())
 }

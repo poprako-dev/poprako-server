@@ -22,7 +22,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
-use crate::result::accept;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
@@ -142,7 +141,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

@@ -425,26 +425,16 @@ fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageUnitEditsInstr {
 }
 
 // Extend a create fixture with a completed proofreader revision.
-#[expect(
-    clippy::panic,
-    reason = "This fixture must remain a Create variant before its revision is assigned"
-)]
 fn create_with_revision(
     local_id: &str,
     translated_text: Option<&str>,
 ) -> UnitEditInstr {
-    let mut edit = create(local_id, None, translated_text);
-
-    let UnitEditInstr::Create { revision, .. } = &mut edit else {
-        panic!("create fixture must produce a Create variant");
-    };
-
-    *revision = Some(UnitRevisionInstr {
+    let revision = UnitRevisionInstr {
         is_proofread: true,
         proofread_text: Some("proofread".to_string()),
-    });
+    };
 
-    edit
+    create_edit(local_id, None, translated_text, Some(revision))
 }
 
 // Build a create-unit edit fixture for a page.
@@ -452,6 +442,16 @@ fn create(
     local_id: &str,
     next_id: Option<String>,
     translated_text: Option<&str>,
+) -> UnitEditInstr {
+    create_edit(local_id, next_id, translated_text, None)
+}
+
+// Assembles a create edit with the requested proofreader state.
+fn create_edit(
+    local_id: &str,
+    next_id: Option<String>,
+    translated_text: Option<&str>,
+    revision: Option<UnitRevisionInstr>,
 ) -> UnitEditInstr {
     UnitEditInstr::Create {
         local_id: local_id.to_string(),
@@ -467,7 +467,7 @@ fn create(
         translation: translated_text.map(|text| UnitTranslationInstr {
             translated_text: text.to_string(),
         }),
-        revision: None,
+        revision,
     }
 }
 

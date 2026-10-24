@@ -65,13 +65,13 @@ pub async fn create(
     Json(instr): Json<CreateTermInstr>,
 ) -> HttpResult<CreateTermVal> {
     //
-    term_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(term_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/terms` — list terms in one base.
@@ -103,13 +103,13 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    term_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
+    Ok(term_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/terms/{term_id}` — fetch a terminology entry.
@@ -132,13 +132,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermInfoView> {
     //
-    term_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    Ok(term_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         term_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/terms/{term_id}` — replace terminology-entry fields.
@@ -173,7 +173,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/terms/{term_id}` — delete a terminology entry.
@@ -203,5 +203,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

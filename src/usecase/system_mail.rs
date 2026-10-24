@@ -21,7 +21,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailsRead,
 };
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 
 /// Lists system mails for the current user.
 ///
@@ -40,17 +40,13 @@ use crate::result::{BaseRest, accept};
     skip(repo, token),
     fields(actor_user_id = %token.user_id),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListSystemMailInfosInstr,
 ) -> BaseRest<Vec<SystemMailInfoView>>
 where
-    R: SystemMailRepo,
+    R: SystemMailRepo + Sync,
 {
     let system_mail_list_spec = SystemMailListSpec {
         receiver_id: token.user_id,
@@ -76,7 +72,7 @@ where
         })
         .collect();
 
-    accept(system_mail_vals)
+    accept!(system_mail_vals)
 }
 
 /// Marks a batch of system mails as read for the current user.
@@ -93,17 +89,13 @@ where
     skip(repo, token),
     fields(actor_user_id = %token.user_id),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
 ) -> BaseRest<()>
 where
-    R: SystemMailRepo,
+    R: SystemMailRepo + Sync,
 {
     MarkSystemMailsRead {
         ids: &ids,
@@ -112,5 +104,5 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }

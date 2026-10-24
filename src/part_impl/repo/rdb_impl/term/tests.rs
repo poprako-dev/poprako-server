@@ -56,17 +56,13 @@ const PREFIX: &str = "rdb-test-term-domain-";
 // Verify an update in another terminology base rolls back the accompanying insert.
 // Reject duplicate identifiers within one update batch.
 // Reject sources that differ only by case and surrounding whitespace.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_normalized_duplicate(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     term_entry: &TermEntry,
 ) {
     let duplicate_entry = TermEntry {
-        id: format!("{}duplicate", PREFIX),
+        id: [PREFIX, "duplicate"].concat(),
         source: " 100%_HERO ".into(),
         ..term_entry.clone()
     };
@@ -120,10 +116,6 @@ async fn verify_duplicate_updates(
     ));
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_wrong_scope_rollback(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -131,13 +123,13 @@ async fn verify_wrong_scope_rollback(
     termbase_entry: &TermbaseEntry,
 ) {
     let other_termbase_entry = TermbaseEntry {
-        id: format!("{}other-base", PREFIX),
+        id: [PREFIX, "other-base"].concat(),
         name: "Other Glossary".into(),
         ..termbase_entry.clone()
     };
 
     let other_term_entry = TermEntry {
-        id: format!("{}other-term", PREFIX),
+        id: [PREFIX, "other-term"].concat(),
         termbase_id: other_termbase_entry.id.clone(),
         source: "Other".into(),
         targets: vec!["其他".into()],
@@ -168,7 +160,7 @@ async fn verify_wrong_scope_rollback(
     .unwrap();
 
     let rollback_entry = TermEntry {
-        id: format!("{}rollback", PREFIX),
+        id: [PREFIX, "rollback"].concat(),
         termbase_id: termbase_entry.id.clone(),
         source: "Rollback".into(),
         targets: vec!["回滚".into()],
@@ -231,10 +223,6 @@ async fn verify_wrong_scope_rollback(
     assert_eq!(unchanged_other.source, other_term_entry.source);
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_bulk_upsert(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -243,10 +231,10 @@ async fn verify_bulk_upsert(
 ) -> Vec<TermRepl> {
     let bulk_entries = (0..200)
         .map(|index| TermEntry {
-            id: format!("{}bulk-{index:03}", PREFIX),
+            id: [PREFIX, "bulk-", &format!("{:03}", &index)].concat(),
             termbase_id: entry.id.clone(),
-            source: format!("Bulk {index:03}"),
-            targets: vec![format!("Target {index:03}")],
+            source: ["Bulk ", &format!("{:03}", &index)].concat(),
+            targets: vec![["Target ", &format!("{:03}", &index)].concat()],
             comment: None,
             creator_id: comic_fixture.creator_form.id.clone(),
         })
@@ -275,7 +263,9 @@ async fn verify_bulk_upsert(
         .map(|(index, term_entry)| TermRepl {
             id: term_entry.id.clone(),
             source: format!("{} updated", term_entry.source),
-            targets: vec![format!("Target {index:03} updated")],
+            targets: vec![
+                ["Target ", &format!("{:03}", &index), " updated"].concat(),
+            ],
             comment: Some("batch updated".into()),
         })
         .collect::<Vec<_>>();
@@ -326,10 +316,6 @@ async fn verify_bulk_upsert(
     bulk_updates
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_import_upsert(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -338,7 +324,7 @@ async fn verify_import_upsert(
     term_entry: &TermEntry,
 ) {
     let imported_entry = TermEntry {
-        id: format!("{}imported", PREFIX),
+        id: [PREFIX, "imported"].concat(),
         termbase_id: termbase_entry.id.clone(),
         source: "Alpha".into(),
         targets: vec!["阿尔法".into()],
@@ -405,10 +391,6 @@ async fn verify_import_upsert(
 /// Verifies term array unique and fuzzy roundtrip.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
@@ -422,7 +404,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
-        id: format!("{}base", PREFIX),
+        id: [PREFIX, "base"].concat(),
         team_id: None,
         comic_id: Some(comic_fixture.comic_info.id.clone()),
         name: "Glossary".into(),
@@ -446,7 +428,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     .unwrap();
 
     let term_entry = TermEntry {
-        id: format!("{}main", PREFIX),
+        id: [PREFIX, "main"].concat(),
         termbase_id: termbase_entry.id.clone(),
         source: "100%_Hero".into(),
         targets: vec!["勇者".into(), "英雄".into()],

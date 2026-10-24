@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shape::write::comic::ComicEntryShape;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -55,7 +55,7 @@ impl TryFrom<ComicInfoRecord> for ComicInfo {
 
     fn try_from(v: ComicInfoRecord) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             id: v.f_id,
             workset_id: v.f_workset_id,
             index: usize_from_i32(v.f_index, "t_comic.f_index")?,

@@ -7,7 +7,7 @@ pub mod perm {
         check_user_is_team_admin, check_user_is_team_member,
     };
     use crate::model::read::proj::member::MemberInfo;
-    use crate::result::{BaseRest, accept};
+    use crate::result::BaseRest;
     use crate::value::role::RoleMask;
 
     /// Verify the caller may create a comic with the requested preset roles.
@@ -26,7 +26,7 @@ pub mod perm {
             )?;
         }
 
-        accept(())
+        accept!(())
     }
 
     /// Verify the caller may list comics.
@@ -73,7 +73,7 @@ pub mod perm {
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::comic::ComicInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 
@@ -81,7 +81,7 @@ use crate::value::index::stored_index_to_user_index;
 pub fn ensure_comic_writable(comic_info: &ComicInfo) -> BaseRest<()> {
     //
     if comic_info.archived_at.is_none() {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {

@@ -12,7 +12,7 @@ use crate::part::repo::oper::assignment_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `get_info`.
 fn get_info(
@@ -85,7 +85,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(&state, oper))
+        accept!(list_infos(&state, oper))
     }
 }
 
@@ -150,7 +150,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
 
             context.state.assignment_invitations.push(info.clone());
 
-            accept(info)
+            accept!(info)
         }
     }
 }
@@ -223,7 +223,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
 
         info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -258,7 +258,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 
                 context.state.assignment_invitations.remove(position);
 
-                accept(())
+                accept!(())
             }
 
             DeleteAssignmentInvitations::Chapter { chapter_id } => {
@@ -270,7 +270,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
                     .assignment_invitations
                     .retain(|info| info.chapter_id != *chapter_id);
 
-                accept(())
+                accept!(())
             }
         }
     }
@@ -298,7 +298,7 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
             .assignment_invitations
             .retain(|info| info.id != oper.id || !info.is_pending);
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -322,7 +322,7 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
             .assignment_invitations
             .retain(|info| info.id != oper.id || !info.is_pending);
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

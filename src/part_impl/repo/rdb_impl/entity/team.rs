@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -88,7 +88,7 @@ impl TryFrom<TeamInfoRecord> for TeamInfo {
 
     fn try_from(v: TeamInfoRecord) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),

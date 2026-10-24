@@ -38,7 +38,7 @@ use crate::part::repo::oper::user::{
     GetUserCredential, GetUserInfo, GetUserInfoExcluded, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::user::view::user_info_view;
 use crate::value::image::{ImageKind, UserAvatarKey};
 
@@ -56,10 +56,6 @@ use crate::value::image::{ImageKind, UserAvatarKey};
     skip(repo, obj_dept, token),
     fields(actor_user_id = %token.user_id),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -67,7 +63,7 @@ pub async fn get_info<C, R, O>(
 ) -> BaseRest<UserInfoView>
 where
     C: Context,
-    R: UserRepo<C>,
+    R: UserRepo<C> + Sync,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
     let user_info = GetUserInfo { id: &id }.run_on(repo).await?;
@@ -139,11 +135,11 @@ where
             .step_on(repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Replaces a user's password after verifying their current password.
@@ -210,7 +206,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Allocates a new avatar upload slot for a user.
@@ -286,7 +282,7 @@ where
         headers: obj_slot.headers,
     });
 
-    accept(AllocUserAvatarVal { slot })
+    accept!(AllocUserAvatarVal { slot })
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.

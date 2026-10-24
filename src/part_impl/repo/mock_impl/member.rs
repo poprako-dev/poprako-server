@@ -16,7 +16,7 @@ use crate::part::repo::oper::member::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::member::MemberInclOpt;
 
 // Internal implementation of `find_user`.
@@ -121,7 +121,7 @@ fn create_member(
 
     state.members.push(member.clone());
 
-    accept(member)
+    accept!(member)
 }
 
 // Internal implementation of `find_member_by_user_id_and_team_id`.
@@ -158,7 +158,7 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(find_member_by_user_id_and_team_id(
+        accept!(find_member_by_user_id_and_team_id(
             &state,
             oper.user_id,
             oper.team_id,
@@ -185,7 +185,7 @@ fn get_member_info(
 
     apply_team_incl(state, &mut member_info, include_team);
 
-    accept(member_info)
+    accept!(member_info)
 }
 
 // Internal implementation of `list_member_infos`.
@@ -330,11 +330,11 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
             // Internal implementation detail.
             // Internal implementation detail.
             ListMemberInfos::Spec { spec } => {
-                accept(list_member_infos(&state, spec))
+                accept!(list_member_infos(&state, spec))
             }
 
             ListMemberInfos::User { user_id } => {
-                accept(list_member_infos_by_user(&state, user_id))
+                accept!(list_member_infos_by_user(&state, user_id))
             }
         }
     }
@@ -409,7 +409,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
                             repl.trimmed_user_nickname().to_owned();
                     });
 
-                accept(())
+                accept!(())
             }
 
             UpdateMember::Role { update } => {
@@ -425,7 +425,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 
                 member_info.roles = update.roles;
 
-                accept(())
+                accept!(())
             }
         }
     }
@@ -451,11 +451,11 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
             // Internal implementation detail.
             // Internal implementation detail.
             ListMemberInfos::Spec { spec } => {
-                accept(list_member_infos(&context.state, spec))
+                accept!(list_member_infos(&context.state, spec))
             }
 
             ListMemberInfos::User { user_id } => {
-                accept(list_member_infos_by_user(&context.state, user_id))
+                accept!(list_member_infos_by_user(&context.state, user_id))
             }
         }
     }
@@ -476,7 +476,7 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
         oper: &FindMemberInfo<'a>,
     ) -> BaseRest<Option<MemberInfo>> {
         //
-        accept(find_member_by_user_id_and_team_id(
+        accept!(find_member_by_user_id_and_team_id(
             &context.state,
             oper.user_id,
             oper.team_id,
@@ -517,7 +517,7 @@ impl<'a> Step<LockTeamMemberInfos<'a>, MockContext> for Mock {
         oper: &LockTeamMemberInfos<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        accept(
+        accept!(
             context
                 .state
                 .members
@@ -555,7 +555,7 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
 
         context.state.members.remove(position);
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -579,6 +579,6 @@ impl<'a> Step<DeleteUserMemberships<'a>, MockContext> for Mock {
             .members
             .retain(|member_info| member_info.user_id != oper.user_id);
 
-        accept(())
+        accept!(())
     }
 }

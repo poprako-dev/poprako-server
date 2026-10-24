@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ impl TryFrom<UserInfoRecord> for UserInfo {
 
     fn try_from(record: UserInfoRecord) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             id: record.f_id,
             qid: record.f_qid,
             nickname: record.f_nickname,

@@ -2,7 +2,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -40,7 +40,7 @@ pub fn check_workflow_role(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Verify the caller may join a chapter with the requested roles.
@@ -66,7 +66,7 @@ pub fn check_join_role(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 // Resolve the assignment roles that can apply one workflow transition.

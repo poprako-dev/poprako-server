@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_qid, t_user,
 };
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 /// Find user info by QID, returning None when absent.
@@ -59,7 +59,7 @@ pub async fn update_info(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Load user info by ID, locking the record for update.

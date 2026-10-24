@@ -44,7 +44,7 @@ use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
@@ -93,7 +93,7 @@ where
     let assignment_info_vals =
         assignment_info_views(repo, obj_dept, assignment_infos).await?;
 
-    accept(assignment_info_vals)
+    accept!(assignment_info_vals)
 }
 
 /// Joins a chapter assignment with requested roles.
@@ -231,11 +231,11 @@ where
                 .await?;
             }
 
-            accept(assignment_info)
+            accept!(assignment_info)
         })
         .await?;
 
-    accept(AssignmentInfoView::from(assignment_info))
+    accept!(AssignmentInfoView::from(assignment_info))
 }
 
 /// Deletes one assignment by identifier.
@@ -324,20 +324,16 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
     let () = ();
 
-    accept(())
+    accept!(())
 }
 
 // Ensure the current user may list assignments for the requested scope.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn ensure_user_can_list<C, R>(
     repo: &R,
     token: &UserToken,
@@ -345,7 +341,7 @@ async fn ensure_user_can_list<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + UserRepo<C>,
+    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Sync,
 {
     match assignment_list_spec {
         //

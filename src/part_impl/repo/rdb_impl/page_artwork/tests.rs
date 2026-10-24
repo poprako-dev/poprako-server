@@ -38,7 +38,7 @@ use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 use crate::shared::test_rdb::start;
 use crate::value::image::ImageExt;
 use crate::value::page_artwork::PageArtworkImageKey;
@@ -72,7 +72,7 @@ impl ObjDeptPool for Pool {
         byte_len: u64,
     ) -> ObjDeptRest<ObjDeptPoolSlot> {
         Ok(ObjDeptPoolSlot {
-            url: Url::parse(&format!("https://example.test/upload/{key}"))
+            url: Url::parse(&["https://example.test/upload/", key].concat())
                 .unwrap(),
             headers: BTreeMap::from([
                 ("content-type".into(), content_type.into()),
@@ -312,7 +312,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .step_on(&repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

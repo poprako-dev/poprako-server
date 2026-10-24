@@ -11,7 +11,7 @@ use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::comment::CommentInclOpt;
 
 // Internal implementation of `find_user`.
@@ -106,7 +106,7 @@ fn create_comment(
 
     state.comments.push(comment_info.clone());
 
-    accept(comment_info)
+    accept!(comment_info)
 }
 
 impl Run<ListCommentInfos<'_>> for Mock {
@@ -125,7 +125,7 @@ impl Run<ListCommentInfos<'_>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_comments(&state, oper.spec))
+        accept!(list_comments(&state, oper.spec))
     }
 }
 

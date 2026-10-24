@@ -39,13 +39,13 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, SetChapterConfirmedArtworkVersion,
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterConfirmedArtworkVer,
     UpdateChapterStage,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::internal::member::MemberLoader;
@@ -134,11 +134,11 @@ where
                 }),
             };
 
-            accept(alloc)
+            accept!(alloc)
         })
         .await?;
 
-    accept(alloc)
+    accept!(alloc)
 }
 
 /// Confirms an exact generation and completes typesetting in the same transaction.
@@ -211,18 +211,18 @@ where
 
             if is_new_confirmation {
                 //
-                SetChapterConfirmedArtworkVersion {
+                SetChapterConfirmedArtworkVer {
                     id: &chapter_info.id,
-                    version: instr.artwork_ver,
+                    ver: instr.artwork_ver,
                 }
                 .step_on(repo, context)
                 .await?;
             }
 
-            let previous_phase =
+            let prev_phase =
                 chapter_info.stages.get_phase(Stage::TypesetRedraw);
 
-            if previous_phase == StagePhase::Completed {
+            if prev_phase == StagePhase::Completed {
                 //
                 if is_new_confirmation {
                     //
@@ -233,7 +233,7 @@ where
                     .await?;
                 }
 
-                return accept(None);
+                return accept!(None);
             }
 
             let stage_update = ChapterStageRepl {
@@ -255,7 +255,7 @@ where
                 Some(&token.user_id),
                 ChapterWorkflowRecordPayload::StageTransitioned {
                     stage: Stage::TypesetRedraw,
-                    previous_phase,
+                    previous_phase: prev_phase,
                     next_phase: StagePhase::Completed,
                     origin: ChapterWorkflowRecordOrigin::ArtworkUpload,
                 },
@@ -273,7 +273,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(Some(chapter_info.id))
+            accept!(Some(chapter_info.id))
         })
         .await?;
 
@@ -289,7 +289,7 @@ where
         .await;
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Exports metadata and the original URL of the current available artwork.
@@ -397,7 +397,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(artwork_export)
+    accept!(artwork_export)
 }
 
 // Checks team administration or worker assignment inside the chapter transaction.

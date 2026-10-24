@@ -39,7 +39,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter::stage::Stage;
@@ -191,11 +191,11 @@ where
             )
             .await?;
 
-            accept(import_val)
+            accept!(import_val)
         })
         .await?;
 
-    accept(val)
+    accept!(val)
 }
 
 // Validates permissions and parses the submitted translation content.
@@ -273,7 +273,7 @@ where
         stages.insert(0, Stage::Translate);
     }
 
-    accept((edit_perm, format, mode, imported_pages, stages))
+    accept!((edit_perm, format, mode, imported_pages, stages))
 }
 
 // Carries the actor and strategy through each page import.
@@ -318,7 +318,7 @@ where
                 }
             })?;
 
-        let page_import_outcome = replace_page_units(
+        let page_import_changes = apply_page_import(
             repo,
             context,
             page_scope,
@@ -327,14 +327,14 @@ where
         )
         .await?;
 
-        final_page_count_metrics.push(page_import_outcome.count_metrics);
+        final_page_count_metrics.push(page_import_changes.count_metrics);
 
-        imported_page_count += page_import_outcome.imported_page_count;
+        imported_page_count += page_import_changes.imported_page_count;
 
-        imported_unit_count += page_import_outcome.imported_unit_count;
+        imported_unit_count += page_import_changes.imported_unit_count;
     }
 
-    accept((
+    accept!((
         final_page_count_metrics,
         imported_page_count,
         imported_unit_count,
@@ -358,7 +358,7 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
 }
 
 // Captures the page-level results of one import application decision.
-struct PageImportOutcome {
+struct PageImportChanges {
     // Final visible Unit counters for the page.
     count_metrics: UnitCountMetrics,
     // Whether this page's visible content changed through the import.
@@ -368,13 +368,13 @@ struct PageImportOutcome {
 }
 
 // Applies imported Units to one page according to the selected strategy.
-async fn replace_page_units<C, R>(
+async fn apply_page_import<C, R>(
     repo: &R,
     context: &mut C,
     page_scope: &PageInfo,
     imported_page: &PageTranslationImport,
     import_settings: &ImportSettings<'_>,
-) -> BaseRest<PageImportOutcome>
+) -> BaseRest<PageImportChanges>
 where
     C: Context,
     R: PageRepo<C> + UnitRepo<C> + Sync,
@@ -396,7 +396,7 @@ where
     if (visible_unit_ids.is_empty(), imported_page.units.is_empty())
         == (true, true)
     {
-        return accept(PageImportOutcome {
+        return accept!(PageImportChanges {
             count_metrics: current_count_metrics,
             imported_page_count: 0,
             imported_unit_count: 0,
@@ -407,7 +407,7 @@ where
         //
         ChapterTranslationImportMode::Keep if !visible_unit_ids.is_empty() => {
             //
-            return accept(PageImportOutcome {
+            return accept!(PageImportChanges {
                 count_metrics: current_count_metrics,
                 imported_page_count: 0,
                 imported_unit_count: 0,
@@ -461,7 +461,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(PageImportOutcome {
+    accept!(PageImportChanges {
         count_metrics: final_count_metrics,
         imported_page_count: 1,
         imported_unit_count: imported_page.units.len(),
@@ -509,7 +509,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Applies imported units against the current page order.
@@ -528,7 +528,7 @@ where
     R: UnitRepo<C> + Sync,
 {
     let Some(_) = imported_page.units.first() else {
-        return accept(UnitCountMetrics::default());
+        return accept!(UnitCountMetrics::default());
     };
 
     let edits = build_page_edits(&imported_page.units, user_id, edit_perm);
@@ -548,7 +548,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(final_count_metrics)
+    accept!(final_count_metrics)
 }
 
 // Builds create edits for all imported units on one page.

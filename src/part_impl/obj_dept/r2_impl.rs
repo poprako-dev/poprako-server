@@ -56,10 +56,6 @@ impl R2ObjDeptPool {
     ///
     /// Returns an error when required settings are missing or the client
     /// cannot be constructed.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -89,7 +85,8 @@ impl R2ObjDeptPool {
         );
 
         let endpoint =
-            format!("https://{}.r2.cloudflarestorage.com", account_id);
+            ["https://", account_id.as_str(), ".r2.cloudflarestorage.com"]
+                .concat();
 
         let credentials = Credentials::new(
             access_key_id,
@@ -287,10 +284,6 @@ fn parse_public_url(url_string: &str) -> ObjDeptRest<Url> {
 }
 
 // Builds a URL under the configured public object domain.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     //
     if domain.is_empty() {
@@ -306,24 +299,22 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
         || domain.strip_prefix("https://").is_some();
 
     if has_scheme {
-        return parse_public_url(&format!("{}/{}", domain, path));
+        return parse_public_url(&[domain, "/", path].concat());
     }
 
-    parse_public_url(&format!("https://{}/{}", domain, path))
+    parse_public_url(&["https://", domain, "/", path].concat())
 }
 
 // Builds one Cloudflare image-transformation URL.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
     //
-    let path = format!(
-        "cdn-cgi/image/width={},fit=scale-down,quality=80,format=auto,metadata=\
-            none/{}",
-        width, key,
-    );
+    let path = [
+        "cdn-cgi/image/width=",
+        &width.to_string(),
+        ",fit=scale-down,quality=80,format=auto,metadata=none/",
+        key,
+    ]
+    .concat();
 
     build_public_url(domain, &path)
 }

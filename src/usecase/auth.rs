@@ -27,7 +27,7 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Registers a new user using an invitation code.
 ///
@@ -122,7 +122,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept((
+            accept!((
                 user_info.id,
                 invitation_info.team_id,
                 invitation_info.invitor_id,
@@ -146,7 +146,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    accept(RegisterAuthVal {
+    accept!(RegisterAuthVal {
         user_id: original_token.user_id,
         token,
     })
@@ -166,17 +166,13 @@ where
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
 #[instrument(level = "info", skip(repo, auth))]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
     instr: LoginAuthInstr,
 ) -> BaseRest<LoginAuthVal>
 where
     C: Context,
-    R: UserRepo<C>,
+    R: UserRepo<C> + Sync,
     A: TokenAuth + Sync,
 {
     let qid = instr.qid.trim();
@@ -203,7 +199,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    accept(LoginAuthVal {
+    accept!(LoginAuthVal {
         user_id: original_token.user_id,
         token,
     })

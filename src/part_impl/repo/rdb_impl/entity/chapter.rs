@@ -40,7 +40,8 @@ pub struct ChapterInfoRecord {
     pub f_reviewed_at: Option<OffsetDateTime>,
     pub f_published_at: Option<OffsetDateTime>,
 
-    pub f_confirmed_artwork_version: Option<i64>,
+    #[diesel(column_name = f_confirmed_artwork_version)]
+    pub f_confirmed_artwork_ver: Option<i64>,
 
     pub f_creator_id: String,
 
@@ -102,14 +103,14 @@ impl TryFrom<ChapterInfoRecord> for ChapterInfo {
             )?,
             stages,
             confirmed_artwork_ver: record
-                .f_confirmed_artwork_version
+                .f_confirmed_artwork_ver
                 .map(u32::try_from)
                 .transpose()
                 .map_err(|_| {
                     //
                     unrecoverable_error! {
                         message: "invalid confirmed artwork version".into();
-                        artwork_ver = ?record.f_confirmed_artwork_version,
+                        artwork_ver = ?record.f_confirmed_artwork_ver,
                         "invalid confirmed artwork version",
                     }
                 })?,

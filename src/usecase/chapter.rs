@@ -42,7 +42,7 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
@@ -92,7 +92,7 @@ where
     let chapter_info_vals =
         chapter_info_views(repo, obj_dept, chapter_infos).await?;
 
-    accept(chapter_info_vals)
+    accept!(chapter_info_vals)
 }
 
 /// Fetches a chapter by ID.
@@ -127,7 +127,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(ChapterInfoView::from(chapter_info))
+    accept!(ChapterInfoView::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -162,7 +162,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(chapter_info.map(ChapterInfoView::from))
+    accept!(chapter_info.map(ChapterInfoView::from))
 }
 
 /// Creates a new chapter.
@@ -240,11 +240,11 @@ where
             )
             .await?;
 
-            accept(chapter_info.id)
+            accept!(chapter_info.id)
         })
         .await?;
 
-    accept(CreateChapterVal { id: chapter_id })
+    accept!(CreateChapterVal { id: chapter_id })
 }
 
 /// Updates chapter metadata.
@@ -337,11 +337,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Marks a chapter as the pinned chapter for its comic.
@@ -462,9 +462,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

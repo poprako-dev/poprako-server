@@ -29,7 +29,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_uploaded_at, t_chapter,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shared::result::diesel;
 use crate::value::chapter::ChapterInclOpt;
@@ -84,7 +84,7 @@ pub async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 /// Queries a single chapter record by ID under `FOR UPDATE` lock.
@@ -125,7 +125,7 @@ pub async fn get_info_excluded(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 /// Locks the minimal Chapter edit scope owning the requested Page.
@@ -161,7 +161,7 @@ pub async fn get_unit_edit_scope_excluded(
             }
         })?;
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 /// Queries chapter records for a given comic, ordered by index descending.
@@ -187,7 +187,7 @@ pub async fn list_infos(
     incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl_opt)
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 /// Queries all chapter records for a comic under `FOR UPDATE` lock.
@@ -223,7 +223,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Finds the pinned chapter for a given comic ID, if one exists.
@@ -245,7 +245,7 @@ pub async fn find_pinned_info_by_comic_id(
         .map_err(diesel)?;
 
     let Some(record) = record else {
-        return accept(None);
+        return accept!(None);
     };
 
     let mut info = record_into_info(record)?;
@@ -257,7 +257,7 @@ pub async fn find_pinned_info_by_comic_id(
     )
     .await?;
 
-    accept(Some(info))
+    accept!(Some(info))
 }
 
 /// Returns the pinned chapter infos for the given comic IDs.
@@ -268,7 +268,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
     if comic_ids.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let records = t_chapter
@@ -335,7 +335,7 @@ pub async fn update_info(
         return Err(missing_chapter(&update.id, "update chapter info"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Updates the stage timestamps of a chapter record.
@@ -363,7 +363,7 @@ pub async fn update_stage(
         return Err(missing_chapter(&update.id, "update chapter stage"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Atomically moves a pending two-step stage to active.
@@ -429,7 +429,7 @@ pub async fn start_stage(
         }
     };
 
-    accept(updated_count > 0)
+    accept!(updated_count > 0)
 }
 
 /// Atomically resolves raw provision when every reserved page is uploaded.
@@ -456,7 +456,7 @@ pub async fn complete_raw_provide(
     .await
     .map_err(diesel)?;
 
-    accept(updated_count > 0)
+    accept!(updated_count > 0)
 }
 
 /// Sets the page and unit counters on a chapter record.
@@ -497,7 +497,7 @@ pub async fn set_page_counts(
         return Err(missing_chapter(oper.id, "set chapter page counters"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Adjusts a chapter's unit counters by the given delta.
@@ -527,7 +527,7 @@ pub async fn adjust_unit_counts(
         return Err(missing_chapter(id, "adjust chapter unit counters"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Unpins all chapters for a comic except the one with the given excluded ID.
@@ -551,7 +551,7 @@ pub async fn unpin_others(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Converts a single `ChapterInfoRecord` into a `ChapterInfo`.

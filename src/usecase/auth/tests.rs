@@ -71,10 +71,6 @@ fn login_data(qid: &str, password: &str) -> LoginAuthInstr {
 }
 
 #[tokio::test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     //
     let mock = Mock::new();
@@ -121,15 +117,13 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
 
     assert_eq!(events.len(), 1);
 
-    let Event::UserSignedUp { payload } = events.first().unwrap() else {
-        panic!("expected UserSignedUp event");
-    };
-
-    assert_eq!(payload.team_id, "team-1");
-
-    assert_eq!(payload.invitor_id, "invitor-1");
-
-    assert_eq!(payload.invitee_qid, "qid-1");
+    assert!(matches!(
+        events.first().unwrap(),
+        Event::UserSignedUp { payload }
+            if payload.team_id == "team-1"
+                && payload.invitor_id == "invitor-1"
+                && payload.invitee_qid == "qid-1"
+    ));
 
     let login_val = login(
         (&mock, &mock),

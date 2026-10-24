@@ -411,10 +411,6 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
 }
 
 /// Purges expired dead records while pending and recent dead records remain.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     //
     // Internal state field test_shared.
@@ -477,7 +473,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     assert_eq!(purged_count, 1);
 
     let remaining_ids: Vec<String> = t_local_message::table
-        .filter(t_local_message::f_id.like(format!("{}%", PREFIX)))
+        .filter(t_local_message::f_id.like([PREFIX, "%"].concat()))
         .order_by(t_local_message::f_id.asc())
         .select(t_local_message::f_id)
         .load(&mut conn)

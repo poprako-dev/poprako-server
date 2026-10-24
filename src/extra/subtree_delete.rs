@@ -19,7 +19,7 @@ use crate::part::obj_dept::{
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::RdbContext;
 use crate::usecase::subtree_delete as subtree_delete_usecase;
 use crate::value::subtree_delete::SubtreeSweepLevel;
@@ -132,10 +132,10 @@ where
         .await;
 
         if swept {
-            return accept(SchedNext::Continue);
+            return accept!(SchedNext::Continue);
         }
 
-        accept(SchedNext::Wait)
+        accept!(SchedNext::Wait)
     }
 }
 

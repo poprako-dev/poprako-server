@@ -7,41 +7,29 @@ use crate::model::write::workset::WorksetEntry;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shape::write::comic::ComicEntryShape;
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
-        id: format!("{}user-{}", prefix, name),
-        nickname: format!("{}user-{}", prefix, name),
-        qid: format!("{}qid-{}", prefix, name),
+        id: [prefix, "user-", name].concat(),
+        nickname: [prefix, "user-", name].concat(),
+        qid: [prefix, "qid-", name].concat(),
         password_hash: "hash".into(),
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn team_entry(prefix: &str) -> TeamEntry {
     TeamEntry {
-        id: format!("{}team", prefix),
-        name: format!("{}team", prefix),
+        id: [prefix, "team"].concat(),
+        name: [prefix, "team"].concat(),
         description: "team".into(),
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn workset_entry(prefix: &str, team: &TeamEntry) -> WorksetEntry {
     WorksetEntry {
-        id: format!("{}workset", prefix),
+        id: [prefix, "workset"].concat(),
         team_id: team.id.clone(),
         index: 0,
         name: "RDB Workset".into(),
@@ -49,10 +37,6 @@ pub fn workset_entry(prefix: &str, team: &TeamEntry) -> WorksetEntry {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn comic_entry<'a>(
     prefix: &str,
@@ -60,7 +44,7 @@ pub fn comic_entry<'a>(
     creator_form: &'a UserEntry,
 ) -> ComicEntryShape<'a> {
     ComicEntryShape {
-        id: format!("{}comic", prefix),
+        id: [prefix, "comic"].concat(),
         workset_id: &workset.id,
         index: 0,
         title: "RDB Comic".into(),
@@ -70,10 +54,6 @@ pub fn comic_entry<'a>(
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn chapter_entry<'a>(
     prefix: &str,
@@ -81,7 +61,7 @@ pub fn chapter_entry<'a>(
     creator_form: &'a UserEntry,
 ) -> ChapterEntryShape<'a> {
     ChapterEntryShape {
-        id: format!("{}chapter", prefix),
+        id: [prefix, "chapter"].concat(),
         comic_id: &comic.id,
         is_pinned: true,
         index: 0,
@@ -90,14 +70,10 @@ pub fn chapter_entry<'a>(
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 #[must_use]
 pub fn page_entry(prefix: &str, chapter: &ChapterInfo) -> PageEntry {
     PageEntry {
-        id: format!("{}page", prefix),
+        id: [prefix, "page"].concat(),
         chapter_id: chapter.id.clone(),
         index: 0,
     }

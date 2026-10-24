@@ -3,7 +3,7 @@ use diesel_async::RunQueryDsl as _;
 
 use poprako_rdb_core::RdbCore;
 
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel as diesel_error;
 
 // Keep each cleanup statement typed while sharing execution and error handling.
@@ -42,15 +42,11 @@ macro_rules! assert_fixture_table_empty {
 ///
 /// # Errors
 /// Returns database connection or typed query errors.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 
-    let id_pattern = format!("{}%", prefix);
+    let id_pattern = [prefix, "%"].concat();
 
     delete_fixture_rows!(&mut conn, &id_pattern, t_comment, f_id);
 
@@ -93,7 +89,7 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
 
     delete_fixture_rows!(&mut conn, &id_pattern, t_user, f_id);
 
-    accept(())
+    accept!(())
 }
 
 /// Verifies cleanup removed every fixture record covered by the prefix.
@@ -103,10 +99,6 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
 ///
 /// # Errors
 /// Returns database connection or typed query errors.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
@@ -114,7 +106,7 @@ pub async fn assert_no_leftovers(
     //
     let mut conn = shared.get().await?;
 
-    let id_pattern = format!("{}%", prefix);
+    let id_pattern = [prefix, "%"].concat();
 
     assert_fixture_table_empty!(&mut conn, &id_pattern, t_announcement, f_id);
 
@@ -163,5 +155,5 @@ pub async fn assert_no_leftovers(
 
     assert_fixture_table_empty!(&mut conn, &id_pattern, t_workset, f_id);
 
-    accept(())
+    accept!(())
 }

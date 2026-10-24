@@ -11,7 +11,7 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
@@ -38,7 +38,7 @@ pub fn get_chapter_by_id(
 
     apply_chapter_incls(state, &mut chapter_info, incl_opt);
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 /// Resolves the minimal Unit edit scope through its owning Page.
@@ -57,7 +57,7 @@ pub fn get_unit_edit_scope_by_page_id(
 
     let chapter_info = get_chapter_by_id(state, &page_info.chapter_id, &[])?;
 
-    accept(ChapterUnitEditScope {
+    accept!(ChapterUnitEditScope {
         id: chapter_info.id,
         comic_id: chapter_info.comic_id,
         is_published: chapter_info.stages.has_phase(
@@ -127,7 +127,7 @@ pub fn create_chapter(
 
     state.chapters.push(chapter_info.clone());
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 /// Enriches chapter include fields for the requested relation set.

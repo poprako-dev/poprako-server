@@ -17,7 +17,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::accept;
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::test_rdb::start;
 use crate::usecase::unit as unit_usecase;
@@ -79,7 +78,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
             .step_on(&repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

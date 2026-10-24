@@ -66,10 +66,6 @@ async fn verify_assignment_ancestor_inclusions(
 /// Verifies assignment roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -89,7 +85,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
     let entry = AssignmentEntryShape {
-        id: format!("{}assignment", PREFIX),
+        id: [PREFIX, "assignment"].concat(),
         chapter_id: &chapter_fixture.chapter_info.id,
         user_id: &assignee_form.id,
         roles: RoleMask::from(RoleField::TRANSLATOR),

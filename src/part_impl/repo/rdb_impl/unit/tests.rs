@@ -29,23 +29,19 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
 // Verify batched page reads and selected unit fields after restoration.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_selected_units(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let missing_page_id = format!("{}missing-page", PREFIX);
+    let missing_page_id = [PREFIX, "missing-page"].concat();
     let page_ids = [
         page_fixture.page_entry.id.as_str(),
         missing_page_id.as_str(),
@@ -109,7 +105,7 @@ async fn verify_selected_units(
             unit.proofread_text.as_deref() == Some("proofread")
         }),);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -172,7 +168,7 @@ async fn verify_restore(
 
         assert_eq!(count_metrics.proofread, 1);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -223,7 +219,7 @@ async fn verify_tombstone(
                 .is_some_and(|order| order.is_hidden)
         );
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -302,17 +298,13 @@ async fn verify_mixed_patches(
 
         assert_eq!(count_metrics.proofread, 0);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 }
 
 // Verify a stale identifier rolls back every earlier edit in the batch.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_stale_edit_rollback(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -321,7 +313,7 @@ async fn verify_stale_edit_rollback(
 ) {
     let creator_id = page_fixture.chapter_info.creator_id.clone();
 
-    let missing_id = format!("{}missing", PREFIX);
+    let missing_id = [PREFIX, "missing"].concat();
 
     let stale_orders = [
         UnitOrder {
@@ -383,7 +375,7 @@ async fn verify_stale_edit_rollback(
             )
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await;
 
@@ -410,7 +402,7 @@ async fn verify_stale_edit_rollback(
             Some("saved after create"),
         );
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -476,7 +468,7 @@ async fn verify_create_and_save(
 
         assert_eq!(count_metrics.total, 2);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -486,10 +478,6 @@ async fn verify_create_and_save(
 /// Verifies Unit v2 persistence through the real transaction adapter.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -505,9 +493,9 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let first_id = format!("{}first", PREFIX);
+    let first_id = [PREFIX, "first"].concat();
 
-    let second_id = format!("{}second", PREFIX);
+    let second_id = [PREFIX, "second"].concat();
 
     let create_orders = verify_create_and_save(
         &repo,

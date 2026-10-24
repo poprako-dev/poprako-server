@@ -27,7 +27,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -102,11 +102,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(term_info.id)
+            accept!(term_info.id)
         })
         .await?;
 
-    accept(CreateTermVal { id: term_id })
+    accept!(CreateTermVal { id: term_id })
 }
 
 /// Fetches a terminology entry by ID.
@@ -144,7 +144,7 @@ where
 
     termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    accept(term_info.into())
+    accept!(term_info.into())
 }
 
 /// Lists terminology entries inside one terminology base.
@@ -192,7 +192,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(term_infos.into_iter().map(Into::into).collect())
+    accept!(term_infos.into_iter().map(Into::into).collect())
 }
 
 /// Replaces a terminology entry's source, targets, and comment.
@@ -273,11 +273,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a terminology entry.
@@ -342,9 +342,9 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }

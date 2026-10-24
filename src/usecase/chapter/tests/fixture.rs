@@ -60,10 +60,6 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn chapter(
     id: &str,
     comic_id: &str,
@@ -80,7 +76,7 @@ pub fn chapter(
         comic: None,
         is_pinned,
         index,
-        subtitle: format!("chapter {}", index),
+        subtitle: ["chapter ", &index.to_string()].concat(),
         page_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -93,13 +89,9 @@ pub fn chapter(
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     MemberInfo {
-        id: format!("member-{}-{}", user_id, team_id),
+        id: ["member-", user_id, "-", team_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
@@ -110,10 +102,6 @@ pub fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -123,7 +111,7 @@ pub fn assignment(
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
+        id: ["assignment-", chapter_id, "-", user_id].concat(),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,

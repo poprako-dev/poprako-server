@@ -42,7 +42,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     shift_indexes_temporary,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
@@ -55,7 +55,7 @@ async fn list_raw_ident_infos(
 ) -> BaseRest<Vec<PageRawIdentInfo>> {
     //
     if page_ids.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let mut conn = core.get().await?;
@@ -67,7 +67,7 @@ async fn list_raw_ident_infos(
         .await
         .map_err(map_diesel)?;
 
-    accept(records.into_iter().map(PageRawIdentInfo::from).collect())
+    accept!(records.into_iter().map(PageRawIdentInfo::from).collect())
 }
 
 // Implements update raw idents.
@@ -123,7 +123,7 @@ async fn update_raw_idents(
             .map_err(map_diesel)?;
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetPageInfo<'_>> for HybRepo {

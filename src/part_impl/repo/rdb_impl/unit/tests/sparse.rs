@@ -69,7 +69,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         context.conn().set_instrumentation(
             move |event: InstrumentationEvent<'_>| {
                 if let InstrumentationEvent::StartQuery { query, .. } = event {
-                    recorded.lock().unwrap().push(format!("{query}"));
+                    recorded.lock().unwrap().push(query.to_string());
                 }
             },
         );
@@ -313,7 +313,7 @@ async fn sparse_unit_writes_use_testcontainer() {
             Some("final")
         );
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

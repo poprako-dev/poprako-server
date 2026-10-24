@@ -23,10 +23,6 @@ const PREFIX: &str = "rdb-test-comment-domain-";
 /// Verifies comment roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -40,7 +36,7 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
     );
 
     let entry = CommentEntry {
-        id: format!("{}comment", PREFIX),
+        id: [PREFIX, "comment"].concat(),
         team_id: team_fixture.team_entry.id.clone(),
         user_id: team_fixture.user_entry.id.clone(),
         content: "comment".into(),

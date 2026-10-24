@@ -40,7 +40,7 @@ use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRecord;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ where
     }
 
     if key_counts.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let id_refs = key_counts.keys().map(String::as_str).collect::<Vec<_>>();
@@ -134,7 +134,7 @@ where
         I::inject(owner, related);
     }
 
-    accept(())
+    accept!(())
 }
 
 // Decrements a reference count and takes ownership of a loaded related entity
@@ -183,7 +183,7 @@ where
         map.insert(id, info);
     }
 
-    accept(map)
+    accept!(map)
 }
 
 // ── Reusable BatchByIds impls (one per table) ───────────────────────────────

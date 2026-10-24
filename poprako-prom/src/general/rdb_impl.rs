@@ -95,10 +95,6 @@ impl std::error::Error for PromError {}
 
 /// Records a database failure once and retains its application-neutral class.
 #[doc(hidden)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn diesel_error(source: diesel::result::Error) -> PromError {
     //
     use diesel::result::{DatabaseErrorKind, Error};
@@ -165,7 +161,7 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
             );
 
             PromError::Unrecoverable {
-                message: format!("diesel error: {}", information.message()),
+                message: ["diesel error: ", information.message()].concat(),
             }
         }
 
@@ -175,7 +171,7 @@ pub fn diesel_error(source: diesel::result::Error) -> PromError {
                 "Diesel SDK error");
 
             PromError::Unrecoverable {
-                message: format!("diesel error: {}", source),
+                message: ["diesel error: ", &source.to_string()].concat(),
             }
         }
     }

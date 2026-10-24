@@ -172,7 +172,7 @@ async fn verify_patches(
 
             assert_eq!(second.translation_note.as_deref(), Some("内部沟通"));
 
-            accept(())
+            accept!(())
         })
         .await
         .unwrap();
@@ -238,7 +238,7 @@ async fn verify_diff_stats(
 
         assert_eq!(counts.translated, 2);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

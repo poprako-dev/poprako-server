@@ -175,7 +175,7 @@ where
             .await
             .map_err(|error| NuclError::Backend(diesel(error)))?;
 
-        let result = match f(context).await {
+        let transaction_rest = match f(context).await {
             //
             Ok(value) => {
                 //
@@ -212,11 +212,11 @@ where
             //
             let _ = diesel(error);
 
-            return result;
+            return transaction_rest;
         }
 
         session.restored = true;
 
-        result
+        transaction_rest
     }
 }

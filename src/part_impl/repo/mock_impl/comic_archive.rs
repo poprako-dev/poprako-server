@@ -20,7 +20,7 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, unrecoverable,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `order_unit_infos`.
 fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
@@ -28,7 +28,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     // Internal implementation detail.
     // Internal implementation detail.
     if unit_infos.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let mut infos_by_id = unit_infos
@@ -97,7 +97,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         return Err(unrecoverable("persisted Unit chain is corrupt"));
     }
 
-    accept(visible_infos)
+    accept!(visible_infos)
 }
 
 impl Run<ListComicArchivePayloads<'_>> for Mock {
@@ -131,7 +131,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
             .map(|record| (record.created_at, record.archived_payload.clone()))
             .collect();
 
-        let rest = accept(payloads);
+        let rest = accept!(payloads);
 
         drop(state);
 
@@ -167,7 +167,7 @@ fn page_snapshots(
 
             unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
-            accept(ComicArchivePageSnapshot {
+            accept!(ComicArchivePageSnapshot {
                 page_info,
                 unit_infos,
             })
@@ -176,7 +176,7 @@ fn page_snapshots(
 
     page_snapshots.sort_by_key(|snapshot| snapshot.page_info.index);
 
-    accept(page_snapshots)
+    accept!(page_snapshots)
 }
 
 // Assemble and return a comic archive snapshot (including chapter, page, and unit info) for submission.
@@ -241,7 +241,7 @@ fn get_snapshot_excluded(
                             .ok_or_else(|| expected("error-user-not-found"))?,
                     );
 
-                    accept(assignment_info)
+                    accept!(assignment_info)
                 })
                 .collect::<BaseRest<Vec<_>>>()?;
 
@@ -293,7 +293,7 @@ fn get_snapshot_excluded(
                 })
                 .collect();
 
-            accept(ComicArchiveChapterSnapshot {
+            accept!(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 workflow_record_infos,
@@ -303,7 +303,7 @@ fn get_snapshot_excluded(
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ComicArchiveSnapshot {
+    accept!(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -424,7 +424,7 @@ fn commit(
 
     comic_info.updated_at = archived_at;
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {

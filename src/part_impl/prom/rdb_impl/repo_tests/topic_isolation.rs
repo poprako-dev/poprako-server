@@ -28,10 +28,6 @@ diesel::table! {
 // claim_reads_are_bounded(ClaimPending)(negative): an unrelated topic's backlog cannot add heap reads to this topic's claim.
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn claim_reads_are_bounded() {
     //
     let test_rdb = start().await;
@@ -43,7 +39,7 @@ async fn claim_reads_are_bounded() {
     let now = OffsetDateTime::now_utc();
 
     let ids = (0..8192)
-        .map(|index| format!("prom-cost-{:05}", index))
+        .map(|index| ["prom-cost-", &format!("{:05}", &index)].concat())
         .collect::<Vec<_>>();
 
     let items = ids

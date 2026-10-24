@@ -29,7 +29,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_proofread_text, f_translated_text, f_translation_note, f_typography_note,
     f_updated_at, f_x_coord, f_y_coord, t_unit as unit_table,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 use crate::util::Patch;
 
@@ -137,7 +137,7 @@ fn ensure_affected(
 ) -> BaseRest<()> {
     //
     if affected == expected {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -169,7 +169,7 @@ async fn apply_create_items(
 ) -> BaseRest<()> {
     //
     if items.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let affected = diesel::insert_into(unit_table)
@@ -189,7 +189,7 @@ async fn apply_update_packs(
 ) -> BaseRest<()> {
     //
     if packs.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let ids = packs.keys().copied().collect::<Vec<_>>();
@@ -307,7 +307,7 @@ async fn count_visible_units(
         .await
         .map_err(diesel)?;
 
-    accept(UnitCountMetrics {
+    accept!(UnitCountMetrics {
         total: usize_from_i64(total, "count visible Units")?,
         translated: usize_from_i64(
             translated,

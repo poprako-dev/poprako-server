@@ -22,7 +22,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::{
     f_created_at, f_deleted_at, f_id, f_workset_next_index, t_team,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 /// Build the expected error for a missing team.
@@ -159,7 +159,7 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
         return Err(missing_team(&repl.id, "update team info"));
     }
 
-    accept(())
+    accept!(())
 }
 
 // Load one team info and lock the record for transactional updates.
@@ -222,7 +222,7 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         });
     };
 
-    accept(())
+    accept!(())
 }
 
 // Advance workset sequence and return previous value for deterministic IDs.
@@ -247,5 +247,5 @@ pub async fn increment_workset_next_index(
         return Err(missing_team(id, "allocate team workset index"));
     };
 
-    accept(usize_from_i32(prev, "t_team.f_workset_next_index")?)
+    accept!(usize_from_i32(prev, "t_team.f_workset_next_index")?)
 }

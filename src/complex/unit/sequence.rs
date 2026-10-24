@@ -5,7 +5,7 @@ mod tests;
 
 use std::collections::HashMap;
 
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Orders a complete persisted Unit chain without changing record content.
 ///
@@ -23,7 +23,7 @@ where
 {
     //
     if units.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let mut index_by_id = HashMap::with_capacity(units.len());
@@ -150,7 +150,7 @@ where
         *displaced_position = current_position;
     }
 
-    accept(())
+    accept!(())
 }
 
 // Returns an unrecoverable error for a corrupt Unit chain.

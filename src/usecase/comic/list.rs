@@ -17,7 +17,7 @@ use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part::repo::oper::comic::ListComicInfos;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::util::LoadMode;
@@ -142,7 +142,7 @@ fn validate_with_options(
 ) -> BaseRest<()> {
     //
     if !with_pinned_chapter_assignment || with_pinned_chapter {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {

@@ -15,7 +15,7 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
 use crate::value::comic_archive::artwork::ArchivedPageArtworkPayload;
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
@@ -288,7 +288,7 @@ impl ComicArchiveMonth {
 
         months.sort_by_key(|month| month.start);
 
-        accept(months)
+        accept!(months)
     }
 
     // Construct a month slot from validated label, year, and month components.
@@ -353,7 +353,7 @@ impl ComicArchiveMonth {
                 }
             })?;
 
-        accept(Self {
+        accept!(Self {
             label,
             start: PrimitiveDateTime::new(start_date, Time::MIDNIGHT)
                 .assume_utc(),
@@ -411,5 +411,5 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         }
     })?;
 
-    accept((year, month))
+    accept!((year, month))
 }

@@ -20,7 +20,7 @@ use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterConfirmedArtworkVersion,
+    GetChapterInfoExcluded, SetChapterConfirmedArtworkVer,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::comic_archive::{
@@ -33,7 +33,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::test_rdb::start;
 
 fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
@@ -84,7 +84,7 @@ async fn replace(
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .map_err(BaseError::from)
@@ -297,7 +297,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
                 raw_ident: None,
             },
             crate::model::write::page_artwork::PageArtworkEntry {
-                id: format!("{chapter_id}-extra"),
+                id: [chapter_id.as_str(), "-extra"].concat(),
                 chapter_id: chapter_id.clone(),
                 index: 7,
                 raw_ident: None,
@@ -319,7 +319,8 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
         entry("review-second", chapter_id, 1),
     ];
 
-    entries.get_mut(1).unwrap().page_artwork_id = format!("{chapter_id}-extra");
+    entries.get_mut(1).unwrap().page_artwork_id =
+        [chapter_id.as_str(), "-extra"].concat();
 
     entries.get_mut(1).unwrap().index = 0;
 
@@ -421,9 +422,9 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     );
 
     nucl.coord(async |context| {
-        SetChapterConfirmedArtworkVersion {
+        SetChapterConfirmedArtworkVer {
             id: chapter_id,
-            version: 42,
+            ver: 42,
         }
         .step_on(&repo, context)
         .await?;
@@ -437,17 +438,29 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
         assert_eq!(chapter.confirmed_artwork_ver, Some(42));
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 
     let first = (0..2100)
-        .map(|index| entry(&format!("review-a-{index}"), chapter_id, index))
+        .map(|index| {
+            entry(
+                &["review-a-", &index.to_string()].concat(),
+                chapter_id,
+                index,
+            )
+        })
         .collect::<Vec<_>>();
 
     let second = (0..2100)
-        .map(|index| entry(&format!("review-b-{index}"), chapter_id, index))
+        .map(|index| {
+            entry(
+                &["review-b-", &index.to_string()].concat(),
+                chapter_id,
+                index,
+            )
+        })
         .collect::<Vec<_>>();
 
     let (first_result, second_result) = tokio::join!(

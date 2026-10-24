@@ -14,7 +14,7 @@ use crate::part::repo::oper::term::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `get_info`.
 fn get_info(state: &MockState, id: &str) -> BaseRest<TermInfo> {
@@ -153,7 +153,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
             }
         };
 
-        let rest = accept(term_infos);
+        let rest = accept!(term_infos);
 
         drop(state);
 
@@ -211,7 +211,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
 
         context.state.terms.push(term_info.clone());
 
-        accept(term_info)
+        accept!(term_info)
     }
 }
 
@@ -250,7 +250,7 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
             }
         };
 
-        accept(term_infos)
+        accept!(term_infos)
     }
 }
 
@@ -273,7 +273,7 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
         // Internal implementation detail.
         get_info(&context.state, oper.id)?;
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -321,7 +321,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
 
         term_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -434,7 +434,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
             term_info.updated_at = now();
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -464,7 +464,7 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
 
         context.state.terms.remove(position);
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -490,6 +490,6 @@ impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
             .terms
             .retain(|term_info| term_info.termbase_id != oper.termbase_id);
 
-        accept(())
+        accept!(())
     }
 }

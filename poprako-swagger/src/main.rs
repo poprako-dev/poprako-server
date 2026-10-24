@@ -16,13 +16,7 @@ fn main() -> anyhow::Result<()> {
 
     let swagger_json = serde_json::to_string_pretty(&doc)?;
 
-    #[allow(
-        clippy::print_stdout,
-        reason = "The Swagger executable writes its generated JSON document to stdout"
-    )]
-    {
-        std::io::stdout().write_all(swagger_json.as_bytes())?;
-    }
+    std::io::stdout().write_all(swagger_json.as_bytes())?;
 
     Ok(())
 }

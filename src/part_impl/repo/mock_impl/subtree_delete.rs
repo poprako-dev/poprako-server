@@ -22,7 +22,7 @@ use crate::part::repo::oper::subtree_delete::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Collect worksets covered by a deletion scope.
 #[must_use]
@@ -138,7 +138,7 @@ pub fn lock_scope(
                 })
                 .ok_or_else(|| expected("error-team-not-found"))?;
 
-            accept(SubtreeDeleteScope::Team {
+            accept!(SubtreeDeleteScope::Team {
                 team_id: team_info.id.clone(),
             })
         }
@@ -155,7 +155,7 @@ pub fn lock_scope(
                 })
                 .ok_or_else(|| expected("error-workset-not-found"))?;
 
-            accept(SubtreeDeleteScope::Workset {
+            accept!(SubtreeDeleteScope::Workset {
                 workset_id: workset_info.id.clone(),
                 team_id: workset_info.team_id.clone(),
             })
@@ -179,7 +179,7 @@ pub fn lock_scope(
                 .find(|workset_info| workset_info.id == comic_info.workset_id)
                 .ok_or_else(|| expected("error-workset-not-found"))?;
 
-            accept(SubtreeDeleteScope::Comic {
+            accept!(SubtreeDeleteScope::Comic {
                 comic_id: comic_info.id.clone(),
                 workset_id: workset_info.id.clone(),
                 team_id: workset_info.team_id.clone(),
@@ -210,7 +210,7 @@ pub fn lock_scope(
                 .find(|workset_info| workset_info.id == comic_info.workset_id)
                 .ok_or_else(|| expected("error-workset-not-found"))?;
 
-            accept(SubtreeDeleteScope::Chapter {
+            accept!(SubtreeDeleteScope::Chapter {
                 chapter_id: chapter_info.id.clone(),
                 comic_id: comic_info.id.clone(),
                 workset_id: workset_info.id.clone(),
@@ -264,7 +264,7 @@ pub fn mark_scope(
 
     state.deleted_chapter_ids.extend(marked_chapter_ids);
 
-    accept(())
+    accept!(())
 }
 
 impl Step<LockSubtreeDeleteScope<'_>, MockContext> for Mock {
@@ -314,7 +314,7 @@ impl Step<ClaimSubtreeSweep, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ClaimSubtreeSweep,
     ) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-        accept(sweep::claim(&context.state, oper.level))
+        accept!(sweep::claim(&context.state, oper.level))
     }
 }
 
@@ -338,7 +338,7 @@ impl Step<ListSubtreePageIds<'_>, MockContext> for Mock {
 
         ids.sort_unstable();
 
-        accept(ids)
+        accept!(ids)
     }
 }
 
@@ -366,7 +366,7 @@ impl Step<DeleteSubtree<'_>, MockContext> for Mock {
 
         sweep::delete_chapter(&mut context.state, chapter_id);
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -386,6 +386,6 @@ impl Step<SweepSubtree<'_>, MockContext> for Mock {
         //
         sweep::sweep_target(&mut context.state, oper.target);
 
-        accept(())
+        accept!(())
     }
 }

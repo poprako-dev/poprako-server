@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::chapter::stage::{
     Stage, StagePhase, StagePhaseField, is_valid_stage_phase,
 };
@@ -49,7 +49,7 @@ impl StageMask {
         //
         Self::validate_mask_value(value, true)?;
 
-        accept(Self(value))
+        accept!(Self(value))
     }
 
     /// Return workflow stages in mask bit order.
@@ -164,7 +164,7 @@ impl StageMask {
             Self::validate_stage_field(*stage, field, allow_ignore)?;
         }
 
-        accept(())
+        accept!(())
     }
 
     // Decode the requested stage field from `self`.
@@ -216,7 +216,7 @@ impl StageMask {
         if field == StagePhaseField::IGNORE {
             //
             if allow_ignore {
-                return accept(());
+                return accept!(());
             }
 
             return Err(expected_error! {
@@ -254,7 +254,7 @@ impl StageMask {
             });
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -267,7 +267,7 @@ impl TryFrom<u32> for StageMask {
         //
         Self::validate_mask_value(value, false)?;
 
-        accept(Self(value))
+        accept!(Self(value))
     }
 }
 

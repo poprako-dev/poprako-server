@@ -8,7 +8,7 @@ use crate::complex::util::{
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::role::RoleField;
 use crate::value::unit::{UnitEditPerm, UnitTextPart};
 
@@ -54,7 +54,7 @@ pub fn ensure_user_can_transform(
     };
 
     if allowed {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {
@@ -83,7 +83,7 @@ pub fn ensure_user_can_list_infos(access: &UnitListAccess<'_>) -> BaseRest<()> {
 
     match access_check {
         //
-        Ok(()) => accept(()),
+        Ok(()) => accept!(()),
 
         Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
@@ -190,5 +190,5 @@ pub fn ensure_user_can_edit_fields(
         }
     }
 
-    accept(())
+    accept!(())
 }

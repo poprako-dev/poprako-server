@@ -24,10 +24,6 @@ const PREFIX: &str = "rdb-test-system-mail-domain-";
 /// Verifies system mail roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -42,13 +38,13 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let system_mail_entries = [
         SystemMailEntry {
-            id: format!("{}system-mail-1", PREFIX),
+            id: [PREFIX, "system-mail-1"].concat(),
             receiver_id: user_fixture.entry.id.clone(),
             title: "RDB Mail One".into(),
             content: "mail one".into(),
         },
         SystemMailEntry {
-            id: format!("{}system-mail-2", PREFIX),
+            id: [PREFIX, "system-mail-2"].concat(),
             receiver_id: user_fixture.entry.id.clone(),
             title: "RDB Mail Two".into(),
             content: "mail two".into(),

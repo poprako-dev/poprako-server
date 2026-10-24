@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::assignment::incl::apply_assignment_incls;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::assignment::AssignmentInclOpt;
 
@@ -183,7 +183,7 @@ fn get_assignment(
 
     apply_assignment_incls(state, &mut assignment_info, incl_opt);
 
-    accept(assignment_info)
+    accept!(assignment_info)
 }
 
 // Find the most recent assignment for a user within a comic, then load all
@@ -282,7 +282,7 @@ fn create_assignment(
 
     state.assignments.push(assignment_info.clone());
 
-    accept(assignment_info)
+    accept!(assignment_info)
 }
 
 // Internal implementation of `delete_assignment_by_id`.
@@ -298,7 +298,7 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseRest<()> {
 
     state.assignments.remove(index);
 
-    accept(())
+    accept!(())
 }
 
 // Internal implementation of `delete_assignments_by_chapter_id`.
@@ -311,7 +311,7 @@ fn delete_assignments_by_chapter_id(
     // Internal implementation detail.
     state.assignments.retain(|a| a.chapter_id != chapter_id);
 
-    accept(())
+    accept!(())
 }
 
 impl Run<FindAssignmentInfo<'_, '_>> for Mock {
@@ -348,7 +348,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
             ),
         };
 
-        let rest = accept(assignment_info);
+        let rest = accept!(assignment_info);
 
         drop(state);
 
@@ -374,7 +374,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
 
         let assignment_infos = list_infos(&state, oper);
 
-        let rest = accept(assignment_infos);
+        let rest = accept!(assignment_infos);
 
         drop(state);
 
@@ -440,7 +440,7 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
             ),
         };
 
-        accept(assignment_info)
+        accept!(assignment_info)
     }
 }
 
@@ -458,7 +458,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListAssignmentInfosExcluded<'_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
-        accept(list_infos_excluded(&context.state, oper.chapter_id))
+        accept!(list_infos_excluded(&context.state, oper.chapter_id))
     }
 }
 
@@ -481,7 +481,7 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
         // Internal implementation detail.
         let assignment_infos = list_infos(&context.state, oper);
 
-        accept(assignment_infos)
+        accept!(assignment_infos)
     }
 }
 
@@ -531,7 +531,7 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 
         assignment_info.updated_at = now();
 
-        accept(assignment_info.clone())
+        accept!(assignment_info.clone())
     }
 }
 

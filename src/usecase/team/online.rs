@@ -17,7 +17,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
 use crate::part::repo::oper::user::UpdateUser;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 
 /// Marks the authenticated user online in one team for ten minutes.
 /// Updates user and membership activity before renewing the lease, without a transaction.
@@ -64,7 +64,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Lists active user identifiers for one team in ascending order.
@@ -103,5 +103,5 @@ where
     let online_user_ids =
         ListOnlineUserIds { team_id: &team_id }.run_on(repo).await?;
 
-    accept(online_user_ids)
+    accept!(online_user_ids)
 }

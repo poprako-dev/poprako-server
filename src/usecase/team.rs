@@ -47,7 +47,7 @@ use crate::part::repo::oper::team::{
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::team::view::team_info_view;
 use crate::value::image::{ImageKind, TeamAvatarKey};
 use crate::value::role::{RoleField, RoleMask};
@@ -115,7 +115,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(team_info)
+            accept!(team_info)
         })
         .await?;
 
@@ -173,7 +173,7 @@ where
 
     UpdateTeam { repl: &team_repl }.run_on(repo).await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Allocates a new avatar upload slot for a team.
@@ -266,7 +266,7 @@ where
         headers: obj_slot.headers,
     });
 
-    accept(AllocTeamAvatarVal { slot })
+    accept!(AllocTeamAvatarVal { slot })
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
@@ -277,10 +277,6 @@ where
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn mark_avatar_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -289,7 +285,7 @@ pub async fn mark_avatar_uploaded<C, R, O>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: MemberRepo<C>,
+    R: MemberRepo<C> + Sync,
     O: ObjDept<TeamAvatar, C> + Sync,
 {
     let member_info = FindMemberInfo {

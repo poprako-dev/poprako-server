@@ -57,29 +57,26 @@ pub enum RdbError {
 
 impl std::fmt::Display for RdbError {
     // Formats an infrastructure failure without adding contextual classification.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //
         match self {
             //
             Self::PoolBuild { source } => {
-                write!(formatter, "failed to build RDB pool: {}", source)
+                //
+                formatter.write_str("failed to build RDB pool: ")?;
+
+                std::fmt::Display::fmt(source, formatter)
             }
 
             Self::PoolGet { message } => {
                 //
-                write!(
-                    formatter,
-                    "failed to acquire RDB connection: {}",
-                    message
-                )
+                formatter.write_str("failed to acquire RDB connection: ")?;
+
+                formatter.write_str(message)
             }
 
             Self::PoolWaitTimeout => {
-                write!(formatter, "timed out waiting for an RDB connection")
+                formatter.write_str("timed out waiting for an RDB connection")
             }
         }
     }
@@ -150,14 +147,14 @@ impl RdbCore {
         //
         let started_at = Instant::now();
 
-        let connection = self.pool.get().await;
+        let conn = self.pool.get().await;
 
         metrics::histogram!("rdb_pool_acquire_duration_seconds")
             .record(started_at.elapsed().as_secs_f64());
 
-        match connection {
+        match conn {
             //
-            Ok(connection) => Ok(connection),
+            Ok(conn) => Ok(conn),
 
             Err(source) => Err(pool_get_error(&source)),
         }

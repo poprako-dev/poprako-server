@@ -49,13 +49,15 @@ pub async fn list_infos(
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<Vec<PageArtworkInfoView>> {
     //
-    page_artwork_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        token,
-        chapter_id,
+    Ok(
+        page_artwork_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            token,
+            chapter_id,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// Replaces the authoritative composite manifest and allocates needed uploads.
@@ -78,24 +80,26 @@ pub async fn alloc_chapter_page_artworks(
     Json(instr): Json<AllocChapterPageArtworksInstr>,
 ) -> HttpResult<AllocChapterPageArtworksVal> {
     //
-    page_artwork_manifest_usecase::alloc_chapter_page_artworks::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-        _,
-    >(
-        (
-            harn.nucl().rept_read(),
-            harn.repo(),
-            harn.obj_dept(),
-            &harn.config().image,
-        ),
-        token,
-        chapter_id,
-        instr,
+    Ok(
+        page_artwork_manifest_usecase::alloc_chapter_page_artworks::<
+            _,
+            RdbContext<ReptRead>,
+            HybRepo,
+            _,
+        >(
+            (
+                harn.nucl().rept_read(),
+                harn.repo(),
+                harn.obj_dept(),
+                &harn.config().image,
+            ),
+            token,
+            chapter_id,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// Allocates a replacement composite image while preserving issues.
@@ -119,7 +123,12 @@ pub async fn alloc_image(
     Json(instr): Json<AllocPageArtworkImageInstr>,
 ) -> HttpResult<AllocatedPageArtworkVal> {
     //
-    page_artwork_image_usecase::alloc_image::<_, RdbContext<ReptRead>, HybRepo, _>(
+    Ok(page_artwork_image_usecase::alloc_image::<
+        _,
+        RdbContext<ReptRead>,
+        HybRepo,
+        _,
+    >(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -131,7 +140,7 @@ pub async fn alloc_image(
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// Marks an exact composite generation uploaded without changing workflow.
@@ -170,5 +179,5 @@ pub async fn mark_image_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

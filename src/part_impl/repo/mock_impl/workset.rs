@@ -14,7 +14,7 @@ use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `get_workset_info`.
 fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
@@ -86,7 +86,7 @@ fn update_workset(state: &mut MockState, update: &WorksetRepl) -> BaseRest<()> {
 
     workset_info.updated_at = now();
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Run<GetWorksetInfo<'a>> for Mock {
@@ -122,7 +122,7 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_workset_infos(&state, oper))
+        accept!(list_workset_infos(&state, oper))
     }
 }
 
@@ -175,7 +175,7 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListWorksetInfos<'a>,
     ) -> BaseRest<Vec<WorksetInfo>> {
-        accept(list_workset_infos(&context.state, oper))
+        accept!(list_workset_infos(&context.state, oper))
     }
 }
 
@@ -220,7 +220,7 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
 
         context.state.worksets.push(workset_info.clone());
 
-        accept(workset_info)
+        accept!(workset_info)
     }
 }
 
@@ -260,7 +260,7 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
             .filter(|comic_info| comic_info.workset_id == oper.id)
             .count();
 
-        accept(index)
+        accept!(index)
     }
 }
 
@@ -296,6 +296,6 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
 
         workset_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }

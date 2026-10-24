@@ -33,7 +33,7 @@ use poprako_obj_dept::rest::ObjDeptRest;
 use poprako_orchestra::Nucl as _;
 
 use crate::part::obj_dept::ChapterArtwork;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 use crate::value::artwork::ChapterArtworkKey;
 use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
@@ -79,7 +79,7 @@ async fn verify_artwork_clear(
 
         assert!(!marked_after_clear);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -158,10 +158,6 @@ pub async fn concurrent_claim_is_unique_ordered_and_fenced(shared: RdbCore) {
     repeated_defer_locks_completion(&shared).await;
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn insert_task(
     shared: &RdbCore,
     suffix: &str,
@@ -171,12 +167,12 @@ async fn insert_task(
 
     diesel::insert_into(t_obj_prom_task::table)
         .values((
-            t_obj_prom_task::f_id.eq(format!("{}{}", PREFIX, suffix)),
+            t_obj_prom_task::f_id.eq([PREFIX, suffix].concat()),
             t_obj_prom_task::f_topic.eq("page_image"),
             t_obj_prom_task::f_oper.eq("obj_prom_oper:check"),
-            t_obj_prom_task::f_obj_id.eq(format!("{}page", PREFIX)),
+            t_obj_prom_task::f_obj_id.eq([PREFIX, "page"].concat()),
             t_obj_prom_task::f_version.eq(1_i64),
-            t_obj_prom_task::f_key.eq(format!("{}key", PREFIX)),
+            t_obj_prom_task::f_key.eq([PREFIX, "key"].concat()),
             t_obj_prom_task::f_generation.eq(0_i64),
             t_obj_prom_task::f_status.eq(PENDING),
             t_obj_prom_task::f_visible_at.eq(created_at),
@@ -191,23 +187,19 @@ async fn insert_task(
         .unwrap();
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn cleanup(shared: &RdbCore) {
     let mut conn = shared.get().await.unwrap();
 
     diesel::delete(
         t_obj_prom_task::table
-            .filter(t_obj_prom_task::f_id.like(format!("{}%", PREFIX))),
+            .filter(t_obj_prom_task::f_id.like([PREFIX, "%"].concat())),
     )
     .execute(&mut conn)
     .await
     .unwrap();
 
     let remaining = t_obj_prom_task::table
-        .filter(t_obj_prom_task::f_id.like(format!("{}%", PREFIX)))
+        .filter(t_obj_prom_task::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -249,17 +241,13 @@ async fn expire_current_attempt(shared: &RdbCore, id: &str, claim_token: Uuid) {
 }
 
 // completed_tasks_can_be_recreated(ObjDeptProm)(negative): stale execution credentials cannot mutate a recreated task or a reclaimed attempt.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     let prom = RdbObjDeptProm::new(shared.clone());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let key = ObjKey {
-        id: format!("{}object", PREFIX),
+        id: [PREFIX, "object"].concat(),
         ver: 1,
         image: "test/object/1.png".into(),
     };
@@ -377,17 +365,13 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
 }
 
 // repeated_defer_locks_completion(ObjDeptPromDefer)(positive): conflicting defer retains the task until identity validation and the caller transaction finish.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn repeated_defer_locks_completion(shared: &RdbCore) {
     let prom = RdbObjDeptProm::new(shared.clone());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let key = ObjKey {
-        id: format!("{}locked", PREFIX),
+        id: [PREFIX, "locked"].concat(),
         ver: 1,
         image: "test/locked/1.png".into(),
     };
@@ -467,7 +451,7 @@ impl ObjDeptPool for ArtworkTestPool {
         _byte_len: u64,
     ) -> ObjDeptRest<ObjDeptPoolSlot> {
         Ok(ObjDeptPoolSlot {
-            url: url::Url::parse(&format!("https://obj.test/{key}")).unwrap(),
+            url: url::Url::parse(&["https://obj.test/", key].concat()).unwrap(),
             headers: BTreeMap::default(),
             expires_at: OffsetDateTime::now_utc() + Duration::minutes(10),
         })

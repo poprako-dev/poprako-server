@@ -6,7 +6,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::oper::chapter::StartChapterStage;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
@@ -87,5 +87,5 @@ where
         .step_on(repo, context)
         .await?;
 
-    accept(())
+    accept!(())
 }

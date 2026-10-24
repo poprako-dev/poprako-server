@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::write::term::{TermEntry, TermImport, TermRepl};
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 
 /// Borrows a trimmed terminology-entry source filter, omitting blank values.
@@ -32,7 +32,7 @@ pub fn build_entry(
 
     ensure_targets(&targets)?;
 
-    accept(TermEntry {
+    accept!(TermEntry {
         id: next_snowflake_id(),
         termbase_id,
         source,
@@ -53,7 +53,7 @@ pub fn build_import(
 
     ensure_targets(&targets)?;
 
-    accept(TermImport {
+    accept!(TermImport {
         source,
         targets,
         comment,
@@ -72,7 +72,7 @@ pub fn build_update(
 
     ensure_targets(&targets)?;
 
-    accept(TermRepl {
+    accept!(TermRepl {
         id,
         source,
         targets,
@@ -95,7 +95,7 @@ fn normalize_source(source: &str) -> BaseRest<&str> {
         });
     }
 
-    accept(source)
+    accept!(source)
 }
 
 // Validate targets after trimming, preserving the original owned strings.
@@ -140,5 +140,5 @@ fn ensure_targets(targets: &[String]) -> BaseRest<()> {
         }
     }
 
-    accept(())
+    accept!(())
 }

@@ -542,10 +542,6 @@ fn list_infos_rejects_invalid_combination() {
 }
 
 #[test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
     let member_list_spec: MemberListSpec = ListMemberInfosInstr {
@@ -560,19 +556,9 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     .try_into()
     .unwrap();
 
-    let MemberListSpec::User {
-        owner_id,
-        offset,
-        limit,
-        ..
-    } = member_list_spec
-    else {
-        panic!("expected mine list spec");
-    };
-
-    assert_eq!(owner_id, "user-1");
-
-    assert_eq!(offset, 3);
-
-    assert_eq!(limit.get(), 5);
+    assert!(matches!(
+        member_list_spec,
+        MemberListSpec::User { owner_id, offset, limit, .. }
+            if owner_id == "user-1" && offset == 3 && limit.get() == 5
+    ));
 }

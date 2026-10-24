@@ -6,7 +6,8 @@ description: Classify, convert, propagate, and review PopRaKo server application
 # Error handling
 
 The server error surface is
-`crate::result::{BaseError, BaseRest, ExpectedVariant, accept}`.
+`crate::result::{BaseError, BaseRest, ExpectedVariant}` and the lexical
+`accept!` success-construction macro.
 Infrastructure workspace crates keep their own errors; classify them at the
 server adapter boundary rather than adding server dependencies to those crates.
 
@@ -19,7 +20,7 @@ server adapter boundary rather than adding server dependencies to those crates.
   persisted state, and violated internal invariants.
 - Preserve an existing BaseError with `?` when no new classification is
   needed. Do not wrap an error merely to restate the function name.
-- Use `accept(value)` for simple successful results where it is the nearby
+- Use `accept!(value)` for simple successful results where it is the nearby
   convention.
 
 ## Conversion and propagation

@@ -21,17 +21,9 @@ use crate::api::http::state::AppHarn;
 ///
 /// Returns an error when metrics initialization, listener binding, or serving
 /// fails.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
 where
-    A: ToSocketAddrs + std::fmt::Debug,
+    A: ToSocketAddrs + std::fmt::Debug + Send + Sync,
 {
     init_prometheus()?;
 
@@ -45,7 +37,9 @@ where
                 "Tokio SDK listener bind error",
             );
         })
-        .with_context(|| format!("failed to bind listener on {:?}", addr))?;
+        .with_context(|| {
+            ["failed to bind listener on ", &format!("{:?}", &addr)].concat()
+        })?;
 
     tracing::info!(addr = ?addr, "listening");
 

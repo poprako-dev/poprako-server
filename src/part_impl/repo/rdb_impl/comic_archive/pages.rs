@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_page_id, t_unit,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 
 /// Locks ordered source Pages with their translation Units.
@@ -63,7 +63,7 @@ pub async fn load_archive_pages(
         .map(Into::into)
         .collect::<Vec<UnitInfo>>();
 
-    accept((page_infos, unit_infos))
+    accept!((page_infos, unit_infos))
 }
 
 /// Assembles ordered Page details after all descendant records have been locked.
@@ -102,14 +102,14 @@ pub fn assemble_page_snapshots(
             });
     }
 
-    accept(page_snapshots_by_chapter)
+    accept!(page_snapshots_by_chapter)
 }
 
 // Reorder chained unit infos by next_id links and return only visible units.
 fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     //
     if unit_infos.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let mut infos_by_id = unit_infos
@@ -175,7 +175,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         return Err(corrupt_unit_chain_error());
     }
 
-    accept(visible_infos)
+    accept!(visible_infos)
 }
 
 // Standardize chain-corruption failures for unit graph validation.

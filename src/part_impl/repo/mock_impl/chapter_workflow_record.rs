@@ -9,7 +9,7 @@ use crate::part::repo::oper::chapter_workflow_record::{
     CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // List immutable records using the API's deterministic reverse chronological order.
 fn list_infos(
@@ -59,7 +59,7 @@ impl<'a> Run<ListChapterWorkflowRecordInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(
+        accept!(list_infos(
             &state,
             &oper.spec.chapter_id,
             oper.spec.offset,
@@ -97,7 +97,7 @@ impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
                 }
             }));
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -127,7 +127,7 @@ impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
                 }
             }));
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

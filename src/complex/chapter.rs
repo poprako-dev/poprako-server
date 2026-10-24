@@ -27,7 +27,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{
     Stage, StageOper, StagePhase, try_modify_stage,
@@ -66,7 +66,7 @@ pub fn build_stage_update(
         stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
     };
 
-    accept(chapter_stage_update)
+    accept!(chapter_stage_update)
 }
 
 /// Rejects a minimal persisted Chapter scope once it has been published.
@@ -87,7 +87,7 @@ pub fn ensure_writable_state(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Rejects user mutations once a chapter has been published.

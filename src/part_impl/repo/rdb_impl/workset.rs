@@ -32,7 +32,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_comic_count, f_comic_next_index, f_deleted_at, f_id, f_index, f_team_id,
     t_workset,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
@@ -74,7 +74,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
         });
     };
 
-    accept(WorksetInfo::try_from(record)?)
+    accept!(WorksetInfo::try_from(record)?)
 }
 
 // List worksets for one team with stable index ordering.
@@ -127,7 +127,7 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
         return Err(missing_workset(&update.id, "update workset info"));
     }
 
-    accept(())
+    accept!(())
 }
 
 // Insert a new workset and return its public info record.
@@ -147,7 +147,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(WorksetInfo::try_from(record)?)
+    accept!(WorksetInfo::try_from(record)?)
 }
 
 // Allocate next comic index atomically for a workset.
@@ -169,7 +169,7 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<usize> {
         return Err(missing_workset(id, "allocate workset comic index"));
     };
 
-    accept(usize_from_i32(index, "t_workset.f_comic_next_index")?)
+    accept!(usize_from_i32(index, "t_workset.f_comic_next_index")?)
 }
 
 // Update comic count by a delta value.
@@ -193,7 +193,7 @@ async fn update_comic_count(
         return Err(missing_workset(id, "update workset comic count"));
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetWorksetInfo<'_>> for HybRepo {

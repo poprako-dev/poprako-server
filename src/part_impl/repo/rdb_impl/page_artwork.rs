@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::entity::page_artwork::{
     PageArtworkItem, PageArtworkRecord,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -198,7 +198,7 @@ where
             }
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -238,6 +238,6 @@ where
             ));
         }
 
-        accept(())
+        accept!(())
     }
 }

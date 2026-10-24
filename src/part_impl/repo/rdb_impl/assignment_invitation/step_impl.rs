@@ -22,7 +22,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
     f_chapter_id, f_code, f_created_at, f_id, f_pending,
     t_assignment_invitation,
 };
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 /// Queries assignment invitation records selected by a list specification.
@@ -170,7 +170,7 @@ pub async fn mark_pending_as_used(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a single assignment invitation record by ID.
@@ -182,7 +182,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes an assignment invitation only while it remains pending.
@@ -198,7 +198,7 @@ pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes all assignment invitation records for a given chapter ID.
@@ -213,7 +213,7 @@ pub async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Converts a vector of `AssignmentInvitationInfoRecord` values into `AssignmentInvitationInfo`.

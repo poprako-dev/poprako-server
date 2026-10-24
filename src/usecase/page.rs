@@ -38,10 +38,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn mark_image_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -50,7 +46,7 @@ pub async fn mark_image_uploaded<C, R, O>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: PageRepo<C> + AssignmentRepo<C>,
+    R: PageRepo<C> + AssignmentRepo<C> + Sync,
     O: ObjDept<PageImage, C> + Sync,
 {
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;

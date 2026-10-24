@@ -19,10 +19,6 @@ use poprako_server::{
 };
 
 // Report every failed supervisor after all joins have completed.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn report_shutdown(
     rests: [(&str, Result<(), JoinError>); 4],
 ) -> anyhow::Result<()> {
@@ -40,7 +36,7 @@ fn report_shutdown(
                 );
 
                 anyhow::Error::new(error)
-                    .context(format!("{} supervisor failed", actor))
+                    .context([actor, " supervisor failed"].concat())
             })
         })
         .fold(Ok(()), Result::and)

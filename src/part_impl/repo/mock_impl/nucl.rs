@@ -2,8 +2,8 @@ use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
 
 use crate::part::nucl::Serial;
-use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockFault};
+use crate::result::{BaseError, BaseRest};
 
 /// Applies a signed counter delta without allowing an invalid negative state.
 pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
@@ -48,7 +48,7 @@ pub fn apply_signed_delta(value: &mut usize, delta: i32) -> BaseRest<()> {
     }
 
     //
-    accept(())
+    accept!(())
 }
 
 impl Nucl for Mock {
@@ -77,9 +77,11 @@ impl Nucl for Mock {
 
         let mut context = MockContext {
             state,
-            archive_commit_failure: flags.archive_commit_failure,
-            create_team_failure: flags.create_team_failure,
-            obj_delete_failure: flags.obj_delete_failure,
+            archive_commit_failure: flags.faults.contains(&MockFault::Archive),
+            create_team_failure: flags
+                .faults
+                .contains(&MockFault::TeamCreation),
+            obj_delete_failure: flags.faults.contains(&MockFault::ObjDeletion),
         };
 
         match f(&mut context).await {
@@ -87,7 +89,7 @@ impl Nucl for Mock {
             // Internal implementation detail.
             Ok(value) => {
                 //
-                if flags.commit_failure {
+                if flags.faults.contains(&MockFault::Commit) {
                     //
                     return Err(NuclError::Backend(BaseError::Unrecoverable {
                         message: "injected transaction commit failure".into(),

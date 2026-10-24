@@ -19,7 +19,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
 use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 use crate::value::chapter::mask::StageMask;
 use crate::value::role::RoleMask;
 
@@ -257,7 +257,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for TestRepo {
             .unwrap()
             .push(oper.comic_ids.iter().map(|id| (*id).to_owned()).collect());
 
-        accept(
+        accept!(
             self.pinned_chapters
                 .iter()
                 .filter(|chapter| {
@@ -285,10 +285,10 @@ impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
         let page_info = fallback_page_info();
 
         if !oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
-            return accept(Vec::new());
+            return accept!(Vec::new());
         }
 
-        accept(vec![page_info])
+        accept!(vec![page_info])
     }
 }
 

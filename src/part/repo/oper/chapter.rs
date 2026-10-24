@@ -161,9 +161,9 @@ pub struct UnpinOtherChapters<'a> {
 /// Records the first successful business confirmation of an artwork generation.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct SetChapterConfirmedArtworkVersion<'a> {
+pub struct SetChapterConfirmedArtworkVer<'a> {
     /// Locked owning Chapter.
     pub id: &'a str,
     /// Successfully confirmed generation.
-    pub version: u32,
+    pub ver: u32,
 }

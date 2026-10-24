@@ -13,15 +13,10 @@ use crate::part::repo::oper::unit::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
-use crate::result::accept;
 
 use super::{PREFIX, create_edit};
 
 // Verify repeated page identifiers preserve history ordering without duplicate records.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_selected_history(
     repo: &HybRepo,
     missing_translation_page_id: &str,
@@ -45,17 +40,17 @@ async fn verify_selected_history(
 
     assert_eq!(
         selected_infos.as_slice().first().unwrap().id,
-        format!("{}missing-translation", PREFIX)
+        [PREFIX, "missing-translation"].concat()
     );
 
     assert_eq!(
         selected_infos.get(1).unwrap().id,
-        format!("{}chunked-0-0", PREFIX)
+        [PREFIX, "chunked-0-0"].concat()
     );
 
     assert_eq!(
         selected_infos.get(600).unwrap().id,
-        format!("{}chunked-5-99", PREFIX)
+        [PREFIX, "chunked-5-99"].concat()
     );
 
     assert!(
@@ -68,17 +63,13 @@ async fn verify_selected_history(
 
     assert_eq!(
         selected_infos.get(601).unwrap().id,
-        format!("{}equal", PREFIX)
+        [PREFIX, "equal"].concat()
     );
 
     assert_eq!(selected_infos.get(606).unwrap().id, hidden_diff_id);
 }
 
 // Seed visible and hidden copies of every translation and revision pairing.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_text_matrix(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -107,14 +98,14 @@ async fn seed_text_matrix(
 
     for (index, (translation, revision)) in text_cases.into_iter().enumerate() {
         matrix_edits.push(create_text_edit(
-            &format!("{}matrix-{index}", PREFIX),
+            &[PREFIX, "matrix-", &index.to_string()].concat(),
             &page_fixture.chapter_info.creator_id,
             translation,
             revision,
             index % 2 == 0,
         ));
 
-        let hidden_id = format!("{}matrix-hidden-{index}", PREFIX);
+        let hidden_id = [PREFIX, "matrix-hidden-", &index.to_string()].concat();
 
         matrix_edits.push(create_text_edit(
             &hidden_id,
@@ -157,17 +148,13 @@ async fn seed_text_matrix(
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 }
 
 // Seed a proofreader append without a source translation.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_missing_translation(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -175,7 +162,7 @@ async fn seed_missing_translation(
     missing_translation_page_id: &str,
 ) {
     let missing_translation_edit = [create_text_edit(
-        &format!("{}missing-translation", PREFIX),
+        &[PREFIX, "missing-translation"].concat(),
         &page_fixture.chapter_info.creator_id,
         None,
         Some("proofread"),
@@ -193,56 +180,52 @@ async fn seed_missing_translation(
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 }
 
 // Seed equal, empty, whitespace, missing-proofread, and hidden translations.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_excluded_diff_cases(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     equal_page_id: &str,
 ) -> String {
-    let hidden_diff_id = format!("{}hidden-diff", PREFIX);
+    let hidden_diff_id = [PREFIX, "hidden-diff"].concat();
 
     let excluded_edits = [
         create_text_edit(
-            &format!("{}equal", PREFIX),
+            &[PREFIX, "equal"].concat(),
             &page_fixture.chapter_info.creator_id,
             Some("same"),
             Some("same"),
             true,
         ),
         create_text_edit(
-            &format!("{}empty", PREFIX),
+            &[PREFIX, "empty"].concat(),
             &page_fixture.chapter_info.creator_id,
             None,
             Some(""),
             true,
         ),
         create_text_edit(
-            &format!("{}ascii-whitespace", PREFIX),
+            &[PREFIX, "ascii-whitespace"].concat(),
             &page_fixture.chapter_info.creator_id,
             None,
             Some(" \t\r\n"),
             true,
         ),
         create_text_edit(
-            &format!("{}unicode-whitespace", PREFIX),
+            &[PREFIX, "unicode-whitespace"].concat(),
             &page_fixture.chapter_info.creator_id,
             None,
             Some("\u{3000}"),
             true,
         ),
         create_text_edit(
-            &format!("{}missing-proofread", PREFIX),
+            &[PREFIX, "missing-proofread"].concat(),
             &page_fixture.chapter_info.creator_id,
             Some("translated"),
             None,
@@ -268,7 +251,7 @@ async fn seed_excluded_diff_cases(
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -297,7 +280,7 @@ async fn seed_excluded_diff_cases(
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -305,10 +288,6 @@ async fn seed_excluded_diff_cases(
 }
 
 // Verify all historical identifiers retain insertion order and hidden flags.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_chunked_order(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -329,7 +308,14 @@ async fn verify_chunked_order(
         let expected_ids = (0..6)
             .flat_map(|batch_index| {
                 (0..100).map(move |unit_index| {
-                    format!("{}chunked-{}-{}", PREFIX, batch_index, unit_index)
+                    [
+                        PREFIX,
+                        "chunked-",
+                        &batch_index.to_string(),
+                        "-",
+                        &unit_index.to_string(),
+                    ]
+                    .concat()
                 })
             })
             .collect::<Vec<_>>();
@@ -343,17 +329,13 @@ async fn verify_chunked_order(
 
         assert!(orders.iter().all(|order| order.is_hidden));
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 }
 
 // Create and tombstone six batches so history exceeds one database chunk.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_chunked_history(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
@@ -363,10 +345,14 @@ async fn seed_chunked_history(
     for batch_index in 0..6 {
         let batch_edits = (0..100)
             .map(|unit_index| {
-                let unit_id = format!(
-                    "{}chunked-{}-{}",
-                    PREFIX, batch_index, unit_index,
-                );
+                let unit_id = [
+                    PREFIX,
+                    "chunked-",
+                    &batch_index.to_string(),
+                    "-",
+                    &unit_index.to_string(),
+                ]
+                .concat();
 
                 create_edit(
                     &unit_id,
@@ -425,7 +411,7 @@ async fn seed_chunked_history(
             )
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await
         .unwrap();
@@ -433,25 +419,21 @@ async fn seed_chunked_history(
 }
 
 // Create dedicated pages for equality, append-only, hidden history, and text matrix cases.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_diff_pages(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> [String; 4] {
-    let equal_page_id = format!("{}equal-page", PREFIX);
+    let equal_page_id = [PREFIX, "equal-page"].concat();
 
     let missing_translation_page_id =
-        format!("{}missing-translation-page", PREFIX);
+        [PREFIX, "missing-translation-page"].concat();
 
-    let chunked_order_page_id = format!("{}chunked-order-page", PREFIX);
+    let chunked_order_page_id = [PREFIX, "chunked-order-page"].concat();
 
-    let matrix_page_id = format!("{}matrix-page", PREFIX);
+    let matrix_page_id = [PREFIX, "matrix-page"].concat();
 
-    let empty_page_id = format!("{}empty-page", PREFIX);
+    let empty_page_id = [PREFIX, "empty-page"].concat();
 
     let additional_pages = [
         (matrix_page_id.as_str(), 4),
@@ -477,7 +459,7 @@ async fn seed_diff_pages(
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

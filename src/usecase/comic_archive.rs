@@ -33,7 +33,7 @@ use crate::part::repo::oper::comic_archive::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
@@ -116,7 +116,7 @@ where
         .map(|(month, payloads)| (month.label, payloads))
         .collect::<BTreeMap<_, _>>();
 
-    accept(ExportComicArchivesVal(exports))
+    accept!(ExportComicArchivesVal(exports))
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
@@ -209,11 +209,11 @@ where
 
             let record = entry.record;
 
-            accept(ArchiveComicVal {
+            accept!(ArchiveComicVal {
                 archived_id: record.id,
             })
         })
         .await?;
 
-    accept(archive_comic_val)
+    accept!(archive_comic_val)
 }

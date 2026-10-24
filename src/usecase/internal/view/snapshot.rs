@@ -19,7 +19,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
 use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::view::obj_urls::{
     ObjUrlBatch, ObjUrlViews, load_obj_urls,
@@ -215,7 +215,7 @@ impl ObjViewSnapshot {
             }
         }
 
-        accept(snapshot)
+        accept!(snapshot)
     }
 
     /// Renders an assignment and every included model without further I/O.
@@ -319,7 +319,7 @@ impl ObjViewSnapshot {
 
         let comic_covers = comic_ids.iter().map(|id| covers.take(id)).collect();
 
-        accept(Self {
+        accept!(Self {
             comic_covers,
             team_avatars,
             user_avatars,

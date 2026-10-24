@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_user_last_active_at, f_user_nickname, t_member,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -61,15 +61,11 @@ pub async fn find_info_by_user_id_and_team_id(
         .optional()
         .map_err(diesel)?;
 
-    accept(record.map(Into::into))
+    accept!(record.map(Into::into))
 }
 
 /// Query a paginated, filtered list of member infos.
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
@@ -98,7 +94,8 @@ pub async fn list_infos(
                     let escaped = escape_ilike_pattern(nickname);
 
                     query = query.filter(
-                        f_user_nickname.ilike(format!("%{}%", escaped)),
+                        f_user_nickname
+                            .ilike(["%", escaped.as_str(), "%"].concat()),
                     );
                 }
 
@@ -176,7 +173,7 @@ pub async fn list_infos(
     incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 /// Load a single member info by ID with optional includes.
@@ -217,7 +214,7 @@ pub async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 /// Insert a new member and return its info.
@@ -238,7 +235,7 @@ pub async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 /// Update the user-nickname for every member record owned by the given user.
@@ -263,7 +260,7 @@ pub async fn update_user_nickname(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Query all member infos for a team, locking the records for update.
@@ -282,7 +279,7 @@ pub async fn list_infos_by_team_id_excluded(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 /// Query all member infos for a user without acquiring a lock.
@@ -300,7 +297,7 @@ pub async fn list_infos_by_user_id(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 /// Update the role mask and refresh assignment timestamps for a member.
@@ -324,7 +321,7 @@ pub async fn update_role(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Delete a member by ID.
@@ -340,7 +337,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Delete every membership for a user, including records under tombstoned teams.
@@ -355,7 +352,7 @@ pub async fn delete_user_memberships(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Escape SQL ILIKE wildcards so user input remains literal.

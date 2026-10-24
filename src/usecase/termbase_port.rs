@@ -37,7 +37,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::term::TermReplShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -90,11 +90,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ExportTermbaseVal::from_models(termbase_info, term_infos))
+            accept!(ExportTermbaseVal::from_models(termbase_info, term_infos))
         })
         .await?;
 
-    accept(export_termbase_val)
+    accept!(export_termbase_val)
 }
 
 /// Imports a native portable document into a team or comic scope.
@@ -199,7 +199,7 @@ where
         })
         .await?;
 
-    accept(import_termbase_val)
+    accept!(import_termbase_val)
 }
 
 /// Appends portable terms to a locked existing base without replacing its metadata.
@@ -309,7 +309,7 @@ where
                 }
             }
 
-            accept(AppendTermbaseVal {
+            accept!(AppendTermbaseVal {
                 added,
                 updated,
                 unchanged: term_count - added - updated,
@@ -317,7 +317,7 @@ where
         })
         .await?;
 
-    accept(append_termbase_val)
+    accept!(append_termbase_val)
 }
 
 // Lock the import scope and resolve its owning team.
@@ -336,7 +336,7 @@ where
             //
             LockTeam { id: team_id }.step_on(repo, context).await?;
 
-            accept(team_id.clone())
+            accept!(team_id.clone())
         }
 
         TermbaseScope::Comic { comic_id } => {
@@ -356,7 +356,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(workset_info.team_id)
+            accept!(workset_info.team_id)
         }
     }
 }
@@ -513,7 +513,7 @@ where
         .await?;
     }
 
-    accept(ImportTermbaseVal {
+    accept!(ImportTermbaseVal {
         id: termbase_info.id,
         created,
         created_term_count,
@@ -534,5 +534,5 @@ fn already_exists_error(name: &str) -> BaseError {
 
 // Convert one bounded import count into the public response representation.
 const fn import_count(count: usize) -> BaseRest<usize> {
-    accept(count)
+    accept!(count)
 }

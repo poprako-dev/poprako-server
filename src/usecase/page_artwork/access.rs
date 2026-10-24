@@ -8,7 +8,7 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::role::RoleField;
@@ -35,7 +35,7 @@ where
     if member_info
         .is_some_and(|info| info.roles.has_any_role(&[RoleField::ADMIN]))
     {
-        return accept(());
+        return accept!(());
     }
 
     let assignment_info = FindAssignmentInfo::ChapterUser {

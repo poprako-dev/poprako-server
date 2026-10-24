@@ -48,7 +48,7 @@ adapter before the use case is called.
   for independent operations and `.step_on(repo, context)` inside that
   transaction, with the required context and isolation-level capabilities.
 - Bind transaction output before returning or converting it. For unit output,
-  await the transaction, then return `accept(())` or the nearby equivalent.
+  await the transaction, then return `accept!(())` or the nearby equivalent.
 - Put reusable chains of at least two repository reads behind associated
   methods on `*Loader` under private `usecase::internal`. Do not wrap a single
   operation in a loader. Model-returning methods include the model suffix,

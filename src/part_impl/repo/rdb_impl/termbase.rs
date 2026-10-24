@@ -35,7 +35,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{
     f_updated_at, t_termbase,
 };
 use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
@@ -50,7 +50,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Escape wildcard and escape characters before constructing ILIKE patterns.
@@ -87,7 +87,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
         });
     };
 
-    accept(TermbaseInfo::try_from(record)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
 // Load one termbase record by id with record lock for transactional mutation.
@@ -119,15 +119,11 @@ async fn get_info_excluded(
         });
     };
 
-    accept(TermbaseInfo::try_from(record)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
 // List termbase records with team/comic filter and optional fuzzy name.
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseListSpec,
@@ -178,7 +174,7 @@ async fn list_infos(
         //
         let escaped = escape_ilike_pattern(fuzzy_name);
 
-        let pattern = format!("%{}%", escaped);
+        let pattern = ["%", escaped.as_str(), "%"].concat();
 
         query = query.filter(f_name.ilike(pattern));
     }
@@ -241,7 +237,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(TermbaseInfo::try_from(record)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
 // Update termbase descriptive fields.
@@ -262,7 +258,7 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Adjust term count atomically by signed delta.
@@ -283,7 +279,7 @@ async fn update_term_count(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Touch updated_at to indicate activity without changing business fields.
@@ -297,7 +293,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetTermbaseInfo<'_>> for HybRepo {

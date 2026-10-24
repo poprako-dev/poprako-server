@@ -60,9 +60,7 @@ pub async fn register(
 
     let cookie = auth_cookie(&reply.token);
 
-    reply
-        .accept(StatusCode::CREATED)
-        .map(|body| body.with_cookie(&cookie))
+    Ok(reply.accept(StatusCode::CREATED).with_cookie(&cookie))
 }
 
 /// `POST /api/v1/auth/login` — authenticates a user by QQ id and password.
@@ -94,9 +92,7 @@ pub async fn login(
 
     let cookie = auth_cookie(&reply.token);
 
-    reply
-        .accept(StatusCode::OK)
-        .map(|body| body.with_cookie(&cookie))
+    Ok(reply.accept(StatusCode::OK).with_cookie(&cookie))
 }
 
 /// `POST /api/v1/auth/logout` — clears the authorization cookie.
@@ -122,17 +118,13 @@ pub async fn logout() -> HttpNoContent {
         .max_age(Duration::ZERO)
         .build();
 
-    no_content().map(|body| body.with_cookie(&cookie))
+    Ok(no_content().with_cookie(&cookie))
 }
 
 // Builds the `authorization-token` HttpOnly cookie used by auth responses.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn auth_cookie(token: &str) -> Cookie<'static> {
     //
-    Cookie::build((AUTH_COOKIE_NAME, format!("Bearer {}", token)))
+    Cookie::build((AUTH_COOKIE_NAME, ["Bearer ", token].concat()))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)

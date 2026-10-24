@@ -35,7 +35,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -142,11 +142,11 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            accept(termbase_info.id)
+            accept!(termbase_info.id)
         })
         .await?;
 
-    accept(CreateTermbaseVal { id: termbase_id })
+    accept!(CreateTermbaseVal { id: termbase_id })
 }
 
 /// Fetches a terminology base by ID.
@@ -178,7 +178,7 @@ where
 
     termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    accept(termbase_info.into())
+    accept!(termbase_info.into())
 }
 
 /// Lists terminology bases directly owned by a team.
@@ -231,7 +231,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(termbase_infos.into_iter().map(Into::into).collect())
+    accept!(termbase_infos.into_iter().map(Into::into).collect())
 }
 
 /// Lists team and comic terminology bases visible from a comic.
@@ -274,7 +274,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(termbase_infos.into_iter().map(Into::into).collect())
+    accept!(termbase_infos.into_iter().map(Into::into).collect())
 }
 
 /// Replaces a terminology base's name and description.
@@ -329,11 +329,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a terminology base and all child terms.
@@ -381,11 +381,11 @@ where
 
         delete_cascade(repo, context, &termbase_info.id).await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes one terminology base and all child terms in a transaction.
@@ -414,5 +414,5 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }

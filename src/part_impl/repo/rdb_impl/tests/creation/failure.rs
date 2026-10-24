@@ -100,7 +100,7 @@ macro_rules! forward_steps {
 }
 
 forward_steps!(
-    chapter::SetChapterConfirmedArtworkVersion<'_>,
+    chapter::SetChapterConfirmedArtworkVer<'_>,
     chapter::GetChapterInfo<'_, '_>,
     chapter::GetChapterInfoExcluded<'_, '_>,
     chapter::GetChapterUnitEditScopeExcluded<'_>,

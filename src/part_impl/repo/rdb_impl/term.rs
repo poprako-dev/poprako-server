@@ -34,7 +34,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
 use crate::part_impl::repo::rdb_impl::term::upsert::upsert_terms;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 use crate::value::pagination::PubListLimit;
@@ -273,7 +273,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Escape wildcard characters before reusing user input in a SQL `ILIKE` pattern.
@@ -303,7 +303,7 @@ async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Delete all terms that belong to one termbase.
@@ -316,7 +316,7 @@ async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Insert a new term record and return the inserted record as response info.
@@ -333,7 +333,7 @@ async fn create(conn: &mut RdbConn, entry: &TermEntry) -> BaseRest<TermInfo> {
         .await
         .map_err(diesel)?;
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 // Load every terminology entry in deterministic source order.
@@ -351,7 +351,7 @@ async fn list_all_infos(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 // Locks a term record for mutation safety.
@@ -380,15 +380,11 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         });
     };
 
-    accept(())
+    accept!(())
 }
 
 // Build a filtered query for term listing and execute a paged query.
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn list_infos(
     conn: &mut RdbConn,
     termbase_id: &str,
@@ -407,7 +403,7 @@ async fn list_infos(
         //
         let escaped = escape_ilike_pattern(fuzzy_source);
 
-        let pattern = format!("%{}%", escaped);
+        let pattern = ["%", escaped.as_str(), "%"].concat();
 
         query = query.filter(f_source.ilike(pattern));
     }
@@ -420,7 +416,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 // Load one term record by id and convert it into response info.
@@ -448,5 +444,5 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
         });
     };
 
-    accept(record.into())
+    accept!(record.into())
 }

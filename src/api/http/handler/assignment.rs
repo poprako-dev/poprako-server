@@ -54,13 +54,15 @@ pub async fn list_infos(
     Query(instr): Query<ListAssignmentInfosInstr>,
 ) -> HttpResult<Vec<AssignmentInfoView>> {
     //
-    assignment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        assignment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
@@ -102,7 +104,7 @@ pub async fn update_roles(
     >((harn.nucl().rept_read(), harn.repo()), user_token, instr)
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/assignments/{assignment_id}` — delete an assignment.
@@ -131,7 +133,7 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/assignments/join` — join a chapter assignment with roles.
@@ -154,11 +156,13 @@ pub async fn join(
     Json(instr): Json<JoinChapterAssignmentInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    assignment_usecase::join::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
-        user_token,
-        instr,
+    Ok(
+        assignment_usecase::join::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::CREATED),
     )
-    .await?
-    .accept(StatusCode::CREATED)
 }

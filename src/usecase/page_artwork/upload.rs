@@ -13,7 +13,7 @@ use crate::data::val::page_artwork::AllocatedPageArtworkVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::write::page_artwork::PageArtworkEntry;
 use crate::part::obj_dept::PageArtworkImage;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::page_artwork::PageArtworkImageKey;
 
@@ -52,7 +52,7 @@ where
 
     if let Some(meta) = avail_meta {
         //
-        return accept(AllocatedPageArtworkVal {
+        return accept!(AllocatedPageArtworkVal {
             page_artwork_id: entry.id.clone(),
             index: entry.index,
             image_ver: meta.key.ver,
@@ -87,7 +87,7 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    accept(AllocatedPageArtworkVal {
+    accept!(AllocatedPageArtworkVal {
         page_artwork_id: entry.id.clone(),
         index: entry.index,
         image_ver: alloc.key().ver,

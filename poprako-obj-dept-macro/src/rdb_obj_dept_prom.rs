@@ -50,10 +50,6 @@ impl Parse for PromInput {
 }
 
 /// Expands the typed Diesel `ObjDeptProm` adapter.
-#[expect(
-    clippy::too_many_lines,
-    reason = "actor-side task transitions remain one auditable generated state machine"
-)]
 pub fn expand(input: TokenStream) -> Result<TokenStream> {
     //
     let PromInput { name, table } = syn::parse2(input)?;
@@ -65,7 +61,14 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
     let defer_impl = defer::expand_impl(&name, &module);
 
+    let claim_and_reset = claim_and_reset(&table);
+
+    let task_records = task_records(&table);
+
+    let finalize_attempts = finalize_attempts(&table);
+
     Ok(quote! {
+        //
         #[derive(Clone)]
         pub struct #name {
             core: ::poprako_rdb_core::RdbCore,
@@ -105,290 +108,26 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
             #defer_module
 
-            #[derive(::diesel::Queryable, ::diesel::Selectable)]
-            #[diesel(table_name = #table)]
-            #[diesel(check_for_backend(::diesel::pg::Pg))]
-            struct FullRecord {
-                #[diesel(column_name = f_id)]
-                id: String,
+            #task_records
 
-                #[diesel(column_name = f_topic)]
-                topic: String,
-                #[diesel(column_name = f_oper)]
-                oper: String,
+            #claim_and_reset
 
-                #[diesel(column_name = f_obj_id)]
-                obj_id: String,
-                #[diesel(column_name = f_version)]
-                ver: i64,
-                #[diesel(column_name = f_key)]
-                image: String,
+            #finalize_attempts
 
-                #[diesel(column_name = f_generation)]
-                gen_no: i64,
-                #[diesel(column_name = f_status)]
-                status: String,
-                #[diesel(column_name = f_visible_at)]
-                visible_at: ::time::OffsetDateTime,
-                #[diesel(column_name = f_retried_count)]
-                retried_count: i64,
-                #[diesel(column_name = f_claim_token)]
-                claim_token: Option<Uuid>,
-                #[diesel(column_name = f_error)]
-                error: Option<String>,
-
-                #[diesel(column_name = f_created_at)]
-                created_at: ::time::OffsetDateTime,
-                #[diesel(column_name = f_updated_at)]
-                updated_at: ::time::OffsetDateTime,
-            }
-
-            #[derive(::diesel::Queryable, ::diesel::Selectable)]
-            #[diesel(table_name = #table)]
-            #[diesel(check_for_backend(::diesel::pg::Pg))]
-            struct TaskRecord {
-                #[diesel(column_name = f_id)]
-                id: String,
-
-                #[diesel(column_name = f_topic)]
-                topic: String,
-                #[diesel(column_name = f_oper)]
-                oper: String,
-
-                #[diesel(column_name = f_obj_id)]
-                obj_id: String,
-                #[diesel(column_name = f_version)]
-                ver: i64,
-                #[diesel(column_name = f_key)]
-                image: String,
-
-                #[diesel(column_name = f_generation)]
-                gen_no: i64,
-                #[diesel(column_name = f_retried_count)]
-                retried_count: i64,
-                #[diesel(column_name = f_claim_token)]
-                claim_token: Option<Uuid>,
-            }
-
-            impl TryFrom<TaskRecord> for ObjDeptPromTask {
-                //
-                type Error = ObjDeptError;
-
-                fn try_from(record: TaskRecord) -> ObjDeptRest<Self> {
-                    //
-                    let Some(claim_token) = record.claim_token else {
-                        //
-                        ::tracing::error!(task_id = record.id,
-                            "claimed object task has no execution credential");
-
-                        return Err(ObjDeptError::Unrecoverable {
-                            message:
-                                "claimed object task has no execution \
-                                    credential".into(),
-                        });
-                    };
-
-                    Ok(Self {
-                        id: record.id,
-                        topic: record.topic,
-                        oper: record.oper,
-                        obj_id: record.obj_id,
-                        ver: record.ver,
-                        image: record.image,
-                        gen_no: record.gen_no,
-                        retried_count: record.retried_count,
-                        claim_token,
-                    })
-                }
-            }
-
-            pub async fn reset_tasks(core: &RdbCore) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_error)?;
-                let now = ::time::OffsetDateTime::now_utc();
-                let before = now - PROCESSING_TIMEOUT;
-                let invalid = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_status.ne(PENDING))
-                        .filter(#table::f_status.ne(PROCESSING))
-                        .filter(#table::f_status.ne(OPERATOR)),
-                )
-                .set((
-                    #table::f_status.eq(OPERATOR),
-                    #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_error.eq(Some("invalid object task status")),
-                    #table::f_updated_at.eq(now),
-                ))
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_error)?;
-                let reset = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_updated_at.le(before)),
-                )
-                .set((
-                    #table::f_status.eq(PENDING),
-                    #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_visible_at.eq(now),
-                    #table::f_updated_at.eq(now),
-                ))
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_error)?;
-
-                Ok(invalid + reset)
-            }
-
-            ::diesel::define_sql_function! {
-                fn gen_random_uuid() -> ::diesel::sql_types::Uuid;
-            }
-
-            pub async fn claim_task(
-                core: &RdbCore,
-            ) -> ObjDeptRest<Option<ObjDeptPromTask>> {
-                let mut conn = core.get().await.map_err(rdb_error)?;
-                let claim_candidate =
-                    ::diesel::alias!(#table as claim_candidate);
-                let candidate = claim_candidate
-                    .filter(claim_candidate.field(#table::f_status).eq(PENDING))
-                    .filter(
-                        claim_candidate
-                            .field(#table::f_visible_at)
-                            .le(::time::OffsetDateTime::now_utc()),
-                    )
-                    .order_by((
-                        claim_candidate.field(#table::f_visible_at).asc(),
-                        claim_candidate.field(#table::f_created_at).asc(),
-                        claim_candidate.field(#table::f_id).asc(),
-                    ))
-                    .select(claim_candidate.field(#table::f_id))
-                    .for_update()
-                    .skip_locked()
-                    .limit(1);
-                let record = ::diesel::update(
-                    #table::table.filter(#table::f_id.eq_any(candidate)),
-                )
-                .set((
-                    #table::f_status.eq(PROCESSING),
-                    #table::f_claim_token.eq(gen_random_uuid().nullable()),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
-                .returning(TaskRecord::as_returning())
-                .get_result::<TaskRecord>(&mut conn)
-                .await
-                .optional()
-                .map_err(diesel_error)?;
-                record.map(ObjDeptPromTask::try_from).transpose()
-            }
-
-            pub async fn complete_task(
-                core: &RdbCore,
-                task: &ObjDeptPromTask,
-            ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_error)?;
-
-                ::diesel::delete(
-                    #table::table
-                        .filter(#table::f_id.eq(&task.id))
-                        .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_claim_token.eq(task.claim_token)),
-                )
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_error)
-            }
-
-            pub async fn retry_task(
-                core: &RdbCore,
-                task: &ObjDeptPromTask,
-                message: &str,
-            ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_error)?;
-
-                ::diesel::update(
-                    #table::table
-                        .filter(#table::f_id.eq(&task.id))
-                        .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_claim_token.eq(task.claim_token)),
-                )
-                .set((
-                    #table::f_status.eq(PENDING),
-                    #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_retried_count
-                        .eq(task.retried_count.saturating_add(1)),
-                    #table::f_visible_at.eq(
-                        ::time::OffsetDateTime::now_utc() + RETRY_DELAY,
-                    ),
-                    #table::f_error.eq(Some(message)),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_error)
-            }
-
-            pub async fn mark_task_operator(
-                core: &RdbCore,
-                task: &ObjDeptPromTask,
-                message: &str,
-            ) -> ObjDeptRest<usize> {
-                let mut conn = core.get().await.map_err(rdb_error)?;
-
-                ::diesel::update(
-                    #table::table
-                        .filter(#table::f_id.eq(&task.id))
-                        .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_claim_token.eq(task.claim_token)),
-                )
-                .set((
-                    #table::f_status.eq(OPERATOR),
-                    #table::f_claim_token.eq(None::<Uuid>),
-                    #table::f_error.eq(Some(message)),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_error)
-            }
-
-            #[allow(dead_code, reason = "This generated schema assertion is type checked without being called at runtime")]
-            fn assert_full_schema(record: FullRecord) {
+            const _: fn(FullRecord) = |record| {
                 //
                 let FullRecord {
-                    //
-                    id,
-                    topic,
-                    oper,
-                    obj_id,
-                    ver,
-                    image,
-                    gen_no: gen_value,
-                    status,
-                    visible_at,
-                    retried_count,
-                    claim_token,
-                    error,
-                    created_at,
-                    updated_at,
+                    id, topic, oper, obj_id, ver, image, gen_no: gen_value,
+                    status, visible_at, retried_count, claim_token, error,
+                    created_at, updated_at,
                 } = record;
 
                 drop((
-                    id,
-                    topic,
-                    oper,
-                    obj_id,
-                    ver,
-                    image,
-                    gen_value,
-                    status,
-                    visible_at,
-                    retried_count,
-                    claim_token,
-                    error,
-                    created_at,
-                    updated_at,
+                    id, topic, oper, obj_id, ver, image, gen_value, status,
+                    visible_at, retried_count, claim_token, error,
+                    created_at, updated_at,
                 ));
-            }
+            };
         }
 
         impl ::poprako_obj_dept::prom::ObjDeptProm for #name {
@@ -432,6 +171,281 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
         #defer_impl
     })
+}
+
+// Generates claim and reset.
+fn claim_and_reset(table: &Path) -> TokenStream {
+    //
+    quote! {
+        pub async fn reset_tasks(core: &RdbCore) -> ObjDeptRest<usize> {
+            let mut conn = core.get().await.map_err(rdb_error)?;
+            let now = ::time::OffsetDateTime::now_utc();
+            let before = now - PROCESSING_TIMEOUT;
+            let invalid = ::diesel::update(
+                #table::table
+                    .filter(#table::f_status.ne(PENDING))
+                    .filter(#table::f_status.ne(PROCESSING))
+                    .filter(#table::f_status.ne(OPERATOR)),
+            )
+            .set((
+                #table::f_status.eq(OPERATOR),
+                #table::f_claim_token.eq(None::<Uuid>),
+                #table::f_error.eq(Some("invalid object task status")),
+                #table::f_updated_at.eq(now),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(diesel_error)?;
+            let reset = ::diesel::update(
+                #table::table
+                    .filter(#table::f_status.eq(PROCESSING))
+                    .filter(#table::f_updated_at.le(before)),
+            )
+            .set((
+                #table::f_status.eq(PENDING),
+                #table::f_claim_token.eq(None::<Uuid>),
+                #table::f_visible_at.eq(now),
+                #table::f_updated_at.eq(now),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(diesel_error)?;
+
+            Ok(invalid + reset)
+        }
+
+        ::diesel::define_sql_function! {
+            fn gen_random_uuid() -> ::diesel::sql_types::Uuid;
+        }
+
+        pub async fn claim_task(
+            core: &RdbCore,
+        ) -> ObjDeptRest<Option<ObjDeptPromTask>> {
+            let mut conn = core.get().await.map_err(rdb_error)?;
+            let claim_candidate =
+                ::diesel::alias!(#table as claim_candidate);
+            let candidate = claim_candidate
+                .filter(claim_candidate.field(#table::f_status).eq(PENDING))
+                .filter(
+                    claim_candidate
+                        .field(#table::f_visible_at)
+                        .le(::time::OffsetDateTime::now_utc()),
+                )
+                .order_by((
+                    claim_candidate.field(#table::f_visible_at).asc(),
+                    claim_candidate.field(#table::f_created_at).asc(),
+                    claim_candidate.field(#table::f_id).asc(),
+                ))
+                .select(claim_candidate.field(#table::f_id))
+                .for_update()
+                .skip_locked()
+                .limit(1);
+            let record = ::diesel::update(
+                #table::table.filter(#table::f_id.eq_any(candidate)),
+            )
+            .set((
+                #table::f_status.eq(PROCESSING),
+                #table::f_claim_token.eq(gen_random_uuid().nullable()),
+                #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
+            ))
+            .returning(TaskRecord::as_returning())
+            .get_result::<TaskRecord>(&mut conn)
+            .await
+            .optional()
+            .map_err(diesel_error)?;
+            record.map(ObjDeptPromTask::try_from).transpose()
+        }
+    }
+}
+
+// Generates task records.
+fn task_records(table: &Path) -> TokenStream {
+    //
+    let full_task_schema = full_task_schema(table);
+
+    quote! {
+        #full_task_schema
+
+        #[derive(::diesel::Queryable, ::diesel::Selectable)]
+        #[diesel(table_name = #table)]
+        #[diesel(check_for_backend(::diesel::pg::Pg))]
+        struct TaskRecord {
+            #[diesel(column_name = f_id)]
+            id: String,
+
+            #[diesel(column_name = f_topic)]
+            topic: String,
+            #[diesel(column_name = f_oper)]
+            oper: String,
+
+            #[diesel(column_name = f_obj_id)]
+            obj_id: String,
+            #[diesel(column_name = f_version)]
+            ver: i64,
+            #[diesel(column_name = f_key)]
+            image: String,
+
+            #[diesel(column_name = f_generation)]
+            gen_no: i64,
+            #[diesel(column_name = f_retried_count)]
+            retried_count: i64,
+            #[diesel(column_name = f_claim_token)]
+            claim_token: Option<Uuid>,
+        }
+
+        impl TryFrom<TaskRecord> for ObjDeptPromTask {
+            //
+            type Error = ObjDeptError;
+
+            fn try_from(record: TaskRecord) -> ObjDeptRest<Self> {
+                //
+                let Some(claim_token) = record.claim_token else {
+                    //
+                    ::tracing::error!(task_id = record.id,
+                        "claimed object task has no execution credential");
+
+                    return Err(ObjDeptError::Unrecoverable {
+                        message:
+                            "claimed object task has no execution \
+                                credential".into(),
+                    });
+                };
+
+                Ok(Self {
+                    id: record.id,
+                    topic: record.topic,
+                    oper: record.oper,
+                    obj_id: record.obj_id,
+                    ver: record.ver,
+                    image: record.image,
+                    gen_no: record.gen_no,
+                    retried_count: record.retried_count,
+                    claim_token,
+                })
+            }
+        }
+    }
+}
+
+// Generates finalize attempts.
+fn finalize_attempts(table: &Path) -> TokenStream {
+    //
+    quote! {
+        pub async fn complete_task(
+            core: &RdbCore,
+            task: &ObjDeptPromTask,
+        ) -> ObjDeptRest<usize> {
+            let mut conn = core.get().await.map_err(rdb_error)?;
+
+            ::diesel::delete(
+                #table::table
+                    .filter(#table::f_id.eq(&task.id))
+                    .filter(#table::f_status.eq(PROCESSING))
+                    .filter(#table::f_claim_token.eq(task.claim_token)),
+            )
+            .execute(&mut conn)
+            .await
+            .map_err(diesel_error)
+        }
+
+        pub async fn retry_task(
+            core: &RdbCore,
+            task: &ObjDeptPromTask,
+            message: &str,
+        ) -> ObjDeptRest<usize> {
+            let mut conn = core.get().await.map_err(rdb_error)?;
+
+            ::diesel::update(
+                #table::table
+                    .filter(#table::f_id.eq(&task.id))
+                    .filter(#table::f_status.eq(PROCESSING))
+                    .filter(#table::f_claim_token.eq(task.claim_token)),
+            )
+            .set((
+                #table::f_status.eq(PENDING),
+                #table::f_claim_token.eq(None::<Uuid>),
+                #table::f_retried_count
+                    .eq(task.retried_count.saturating_add(1)),
+                #table::f_visible_at.eq(
+                    ::time::OffsetDateTime::now_utc() + RETRY_DELAY,
+                ),
+                #table::f_error.eq(Some(message)),
+                #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(diesel_error)
+        }
+
+        pub async fn mark_task_operator(
+            core: &RdbCore,
+            task: &ObjDeptPromTask,
+            message: &str,
+        ) -> ObjDeptRest<usize> {
+            let mut conn = core.get().await.map_err(rdb_error)?;
+
+            ::diesel::update(
+                #table::table
+                    .filter(#table::f_id.eq(&task.id))
+                    .filter(#table::f_status.eq(PROCESSING))
+                    .filter(#table::f_claim_token.eq(task.claim_token)),
+            )
+            .set((
+                #table::f_status.eq(OPERATOR),
+                #table::f_claim_token.eq(None::<Uuid>),
+                #table::f_error.eq(Some(message)),
+                #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(diesel_error)
+        }
+    }
+}
+
+// Generates full task schema.
+fn full_task_schema(table: &Path) -> TokenStream {
+    //
+    quote! {
+        //
+        #[derive(::diesel::Queryable, ::diesel::Selectable)]
+        #[diesel(table_name = #table)]
+        #[diesel(check_for_backend(::diesel::pg::Pg))]
+        struct FullRecord {
+            #[diesel(column_name = f_id)]
+            id: String,
+
+            #[diesel(column_name = f_topic)]
+            topic: String,
+            #[diesel(column_name = f_oper)]
+            oper: String,
+
+            #[diesel(column_name = f_obj_id)]
+            obj_id: String,
+            #[diesel(column_name = f_version)]
+            ver: i64,
+            #[diesel(column_name = f_key)]
+            image: String,
+
+            #[diesel(column_name = f_generation)]
+            gen_no: i64,
+            #[diesel(column_name = f_status)]
+            status: String,
+            #[diesel(column_name = f_visible_at)]
+            visible_at: ::time::OffsetDateTime,
+            #[diesel(column_name = f_retried_count)]
+            retried_count: i64,
+            #[diesel(column_name = f_claim_token)]
+            claim_token: Option<Uuid>,
+            #[diesel(column_name = f_error)]
+            error: Option<String>,
+
+            #[diesel(column_name = f_created_at)]
+            created_at: ::time::OffsetDateTime,
+            #[diesel(column_name = f_updated_at)]
+            updated_at: ::time::OffsetDateTime,
+        }
+    }
 }
 
 // Converts a generated type name into its helper-module name.

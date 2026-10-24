@@ -42,17 +42,13 @@ fn action_from_error(error: ObjDeptError) -> ObjTaskAction {
 }
 
 // Persists one actor decision through the durable-task adapter.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn persist_action<P>(
     prom: &P,
     task: &ObjDeptPromTask,
     action: &ObjTaskAction,
 ) -> ObjDeptRest<usize>
 where
-    P: ObjDeptProm,
+    P: ObjDeptProm + Send + Sync,
 {
     //
     match action {
@@ -79,19 +75,15 @@ async fn wait_poll(token: &CancellationToken) -> bool {
 }
 
 // Runs typed dispatch and persists its fenced task mutation.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_attempt<P, H, F>(
     prom: &P,
     handler: &H,
     task: &ObjDeptPromTask,
 ) -> ObjDeptRest<usize>
 where
-    P: ObjDeptProm,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     //
     let action = match validate_task(task) {
@@ -120,15 +112,11 @@ where
 
 // Keeps the actor helper call graph in the repository's required order.
 // Claims immediately, drains visible work, and waits only when no task is available.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_claim_loop<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
-    P: ObjDeptProm,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     loop {
         //
@@ -219,7 +207,7 @@ where
 // Runs maintenance immediately and then at an independent fixed cadence.
 async fn run_maintenance_loop<P>(prom: P, token: CancellationToken)
 where
-    P: ObjDeptProm,
+    P: ObjDeptProm + Send + Sync,
 {
     loop {
         //
@@ -254,15 +242,11 @@ where
 }
 
 // Runs claim and maintenance under one cancellation supervisor.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
-    P: ObjDeptProm + Clone,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Clone + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     let claim_loop = run_claim_loop(prom.clone(), handler, token.clone());
 

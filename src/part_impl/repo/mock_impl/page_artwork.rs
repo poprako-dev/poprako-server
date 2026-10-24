@@ -12,7 +12,7 @@ use crate::part::repo::oper::page_artwork::{
     UpdatePageArtworkInfo,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 // Read one Chapter's manifest in its own order.
 fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageArtworkInfo> {
@@ -67,7 +67,7 @@ impl Run<ListPageArtworkInfos<'_>> for Mock {
         &self,
         oper: &ListPageArtworkInfos<'_>,
     ) -> BaseRest<Vec<PageArtworkInfo>> {
-        accept(list_infos(&self.state.lock().unwrap(), oper.chapter_id))
+        accept!(list_infos(&self.state.lock().unwrap(), oper.chapter_id))
     }
 }
 
@@ -85,7 +85,7 @@ impl Step<ListPageArtworkInfos<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageArtworkInfos<'_>,
     ) -> BaseRest<Vec<PageArtworkInfo>> {
-        accept(list_infos(&context.state, oper.chapter_id))
+        accept!(list_infos(&context.state, oper.chapter_id))
     }
 }
 
@@ -155,7 +155,7 @@ impl Step<ReplacePageArtworkManifest<'_>, MockContext> for Mock {
             });
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -193,6 +193,6 @@ impl Step<UpdatePageArtworkInfo<'_>, MockContext> for Mock {
 
         page_artwork_info.updated_at = OffsetDateTime::now_utc();
 
-        accept(())
+        accept!(())
     }
 }

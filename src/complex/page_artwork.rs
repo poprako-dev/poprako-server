@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Produces a localized composite page rejection.
 pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
@@ -42,5 +42,5 @@ where
         }
     }
 
-    accept(())
+    accept!(())
 }

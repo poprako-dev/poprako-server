@@ -101,16 +101,12 @@ pub struct UnitOrderInput(Vec<UnitOrder>);
 
 /// Builds an unordered maximum-size Unit chain.
 #[must_use]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn unit_order_input() -> UnitOrderInput {
     //
     UnitOrderInput(
         (0..100)
             .map(|index| UnitOrder {
-                id: format!("unit-{}", index),
+                id: ["unit-", &index.to_string()].concat(),
                 next_id: (index < 99).then(|| format!("unit-{}", index + 1)),
                 is_hidden: false,
             })
@@ -165,10 +161,6 @@ pub fn order_visible_unit_ids(unit_order_input: UnitOrderInput) -> bool {
 }
 
 // Builds one large benchmark archive snapshot with deterministic content.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
     //
     let stages = StageMask::try_from(0).ok()?;
@@ -179,12 +171,12 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
 
     for chapter_index in 0..CHAPTER_COUNT {
         //
-        let chapter_id = format!("chapter-{}", chapter_index);
+        let chapter_id = ["chapter-", &chapter_index.to_string()].concat();
 
         let user_info = user_info(archived_at);
 
         let assignment_info = AssignmentInfo {
-            id: format!("assignment-{}", chapter_index),
+            id: ["assignment-", &chapter_index.to_string()].concat(),
             chapter_id: chapter_id.clone(),
             user_id: "user-1".into(),
             user: Some(user_info),
@@ -198,7 +190,13 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
 
         for page_index in 0..PAGE_COUNT {
             //
-            let page_id = format!("page-{}-{}", chapter_index, page_index);
+            let page_id = [
+                "page-",
+                &chapter_index.to_string(),
+                "-",
+                &page_index.to_string(),
+            ]
+            .concat();
 
             let mut unit_infos = Vec::with_capacity(usize::from(UNIT_COUNT));
 
@@ -237,7 +235,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 comic: None,
                 is_pinned: chapter_index == 0,
                 index: chapter_index,
-                subtitle: format!("Chapter {}", chapter_index),
+                subtitle: ["Chapter ", &chapter_index.to_string()].concat(),
                 page_count: usize::from(PAGE_COUNT),
                 total_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
                 translated_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
@@ -280,31 +278,26 @@ fn poprako_content() -> &'static str {
             let unit_strings = (1..=2_000)
                 .map(|index| {
                     //
-                    format!(
-                        "{{\"id\":\"unit-{index}\",\"x\":1.0,\"y\":2.0,\
-                            \"index_in_page\":{index},\"is_inbox\":true,\
-                            \"translated_text\":\"translated\",\
-                            \"prooved_text\":\"proofread\",\
-                            \"is_prooved\":true}}",
-                    )
+                    [
+                        "{\"id\":\"unit-", &index.to_string(),
+                        "\",\"x\":1.0,\"y\":2.0,\"index_in_page\":", &index.to_string(),
+                        ",\"is_inbox\":true,\"translated_text\":\"translated\",\"prooved_text\":\"proofread\",\"is_prooved\":true}",
+                    ].concat()
                 })
                 .collect::<Vec<_>>();
 
             let units = unit_strings.join(",");
 
-            format!(
-                "{{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[\
-                    {{\"image_filename\":\"001.png\",\"units\":[{units}]}}]}}",
-            )
+            [
+                "{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[{\"image_filename\":\"001.png\",\"units\":[",
+                &units,
+                "]}]}",
+            ].concat()
         })
         .as_str()
 }
 
 // Builds a deterministic large payload reused by export benchmarks.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn export_input() -> LabelPlusExportInput {
     //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
@@ -315,7 +308,7 @@ fn export_input() -> LabelPlusExportInput {
 
     for page_index in 0..(PAGE_COUNT * 8) {
         //
-        let page_id = format!("page-{}", page_index);
+        let page_id = ["page-", &page_index.to_string()].concat();
 
         let unit_infos = (0..UNIT_COUNT)
             .map(|unit_index| {
@@ -357,10 +350,6 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
 }
 
 // Builds one deterministic page unit used by both archive and export fixtures.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn unit_info(
     page_id: &str,
     chapter_index: usize,
@@ -369,7 +358,15 @@ fn unit_info(
     archived_at: OffsetDateTime,
 ) -> UnitInfo {
     UnitInfo {
-        id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
+        id: [
+            "unit-",
+            &chapter_index.to_string(),
+            "-",
+            &page_index.to_string(),
+            "-",
+            &unit_index.to_string(),
+        ]
+        .concat(),
         page_id: page_id.into(),
         next_id: (unit_index + 1 < UNIT_COUNT).then(|| {
             format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1)
@@ -383,15 +380,31 @@ fn unit_info(
         },
         typography_note: None,
         translation_note: None,
-        translated_text: Some(format!(
-            "Translated text for chapter {}, page {}, unit {}.",
-            chapter_index, page_index, unit_index,
-        )),
+        translated_text: Some(
+            [
+                "Translated text for chapter ",
+                &chapter_index.to_string(),
+                ", page ",
+                &page_index.to_string(),
+                ", unit ",
+                &unit_index.to_string(),
+                ".",
+            ]
+            .concat(),
+        ),
         last_translator_id: Some("user-1".into()),
-        proofread_text: Some(format!(
-            "Proofread text for chapter {}, page {}, unit {}.",
-            chapter_index, page_index, unit_index,
-        )),
+        proofread_text: Some(
+            [
+                "Proofread text for chapter ",
+                &chapter_index.to_string(),
+                ", page ",
+                &page_index.to_string(),
+                ", unit ",
+                &unit_index.to_string(),
+                ".",
+            ]
+            .concat(),
+        ),
         last_proofreader_id: Some("user-1".into()),
         hidden_at: None,
         created_at: archived_at,

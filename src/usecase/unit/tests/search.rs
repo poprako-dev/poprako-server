@@ -251,23 +251,29 @@ fn search_scope(page_count: usize) -> Mock {
 }
 
 // Seed one valid matching linked Unit chain in storage order.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_matching_chain(mock: &Mock, page_id: &str, unit_count: usize) {
     //
     for unit_index in 0..unit_count {
         //
-        let unit_id = format!("{}-unit-{:03}", page_id, unit_index);
+        let unit_id = matching_unit_id(page_id, unit_index);
 
         let next_id = (unit_index + 1 < unit_count)
-            .then(|| format!("{}-unit-{:03}", page_id, unit_index + 1));
+            .then(|| matching_unit_id(page_id, unit_index + 1));
 
         let unit_info = unit_info(&unit_id, page_id, next_id.as_deref(), "日");
 
         mock.seed_unit(unit_info);
     }
+}
+
+// Builds a stable chain identifier with a minimum three-digit sequence.
+fn matching_unit_id(page_id: &str, unit_index: usize) -> String {
+    //
+    let digits = unit_index.to_string();
+
+    let padding = "0".repeat(3_usize.saturating_sub(digits.len()));
+
+    [page_id, "-unit-", &padding, &digits].concat()
 }
 
 // Build one visible persisted Unit fixture.

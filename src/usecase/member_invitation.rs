@@ -45,7 +45,7 @@ use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::member_invitation::view::member_invitation_info_views;
@@ -53,23 +53,19 @@ use crate::util::next_snowflake_id;
 
 /// Removes one member invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn purge_expired<C, R>(
     (repo,): (&R,),
     invitation_id: &str,
 ) -> BaseRest<()>
 where
     C: Context,
-    R: MemberInvitationRepo<C>,
+    R: MemberInvitationRepo<C> + Sync,
 {
     PurgeExpiredMemberInvitation { id: invitation_id }
         .run_on(repo)
         .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Creates a pending invitation for a team.
@@ -195,11 +191,11 @@ where
 
             Defer::new(purge_task).step_on(prom, context).await?;
 
-            accept((member_invitation_info.id, member_invitation_info.code))
+            accept!((member_invitation_info.id, member_invitation_info.code))
         })
         .await?;
 
-    accept(CreateMemberInvitationVal {
+    accept!(CreateMemberInvitationVal {
         id: member_invitation_id,
         code,
     })
@@ -260,7 +256,7 @@ where
     let member_invitation_info_vals =
         member_invitation_info_views(obj_dept, member_invitation_infos).await?;
 
-    accept(member_invitation_info_vals)
+    accept!(member_invitation_info_vals)
 }
 
 /// Updates the roles of an invitation.
@@ -301,7 +297,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes an invitation.
@@ -333,5 +329,5 @@ where
 
     DeleteMemberInvitation { id: &id }.run_on(repo).await?;
 
-    accept(())
+    accept!(())
 }

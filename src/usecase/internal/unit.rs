@@ -13,7 +13,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 
 /// Loaded evidence that grants Unit list and search access.
 pub enum UnitListAccessInfo {
@@ -74,7 +74,7 @@ impl UnitAccessLoader {
 
         if let Some(member_info) = member_info {
             //
-            return accept(UnitListAccessInfo::Member {
+            return accept!(UnitListAccessInfo::Member {
                 member_info: Box::new(member_info),
             });
         }
@@ -97,7 +97,7 @@ impl UnitAccessLoader {
             });
         };
 
-        accept(UnitListAccessInfo::Assignee {
+        accept!(UnitListAccessInfo::Assignee {
             assignment_info: Box::new(assignment_info),
         })
     }

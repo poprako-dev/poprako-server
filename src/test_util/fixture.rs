@@ -1,5 +1,10 @@
 //! Shared model fixtures used across use-case tests.
 
+#![allow(
+    clippy::expect_used,
+    reason = "Test fixture setup fails immediately when password hashing fails"
+)]
+
 use time::OffsetDateTime;
 
 use crate::complex::user as user_complex;
@@ -24,16 +29,10 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 }
 
 /// Builds a [`UserCredential`] with a properly hashed password.
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
     //
-    let Ok(password_hash) = user_complex::hash_password_for_test(password)
-    else {
-        panic!("failed to hash password")
-    };
+    let password_hash = user_complex::hash_password_for_test(password)
+        .expect("fixture password should hash successfully");
 
     UserCredential {
         user_id: user_id.into(),

@@ -32,7 +32,7 @@ use crate::part::repo::oper::announcement::{
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::announcement::view::announcement_info_views;
 
 /// Lists announcements under a team.
@@ -82,7 +82,7 @@ where
     let announcement_info_vals =
         announcement_info_views(obj_dept, announcement_infos).await?;
 
-    accept(announcement_info_vals)
+    accept!(announcement_info_vals)
 }
 
 /// Creates an announcement under a team.
@@ -133,7 +133,7 @@ where
     let announcement_info =
         CreateAnnouncement { entry: &entry }.run_on(repo).await?;
 
-    accept(CreateAnnouncementVal {
+    accept!(CreateAnnouncementVal {
         id: announcement_info.id,
     })
 }
@@ -193,7 +193,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes an announcement.
@@ -243,5 +243,5 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }

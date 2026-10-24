@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_id,
     f_proofread_text, f_translated_text, t_unit,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 use crate::value::unit::UnitTextPart;
 
@@ -109,7 +109,7 @@ pub async fn list_infos_in_chapter_order(
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     if ids.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let records = t_unit
@@ -141,30 +141,25 @@ pub async fn list_infos_in_chapter_order(
 
     let rank_by_unit_id = load_unit_ranks(conn, &candidates).await?;
 
-    for candidate in &candidates {
+    for cand in &candidates {
         //
-        if !rank_by_unit_id.contains_key(&candidate.unit_info.id) {
+        if !rank_by_unit_id.contains_key(&cand.unit_info.id) {
             return Err(corrupt_unit_chain_error());
         }
     }
 
-    candidates.sort_by_key(|candidate| {
+    candidates.sort_by_key(|cand| {
         //
         (
-            candidate.page_index,
+            cand.page_index,
             rank_by_unit_id
-                .get(&candidate.unit_info.id)
+                .get(&cand.unit_info.id)
                 .copied()
                 .unwrap_or_default(),
         )
     });
 
-    accept(
-        candidates
-            .into_iter()
-            .map(|candidate| candidate.unit_info)
-            .collect(),
-    )
+    accept!(candidates.into_iter().map(|cand| cand.unit_info).collect(),)
 }
 
 /// Lists Units for multiple Pages with one query and validates each linked list.
@@ -218,7 +213,7 @@ pub async fn list_infos_by_page_ids(
         unit_infos.extend(page_unit_infos);
     }
 
-    accept(unit_infos)
+    accept!(unit_infos)
 }
 
 /// Lists every requested persisted Unit that currently exists.
@@ -235,7 +230,7 @@ pub async fn list_infos_by_ids(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(UnitInfo::from).collect())
+    accept!(records.into_iter().map(UnitInfo::from).collect())
 }
 
 /// Lists the complete Unit chain, including tombstones.
@@ -312,7 +307,7 @@ pub async fn list_orders(
         |order| order.next_id.as_deref(),
     )?;
 
-    accept(orders)
+    accept!(orders)
 }
 
 // Converts a Unit search fetch count into its SQL LIMIT representation.
@@ -336,7 +331,7 @@ async fn load_unit_ranks(
     //
     let mut page_ids = candidates
         .iter()
-        .map(|candidate| candidate.unit_info.page_id.as_str())
+        .map(|cand| cand.unit_info.page_id.as_str())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
@@ -377,5 +372,5 @@ async fn load_unit_ranks(
         }
     }
 
-    accept(rank_by_unit_id)
+    accept!(rank_by_unit_id)
 }

@@ -80,15 +80,11 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "team-1".into(),
         ver: version,
-        image: format!("team_avatar/team-1-{}.png", version),
+        image: ["team_avatar/team-1-", &version.to_string(), ".png"].concat(),
     };
 
     let meta = ObjMeta {

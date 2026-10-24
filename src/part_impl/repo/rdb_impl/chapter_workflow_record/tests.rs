@@ -32,10 +32,6 @@ const PREFIX: &str = "rdb-test-chapter-workflow-record-domain-";
 /// Verifies JSONB payloads, deterministic paging, and explicit deletion.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     shared: RdbCore,
 ) {
@@ -55,14 +51,14 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
 
     let entries = [
         ChapterWorkflowRecordEntryShape {
-            id: format!("{}record-a", PREFIX),
+            id: [PREFIX, "record-a"].concat(),
             chapter_id: &chapter_fixture.chapter_info.id,
             actor_user_id: Some(&chapter_fixture.creator_form.id),
             payload: ChapterWorkflowRecordPayload::ChapterCreated,
             created_at,
         },
         ChapterWorkflowRecordEntryShape {
-            id: format!("{}record-b", PREFIX),
+            id: [PREFIX, "record-b"].concat(),
             chapter_id: &chapter_fixture.chapter_info.id,
             actor_user_id: Some(&chapter_fixture.creator_form.id),
             payload: ChapterWorkflowRecordPayload::StageTransitioned {
@@ -74,7 +70,7 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
             created_at,
         },
         ChapterWorkflowRecordEntryShape {
-            id: format!("{}record-c", PREFIX),
+            id: [PREFIX, "record-c"].concat(),
             chapter_id: &chapter_fixture.chapter_info.id,
             actor_user_id: None,
             payload: ChapterWorkflowRecordPayload::ChapterPinned,

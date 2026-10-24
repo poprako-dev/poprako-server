@@ -9,7 +9,7 @@ use crate::part::prom::payload::PromPayload;
 use crate::part_impl::prom::mock_impl::json::serialize_payload_error;
 use crate::part_impl::prom::mock_impl::{Mock, MockPromRecord};
 use crate::part_impl::repo::mock_impl::MockContext;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 
 impl Prom<MockContext, String, PromPayload> for Mock {
     // Defines the adapter error exposed by this producer.
@@ -50,7 +50,7 @@ impl<'a> Step<Defer<'a, String, PromPayload, ()>, MockContext> for Mock {
             created_at: now,
         });
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -82,6 +82,6 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, PromPayload, ()>, MockContext>
             .await?;
         }
 
-        accept(())
+        accept!(())
     }
 }

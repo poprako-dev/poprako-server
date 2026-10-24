@@ -97,14 +97,14 @@ pub fn download_response(
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
     //
-    let filename = format!("{}.{}", filename_base, payload.ext);
+    let filename = [filename_base, ".", payload.ext].concat();
 
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, payload.content_type)
         .header(
             CONTENT_DISPOSITION,
-            format!("attachment; filename=\"{filename}\""),
+            ["attachment; filename=\"", &filename, "\""].concat(),
         )
         .body(Body::from(payload.body))
         .map_err(|error| {

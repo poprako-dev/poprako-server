@@ -19,7 +19,7 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::{IssueItem, IssueRecord};
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -38,7 +38,7 @@ async fn clear(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
     .await
     .map_err(map_diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Read ordered issues without exposing mutation operations per Page or issue.
@@ -62,7 +62,10 @@ async fn list_infos(
 
 // Chunk the validated replacement below PostgreSQL's bind parameter limit.
 #[instrument(level = "info", skip_all)]
-async fn replace(conn: &mut RdbConn, repl: &ChapterIssuesRepl) -> BaseRest<()> {
+async fn persist_chapter_issues(
+    conn: &mut RdbConn,
+    repl: &ChapterIssuesRepl,
+) -> BaseRest<()> {
     //
     clear(conn, &repl.chapter_id).await?;
 
@@ -80,7 +83,7 @@ async fn replace(conn: &mut RdbConn, repl: &ChapterIssuesRepl) -> BaseRest<()> {
             .map_err(map_diesel)?;
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListIssueInfos<'_>> for HybRepo {
@@ -111,6 +114,6 @@ where
         context: &mut RdbContext<L>,
         oper: &ReplaceChapterIssues<'_>,
     ) -> BaseRest<()> {
-        replace(context.conn(), oper.repl).await
+        persist_chapter_issues(context.conn(), oper.repl).await
     }
 }

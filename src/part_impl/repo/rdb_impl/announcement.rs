@@ -30,7 +30,7 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
     f_content, f_created_at, f_id, f_team_id, f_title, t_announcement,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 // Loads an announcement record by identifier.
@@ -56,7 +56,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
         });
     };
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 // Queries announcement records filtered by team ID, ordered by creation time descending.
@@ -88,7 +88,7 @@ async fn list_infos(
     )
     .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 // Inserts a new announcement record from the given entry and returns the created info.
@@ -107,7 +107,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(record.into())
+    accept!(record.into())
 }
 
 // Replaces an announcement's editable fields.
@@ -126,7 +126,7 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Deletes an announcement record by identifier.
@@ -138,7 +138,7 @@ async fn delete_announcement(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListAnnouncementInfos<'_>> for HybRepo {

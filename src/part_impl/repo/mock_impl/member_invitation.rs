@@ -16,7 +16,7 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 // Internal implementation of `find_user`.
@@ -123,7 +123,7 @@ fn get_member_invitation_info(
                 include_invitor,
             );
 
-            accept(member_invitation_info)
+            accept!(member_invitation_info)
         }
 
         GetMemberInvitationInfo::Code { code } => state
@@ -184,7 +184,7 @@ fn create_member_invitation(
         .member_invitations
         .push(member_invitation_info.clone());
 
-    accept(member_invitation_info)
+    accept!(member_invitation_info)
 }
 
 // Internal implementation of `update_member_invitation`.
@@ -232,7 +232,7 @@ fn update_member_invitation(
         }
     }
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
@@ -251,7 +251,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_member_invitation_infos(&state, oper.spec))
+        accept!(list_member_invitation_infos(&state, oper.spec))
     }
 }
 
@@ -379,7 +379,7 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
 
         context.state.member_invitations.remove(position);
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -409,7 +409,7 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
                     || !member_invitation_info.is_pending
             });
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -435,7 +435,7 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
                 || !member_invitation_info.is_pending
         });
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 
@@ -477,7 +477,7 @@ impl<'a> Run<DeleteMemberInvitation<'a>> for Mock {
 
         state.member_invitations.remove(position);
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

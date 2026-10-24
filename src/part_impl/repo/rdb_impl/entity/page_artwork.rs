@@ -9,7 +9,7 @@ use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Composite page metadata record.
 #[derive(Queryable, Selectable)]
@@ -31,7 +31,7 @@ impl TryFrom<PageArtworkRecord> for PageArtworkInfo {
 
     fn try_from(record: PageArtworkRecord) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             id: record.f_id,
             chapter_id: record.f_chapter_id,
             index: usize_from_i32(record.f_index, "t_page_artwork.f_index")?,
@@ -64,7 +64,7 @@ impl<'a> TryFrom<&'a PageArtworkEntry> for PageArtworkItem<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
-        accept(Self {
+        accept!(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_index: i32_from_usize(entry.index, "t_page_artwork.f_index")?,

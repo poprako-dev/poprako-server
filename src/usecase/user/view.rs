@@ -7,7 +7,7 @@ use poprako_obj_dept::ObjDeptView;
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::user::UserInfo;
 use crate::part::obj_dept::UserAvatar;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::usecase::internal::view::obj_urls::{
     ObjUrlBatch, ObjUrlViews, load_obj_urls,
 };
@@ -27,7 +27,7 @@ where
 
     let urls = avatar_urls.take(&model.id);
 
-    accept(user_info_view_from_urls(model, urls))
+    accept!(user_info_view_from_urls(model, urls))
 }
 
 /// Renders one user with URLs from an already-loaded object snapshot.

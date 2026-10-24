@@ -42,7 +42,7 @@ use crate::part::repo::oper::page::{
     GetPageInfo, GetPageInfoExcluded, UpdatePageRawIdents,
 };
 use crate::part::repo::page::PageRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::usecase::page::alloc::manifest::apply_manifest;
 use crate::usecase::page::alloc::validation as page_alloc_validation_usecase;
@@ -119,7 +119,7 @@ where
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(AllocChapterPagesVal { pages })
+    accept!(AllocChapterPagesVal { pages })
 }
 
 /// Allocates an image generation for one page.
@@ -227,7 +227,7 @@ where
                 Defer::new(advance_task).step_on(prom, context).await?;
             }
 
-            accept(obj_slot)
+            accept!(obj_slot)
         })
         .await?;
 
@@ -273,7 +273,7 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
         }
     })?;
 
-    accept(AllocatedPageVal {
+    accept!(AllocatedPageVal {
         page_id: alloc.page_id,
         index,
         image_hash: alloc.image_hash,
@@ -283,10 +283,6 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
 }
 
 // Validates the caller and current chapter state.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn ensure_alloc_perm<C, R>(
     repo: &R,
     token: &UserToken,
@@ -294,7 +290,7 @@ async fn ensure_alloc_perm<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C>,
+    R: AssignmentRepo<C> + Sync,
 {
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id,

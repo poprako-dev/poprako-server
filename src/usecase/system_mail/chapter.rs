@@ -322,21 +322,22 @@ fn chapter_mail_args(
 }
 
 // Truncates a title to a maximum number of characters, appending ellipsis if truncated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn truncate_title(title: &str, max_chars: usize) -> String {
     //
     // Internal implementation detail.
     let mut chars = title.chars();
 
-    let short_title = chars.by_ref().take(max_chars).collect::<String>();
+    let mut short_title = chars.by_ref().take(max_chars).collect::<String>();
 
     match chars.next() {
         //
         // Internal implementation detail.
-        Some(_) => format!("{}...", short_title),
+        Some(_) => {
+            //
+            short_title.push_str("...");
+
+            short_title
+        }
 
         None => short_title,
     }

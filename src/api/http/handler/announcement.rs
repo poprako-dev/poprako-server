@@ -73,13 +73,15 @@ pub async fn create(
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
     //
-    announcement_usecase::create::<RdbContext<ReptRead>, HybRepo>(
-        harn.repo(),
-        user_token,
-        instr,
+    Ok(
+        announcement_usecase::create::<RdbContext<ReptRead>, HybRepo>(
+            harn.repo(),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::CREATED),
     )
-    .await?
-    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
@@ -114,13 +116,15 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    announcement_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        announcement_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/announcements/{announcement_id}` — replace editable fields.
@@ -153,7 +157,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/announcements/{announcement_id}` — delete an announcement.
@@ -182,5 +186,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

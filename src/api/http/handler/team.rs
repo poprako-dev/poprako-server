@@ -49,13 +49,13 @@ pub async fn create(
     Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoView> {
     //
-    team_usecase::create::<_, RdbContext<ReptRead>, HybRepo, _>(
+    Ok(team_usecase::create::<_, RdbContext<ReptRead>, HybRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams` — list teams with pagination.
@@ -84,13 +84,15 @@ pub async fn list_infos(
     Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
-    team_read_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        team_read_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/teams/{team_id}/online-users` — list active team users.
@@ -113,13 +115,14 @@ pub async fn list_online_user_ids(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Vec<String>> {
     //
-    team_online_usecase::list_online_user_ids::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        team_id,
+    Ok(
+        team_online_usecase::list_online_user_ids::<
+            RdbContext<ReptRead>,
+            HybRepo,
+        >((harn.repo(),), user_token, team_id)
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own activity and lease.
@@ -149,7 +152,7 @@ pub async fn mark_self_online(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
@@ -171,12 +174,14 @@ pub async fn get_info(
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoView> {
     //
-    team_read_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        team_id,
+    Ok(
+        team_read_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            team_id,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/teams/{team_id}` — update a team's profile.
@@ -210,7 +215,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/alloc` — allocate a team avatar upload slot.
@@ -235,19 +240,21 @@ pub async fn alloc_avatar(
     Json(instr): Json<AllocTeamAvatarInstr>,
 ) -> HttpResult<AllocTeamAvatarVal> {
     //
-    team_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (
-            harn.nucl().rept_read(),
-            harn.repo(),
-            harn.obj_dept(),
-            &harn.config().image,
-        ),
-        user_token,
-        team_id,
-        instr,
+    Ok(
+        team_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
+            (
+                harn.nucl().rept_read(),
+                harn.repo(),
+                harn.obj_dept(),
+                &harn.config().image,
+            ),
+            user_token,
+            team_id,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/mark-uploaded` — confirm a team avatar upload.
@@ -279,7 +286,7 @@ pub async fn mark_avatar_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/teams/{team_id}` — delete a team and all descendants.
@@ -308,5 +315,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

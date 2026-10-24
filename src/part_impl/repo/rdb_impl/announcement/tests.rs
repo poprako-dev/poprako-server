@@ -29,10 +29,6 @@ const PREFIX: &str = "rdb-test-announcement-domain-";
 /// Verifies announcement roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -46,7 +42,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
     );
 
     let entry = AnnouncementEntry {
-        id: format!("{}announcement", PREFIX),
+        id: [PREFIX, "announcement"].concat(),
         team_id: team_fixture.team_entry.id.clone(),
         user_id: team_fixture.user_entry.id.clone(),
         title: "RDB Announcement".into(),

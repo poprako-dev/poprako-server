@@ -105,17 +105,13 @@ async fn verify_page_counters(
 }
 
 // Verify a newly created page starts with empty counters and a current timestamp.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn create_second_page(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> (PageManifestEntry, OffsetDateTime) {
     let second_page_entry = PageManifestEntry {
-        id: format!("{}page-later", PREFIX),
+        id: [PREFIX, "page-later"].concat(),
         chapter_id: page_fixture.chapter_info.id.clone(),
         index: 1,
     };
@@ -340,7 +336,7 @@ async fn verify_page_count_bound(
 ) {
     let overflow_entries = (2..=MAX_CHAPTER_PAGE_COUNT)
         .map(|index| PageManifestEntry {
-            id: format!("{PREFIX}page-overflow-{index:03}"),
+            id: [PREFIX, "page-overflow-", &format!("{:03}", &index)].concat(),
             chapter_id: page_fixture.chapter_info.id.clone(),
             index,
         })

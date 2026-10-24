@@ -172,9 +172,13 @@ macro_rules! preloadable_variant {
     ) => {
         struct $marker;
 
-        impl Incl for $marker {
+        impl $crate::part_impl::repo::rdb_impl::incl::framework::Incl
+            for $marker
+        {
             type Owner = $owner;
-            type Related = <$query as BatchByIds>::Info;
+            type Related = <$query as
+                $crate::part_impl::repo::rdb_impl::incl::framework::BatchByIds
+            >::Info;
             type Query = $query;
 
             fn resolve_key(owner: &Self::Owner) -> Option<&str> {
@@ -215,15 +219,17 @@ macro_rules! preloadable {
         /// Returns an error if loading or converting a related record fails.
         #[tracing::instrument(level = "info", skip_all)]
         pub async fn $populate(
-            conn: &mut RdbConn,
+            conn: &mut poprako_rdb_core::RdbConn,
             infos: &mut [$owner],
             incl_opt: &[$opt],
-        ) -> BaseRest<()> {
-            for incl_opt in expand_incl_opts(incl_opt) {
+        ) -> $crate::result::BaseRest<()> {
+            for incl_opt in $crate::value::incl::expand_incl_opts(incl_opt) {
                 match incl_opt {
                     $(
                         $opt::$marker => {
-                            populate::<$marker>(conn, infos).await?
+                            $crate::part_impl::repo::rdb_impl::incl::
+                                framework::populate::<$marker>(conn, infos)
+                            .await?
                         }
                     )*
                 }

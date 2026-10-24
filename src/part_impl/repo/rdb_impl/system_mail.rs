@@ -29,7 +29,7 @@ use crate::part_impl::repo::rdb_impl::entity::system_mail::{
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::{
     f_created_at, f_id, f_read, f_receiver_id, t_system_mail,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 // ── Free functions ──────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Insert one or more system mail records with a single bulk database write.
@@ -67,7 +67,7 @@ async fn send_batch(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Query mails for the receiver, applying read-state filters and pagination.
@@ -97,7 +97,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    accept(records.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 // Validate ownership for the complete batch, then mark it read with one update.
@@ -156,7 +156,7 @@ async fn mark_read_batch(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<SendSystemMail<'_>> for HybRepo {

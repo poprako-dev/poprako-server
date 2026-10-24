@@ -2,7 +2,6 @@ use super::*;
 
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::result::accept;
 
 #[tokio::test]
 async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
@@ -58,7 +57,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
 
     assert_eq!(listed.total_unit_count, 2);
 
-    accept(())
+    accept!(())
 }
 
 #[tokio::test]

@@ -20,10 +20,6 @@ use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn gen_urls(
     meta: Option<&ObjMeta>,
     spec: ObjUrlSpec,
@@ -48,11 +44,11 @@ pub fn gen_urls(
 
     let optimized_url = spec
         .includes_optimized()
-        .then(|| parse_mock_url(&format!("optimized/{}", key)))
+        .then(|| parse_mock_url(&["optimized/", key].concat()))
         .transpose()?;
 
     let thumbnail_url = match (spec.includes_thumbnail(), thumbnail_enabled) {
-        (true, true) => Some(parse_mock_url(&format!("thumbnail/{}", key))?),
+        (true, true) => Some(parse_mock_url(&["thumbnail/", key].concat())?),
         (true, false) | (false, _) => None,
     };
 
@@ -64,12 +60,8 @@ pub fn gen_urls(
 }
 
 // Parses one deterministic object URL for tests.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn parse_mock_url(path: &str) -> ObjDeptRest<Url> {
-    Url::parse(&format!("https://obj.test/{}", path)).map_err(|source| {
+    Url::parse(&["https://obj.test/", path].concat()).map_err(|source| {
         ObjDeptError::Unrecoverable {
             message: source.to_string(),
         }

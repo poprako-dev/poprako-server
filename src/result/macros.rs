@@ -1,5 +1,13 @@
 //! Error construction and source-level tracing shared by application modules.
 
+// Constructs a successful application result with its shared error type.
+// Keeping the error type explicit lets transaction callbacks infer BaseError.
+macro_rules! accept {
+    ($value:expr $(,)?) => {
+        ::std::result::Result::Ok::<_, $crate::result::BaseError>($value)
+    };
+}
+
 // Constructs an expected error and records one warning at its unlogged source.
 //
 // Supply the variant, `message: String;`, then native tracing fields and a

@@ -34,14 +34,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
     // Build a team member fixture with role perms.
     MemberInfo {
-        id: format!("member-{}-{}", user_id, team_id),
+        id: ["member-", user_id, "-", team_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),

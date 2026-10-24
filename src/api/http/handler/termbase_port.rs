@@ -132,13 +132,11 @@ pub async fn import_team(
         )
         .await?;
 
-    let status = if import_termbase_val.created {
-        StatusCode::CREATED
-    } else {
-        StatusCode::OK
-    };
+    if import_termbase_val.created {
+        return Ok(import_termbase_val.accept(StatusCode::CREATED));
+    }
 
-    import_termbase_val.accept(status)
+    Ok(import_termbase_val.accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/comics/{comic_id}/termbases/import` — import into a comic scope.
@@ -180,13 +178,11 @@ pub async fn import_comic(
         )
         .await?;
 
-    let status = if import_termbase_val.created {
-        StatusCode::CREATED
-    } else {
-        StatusCode::OK
-    };
+    if import_termbase_val.created {
+        return Ok(import_termbase_val.accept(StatusCode::CREATED));
+    }
 
-    import_termbase_val.accept(status)
+    Ok(import_termbase_val.accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/termbases/{termbase_id}/append` — atomically append portable terms.
@@ -229,7 +225,7 @@ pub async fn append(
         )
         .await?;
 
-    append_termbase_val.accept(StatusCode::OK)
+    Ok(append_termbase_val.accept(StatusCode::OK))
 }
 
 // Load and serialize one export document for either response mode.
@@ -257,19 +253,18 @@ fn export_response(
     download: bool,
 ) -> Result<Response, HttpError> {
     //
-    let builder = Response::builder()
+    let mut builder = Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, "application/json");
 
-    let builder = if download {
+    if download {
         //
-        builder.header(
+        builder = builder.header(
             CONTENT_DISPOSITION,
-            format!("attachment; filename=\"termbase_{termbase_id}.json\""),
-        )
-    } else {
-        builder
-    };
+            ["attachment; filename=\"termbase_", termbase_id, ".json\""]
+                .concat(),
+        );
+    }
 
     builder.body(Body::from(body)).map_err(|error| {
         //

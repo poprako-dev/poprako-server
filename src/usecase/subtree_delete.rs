@@ -17,7 +17,7 @@ use crate::part::repo::oper::subtree_delete::{
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
 /// Sweeps one eligible hierarchy claim for the requested level.
@@ -46,7 +46,7 @@ where
                 ClaimSubtreeSweep { level }.step_on(repo, context).await?;
 
             let Some(target) = target else {
-                return accept(false);
+                return accept!(false);
             };
 
             match &target {
@@ -105,9 +105,9 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            accept(true)
+            accept!(true)
         })
         .await?;
 
-    accept(swept)
+    accept!(swept)
 }

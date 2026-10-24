@@ -11,7 +11,7 @@ use crate::part_impl::repo::mock_impl::chapter::orchestra::{
     find_pinned_chapter_info, list_chapter_infos, list_pinned_chapter_infos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::chapter::stage::{Stage, StagePhase};
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
@@ -30,7 +30,7 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_chapter_infos(&state, oper.spec))
+        accept!(list_chapter_infos(&state, oper.spec))
     }
 }
 
@@ -70,7 +70,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
+        accept!(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
     }
 }
 
@@ -90,7 +90,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_pinned_chapter_infos(&state, oper.comic_ids))
+        accept!(list_pinned_chapter_infos(&state, oper.comic_ids))
     }
 }
 
@@ -108,7 +108,7 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
         let mut state = self.state.lock().unwrap();
 
         if state.deleted_chapter_ids.contains(oper.id) {
-            return accept(false);
+            return accept!(false);
         }
 
         let Some(chapter_info) = state
@@ -116,21 +116,21 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
             .iter_mut()
             .find(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(false);
+            return accept!(false);
         };
 
         if chapter_info
             .stages
             .has_phase(Stage::Publish, StagePhase::Completed)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         if !chapter_info
             .stages
             .has_phase(oper.stage, StagePhase::Pending)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         chapter_info.stages = chapter_info
@@ -139,7 +139,7 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
 
         chapter_info.updated_at = now();
 
-        let rest = accept(true);
+        let rest = accept!(true);
 
         drop(state);
 
@@ -164,7 +164,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
         let mut state = self.state.lock().unwrap();
 
         if state.deleted_chapter_ids.contains(oper.id) {
-            return accept(false);
+            return accept!(false);
         }
 
         let Some(chapter_index) = state
@@ -172,7 +172,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             .iter()
             .position(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(false);
+            return accept!(false);
         };
 
         if !state
@@ -182,11 +182,11 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         if state.chapters.get(chapter_index).unwrap().page_count == 0 {
-            return accept(false);
+            return accept!(false);
         }
 
         let chapter_info =
@@ -198,7 +198,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
 
         chapter_info.updated_at = now();
 
-        let rest = accept(true);
+        let rest = accept!(true);
 
         drop(state);
 

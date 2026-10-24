@@ -7,7 +7,7 @@ use crate::model::read::proj::issue::IssueInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Remove all details of the locked Chapter's current review.
 fn clear(context: &mut MockContext, chapter_id: &str) {
@@ -67,7 +67,7 @@ impl Run<ListIssueInfos<'_>> for Mock {
 
         drop(state);
 
-        accept(issues)
+        accept!(issues)
     }
 }
 
@@ -101,6 +101,6 @@ impl Step<ReplaceChapterIssues<'_>, MockContext> for Mock {
                 note: entry.note.clone(),
             }));
 
-        accept(())
+        accept!(())
     }
 }

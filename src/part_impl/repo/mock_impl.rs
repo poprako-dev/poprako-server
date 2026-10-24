@@ -303,25 +303,26 @@ impl poprako_orchestra::Context for MockContext {
     type Level = Serial;
 }
 
-#[cfg_attr(test, derive(Clone, Default))]
-/// Toggleable failure flags for testing error paths in mock adapters.
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "Independent fault-injection switches must be combinable in test scenarios"
-)]
-pub struct MockFlags {
-    //
-    /// Simulates a token authentication failure.
-    pub token_failure: bool,
+/// Independently injectable failures for mock adapter operations.
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub enum MockFault {
+    /// Reject token signing and verification.
+    Token,
+    /// Fail transaction commit after its steps succeed.
+    Commit,
+    /// Fail archive persistence before commit.
+    Archive,
+    /// Fail team creation before commit.
+    TeamCreation,
+    /// Fail object deletion scheduling before commit.
+    ObjDeletion,
+}
 
-    /// Simulates a transaction commit failure after all steps succeed.
-    pub commit_failure: bool,
-    /// Simulates a failure in archive persistence within a transaction.
-    pub archive_commit_failure: bool,
-    /// Simulates a failure in team creation within a transaction.
-    pub create_team_failure: bool,
-    /// Simulates a failure while recording object deletion tasks.
-    pub obj_delete_failure: bool,
+/// Failure injection and object URL capabilities for mock adapters.
+#[cfg_attr(test, derive(Clone, Default))]
+pub struct MockFlags {
+    /// Faults enabled independently for the next mock operations.
+    pub faults: HashSet<MockFault>,
 
     /// Disables thumbnail URL capability in the object-pool mock.
     pub obj_thumbnail_disabled: bool,
@@ -371,9 +372,25 @@ impl Mock {
     #[must_use]
     pub fn with_token_failure(self) -> Self {
         //
-        self.flags.lock().unwrap().token_failure = true;
+        self.flags.lock().unwrap().faults.insert(MockFault::Token);
 
         self
+    }
+
+    /// Enables or disables failure after all transaction steps succeed.
+    /// # Panics
+    /// Panics if the mock failure configuration mutex is poisoned.
+    pub fn set_commit_failure(&self, enabled: bool) {
+        //
+        let mut flags = self.flags.lock().unwrap();
+
+        if enabled {
+            flags.faults.insert(MockFault::Commit);
+
+            return;
+        }
+
+        flags.faults.remove(&MockFault::Commit);
     }
 
     /// Fail archive persistence before a transaction can commit.
@@ -382,7 +399,7 @@ impl Mock {
     #[must_use]
     pub fn with_archive_commit_failure(self) -> Self {
         //
-        self.flags.lock().unwrap().archive_commit_failure = true;
+        self.flags.lock().unwrap().faults.insert(MockFault::Archive);
 
         self
     }
@@ -393,7 +410,11 @@ impl Mock {
     #[must_use]
     pub fn with_create_team_failure(self) -> Self {
         //
-        self.flags.lock().unwrap().create_team_failure = true;
+        self.flags
+            .lock()
+            .unwrap()
+            .faults
+            .insert(MockFault::TeamCreation);
 
         self
     }
@@ -404,7 +425,11 @@ impl Mock {
     #[must_use]
     pub fn with_obj_delete_failure(self) -> Self {
         //
-        self.flags.lock().unwrap().obj_delete_failure = true;
+        self.flags
+            .lock()
+            .unwrap()
+            .faults
+            .insert(MockFault::ObjDeletion);
 
         self
     }

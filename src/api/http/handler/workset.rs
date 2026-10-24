@@ -47,13 +47,13 @@ pub async fn create(
     Json(instr): Json<CreateWorksetInstr>,
 ) -> HttpResult<CreateWorksetVal> {
     //
-    workset_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(workset_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
@@ -83,13 +83,15 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    workset_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        instr,
+    Ok(
+        workset_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
+            (harn.repo(),),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/worksets/{workset_id}` — fetch a workset by id.
@@ -113,13 +115,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoView> {
     //
-    workset_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    Ok(workset_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         workset_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.
@@ -153,7 +155,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/worksets/{workset_id}` — delete a workset and descendants.
@@ -182,5 +184,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

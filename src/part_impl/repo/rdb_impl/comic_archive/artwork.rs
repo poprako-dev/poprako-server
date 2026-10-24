@@ -15,7 +15,7 @@ use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueRecord;
 use crate::part_impl::repo::rdb_impl::entity::page_artwork::PageArtworkRecord;
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 
 /// Loads composites even when the Chapter has no source Pages.
@@ -89,5 +89,5 @@ pub async fn load_archive_page_artworks(
             });
     }
 
-    accept(page_artwork_snapshots_by_chapter)
+    accept!(page_artwork_snapshots_by_chapter)
 }

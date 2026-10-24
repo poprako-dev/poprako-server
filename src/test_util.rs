@@ -23,54 +23,49 @@ pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
 
 /// Asserts that `error` is a [`BaseError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 pub fn assert_expected_variant(error_: &BaseError, expected: ExpectedVariant) {
     //
-    let BaseError::Expected { variant, .. } = error_ else {
-        panic!("expected BaseError::Expected");
-    };
-
-    match (variant, expected) {
-        //
-        (ExpectedVariant::Args, ExpectedVariant::Args)
-        | (ExpectedVariant::Auth, ExpectedVariant::Auth)
-        | (ExpectedVariant::Perm, ExpectedVariant::Perm) => {}
-
-        _ => panic!("unexpected ExpectedVariant"),
-    }
+    assert!(matches!(
+        (error_, expected),
+        (
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                ..
+            },
+            ExpectedVariant::Args,
+        ) | (
+            BaseError::Expected {
+                variant: ExpectedVariant::Auth,
+                ..
+            },
+            ExpectedVariant::Auth,
+        ) | (
+            BaseError::Expected {
+                variant: ExpectedVariant::Perm,
+                ..
+            },
+            ExpectedVariant::Perm,
+        )
+    ));
 }
 
 /// Asserts that `error` is an expected error with the exact variant and i18n key.
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 pub fn assert_expected_message(
     error_: BaseError,
     expected: ExpectedVariant,
     trl_key: &str,
 ) {
     //
-    let BaseError::Expected {
-        variant,
-        message: actual,
-    } = error_
-    else {
-        panic!("expected BaseError::Expected");
+    assert_expected_variant(&error_, expected);
+
+    let actual = match error_ {
+        //
+        BaseError::Expected { message, .. } => Some(message),
+
+        _ => None,
     };
 
-    assert_expected_variant(
-        &BaseError::Expected {
-            variant,
-            message: actual.clone(),
-        },
-        expected,
-    );
-
-    assert_eq!(actual, trl(trl_key));
+    assert_eq!(actual, Some(trl(trl_key)));
 }
 
 /// Returns the current time in UTC. Convenience wrapper for tests.

@@ -40,10 +40,6 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
     //
     // Build a basic workset fixture for pagination and mutation tests.
@@ -53,7 +49,7 @@ fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
         id: id.into(),
         team_id: team_id.into(),
         index,
-        name: format!("workset-{}", index),
+        name: ["workset-", &index.to_string()].concat(),
         description: None,
         comic_count: 0,
         created_at: time,
@@ -90,14 +86,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     // Build an admin member fixture for workset admin-only operations.
     MemberInfo {
-        id: format!("member-{}-{}", user_id, team_id),
+        id: ["member-", user_id, "-", team_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),

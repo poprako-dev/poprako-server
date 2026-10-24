@@ -14,7 +14,7 @@ use crate::part::repo::oper::announcement::{
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::announcement::AnnouncementInclOpt;
 
 // Internal implementation of `find_user`.
@@ -111,7 +111,7 @@ fn create_announcement(
 
     state.announcements.push(announcement_info.clone());
 
-    accept(announcement_info)
+    accept!(announcement_info)
 }
 
 // Loads an announcement from mock storage for mutation.
@@ -144,7 +144,7 @@ fn update_announcement(
 
     announcement_info.content = update.trimmed_content().to_owned();
 
-    accept(())
+    accept!(())
 }
 
 // Deletes an announcement from mock storage.
@@ -158,7 +158,7 @@ fn delete_announcement(state: &mut MockState, id: &str) -> BaseRest<()> {
 
     state.announcements.remove(announcement_index);
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListAnnouncementInfos<'_>> for Mock {
@@ -177,7 +177,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_announcements(&state, oper.spec))
+        accept!(list_announcements(&state, oper.spec))
     }
 }
 

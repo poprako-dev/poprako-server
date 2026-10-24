@@ -5,15 +5,15 @@ use syn::Ident;
 use crate::obj_dept_entry::ObjEntry;
 
 /// Generates read operations for the total department and read projection.
-#[expect(
-    clippy::too_many_lines,
-    reason = "total and projected reads must remain visibly symmetric"
-)]
 pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
     //
     let obj = entry.marker();
 
     let obj_module = entry.module();
+
+    let view_reads = view_reads(obj, view, obj_module);
+
+    let total_urls = total_urls(obj, dept);
 
     quote! {
         impl<'a, P, M> ::poprako_orchestra::Run<
@@ -73,34 +73,17 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
             }
         }
 
-        impl<'a, P, M> ::poprako_orchestra::Run<
-            ::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
-        > for #dept<P, M>
-        where
-            P: ::poprako_obj_dept::pool::ObjDeptPool + ::core::marker::Sync,
-            M: ::poprako_obj_dept::prom::ObjDeptProm + ::core::marker::Sync,
-        {
-            type Error = ::poprako_obj_dept::rest::ObjDeptError;
+        #total_urls
 
-            async fn run(
-                &self,
-                oper: &::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::url::ObjUrls,
-                >,
-            > {
-                //
-                ::poprako_obj_dept::pool::gen_urls_bounded(
-                    self.pool(),
-                    oper.spec,
-                    oper.metas,
-                )
-                .await
-            }
-        }
+        #view_reads
 
+    }
+}
+
+// Generates view reads.
+fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
+    //
+    quote! {
         impl<'a, P> ::poprako_orchestra::Run<
             ::poprako_obj_dept::oper::ListObjMetas<'a, #obj>,
         > for #view<P>
@@ -161,6 +144,40 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
         > for #view<P>
         where
             P: ::poprako_obj_dept::pool::ObjDeptPoolView + ::core::marker::Sync,
+        {
+            type Error = ::poprako_obj_dept::rest::ObjDeptError;
+
+            async fn run(
+                &self,
+                oper: &::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
+            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
+                ::std::collections::HashMap<
+                    String,
+                    ::poprako_obj_dept::model::url::ObjUrls,
+                >,
+            > {
+                //
+                ::poprako_obj_dept::pool::gen_urls_bounded(
+                    self.pool(),
+                    oper.spec,
+                    oper.metas,
+                )
+                .await
+            }
+        }
+    }
+}
+
+// Generates total urls.
+fn total_urls(obj: &Ident, dept: &Ident) -> TokenStream {
+    //
+    quote! {
+        impl<'a, P, M> ::poprako_orchestra::Run<
+            ::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
+        > for #dept<P, M>
+        where
+            P: ::poprako_obj_dept::pool::ObjDeptPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjDeptProm + ::core::marker::Sync,
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 

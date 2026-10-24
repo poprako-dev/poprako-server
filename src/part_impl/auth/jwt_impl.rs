@@ -15,7 +15,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::shared::user::UserToken;
 use crate::part::auth::TokenAuth;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
@@ -66,7 +66,7 @@ impl JwtAuth {
             DecodingKey::from_secret(secret.as_bytes()),
         );
 
-        accept(Self {
+        accept!(Self {
             expiration_seconds,
             encoding_key,
             decoding_key,
@@ -80,10 +80,6 @@ impl JwtAuth {
     ///
     /// Returns an error when required environment variables are missing or
     /// malformed.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -103,7 +99,7 @@ impl JwtAuth {
             | BaseError::Retryable { message }
             | BaseError::Unavailable { message }
             | BaseError::Unrecoverable { message } => {
-                anyhow::anyhow!("{}", message)
+                anyhow::Error::msg(message)
             }
         })
     }
@@ -168,10 +164,11 @@ impl TokenAuth for JwtAuth {
             |error| {
                 //
                 unrecoverable_error! {
-                    message: format!(
-                        "[JwtAuth::sign_token] error when encoding: {}",
-                        error,
-                    );
+                    message: [
+                        "[JwtAuth::sign_token] error when encoding: ",
+                        &error.to_string(),
+                    ]
+                    .concat();
                     operation = "sign_token",
                     sdk_error = ?error,
                     "JWT SDK error",
@@ -201,7 +198,7 @@ impl TokenAuth for JwtAuth {
             }
         })?;
 
-        accept(UserToken {
+        accept!(UserToken {
             user_id: token_data.claims.user_id,
         })
     }

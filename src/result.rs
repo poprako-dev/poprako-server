@@ -61,15 +61,6 @@ pub enum BaseError {
 /// Alias for [`Result`] used at module boundary layers.
 pub type BaseRest<T> = Result<T, BaseError>;
 
-/// Wraps a value in `Ok(...)` — the simplest use-case return.
-#[expect(
-    clippy::unnecessary_wraps,
-    reason = "Application success constructors preserve the shared BaseRest contract"
-)]
-pub const fn accept<T>(v: T) -> BaseRest<T> {
-    Ok(v)
-}
-
 impl From<RdbError> for BaseError {
     // Convert a traced RDB infrastructure failure into the application error surface.
     fn from(source: RdbError) -> Self {

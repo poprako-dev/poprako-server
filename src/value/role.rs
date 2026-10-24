@@ -14,7 +14,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// A singular role perm flag represented as a bit position.
 ///
@@ -92,7 +92,7 @@ impl TryFrom<u32> for RoleField {
             });
         }
 
-        accept(Self(value))
+        accept!(Self(value))
     }
 }
 
@@ -201,7 +201,7 @@ impl TryFrom<u32> for RoleMask {
             });
         }
 
-        accept(Self(value))
+        accept!(Self(value))
     }
 }
 

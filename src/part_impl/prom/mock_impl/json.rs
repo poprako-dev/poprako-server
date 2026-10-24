@@ -1,10 +1,6 @@
 use crate::result::BaseError;
 
 /// Converts a mock prom payload serialization failure after recording the SDK error.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn serialize_payload_error(error_serde: &serde_json::Error) -> BaseError {
     //
     tracing::error!(
@@ -14,6 +10,10 @@ pub fn serialize_payload_error(error_serde: &serde_json::Error) -> BaseError {
     );
 
     BaseError::Unrecoverable {
-        message: format!("failed to serialize prom payload: {}", error_serde),
+        message: [
+            "failed to serialize prom payload: ",
+            &error_serde.to_string(),
+        ]
+        .concat(),
     }
 }

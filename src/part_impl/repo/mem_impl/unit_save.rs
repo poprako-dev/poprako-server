@@ -103,16 +103,17 @@ impl UnitSaveCache {
     }
 
     /// Acquires a stable lock that cannot disappear when a token is evicted.
-    #[allow(
-        clippy::indexing_slicing,
-        reason = "A hash byte is always within the 256-element lock array."
-    )]
     pub async fn lock_save(&self, save_id: Uuid) -> UnitSaveCacheGuard<'_> {
         //
-        let stripe =
-            usize::from(self.hasher.hash_one(save_id).to_le_bytes()[0]);
+        let [stripe_byte, ..] = self.hasher.hash_one(save_id).to_le_bytes();
 
-        let guard = self.locks[stripe].lock().await;
+        let stripe = usize::from(stripe_byte);
+
+        let [first_lock, ..] = self.locks.as_ref();
+
+        let lock = self.locks.get(stripe).unwrap_or(first_lock);
+
+        let guard = lock.lock().await;
 
         UnitSaveCacheGuard {
             cache: &self.tokens,

@@ -73,13 +73,15 @@ pub async fn list_infos(
     //
     let instr = ListPageUnitInfosInstr { page_id };
 
-    unit_usecase::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
-        user_token,
-        instr,
+    Ok(
+        unit_usecase::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/units/search` — search Unit text.
@@ -113,13 +115,15 @@ pub async fn search_infos(
         phrase: query.phrase,
     };
 
-    unit_usecase::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
-        user_token,
-        instr,
+    Ok(
+        unit_usecase::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/pages/{page_id}/units/save` — save Unit edits.
@@ -153,13 +157,13 @@ pub async fn save_infos(
         save_id: query.save_id,
     };
 
-    unit_usecase::save_edits::<_, RdbContext<Serial>, HybRepo>(
+    Ok(unit_usecase::save_edits::<_, RdbContext<Serial>, HybRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/units/transform` — transform Unit text.
@@ -193,5 +197,5 @@ pub async fn transform(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

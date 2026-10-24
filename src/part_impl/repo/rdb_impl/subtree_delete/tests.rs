@@ -16,7 +16,7 @@ fn subtree_unit_items(
         .iter()
         .flat_map(|page| {
             (0..scale.units_per_page).map(move |unit_index| UnitItem {
-                f_id: format!("{}unit-{}-{unit_index:04}", prefix, page.id),
+                f_id: format!("{}unit-{}-{:04}", prefix, page.id, &unit_index),
                 f_page_id: page.id.clone(),
                 f_next_id: None,
                 f_hidden_at: None,
@@ -116,11 +116,11 @@ struct Scale {
 
 async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
     let fixture = test_shared::seed_workset(shared, prefix).await;
-    let creator_id = format!("{prefix}user-owner");
+    let creator_id = [prefix, "user-owner"].concat();
 
     let comics = (0..scale.comics)
         .map(|comic_index| ComicEntryShape {
-            id: format!("{prefix}comic-{comic_index:04}"),
+            id: [prefix, "comic-", &format!("{:04}", &comic_index)].concat(),
             workset_id: &fixture.workset_entry.id,
             index: comic_index,
             title: "Benchmark comic".into(),
@@ -138,8 +138,8 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
             (0..scale.chapters_per_comic).map(move |chapter_index| {
                 ChapterEntryShape {
                     id: format!(
-                        "{}chapter-{}-{chapter_index:04}",
-                        prefix, comic.id
+                        "{}chapter-{}-{:04}",
+                        prefix, comic.id, &chapter_index
                     ),
                     comic_id: &comic.id,
                     is_pinned: chapter_index == 0,
@@ -155,7 +155,7 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
         .iter()
         .flat_map(|chapter| {
             (0..scale.pages_per_chapter).map(move |page_index| PageEntry {
-                id: format!("{}page-{}-{page_index:04}", prefix, chapter.id),
+                id: format!("{}page-{}-{:04}", prefix, chapter.id, &page_index),
                 chapter_id: chapter.id.clone(),
                 index: page_index,
             })

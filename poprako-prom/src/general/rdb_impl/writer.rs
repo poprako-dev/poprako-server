@@ -59,10 +59,10 @@ macro_rules! __general_prom_writer {
                             );
 
                             PromError::Unrecoverable {
-                                message: format!(
-                                    "failed to serialize prom payload: {}",
-                                    error_serde,
-                                ),
+                                message: [
+                                    "failed to serialize prom payload: ",
+                                    &error_serde.to_string(),
+                                ].concat(),
                             }
                         })?;
 
@@ -193,11 +193,7 @@ macro_rules! __general_prom_writer {
 
             // Implements defer.
             #[instrument(level = "info", skip_all)]
-            #[expect(
-                clippy::future_not_send,
-                reason = "Transactional payloads are borrowed locally without a Sync requirement"
-            )]
-            async fn defer<P: Payload>(
+            async fn defer<P: Payload + Sync>(
                 conn: &mut RdbConn,
                 task: &Task<'_, String, P>,
             ) -> AppRest<()> {
@@ -217,11 +213,7 @@ macro_rules! __general_prom_writer {
 
             // Implements defer batch.
             #[instrument(level = "info", skip_all)]
-            #[expect(
-                clippy::future_not_send,
-                reason = "Transactional payloads are borrowed locally without a Sync requirement"
-            )]
-            async fn defer_batch<P: Payload>(
+            async fn defer_batch<P: Payload + Sync>(
                 conn: &mut RdbConn,
                 tasks: &[Task<'_, String, P>],
             ) -> AppRest<()> {

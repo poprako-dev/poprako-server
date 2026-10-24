@@ -26,7 +26,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::comment::view::comment_info_views;
 
 /// Lists comments under a team.
@@ -75,7 +75,7 @@ where
 
     let comment_info_vals = comment_info_views(obj_dept, comment_infos).await?;
 
-    accept(comment_info_vals)
+    accept!(comment_info_vals)
 }
 
 /// Creates a comment under a team.
@@ -124,7 +124,7 @@ where
 
     let comment_info = CreateComment { entry: &entry }.run_on(repo).await?;
 
-    accept(CreateCommentVal {
+    accept!(CreateCommentVal {
         id: comment_info.id,
     })
 }

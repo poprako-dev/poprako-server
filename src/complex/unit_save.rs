@@ -11,7 +11,7 @@ use poprako_util::i18n::trl;
 use crate::complex::unit as unit_complex;
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::unit::{UnitWriteChangeShape, UnitWritePlanShape};
 use crate::util::Patch;
 
@@ -113,7 +113,7 @@ pub fn plan_writes<'a>(
         true
     });
 
-    accept(UnitWritePlanShape {
+    accept!(UnitWritePlanShape {
         creates: creates.into_values().collect(),
         changes,
         skipped_ids,
@@ -169,7 +169,7 @@ fn patch_create(create: &mut UnitEdit, edit: &UnitEdit) -> BaseRest<()> {
 
     patch_initial(translation_note, translation_annotation);
 
-    accept(())
+    accept!(())
 }
 
 // Distinguishes submitted content from order-only or empty saves.

@@ -52,7 +52,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
 
@@ -110,7 +110,7 @@ async fn load_archive_root(
 
     let workset_info = WorksetInfo::try_from(workset_record)?;
 
-    accept((comic_info, workset_info))
+    accept!((comic_info, workset_info))
 }
 
 // Lock and load the source Comic's ordered Chapters.
@@ -133,7 +133,7 @@ async fn load_archive_chapters(
         .map(ChapterInfo::try_from)
         .collect::<BaseRest<Vec<ChapterInfo>>>()?;
 
-    accept(chapter_infos)
+    accept!(chapter_infos)
 }
 
 // Lock and load workflow records, invitations, assignments, and assignees.
@@ -208,11 +208,11 @@ async fn load_archive_chapter_relations(
         })
         .collect::<BaseRest<HashMap<_, _>>>()?;
 
-    accept((workflow_record_infos, assignment_infos, user_infos))
+    accept!((workflow_record_infos, assignment_infos, user_infos))
 }
 
 // Loaded descendants needed to assemble Chapter snapshots.
-struct ArchiveChapterParts {
+struct ArchiveChapterDescendants {
     // Chapters included in the archive.
     chapter_infos: Vec<ChapterInfo>,
 
@@ -235,10 +235,10 @@ struct ArchiveChapterParts {
 // Assemble loaded archive descendants into Chapter snapshots.
 fn assemble_chapter_snapshots(
     source_comic_id: &str,
-    coord_fields: ArchiveChapterParts,
+    coord_fields: ArchiveChapterDescendants,
 ) -> BaseRest<Vec<ComicArchiveChapterSnapshot>> {
     //
-    let ArchiveChapterParts {
+    let ArchiveChapterDescendants {
         chapter_infos,
         workflow_record_infos,
         assignment_infos,
@@ -317,7 +317,7 @@ fn assemble_chapter_snapshots(
         })
         .collect();
 
-    accept(chapter_snapshots)
+    accept!(chapter_snapshots)
 }
 
 /// Lock every active descendant needed by an archive transaction.
@@ -349,7 +349,7 @@ async fn get_snapshot_excluded(
 
     let chapter_snapshots = assemble_chapter_snapshots(
         source_comic_id,
-        ArchiveChapterParts {
+        ArchiveChapterDescendants {
             chapter_infos,
             workflow_record_infos,
             assignment_infos,
@@ -360,7 +360,7 @@ async fn get_snapshot_excluded(
         },
     )?;
 
-    accept(ComicArchiveSnapshot {
+    accept!(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,

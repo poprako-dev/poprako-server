@@ -11,17 +11,17 @@ use crate::part::repo::oper::page::SetPageUnitCountMetrics;
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 
 /// Persisted Page changes needed by the caller's completion policy.
-pub struct PageEditOutcome {
+pub struct PageEditChanges {
     /// Counter change to aggregate into the owning Chapter.
     count_delta: UnitCountDelta,
     /// Normalized edits actually submitted for persistence.
     applied_edits: Vec<UnitEdit>,
 }
 
-impl PageEditOutcome {
+impl PageEditChanges {
     /// Returns the counter change for the owning Chapter.
     pub const fn count_delta(&self) -> UnitCountDelta {
         self.count_delta
@@ -43,7 +43,7 @@ pub async fn apply_edits<C, R>(
     context: &mut C,
     page_scope: &PageUnitScope,
     edits: Vec<UnitEdit>,
-) -> BaseRest<PageEditOutcome>
+) -> BaseRest<PageEditChanges>
 where
     C: Context + Send,
     C::Level: AtLeast<Serial>,
@@ -79,7 +79,7 @@ where
 
     let count_delta = page_scope.count_metrics.calc_delta(count_metrics)?;
 
-    accept(PageEditOutcome {
+    accept!(PageEditChanges {
         count_delta,
         applied_edits: edits,
     })

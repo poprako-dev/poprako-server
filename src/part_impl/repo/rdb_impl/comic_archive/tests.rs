@@ -214,10 +214,6 @@ fn verify_archived_payload(
 /// Verifies comic archive roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -250,7 +246,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     let archiver_id = page_fixture.chapter_info.creator_id.clone();
 
     let workflow_record_entry = ChapterWorkflowRecordEntryShape {
-        id: format!("{}workflow-record", PREFIX),
+        id: [PREFIX, "workflow-record"].concat(),
         chapter_id: &page_fixture.chapter_info.id,
         actor_user_id: Some(&archiver_id),
         payload: ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {

@@ -9,7 +9,7 @@ use crate::part_impl::repo::mock_impl::comic::{
     get_comic_info, list_comic_infos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, expected, now};
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     // Use base error type for get-by-id read operation.
@@ -43,7 +43,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_comic_infos(&state, oper.spec))
+        accept!(list_comic_infos(&state, oper.spec))
     }
 }
 
@@ -77,7 +77,7 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 
         comic.updated_at = now();
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

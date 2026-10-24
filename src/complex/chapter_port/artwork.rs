@@ -4,11 +4,11 @@ use poprako_util::i18n::trl;
 
 use crate::config::artwork::ArtworkConfig;
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::role::RoleField;
 
 /// Validates arbitrary file suffixes without treating them as path segments.
-pub fn valid_extension(ext: &str) -> bool {
+pub fn valid_ext(ext: &str) -> bool {
     //
     !ext.is_empty()
         && ext.len() <= 32
@@ -39,7 +39,7 @@ pub fn ensure_alloc(
     if byte_len == 0
         || limit.is_none_or(|limit| byte_len > limit)
         || byte_len > i64::MAX as u64
-        || !valid_extension(ext)
+        || !valid_ext(ext)
     {
         //
         return Err(artwork_error(
@@ -48,7 +48,7 @@ pub fn ensure_alloc(
         ));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Requires a chapter typesetter or redrawer assignment.
@@ -68,5 +68,5 @@ pub fn ensure_user_can_upload(
         ));
     }
 
-    accept(())
+    accept!(())
 }

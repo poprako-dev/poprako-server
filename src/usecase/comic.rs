@@ -45,7 +45,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::comic::ComicEntryShape;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
@@ -131,11 +131,11 @@ where
             )
             .await?;
 
-            accept((comic_info.id, chapter_info.id))
+            accept!((comic_info.id, chapter_info.id))
         })
         .await?;
 
-    accept(CreateComicVal {
+    accept!(CreateComicVal {
         id: comic_id,
         chapter_id,
     })
@@ -234,7 +234,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a comic and updates the parent workset counter.
@@ -305,9 +305,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

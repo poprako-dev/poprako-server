@@ -151,6 +151,24 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
     assert!(!logs.contains("private-translation"), "{logs}");
 }
 
+// Checks only the rejection event because request spans retain request paths.
+fn assert_rejection_diagnostics_exclude_payload(logs: &str) {
+    // Existing request spans retain paths; rejection fields exclude client values.
+    let diagnostic = logs
+        .split("HTTP request extraction rejected")
+        .nth(1)
+        .unwrap();
+
+    assert!(
+        !diagnostic
+            .lines()
+            .next()
+            .unwrap()
+            .contains("private-sentinel"),
+        "{logs}"
+    );
+}
+
 #[tokio::test]
 async fn native_request_extractors_record_concrete_rejections_without_payloads()
 {
@@ -237,7 +255,10 @@ async fn native_request_extractors_record_concrete_rejections_without_payloads()
 
         assert!(logs.contains(variant), "{logs}");
 
-        assert!(logs.contains(&format!("status={status}")), "{logs}");
+        assert!(
+            logs.contains(&["status=", &status.to_string()].concat()),
+            "{logs}"
+        );
 
         assert!(logs.contains("error_origin=\"axum\""), "{logs}");
 
@@ -247,20 +268,7 @@ async fn native_request_extractors_record_concrete_rejections_without_payloads()
 
         assert!(!logs.contains("private-credential"), "{logs}");
 
-        // Existing request spans retain paths; rejection fields exclude client values.
-        let diagnostic = logs
-            .split("HTTP request extraction rejected")
-            .nth(1)
-            .unwrap();
-
-        assert!(
-            !diagnostic
-                .lines()
-                .next()
-                .unwrap()
-                .contains("private-sentinel"),
-            "{logs}"
-        );
+        assert_rejection_diagnostics_exclude_payload(&logs);
 
         if !uri.starts_with("/path/") {
             assert!(!logs.contains("private-sentinel"), "{logs}");

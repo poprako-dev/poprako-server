@@ -16,7 +16,7 @@ use crate::model::write::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
 };
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
@@ -97,7 +97,7 @@ pub fn validate_page_count(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 // Convert the shared PopRaKo document into normalized import pages.
@@ -201,7 +201,7 @@ fn convert_poprako_document(
         ));
     }
 
-    accept(pages)
+    accept!(pages)
 }
 
 // Build translated text when the current user has translator permission.

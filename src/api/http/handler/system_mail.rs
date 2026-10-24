@@ -37,9 +37,11 @@ pub async fn list_infos(
     Query(instr): Query<ListSystemMailInfosInstr>,
 ) -> HttpResult<Vec<SystemMailInfoView>> {
     //
-    system_mail_usecase::list_infos((harn.repo(),), user_token, instr)
-        .await?
-        .accept(StatusCode::OK)
+    Ok(
+        system_mail_usecase::list_infos((harn.repo(),), user_token, instr)
+            .await?
+            .accept(StatusCode::OK),
+    )
 }
 
 /// `POST /api/v1/system-mails/mark-read` — mark a batch of mails as read.
@@ -64,5 +66,5 @@ pub async fn mark_read(
     system_mail_usecase::mark_read((harn.repo(),), user_token, instr.ids)
         .await?;
 
-    no_content()
+    Ok(no_content())
 }

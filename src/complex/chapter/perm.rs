@@ -5,7 +5,7 @@ use crate::complex::util::{
 };
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::RoleMask;
 
@@ -46,7 +46,7 @@ pub fn ensure_user_can_create(
         )?;
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Verify the caller administers the owning team.

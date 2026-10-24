@@ -18,7 +18,7 @@ use crate::part::repo::oper::team::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `create_team`.
 fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
@@ -41,7 +41,7 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
 
     state.teams.push(team_info.clone());
 
-    accept(team_info)
+    accept!(team_info)
 }
 
 // Internal implementation of `get_team_info`.
@@ -122,7 +122,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
 
     team_info.updated_at = now();
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Run<CreateTeam<'a>> for Mock {
@@ -172,7 +172,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_team_infos(&state, oper))
+        accept!(list_team_infos(&state, oper))
     }
 }
 
@@ -276,7 +276,7 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
         // Internal implementation detail.
         get_team_info(&context.state, oper.id)?;
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -316,6 +316,6 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
             .filter(|workset_info| workset_info.team_id == oper.id)
             .count();
 
-        accept(workset_index)
+        accept!(workset_index)
     }
 }

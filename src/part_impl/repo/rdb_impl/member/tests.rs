@@ -102,10 +102,6 @@ async fn verify_member_activity(
 /// Verifies member roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -125,7 +121,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     let member_role = RoleMask::from(RoleField::TRANSLATOR);
 
     let entry = MemberEntry {
-        id: format!("{}member", PREFIX),
+        id: [PREFIX, "member"].concat(),
         user_id: team_fixture.user_entry.id.clone(),
         user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
@@ -214,10 +210,6 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 /// Verifies user cleanup removes memberships hidden by a team tombstone.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn user_cleanup_includes_tombstoned_team_memberships(
     shared: RdbCore,
 ) {
@@ -226,7 +218,7 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
     let entry = MemberEntry {
-        id: format!("{}tombstoned-member", PREFIX),
+        id: [PREFIX, "tombstoned-member"].concat(),
         user_id: team_fixture.user_entry.id.clone(),
         user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
@@ -306,10 +298,6 @@ pub async fn user_cleanup_includes_tombstoned_team_memberships(
 /// Verifies concurrent admin removals preserve one team administrator.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -317,8 +305,8 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
     let second_user_entry = UserEntry {
-        id: format!("{}second-user", PREFIX),
-        qid: format!("{}second-qid", PREFIX),
+        id: [PREFIX, "second-user"].concat(),
+        qid: [PREFIX, "second-qid"].concat(),
         nickname: "RDB second admin".into(),
         password_hash: "password-hash".into(),
     };
@@ -326,7 +314,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     test_shared::create_user(&shared, &second_user_entry).await;
 
     let first_member_entry = MemberEntry {
-        id: format!("{}first-admin-member", PREFIX),
+        id: [PREFIX, "first-admin-member"].concat(),
         user_id: team_fixture.user_entry.id.clone(),
         user_nickname: team_fixture.user_entry.nickname.clone(),
         team_id: team_fixture.team_entry.id.clone(),
@@ -334,7 +322,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     };
 
     let second_member_entry = MemberEntry {
-        id: format!("{}second-admin-member", PREFIX),
+        id: [PREFIX, "second-admin-member"].concat(),
         user_id: second_user_entry.id,
         user_nickname: second_user_entry.nickname,
         team_id: team_fixture.team_entry.id.clone(),

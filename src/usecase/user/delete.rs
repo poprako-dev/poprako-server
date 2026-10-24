@@ -15,7 +15,7 @@ use crate::part::repo::oper::member::{
 };
 use crate::part::repo::oper::user::{DeleteUser, GetUserInfoExcluded};
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Deletes a user and cascades member cleanup.
 ///
@@ -112,9 +112,9 @@ where
         // FIXME: Clean up tombstone subtree references before deleting the user.
         DeleteUser { id: &id }.step_on(repo, context).await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }

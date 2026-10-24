@@ -57,10 +57,6 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     mock.seed_workset(workset("workset-1", "team-1"));
 
@@ -71,7 +67,7 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "comic-1".into(),
         ver: version,
-        image: format!("comic_cover/comic-1-{}.png", version),
+        image: ["comic_cover/comic-1-", &version.to_string(), ".png"].concat(),
     };
 
     let meta = ObjMeta {
