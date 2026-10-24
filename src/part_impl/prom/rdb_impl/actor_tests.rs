@@ -70,7 +70,7 @@ async fn verify_writer_transactions(
             Defer::new(rolled_back).step_on(writer, context).await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "deliberate rollback".into(),
+                message: "deliberate rollback".into(),
             })
         })
         .await;
@@ -250,10 +250,6 @@ async fn persisted_task(
 }
 
 // fixed_topics_control_concurrency(ClaimPending)(positive): different payload kinds share one serial queue while another topic runs concurrently.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn fixed_topics_control_concurrency(core: &RdbCore) {
     use crate::part::prom::payload::invitation::InvitationPayload;
 
@@ -262,8 +258,8 @@ async fn fixed_topics_control_concurrency(core: &RdbCore) {
     for index in 0..2 {
         write_chapter_task(
             &nucl,
-            &format!("category-task-{}", index),
-            &format!("chapter-{}", index),
+            &["category-task-", &index.to_string()].concat(),
+            &["chapter-", &index.to_string()].concat(),
             "actor",
             0,
         )
@@ -280,7 +276,7 @@ async fn fixed_topics_control_concurrency(core: &RdbCore) {
     ];
 
     for (index, invitation_payload) in invitations.into_iter().enumerate() {
-        let id = format!("category-invitation-{}", index);
+        let id = ["category-invitation-", &index.to_string()].concat();
 
         let payload = PromPayload::Invitation {
             payload: invitation_payload,
@@ -333,17 +329,13 @@ async fn fixed_topics_control_concurrency(core: &RdbCore) {
 }
 
 // same_topic_requests_remain_independent(Defer/RetryTask/ResetStuck)(positive): later tasks never replace or complete an earlier attempt.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn same_topic_requests_remain_independent(core: &RdbCore) {
     let nucl = RdbNucl::<Serial>::new(core.clone());
 
     for action in ["wait", "retry", "timeout"] {
-        let first_id = format!("independent-{}-first", action);
+        let first_id = ["independent-", action, "-first"].concat();
 
-        let second_id = format!("independent-{}-second", action);
+        let second_id = ["independent-", action, "-second"].concat();
 
         write_chapter_task(&nucl, &first_id, action, "first", 0).await;
 
@@ -435,7 +427,7 @@ async fn same_topic_batch_is_transactional(core: &RdbCore) {
                 .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "test rollback".into(),
+                message: "test rollback".into(),
             })
         })
         .await;

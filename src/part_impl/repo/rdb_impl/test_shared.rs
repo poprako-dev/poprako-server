@@ -13,8 +13,8 @@ use poprako_rdb_core::RdbCore;
 
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
-use crate::model::write::chapter::ChapterEntry;
-use crate::model::write::comic::ComicEntry;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
@@ -37,46 +37,46 @@ use crate::result::BaseError;
 pub use cleanup::{assert_no_leftovers, cleanup};
 
 pub struct UserFixture {
-    pub user_entry: UserEntry<'static>,
+    pub entry: UserEntry,
 }
 
 pub struct TeamFixture {
     //
-    pub user_entry: UserEntry<'static>,
-    pub team_entry: TeamEntry<'static>,
+    pub user_entry: UserEntry,
+    pub team_entry: TeamEntry,
 }
 
 pub struct WorksetFixture {
     //
-    pub team_entry: TeamEntry<'static>,
-    pub workset_entry: WorksetEntry<'static>,
+    pub team_entry: TeamEntry,
+    pub workset_entry: WorksetEntry,
 }
 
 pub struct ComicFixture {
     //
-    pub creator_form: UserEntry<'static>,
-    pub team_entry: TeamEntry<'static>,
-    pub workset_entry: WorksetEntry<'static>,
-    pub comic_entry: ComicEntry<'static>,
+    pub creator_form: UserEntry,
+    pub team_entry: TeamEntry,
+    pub workset_entry: WorksetEntry,
+    pub comic_info: ComicInfo,
 }
 
 pub struct ChapterFixture {
     //
-    pub creator_form: UserEntry<'static>,
+    pub creator_form: UserEntry,
 
-    pub team_entry: TeamEntry<'static>,
+    pub team_entry: TeamEntry,
 
-    pub workset_entry: WorksetEntry<'static>,
+    pub workset_entry: WorksetEntry,
 
-    pub comic_entry: ComicEntry<'static>,
+    pub comic_info: ComicInfo,
 
-    pub chapter_entry: ChapterEntry<'static>,
+    pub chapter_info: ChapterInfo,
 }
 
 pub struct PageFixture {
     //
-    pub team_entry: TeamEntry<'static>,
-    pub chapter_entry: ChapterEntry<'static>,
+    pub team_entry: TeamEntry,
+    pub chapter_info: ChapterInfo,
     pub page_entry: PageEntry,
 }
 
@@ -91,7 +91,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
 
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry<'_>) {
+pub async fn create_user(shared: &RdbCore, entry: &UserEntry) {
     //
     let repo = HybRepo::new(
         shared.clone(),
@@ -103,8 +103,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry<'_>) {
 
     nucl.coord(async |context| {
         //
-        repo.step(context, &CreateUser { entry: user_entry })
-            .await?;
+        repo.step(context, &CreateUser { entry }).await?;
 
         Ok::<(), BaseError>(())
     })
@@ -117,11 +116,11 @@ pub async fn seed_user(shared: &RdbCore, prefix: &str) -> UserFixture {
     //
     reset(shared, prefix).await;
 
-    let user_entry = user_entry(prefix, "owner");
+    let entry = user_entry(prefix, "owner");
 
-    create_user(shared, &user_entry).await;
+    create_user(shared, &entry).await;
 
-    UserFixture { user_entry }
+    UserFixture { entry }
 }
 
 /// # Panics
@@ -220,35 +219,37 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
         .ok()
         .unwrap();
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateWorkset {
-                entry: &workset_entry,
-            },
-        )
-        .await?;
+    let comic_info = nucl
+        .coord(async |context| {
+            //
+            repo.step(
+                context,
+                &CreateWorkset {
+                    entry: &workset_entry,
+                },
+            )
+            .await?;
 
-        repo.step(
-            context,
-            &CreateComic {
-                entry: &comic_entry,
-            },
-        )
-        .await?;
+            let comic_info = repo
+                .step(
+                    context,
+                    &CreateComic {
+                        entry: &comic_entry,
+                    },
+                )
+                .await?;
 
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .ok()
-    .unwrap();
+            Ok::<_, BaseError>(comic_info)
+        })
+        .await
+        .ok()
+        .unwrap();
 
     ComicFixture {
         creator_form,
         team_entry,
         workset_entry,
-        comic_entry,
+        comic_info,
     }
 }
 
@@ -266,34 +267,30 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let chapter_entry = chapter_entry(
+    let entry = chapter_entry(
         prefix,
-        &comic_fixture.comic_entry,
+        &comic_fixture.comic_info,
         &comic_fixture.creator_form,
     );
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateChapter {
-                entry: &chapter_entry,
-            },
-        )
-        .await?;
+    let chapter_info = nucl
+        .coord(async |context| {
+            //
+            let chapter_info =
+                repo.step(context, &CreateChapter { entry: &entry }).await?;
 
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .ok()
-    .unwrap();
+            Ok::<_, BaseError>(chapter_info)
+        })
+        .await
+        .ok()
+        .unwrap();
 
     ChapterFixture {
         creator_form: comic_fixture.creator_form,
         team_entry: comic_fixture.team_entry,
         workset_entry: comic_fixture.workset_entry,
-        comic_entry: comic_fixture.comic_entry,
-        chapter_entry,
+        comic_info: comic_fixture.comic_info,
+        chapter_info,
     }
 }
 
@@ -311,7 +308,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
+    let page_entry = page_entry(prefix, &chapter_fixture.chapter_info);
 
     let page_manifest_entry = PageManifestEntry {
         id: page_entry.id.clone(),
@@ -337,7 +334,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     PageFixture {
         team_entry: chapter_fixture.team_entry,
-        chapter_entry: chapter_fixture.chapter_entry,
+        chapter_info: chapter_fixture.chapter_info,
         page_entry,
     }
 }

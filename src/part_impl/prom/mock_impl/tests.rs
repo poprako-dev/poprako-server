@@ -31,7 +31,7 @@ fn wait_deadline_preserves_success() {
     let requested_at = now - WAIT_TIMEOUT;
 
     let wait = || DispatchFlow::Wait {
-        err_msg: "pending upload".into(),
+        error_message: "pending upload".into(),
     };
 
     assert!(matches!(

@@ -76,7 +76,7 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
         role(RoleField::PROOFREADER),
     ));
 
-    let err = delete(
+    let error = delete(
         (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-target-user".into(),
@@ -85,7 +85,7 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().assignments.len(), 2);
 }
@@ -103,7 +103,7 @@ async fn delete_rejects_published_chapter() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = delete(
+    let error = delete(
         (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-worker-user".into(),
@@ -112,7 +112,7 @@ async fn delete_rejects_published_chapter() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }

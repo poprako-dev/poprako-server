@@ -130,7 +130,7 @@ async fn team_admin_manages_without_assignment() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = update_info(
+    let error = update_info(
         (&mock, &mock),
         token("user-1"),
         UpdateChapterInfoInstr {
@@ -142,7 +142,7 @@ async fn team_admin_manages_without_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(
         mock.snapshot().chapters.first().unwrap().subtitle,
@@ -165,12 +165,13 @@ async fn cross_team_admin_cannot_manage_chapter() {
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
-    let err = mark_pinned((&mock, &mock), token("user-2"), "chapter-1".into())
-        .await
-        .err()
-        .unwrap();
+    let error =
+        mark_pinned((&mock, &mock), token("user-2"), "chapter-1".into())
+            .await
+            .err()
+            .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(!mock.snapshot().chapters.first().unwrap().is_pinned);
 }
@@ -182,7 +183,7 @@ async fn create_rejects_admin_preset() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
 
-    let err = create(
+    let error = create(
         (&mock, &mock),
         token("user-1"),
         CreateChapterInstr {
@@ -195,7 +196,7 @@ async fn create_rejects_admin_preset() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().chapters.is_empty());
 }

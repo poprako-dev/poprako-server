@@ -16,11 +16,11 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter_workflow_record, t_comic, t_comic_archive, t_comment, t_member,
     t_member_invitation, t_page, t_team, t_term, t_termbase, t_unit, t_workset,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
-/// Delete relational rows owned by one chapter.
+/// Delete relational records owned by one chapter.
 pub async fn delete_chapter_rows(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -68,10 +68,10 @@ pub async fn delete_chapter_rows(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-/// Delete relational rows owned by one comic.
+/// Delete relational records owned by one comic.
 pub async fn delete_comic_rows(
     conn: &mut RdbConn,
     comic_ids: &[String],
@@ -108,10 +108,10 @@ pub async fn delete_comic_rows(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-/// Delete relational rows owned by one team.
+/// Delete relational records owned by one team.
 pub async fn delete_team_rows(
     conn: &mut RdbConn,
     team_id: &str,
@@ -170,7 +170,7 @@ pub async fn delete_team_rows(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Claims eligible tombstones from one explicit hierarchy level.
@@ -213,7 +213,7 @@ pub async fn list_page_ids(
         .await
         .map_err(diesel)?;
 
-    accept(ids)
+    accept!(ids)
 }
 
 /// Claim one eligible Chapter.
@@ -232,7 +232,7 @@ pub async fn claim_chapter(
         .optional()
         .map_err(diesel)?;
 
-    accept(id.map(|id| SubtreeDeleteSweepTarget::Chapter { id }))
+    accept!(id.map(|id| SubtreeDeleteSweepTarget::Chapter { id }))
 }
 
 /// Claim one eligible Team.
@@ -254,7 +254,7 @@ pub async fn claim_team(
         .optional()
         .map_err(diesel)?;
 
-    accept(id.map(|id| SubtreeDeleteSweepTarget::Team { id }))
+    accept!(id.map(|id| SubtreeDeleteSweepTarget::Team { id }))
 }
 
 /// Sweeps the direct dependants and roots in one claimed batch.
@@ -288,7 +288,7 @@ pub async fn sweep_target(
         }
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Hard-deletes a directly requested active Chapter subtree.
@@ -331,10 +331,10 @@ async fn claim_comics(
         .map_err(diesel)?;
 
     if ids.is_empty() {
-        return accept(None);
+        return accept!(None);
     }
 
-    accept(Some(SubtreeDeleteSweepTarget::Comics { ids }))
+    accept!(Some(SubtreeDeleteSweepTarget::Comics { ids }))
 }
 
 // Claim a bounded batch of eligible Worksets.
@@ -358,8 +358,8 @@ async fn claim_worksets(
         .map_err(diesel)?;
 
     if ids.is_empty() {
-        return accept(None);
+        return accept!(None);
     }
 
-    accept(Some(SubtreeDeleteSweepTarget::Worksets { ids }))
+    accept!(Some(SubtreeDeleteSweepTarget::Worksets { ids }))
 }

@@ -82,17 +82,13 @@ impl<P, H> PromActor<P, H> {
 
 impl<P, H> PromActor<P, H>
 where
+    P: Sync,
     H: Handler + Send + Sync + 'static,
     H::Payload: Send,
 {
     /// Decodes and validates one envelope before invoking its typed handler.
     /// Task acknowledgement remains the responsibility of the running actor.
     #[instrument(level = "info", skip_all)]
-    #[expect(
-        clippy::future_not_send,
-        clippy::uninlined_format_args,
-        reason = "Direct dispatch supports local delivery contexts and keeps interpolation arguments explicit"
-    )]
     pub async fn dispatch_payload(
         &self,
         topic: &str,
@@ -107,15 +103,16 @@ where
                 //
                 tracing::error!(
                     operation = "deserialize_prom_payload",
-                    sdk_err = ?error,
+                    sdk_error = ?error,
                     "JSON SDK deserialization error",
                 );
 
                 return DispatchFlow::Dead {
-                    err_msg: format!(
-                        "failed to deserialize prom payload: {}",
-                        error
-                    ),
+                    error_message: [
+                        "failed to deserialize prom payload: ",
+                        &error.to_string(),
+                    ]
+                    .concat(),
                 };
             }
         };
@@ -124,10 +121,13 @@ where
 
         if topic != expected_topic || !H::Payload::TOPICS.contains(&topic) {
             return DispatchFlow::Dead {
-                err_msg: format!(
-                    "prom topic {} does not match registered payload topic {}",
-                    topic, expected_topic,
-                ),
+                error_message: [
+                    "prom topic ",
+                    topic,
+                    " does not match registered payload topic ",
+                    expected_topic,
+                ]
+                .concat(),
             };
         }
 

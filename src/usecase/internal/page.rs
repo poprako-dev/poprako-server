@@ -7,7 +7,7 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
 use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Pinned chapters and query coverage aligned with the caller's comic positions.
 pub struct PinnedChapterSnapshot {
@@ -84,7 +84,7 @@ impl PinnedChapterSnapshot {
             }
         }
 
-        accept(Self {
+        accept!(Self {
             infos,
             queried,
             positions,
@@ -216,7 +216,7 @@ impl PageLoader {
 
         if chapter_comics.is_empty() {
             //
-            return accept(ComicPageIds {
+            return accept!(ComicPageIds {
                 page_ids,
                 positions,
             });
@@ -254,7 +254,7 @@ impl PageLoader {
             }
         }
 
-        accept(ComicPageIds {
+        accept!(ComicPageIds {
             page_ids,
             positions,
         })

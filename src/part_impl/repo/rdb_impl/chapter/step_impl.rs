@@ -14,12 +14,10 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
-use crate::model::write::chapter::{
-    ChapterEntry, ChapterPatch, ChapterStageRepl,
-};
+use crate::model::write::chapter::{ChapterPatch, ChapterStageRepl};
 use crate::part::repo::oper::chapter::SetChapterPageCountMetrics;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
-    ChapterAspectRow, ChapterEntryRow, ChapterInfoRow, ChapterUnitEditScopeRow,
+    ChapterInfoRecord, ChapterItem, ChapterPack, ChapterUnitEditScopeRecord,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
@@ -31,7 +29,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_uploaded_at, t_chapter,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shared::result::diesel;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::Stage;
@@ -48,7 +47,7 @@ pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
     }
 }
 
-/// Queries a single chapter row by ID and populates its includes.
+/// Queries a single chapter record by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
@@ -56,11 +55,11 @@ pub async fn get_info_by_id(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
-    let row = t_chapter
+    let record = t_chapter
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(ChapterInfoRow::as_select())
-        .get_result::<ChapterInfoRow>(conn)
+        .select(ChapterInfoRecord::as_select())
+        .get_result::<ChapterInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -76,7 +75,7 @@ pub async fn get_info_by_id(
             }
         })?;
 
-    let mut info = row_into_info(row)?;
+    let mut info = record_into_info(record)?;
 
     incl::chapter::populate_chapter_incls(
         conn,
@@ -85,10 +84,10 @@ pub async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
-/// Queries a single chapter row by ID under `FOR UPDATE` lock.
+/// Queries a single chapter record by ID under `FOR UPDATE` lock.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -96,12 +95,12 @@ pub async fn get_info_excluded(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
-    let row = t_chapter
+    let record = t_chapter
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(ChapterInfoRow::as_select())
+        .select(ChapterInfoRecord::as_select())
         .for_update()
-        .get_result::<ChapterInfoRow>(conn)
+        .get_result::<ChapterInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -117,7 +116,7 @@ pub async fn get_info_excluded(
             }
         })?;
 
-    let mut info = row_into_info(row)?;
+    let mut info = record_into_info(record)?;
 
     incl::chapter::populate_chapter_incls(
         conn,
@@ -126,7 +125,7 @@ pub async fn get_info_excluded(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 /// Locks the minimal Chapter edit scope owning the requested Page.
@@ -136,7 +135,7 @@ pub async fn get_unit_edit_scope_excluded(
     page_id: &str,
 ) -> BaseRest<ChapterUnitEditScope> {
     //
-    let row = t_chapter
+    let record = t_chapter
         .filter(
             f_id.eq_any(
                 t_page::table
@@ -145,9 +144,9 @@ pub async fn get_unit_edit_scope_excluded(
             ),
         )
         .filter(f_deleted_at.is_null())
-        .select(ChapterUnitEditScopeRow::as_select())
+        .select(ChapterUnitEditScopeRecord::as_select())
         .for_update()
-        .get_result::<ChapterUnitEditScopeRow>(conn)
+        .get_result::<ChapterUnitEditScopeRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -162,56 +161,56 @@ pub async fn get_unit_edit_scope_excluded(
             }
         })?;
 
-    accept(row.into())
+    accept!(record.into())
 }
 
-/// Queries chapter rows for a given comic, ordered by index descending.
+/// Queries chapter records for a given comic, ordered by index descending.
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterListSpec,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
-    let rows = t_chapter
+    let records = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
         .filter(f_deleted_at.is_null())
-        .select(ChapterInfoRow::as_select())
+        .select(ChapterInfoRecord::as_select())
         .order_by(f_index.desc())
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<ChapterInfoRow>(conn)
+        .load::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut infos = rows_into_infos(rows)?;
+    let mut infos = records_into_infos(records)?;
 
     incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl_opt)
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
-/// Queries all chapter rows for a comic under `FOR UPDATE` lock.
+/// Queries all chapter records for a comic under `FOR UPDATE` lock.
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
-    let rows = t_chapter
+    let records = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .filter(f_deleted_at.is_null())
-        .select(ChapterInfoRow::as_select())
+        .select(ChapterInfoRecord::as_select())
         .order_by(f_index.desc())
         .for_update()
-        .load::<ChapterInfoRow>(conn)
+        .load::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows_into_infos(rows)
+    records_into_infos(records)
 }
 
-/// Locks all chapter rows belonging to a comic.
+/// Locks all chapter records belonging to a comic.
 #[instrument(level = "info", skip_all)]
 pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
@@ -224,7 +223,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Finds the pinned chapter for a given comic ID, if one exists.
@@ -235,21 +234,21 @@ pub async fn find_pinned_info_by_comic_id(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<Option<ChapterInfo>> {
     //
-    let row = t_chapter
+    let record = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .filter(f_deleted_at.is_null())
         .filter(f_is_pinned.eq(true))
-        .select(ChapterInfoRow::as_select())
-        .get_result::<ChapterInfoRow>(conn)
+        .select(ChapterInfoRecord::as_select())
+        .get_result::<ChapterInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
-        return accept(None);
+    let Some(record) = record else {
+        return accept!(None);
     };
 
-    let mut info = row_into_info(row)?;
+    let mut info = record_into_info(record)?;
 
     incl::chapter::populate_chapter_incls(
         conn,
@@ -258,7 +257,7 @@ pub async fn find_pinned_info_by_comic_id(
     )
     .await?;
 
-    accept(Some(info))
+    accept!(Some(info))
 }
 
 /// Returns the pinned chapter infos for the given comic IDs.
@@ -269,57 +268,57 @@ pub async fn list_pinned_infos_by_comic_ids(
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
     if comic_ids.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
-    let rows = t_chapter
+    let records = t_chapter
         .filter(f_comic_id.eq_any(comic_ids))
         .filter(f_deleted_at.is_null())
         .filter(f_is_pinned.eq(true))
-        .select(ChapterInfoRow::as_select())
-        .load::<ChapterInfoRow>(conn)
+        .select(ChapterInfoRecord::as_select())
+        .load::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows.into_iter().map(row_into_info).collect()
+    records.into_iter().map(record_into_info).collect()
 }
 
-/// Inserts a new chapter row from the given entry and returns the created info.
+/// Inserts a new chapter record from the given chapter entry and returns the created info.
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    chapter_entry: &ChapterEntry<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
-    let entry = ChapterEntryRow::try_from(chapter_entry)?;
+    let item = ChapterItem::try_from(entry)?;
 
-    let row = diesel::insert_into(t_chapter)
-        .values(&entry)
-        .returning(ChapterInfoRow::as_returning())
-        .get_result::<ChapterInfoRow>(conn)
+    let record = diesel::insert_into(t_chapter)
+        .values(&item)
+        .returning(ChapterInfoRecord::as_returning())
+        .get_result::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
-/// Updates the modifiable fields of a chapter row.
+/// Updates the modifiable fields of a chapter record.
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ChapterPatch<'_>,
+    update: &ChapterPatch,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let mut aspect = ChapterAspectRow::new(now);
+    let mut pack = ChapterPack::new(now);
 
-    if let Some(subtitle) = &update.subtitle {
-        aspect = aspect.subtitle(subtitle);
+    if let Some(subtitle) = &update.trimmed_subtitle() {
+        pack = pack.subtitle(subtitle);
     }
 
     if let Some(pin) = update.pin {
-        aspect = aspect.pinned(pin);
+        pack = pack.pinned(pin);
     }
 
     let updated_count = diesel::update(
@@ -327,7 +326,7 @@ pub async fn update_info(
             .filter(f_id.eq(update.id.as_str()))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -336,10 +335,10 @@ pub async fn update_info(
         return Err(missing_chapter(&update.id, "update chapter info"));
     }
 
-    accept(())
+    accept!(())
 }
 
-/// Updates the stage timestamps of a chapter row.
+/// Updates the stage timestamps of a chapter record.
 #[instrument(level = "info", skip_all)]
 pub async fn update_stage(
     conn: &mut RdbConn,
@@ -348,14 +347,14 @@ pub async fn update_stage(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ChapterAspectRow::new(now).stages(update.stages, now);
+    let pack = ChapterPack::new(now).stages(update.stages, now);
 
     let updated_count = diesel::update(
         t_chapter
             .filter(f_id.eq(update.id.as_str()))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -364,7 +363,7 @@ pub async fn update_stage(
         return Err(missing_chapter(&update.id, "update chapter stage"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Atomically moves a pending two-step stage to active.
@@ -430,7 +429,7 @@ pub async fn start_stage(
         }
     };
 
-    accept(updated_count > 0)
+    accept!(updated_count > 0)
 }
 
 /// Atomically resolves raw provision when every reserved page is uploaded.
@@ -457,10 +456,10 @@ pub async fn complete_raw_provide(
     .await
     .map_err(diesel)?;
 
-    accept(updated_count > 0)
+    accept!(updated_count > 0)
 }
 
-/// Sets the page and unit counters on a chapter row.
+/// Sets the page and unit counters on a chapter record.
 #[instrument(level = "info", skip_all)]
 pub async fn set_page_counts(
     conn: &mut RdbConn,
@@ -469,7 +468,7 @@ pub async fn set_page_counts(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ChapterAspectRow::new(now)
+    let pack = ChapterPack::new(now)
         .page_count(i32_from_usize(oper.page_count, "t_chapter.f_page_count")?)
         .total_unit_count(i32_from_usize(
             oper.total_unit_count,
@@ -489,7 +488,7 @@ pub async fn set_page_counts(
             .filter(f_id.eq(oper.id))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -498,7 +497,7 @@ pub async fn set_page_counts(
         return Err(missing_chapter(oper.id, "set chapter page counters"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Adjusts a chapter's unit counters by the given delta.
@@ -528,7 +527,7 @@ pub async fn adjust_unit_counts(
         return Err(missing_chapter(id, "adjust chapter unit counters"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Unpins all chapters for a comic except the one with the given excluded ID.
@@ -552,15 +551,17 @@ pub async fn unpin_others(
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-// Converts a single `ChapterInfoRow` into a `ChapterInfo`.
-fn row_into_info(row: ChapterInfoRow) -> BaseRest<ChapterInfo> {
-    row.try_into()
+// Converts a single `ChapterInfoRecord` into a `ChapterInfo`.
+fn record_into_info(record: ChapterInfoRecord) -> BaseRest<ChapterInfo> {
+    record.try_into()
 }
 
-// Converts a vector of `ChapterInfoRow` values into `ChapterInfo`.
-fn rows_into_infos(rows: Vec<ChapterInfoRow>) -> BaseRest<Vec<ChapterInfo>> {
-    rows.into_iter().map(row_into_info).collect()
+// Converts a vector of `ChapterInfoRecord` values into `ChapterInfo`.
+fn records_into_infos(
+    records: Vec<ChapterInfoRecord>,
+) -> BaseRest<Vec<ChapterInfo>> {
+    records.into_iter().map(record_into_info).collect()
 }

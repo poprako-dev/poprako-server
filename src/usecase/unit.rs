@@ -55,7 +55,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::unit_save::{UnitSaveGuard as _, UnitSaveRepo};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
 use crate::usecase::unit::page_edit as unit_page_edit_usecase;
@@ -136,11 +136,11 @@ where
                 ));
             }
 
-            accept((unit_infos, page_scope.count_metrics))
+            accept!((unit_infos, page_scope.count_metrics))
         })
         .await?;
 
-    accept(ListPageUnitInfosVal::from_models(unit_infos, count_metrics))
+    accept!(ListPageUnitInfosVal::from_models(unit_infos, count_metrics))
 }
 
 #[instrument(
@@ -180,7 +180,7 @@ where
     unit_perm_complex::ensure_user_can_list_infos(&access_info.as_access())?;
 
     if phrase.contains('\0') {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let found_infos = nucl
@@ -202,12 +202,12 @@ where
                     MAX_UNIT_SEARCH_MATCH_COUNT.into(),
                 )]);
 
-                let err_msg =
+                let error_message =
                     trl_kv("error-unit-search-too-many-matches", &args);
 
                 return Err(expected_error! {
                     ExpectedVariant::Args,
-                    message: err_msg;
+                    message: error_message;
                     match_count = search_ids.len(),
                     match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
                     "too many Unit search matches",
@@ -223,11 +223,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(unit_infos.into_iter().map(UnitInfoView::from).collect())
+            accept!(unit_infos.into_iter().map(UnitInfoView::from).collect())
         })
         .await?;
 
-    accept(found_infos)
+    accept!(found_infos)
 }
 
 /// Saves one authorized Unit batch unless its token already completed.
@@ -313,7 +313,7 @@ where
             }
 
             if let Some(created_unit_ids) = retained_save.created_unit_ids() {
-                return accept((created_unit_ids, false));
+                return accept!((created_unit_ids, false));
             }
 
             let page_edit = unit_page_edit_usecase::apply_edits(
@@ -351,7 +351,7 @@ where
             )
             .await?;
 
-            accept((created_unit_ids, true))
+            accept!((created_unit_ids, true))
         })
         .await?;
 
@@ -359,14 +359,14 @@ where
         save_guard.record(created_unit_ids.clone());
     }
 
-    accept(SavePageUnitEditsVal::from(created_unit_ids.as_ref()))
+    accept!(SavePageUnitEditsVal::from(created_unit_ids.as_ref()))
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
-fn unit_list_invariant(page_id: &str, msg: &'static str) -> BaseError {
+fn unit_list_invariant(page_id: &str, message: &'static str) -> BaseError {
     //
     unrecoverable_error! {
-        message: msg.into();
+        message: message.into();
         page_id,
         "invalid persisted Page Unit state",
     }
@@ -474,7 +474,7 @@ where
         ordered_infos.push(unit_info);
     }
 
-    accept(ordered_infos)
+    accept!(ordered_infos)
 }
 
 // Counts visible Units by completion state.
@@ -515,5 +515,5 @@ fn prepare_save(
         unit_id
     })?;
 
-    accept((edits, save_id, created_unit_ids.into()))
+    accept!((edits, save_id, created_unit_ids.into()))
 }

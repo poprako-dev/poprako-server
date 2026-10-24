@@ -129,6 +129,7 @@ to the task; follow their links when the referenced area is affected.
 | Backend behavior changes across layers | `implement-fullchain-spec` |
 | Migration SQL creation, modification, review, or Diesel rollback/reset | `migration-sql-conventions` |
 | Use cases, repository contracts, or delivery boundaries | `usecase-boundaries` |
+| Owned Models, borrowed Shapes, normalization and repository payload ownership | `model-shape-boundaries` |
 | Instr, Val, View types and dependencies | `data-dto-boundaries` |
 | Harn, AppHarn, startup or test composition | `harness-spec` |
 | Error classification, conversion, or propagation | `error-handling-spec` |

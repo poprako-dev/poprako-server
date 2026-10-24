@@ -15,7 +15,7 @@ use poprako_orchestra::Run;
 use crate::config::cache::CacheConfig;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
 use crate::part_impl::repo::HybRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Shared team-partitioned online-user leases.
 #[derive(Clone)]
@@ -111,7 +111,7 @@ impl Run<MarkUserOnline<'_>> for HybRepo {
             Instant::now(),
         );
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -127,6 +127,6 @@ impl Run<ListOnlineUserIds<'_>> for HybRepo {
             .online_users
             .list_online_user_ids_at(oper.team_id, Instant::now());
 
-        accept(online_user_ids)
+        accept!(online_user_ids)
     }
 }

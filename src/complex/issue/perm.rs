@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::role::RoleField;
 
 /// Requires a current REVIEWER assignment for Issue import.
@@ -12,7 +12,7 @@ pub fn ensure_user_can_import_issue(
 ) -> BaseRest<()> {
     //
     if assignment_info.roles.has_any_role(&[RoleField::REVIEWER]) {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {

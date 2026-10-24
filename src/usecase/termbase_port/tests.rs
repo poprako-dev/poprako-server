@@ -25,14 +25,10 @@ use crate::test_util::fixture::team;
 use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn member(user_id: &str) -> MemberInfo {
     //
     MemberInfo {
-        id: format!("member-{}", user_id),
+        id: ["member-", user_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),

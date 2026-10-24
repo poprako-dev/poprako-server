@@ -110,7 +110,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Insert new user rows inside provided transaction context.
+    // Insert new user records inside provided transaction context.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
@@ -187,7 +187,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Read user row with lock for callers that mutate next.
+    // Read user record with lock for callers that mutate next.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,

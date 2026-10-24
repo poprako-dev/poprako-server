@@ -7,7 +7,7 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfosExcluded, LockChapters,
-    SetChapterConfirmedArtworkVersion, SetChapterPageCountMetrics,
+    SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::chapter::{
 };
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::chapter::stage::{Stage, StagePhase};
 
 impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
@@ -36,7 +36,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     ) -> BaseRest<bool> {
         //
         if context.state.deleted_chapter_ids.contains(oper.id) {
-            return accept(false);
+            return accept!(false);
         }
 
         // Internal implementation detail.
@@ -47,7 +47,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .iter()
             .position(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(false);
+            return accept!(false);
         };
 
         if !context
@@ -58,7 +58,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         if context
@@ -69,7 +69,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .page_count
             == 0
         {
-            return accept(false);
+            return accept!(false);
         }
 
         let chapter_info =
@@ -81,7 +81,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(true)
+        accept!(true)
     }
 }
 
@@ -101,7 +101,7 @@ impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
     ) -> BaseRest<bool> {
         //
         if context.state.deleted_chapter_ids.contains(oper.id) {
-            return accept(false);
+            return accept!(false);
         }
 
         let Some(chapter_info) = context
@@ -110,21 +110,21 @@ impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
             .iter_mut()
             .find(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(false);
+            return accept!(false);
         };
 
         if chapter_info
             .stages
             .has_phase(Stage::Publish, StagePhase::Completed)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         if !chapter_info
             .stages
             .has_phase(oper.stage, StagePhase::Pending)
         {
-            return accept(false);
+            return accept!(false);
         }
 
         chapter_info.stages = chapter_info
@@ -133,7 +133,7 @@ impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(true)
+        accept!(true)
     }
 }
 
@@ -205,7 +205,7 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListChapterInfosExcluded<'a>,
     ) -> BaseRest<Vec<ChapterInfo>> {
-        accept(list_infos(&context.state, oper.comic_id))
+        accept!(list_infos(&context.state, oper.comic_id))
     }
 }
 
@@ -223,7 +223,7 @@ impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
         _: &mut MockContext,
         _: &LockChapters<'a>,
     ) -> BaseRest<()> {
-        accept(())
+        accept!(())
     }
 }
 
@@ -242,7 +242,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
         oper: &FindPinnedChapterInfo<'a, 'b>,
     ) -> BaseRest<Option<ChapterInfo>> {
         //
-        accept(find_pinned_chapter_info(
+        accept!(find_pinned_chapter_info(
             &context.state,
             oper.comic_id,
             oper.incls,
@@ -296,7 +296,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
             .find(|chapter_info| chapter_info.id == oper.update.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        if let Some(subtitle) = &oper.update.subtitle {
+        if let Some(subtitle) = &oper.update.trimmed_subtitle() {
             chapter_info.subtitle = (*subtitle).to_owned();
         }
 
@@ -306,7 +306,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -342,7 +342,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -384,7 +384,7 @@ impl<'a> Step<SetChapterPageCountMetrics<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -433,7 +433,7 @@ impl<'a> Step<AdjustChapterUnitCountDelta<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -473,11 +473,11 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
             chapter_info.updated_at = now();
         }
 
-        accept(())
+        accept!(())
     }
 }
 
-impl Step<SetChapterConfirmedArtworkVersion<'_>, MockContext> for Mock {
+impl Step<SetChapterConfirmedArtworkVer<'_>, MockContext> for Mock {
     // Minimum transaction isolation required by this operation.
     type Level = ReptRead;
 
@@ -489,7 +489,7 @@ impl Step<SetChapterConfirmedArtworkVersion<'_>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &SetChapterConfirmedArtworkVersion<'_>,
+        oper: &SetChapterConfirmedArtworkVer<'_>,
     ) -> BaseRest<()> {
         //
         let chapter_info = context
@@ -499,8 +499,8 @@ impl Step<SetChapterConfirmedArtworkVersion<'_>, MockContext> for Mock {
             .find(|chapter| chapter.id == oper.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        chapter_info.confirmed_artwork_ver = Some(oper.version);
+        chapter_info.confirmed_artwork_ver = Some(oper.ver);
 
-        accept(())
+        accept!(())
     }
 }

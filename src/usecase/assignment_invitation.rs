@@ -44,7 +44,7 @@ use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::assignment_invitation::code::{
     gen_assignment_invitation_id, gen_code,
 };
@@ -55,23 +55,19 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Removes one assignment invitation when it has expired.
 #[instrument(level = "info", skip(repo))]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn purge_expired<C, R>(
     (repo,): (&R,),
     invitation_id: &str,
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentInvitationRepo<C>,
+    R: AssignmentInvitationRepo<C> + Sync,
 {
     PurgeExpiredAssignmentInvitation { id: invitation_id }
         .run_on(repo)
         .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Lists assignment invitations under one chapter.
@@ -106,7 +102,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(
+    accept!(
         assignment_invitation_infos
             .into_iter()
             .map(AssignmentInvitationInfoView::from)
@@ -141,8 +137,6 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let invitee_qid = instr.invitee_qid.trim();
-
     validate_roles(instr.roles, &token.user_id, &instr.chapter_id)?;
 
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
@@ -150,6 +144,8 @@ where
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| {
             //
+            let invitee_qid = instr.invitee_qid.trim();
+
             let chapter_info = GetChapterInfoExcluded {
                 id: &instr.chapter_id,
                 incls: &[],
@@ -192,20 +188,19 @@ where
             let (assignment_invitation_id, code) =
                 (gen_assignment_invitation_id(), gen_code());
 
-            let assignment_invitation_entry = AssignmentInvitationEntry {
+            let entry = AssignmentInvitationEntry {
                 id: assignment_invitation_id,
                 chapter_id: instr.chapter_id,
                 inviter_id: token.user_id,
-                invitee_qid,
+                invitee_qid: instr.invitee_qid,
                 code,
                 roles: instr.roles,
             };
 
-            let assignment_invitation_info = CreateAssignmentInvitation {
-                entry: &assignment_invitation_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let assignment_invitation_info =
+                CreateAssignmentInvitation { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
             let invitation_payload =
                 InvitationPayload::PurgeExpiredAssignmentInvitation {
@@ -227,14 +222,14 @@ where
 
             Defer::new(purge_task).step_on(prom, context).await?;
 
-            accept((
+            accept!((
                 assignment_invitation_info.id,
                 assignment_invitation_info.code,
             ))
         })
         .await?;
 
-    accept(CreateAssignmentInvitationVal {
+    accept!(CreateAssignmentInvitationVal {
         id: assignment_invitation_id,
         code,
     })
@@ -289,11 +284,11 @@ where
             .step_on(repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Verifies that the caller administers the chapter's owning team.
@@ -333,5 +328,5 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
         });
     }
 
-    accept(())
+    accept!(())
 }

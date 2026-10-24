@@ -27,7 +27,7 @@ use crate::part::repo::oper::page_artwork::{
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
 use crate::util::next_snowflake_id;
@@ -92,21 +92,20 @@ where
                 &page_artwork_infos,
             )?;
 
-            let mut page_artwork_entries =
-                Vec::with_capacity(instr.pages.len());
+            let mut entries = Vec::with_capacity(instr.pages.len());
 
             let mut image_inputs = Vec::with_capacity(instr.pages.len());
 
             for (index, page) in instr.pages.into_iter().enumerate() {
                 //
-                let page_artwork_entry = PageArtworkEntry {
+                let entry = PageArtworkEntry {
                     id: page.page_artwork_id.unwrap_or_else(next_snowflake_id),
                     chapter_id: chapter_info.id.clone(),
                     index,
                     raw_ident: page.raw_ident,
                 };
 
-                page_artwork_entries.push(page_artwork_entry);
+                entries.push(entry);
 
                 image_inputs.push((
                     page.image_hash,
@@ -117,12 +116,7 @@ where
 
             let removed_ids = page_artwork_infos
                 .into_iter()
-                .filter(|info| {
-                    //
-                    !page_artwork_entries.iter().any(|page_artwork_entry| {
-                        page_artwork_entry.id == info.id
-                    })
-                })
+                .filter(|info| !entries.iter().any(|entry| entry.id == info.id))
                 .map(|info| info.id)
                 .collect::<Vec<_>>();
 
@@ -133,22 +127,20 @@ where
 
             ReplacePageArtworkManifest {
                 chapter_id: &chapter_info.id,
-                entries: &page_artwork_entries,
+                entries: &entries,
             }
             .step_on(repo, context)
             .await?;
 
             let mut allocated_page_artwork_vals =
-                Vec::with_capacity(page_artwork_entries.len());
+                Vec::with_capacity(entries.len());
 
-            for (page_artwork_entry, image_input) in
-                page_artwork_entries.iter().zip(image_inputs)
-            {
+            for (entry, image_input) in entries.iter().zip(image_inputs) {
                 //
                 let allocated_page_artwork_val = alloc_image_slot(
                     (obj_dept, image_config),
                     context,
-                    page_artwork_entry,
+                    entry,
                     image_input,
                 )
                 .await?;
@@ -162,11 +154,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(AllocChapterPageArtworksVal {
+            accept!(AllocChapterPageArtworksVal {
                 pages: allocated_page_artwork_vals,
             })
         })
         .await?;
 
-    accept(allocated_page_artworks_val)
+    accept!(allocated_page_artworks_val)
 }

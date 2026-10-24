@@ -15,17 +15,17 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
-    AssignmentInvitationAspectRow, AssignmentInvitationEntryRow,
-    AssignmentInvitationInfoRow,
+    AssignmentInvitationInfoRecord, AssignmentInvitationItem,
+    AssignmentInvitationPack,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
     f_chapter_id, f_code, f_created_at, f_id, f_pending,
     t_assignment_invitation,
 };
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
-/// Queries assignment invitation rows selected by a list specification.
+/// Queries assignment invitation records selected by a list specification.
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
@@ -43,29 +43,29 @@ pub async fn list_infos(
         None => query,
     };
 
-    let rows = query
-        .select(AssignmentInvitationInfoRow::as_select())
+    let records = query
+        .select(AssignmentInvitationInfoRecord::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<AssignmentInvitationInfoRow>(conn)
+        .load::<AssignmentInvitationInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows_into_infos(rows)
+    records_into_infos(records)
 }
 
-/// Queries a single assignment invitation row by ID.
+/// Queries a single assignment invitation record by ID.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let row = t_assignment_invitation
+    let record = t_assignment_invitation
         .filter(f_id.eq(id))
-        .select(AssignmentInvitationInfoRow::as_select())
-        .get_result::<AssignmentInvitationInfoRow>(conn)
+        .select(AssignmentInvitationInfoRecord::as_select())
+        .get_result::<AssignmentInvitationInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -81,7 +81,7 @@ pub async fn get_info_by_id(
             }
         })?;
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
 /// Queries a pending invitation by code under `FOR UPDATE` lock.
@@ -91,12 +91,12 @@ pub async fn get_info_by_code_excluded(
     code: &str,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let row = t_assignment_invitation
+    let record = t_assignment_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
-        .select(AssignmentInvitationInfoRow::as_select())
+        .select(AssignmentInvitationInfoRecord::as_select())
         .for_update()
-        .get_result::<AssignmentInvitationInfoRow>(conn)
+        .get_result::<AssignmentInvitationInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -113,26 +113,26 @@ pub async fn get_info_by_code_excluded(
             }
         })?;
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
-/// Inserts a new assignment invitation row from the given entry.
+/// Inserts a new assignment invitation record from the given entry.
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    model_entry: &AssignmentInvitationEntry<'_>,
+    entry: &AssignmentInvitationEntry,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let entry = AssignmentInvitationEntryRow::from(model_entry);
+    let item = AssignmentInvitationItem::from(entry);
 
-    let row = diesel::insert_into(t_assignment_invitation)
-        .values(&entry)
-        .returning(AssignmentInvitationInfoRow::as_returning())
-        .get_result::<AssignmentInvitationInfoRow>(conn)
+    let record = diesel::insert_into(t_assignment_invitation)
+        .values(&item)
+        .returning(AssignmentInvitationInfoRecord::as_returning())
+        .get_result::<AssignmentInvitationInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
 /// Sets the pending flag to false on an invitation, marking it as used.
@@ -144,14 +144,14 @@ pub async fn mark_pending_as_used(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = AssignmentInvitationAspectRow::new(now).pending(false);
+    let pack = AssignmentInvitationPack::new(now).pending(false);
 
     let affected = diesel::update(
         t_assignment_invitation
             .filter(f_id.eq(id))
             .filter(f_pending.eq(true)),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -170,10 +170,10 @@ pub async fn mark_pending_as_used(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
-/// Deletes a single assignment invitation row by ID.
+/// Deletes a single assignment invitation record by ID.
 #[instrument(level = "info", skip_all)]
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -182,7 +182,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes an assignment invitation only while it remains pending.
@@ -198,10 +198,10 @@ pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-/// Deletes all assignment invitation rows for a given chapter ID.
+/// Deletes all assignment invitation records for a given chapter ID.
 #[instrument(level = "info", skip_all)]
 pub async fn delete_by_chapter_id(
     conn: &mut RdbConn,
@@ -213,19 +213,19 @@ pub async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-// Converts a vector of `AssignmentInvitationInfoRow` values into `AssignmentInvitationInfo`.
-fn rows_into_infos(
-    rows: Vec<AssignmentInvitationInfoRow>,
+// Converts a vector of `AssignmentInvitationInfoRecord` values into `AssignmentInvitationInfo`.
+fn records_into_infos(
+    records: Vec<AssignmentInvitationInfoRecord>,
 ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
-    rows.into_iter().map(row_into_info).collect()
+    records.into_iter().map(record_into_info).collect()
 }
 
-// Converts a single `AssignmentInvitationInfoRow` into an `AssignmentInvitationInfo`.
-fn row_into_info(
-    row: AssignmentInvitationInfoRow,
+// Converts a single `AssignmentInvitationInfoRecord` into an `AssignmentInvitationInfo`.
+fn record_into_info(
+    record: AssignmentInvitationInfoRecord,
 ) -> BaseRest<AssignmentInvitationInfo> {
-    row.try_into()
+    record.try_into()
 }

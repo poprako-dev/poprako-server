@@ -3,7 +3,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
+// chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter records in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
@@ -22,7 +22,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
-use crate::result::accept;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
@@ -35,7 +34,7 @@ async fn verify_chapter_inclusions(
     chapter_fixture: &ChapterFixture,
 ) {
     let chapter_list_spec = ChapterListSpec {
-        comic_id: chapter_fixture.comic_entry.id.clone(),
+        comic_id: chapter_fixture.comic_info.id.clone(),
         incl_opt: vec![ChapterInclOpt::Creator],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
@@ -63,7 +62,7 @@ async fn verify_chapter_inclusions(
     );
 
     let chapter_list_spec = ChapterListSpec {
-        comic_id: chapter_fixture.comic_entry.id.clone(),
+        comic_id: chapter_fixture.comic_info.id.clone(),
         incl_opt: vec![ChapterInclOpt::ComicWorksetTeam],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
@@ -84,7 +83,7 @@ async fn verify_chapter_inclusions(
         .as_ref()
         .unwrap();
 
-    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
+    assert_eq!(comic_info.id, chapter_fixture.comic_info.id);
 
     assert_eq!(
         comic_info.workset.as_ref().unwrap().id,
@@ -98,14 +97,14 @@ async fn verify_chapter_inclusions(
 
     let pinned_chapter_info = repo
         .run(&FindPinnedChapterInfo {
-            comic_id: &chapter_fixture.comic_entry.id,
+            comic_id: &chapter_fixture.comic_info.id,
             incls: &[ChapterInclOpt::Creator],
         })
         .await
         .unwrap()
         .unwrap();
 
-    assert_eq!(pinned_chapter_info.id, chapter_fixture.chapter_entry.id);
+    assert_eq!(pinned_chapter_info.id, chapter_fixture.chapter_info.id);
 }
 
 /// Verifies chapter roundtrip via testcontainers.
@@ -128,7 +127,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
     let stage_mask = StageMask::try_from(0u32).unwrap();
 
     let chapter_stage_update = ChapterStageRepl {
-        id: chapter_fixture.chapter_entry.id.clone(),
+        id: chapter_fixture.chapter_info.id.clone(),
         stages: stage_mask,
     };
 
@@ -142,14 +141,14 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 
     let first_start = repo
         .run(&StartChapterStage {
-            id: &chapter_fixture.chapter_entry.id,
+            id: &chapter_fixture.chapter_info.id,
             stage: Stage::Translate,
         })
         .await
@@ -157,7 +156,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repeated_start = repo
         .run(&StartChapterStage {
-            id: &chapter_fixture.chapter_entry.id,
+            id: &chapter_fixture.chapter_info.id,
             stage: Stage::Translate,
         })
         .await
@@ -169,7 +168,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let started_chapter = repo
         .run(&GetChapterInfo {
-            id: &chapter_fixture.chapter_entry.id,
+            id: &chapter_fixture.chapter_info.id,
             incls: &[],
         })
         .await

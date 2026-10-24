@@ -10,7 +10,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::i18n::trl;
 
 use crate::model::read::spec::assignment::AssignmentListSpec;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
@@ -95,7 +95,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
         if let Some(chapter_id) = chapter_id {
             //
-            return accept(AssignmentListSpec::Chapter {
+            return accept!(AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
                 incl_opt,
@@ -116,7 +116,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             });
         };
 
-        accept(AssignmentListSpec::User {
+        accept!(AssignmentListSpec::User {
             owner_id,
             role,
             incl_opt,

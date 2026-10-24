@@ -145,10 +145,6 @@ fn chapter(
 }
 
 // Build assignment fixture for import perm checks.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -159,7 +155,7 @@ fn assignment(
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
+        id: ["assignment-", chapter_id, "-", user_id].concat(),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,
@@ -363,7 +359,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "old"));
 
-    let err = import_translation(
+    let error = import_translation(
         (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationInstr {
@@ -379,7 +375,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(snapshot.units.len(), 1);
 

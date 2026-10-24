@@ -5,10 +5,6 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Converts pages and units into `LabelPlus` text.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn make_label_plus(
     pages: &[PageInfo],
     units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
@@ -45,16 +41,11 @@ pub fn make_label_plus(
                 )
             });
 
-        // FIXME: why ignore? and similar ones.
-        write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name)
-            .unwrap_or_else(|error| {
-                //
-                tracing::error!(
-                    err = %error,
-                    "[chapter_translation_export_complex::make_label_plus] \
-                     failed to write page header",
-                );
-            });
+        output.push_str("\n\n>>>>>>>>[");
+
+        output.push_str(&image_name);
+
+        output.push_str("]<<<<<<<<\n");
 
         let units = units_by_page_id
             .get(&page_info.id)
@@ -62,7 +53,7 @@ pub fn make_label_plus(
 
         for (index, unit_info) in units.iter().enumerate() {
             //
-            let group = if unit_info.is_bubble { 1 } else { 2 };
+            let group = u8::from(!unit_info.is_bubble) + 1;
 
             writeln!(
                 output,
@@ -75,7 +66,7 @@ pub fn make_label_plus(
             .unwrap_or_else(|error| {
                 //
                 tracing::error!(
-                    err = %error,
+                    error = %error,
                     concat!(
                         "[chapter_translation_export_complex::",
                         "make_label_plus] ",

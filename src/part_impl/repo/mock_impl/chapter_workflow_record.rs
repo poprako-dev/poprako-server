@@ -9,7 +9,7 @@ use crate::part::repo::oper::chapter_workflow_record::{
     CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // List immutable records using the API's deterministic reverse chronological order.
 fn list_infos(
@@ -59,7 +59,7 @@ impl<'a> Run<ListChapterWorkflowRecordInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(
+        accept!(list_infos(
             &state,
             &oper.spec.chapter_id,
             oper.spec.offset,
@@ -90,17 +90,14 @@ impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
                 ChapterWorkflowRecordInfo {
                     id: entry.id.clone(),
                     chapter_id: entry.chapter_id.to_string(),
-                    actor_user_id: entry
-                        .actor_user_id
-                        .as_deref()
-                        .map(str::to_owned),
+                    actor_user_id: entry.actor_user_id.map(str::to_owned),
                     kind: entry.payload.kind(),
                     payload: entry.payload.clone(),
                     created_at: entry.created_at,
                 }
             }));
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -123,17 +120,14 @@ impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
                 ChapterWorkflowRecordInfo {
                     id: entry.id.clone(),
                     chapter_id: entry.chapter_id.to_string(),
-                    actor_user_id: entry
-                        .actor_user_id
-                        .as_deref()
-                        .map(str::to_owned),
+                    actor_user_id: entry.actor_user_id.map(str::to_owned),
                     kind: entry.payload.kind(),
                     payload: entry.payload.clone(),
                     created_at: entry.created_at,
                 }
             }));
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

@@ -38,7 +38,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::tests::creation::failure::DuplicateHistoryRepo;
 use crate::part_impl::repo::rdb_impl::tests::creation::snapshot::CreationSnapshot;
-use crate::result::{BaseError, ExpectedVariant, accept};
+use crate::result::{BaseError, ExpectedVariant};
 use crate::shared::test_rdb::start;
 use crate::usecase::{chapter as chapter_usecase, comic as comic_usecase};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
@@ -55,9 +55,9 @@ async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
     let user_entry = test_shared::form::user_entry(prefix, "owner");
 
     let member_entry = MemberEntry {
-        id: format!("{prefix}member"),
+        id: [prefix, "member"].concat(),
         user_id: user_entry.id.clone(),
-        user_nickname: user_entry.nickname.into_owned(),
+        user_nickname: user_entry.nickname,
         team_id: workset_fixture.team_entry.id,
         roles: RoleMask::from(RoleField::ADMIN)
             .union(RoleMask::from(RoleField::TRANSLATOR)),
@@ -81,7 +81,7 @@ async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();

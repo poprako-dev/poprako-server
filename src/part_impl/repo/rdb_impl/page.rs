@@ -22,7 +22,6 @@ use crate::model::read::proj::page::{
     PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitFlaggedStats,
     PageUnitScope,
 };
-use crate::model::write::page::PageRawIdentsRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
@@ -33,7 +32,7 @@ use crate::part::repo::oper::page::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::page::{
-    PageRawIdentEntryRow, PageRawIdentInfoRow,
+    PageRawIdentInfoRecord, PageRawIdentItem,
 };
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
     apply_manifest, delete_by_chapter_id, delete_by_ids, get_info_by_id,
@@ -43,7 +42,8 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     shift_indexes_temporary,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -55,26 +55,26 @@ async fn list_raw_ident_infos(
 ) -> BaseRest<Vec<PageRawIdentInfo>> {
     //
     if page_ids.is_empty() {
-        return accept(Vec::new());
+        return accept!(Vec::new());
     }
 
     let mut conn = core.get().await?;
 
-    let rows = t_page_raw_ident::table
+    let records = t_page_raw_ident::table
         .filter(t_page_raw_ident::f_page_id.eq_any(page_ids))
-        .select(PageRawIdentInfoRow::as_select())
-        .load::<PageRawIdentInfoRow>(&mut *conn)
+        .select(PageRawIdentInfoRecord::as_select())
+        .load::<PageRawIdentInfoRecord>(&mut *conn)
         .await
         .map_err(map_diesel)?;
 
-    accept(rows.into_iter().map(PageRawIdentInfo::from).collect())
+    accept!(records.into_iter().map(PageRawIdentInfo::from).collect())
 }
 
 // Implements update raw idents.
 #[instrument(level = "info", skip_all)]
 async fn update_raw_idents(
     conn: &mut RdbConn,
-    repl: &PageRawIdentsRepl<'_>,
+    repl: &PageRawIdentsReplShape<'_>,
 ) -> BaseRest<()> {
     //
     let unnamed_ids = repl
@@ -84,12 +84,12 @@ async fn update_raw_idents(
         .map(|(page_id, _)| *page_id)
         .collect::<Vec<_>>();
 
-    let entries = repl
+    let items = repl
         .idents
         .iter()
         .filter_map(|(page_id, raw_ident)| {
             //
-            Some(PageRawIdentEntryRow {
+            Some(PageRawIdentItem {
                 f_page_id: page_id,
                 f_raw_ident: (*raw_ident)?,
             })
@@ -107,10 +107,10 @@ async fn update_raw_idents(
         .map_err(map_diesel)?;
     }
 
-    if !entries.is_empty() {
+    if !items.is_empty() {
         //
         diesel::insert_into(t_page_raw_ident::table)
-            .values(&entries)
+            .values(&items)
             .on_conflict(t_page_raw_ident::f_page_id)
             .do_update()
             .set((
@@ -123,7 +123,7 @@ async fn update_raw_idents(
             .map_err(map_diesel)?;
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetPageInfo<'_>> for HybRepo {
@@ -218,14 +218,14 @@ impl<L> Step<GetPageInfo<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Use base error for row-level page reads inside a running transaction.
+    // Use base error for record-level page reads inside a running transaction.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Read one page record in context and convert DB row into `PageInfo`.
+    // Read one page record in context and convert it into `PageInfo`.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -288,7 +288,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Read pages for a chapter while applying exclusion rules for deleted rows.
+    // Read pages for a chapter while applying exclusion rules for deleted records.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -302,7 +302,7 @@ impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Use repository base error for filtered read path with row exclusion.
+    // Use repository base error for filtered read path with record exclusion.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.

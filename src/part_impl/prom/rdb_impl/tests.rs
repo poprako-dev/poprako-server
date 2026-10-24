@@ -3,7 +3,7 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-use super::entity::LocalTaskEntryRow;
+use super::entity::LocalTaskItem;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, CompleteTask, ResetStuck,
 };
@@ -152,7 +152,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
     let first = nucl
         .coord(async |context| {
-            let rows = ClaimPending::new(topic).step_on(&repo, context).await?;
+            let task = ClaimPending::new(topic).step_on(&repo, context).await?;
 
             let competing = tokio::time::timeout(
                 std::time::Duration::from_secs(5),
@@ -166,7 +166,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
             assert!(competing.is_none());
 
-            Ok::<_, BaseError>(rows)
+            Ok::<_, BaseError>(task)
         })
         .await
         .unwrap()
@@ -204,14 +204,14 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     .await
     .unwrap();
 
-    let rows = nucl
+    let task = nucl
         .coord(async |context| {
             ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert!(rows.is_none());
+    assert!(task.is_none());
 
     diesel::update(
         t_local_message::table.filter(t_local_message::f_id.eq(first.id())),
@@ -270,7 +270,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
     let now = OffsetDateTime::now_utc();
 
-    let mut entry = LocalTaskEntryRow {
+    let mut item = LocalTaskItem {
         f_id: "rdb-test-prom-snapshot-next",
         f_topic: topic,
         f_status: LocalTaskStatus::Pending,
@@ -284,7 +284,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entry)
+        .values(&item)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -296,7 +296,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
         .coord(async |context| {
             // Establish the older snapshot before inserting a new oldest task.
             let count = t_local_message::table
-                .filter(t_local_message::f_topic.eq(entry.f_topic))
+                .filter(t_local_message::f_topic.eq(item.f_topic))
                 .count()
                 .get_result::<i64>(context.conn())
                 .await
@@ -304,24 +304,24 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
             assert!(count > 0);
 
-            entry.f_id = "rdb-test-prom-snapshot-first";
+            item.f_id = "rdb-test-prom-snapshot-first";
 
-            entry.f_created_at = now - Duration::minutes(1);
+            item.f_created_at = now - Duration::minutes(1);
 
             diesel::insert_into(t_local_message::table)
-                .values(&entry)
+                .values(&item)
                 .execute(&mut conn)
                 .await
                 .unwrap();
 
-            let rows = nucl
+            let task = nucl
                 .coord(async |context| {
                     ClaimPending::new(topic).step_on(&repo, context).await
                 })
                 .await
                 .unwrap();
 
-            assert_eq!(rows.unwrap().id(), entry.f_id);
+            assert_eq!(task.unwrap().id(), item.f_id);
 
             ClaimPending::new(topic).step_on(&repo, context).await
         })
@@ -333,7 +333,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     ));
 
     let processing_tokens = t_local_message::table
-        .filter(t_local_message::f_topic.eq(entry.f_topic))
+        .filter(t_local_message::f_topic.eq(item.f_topic))
         .filter(
             t_local_message::f_status.eq(LocalTaskStatus::Processing.as_str()),
         )
@@ -346,7 +346,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
     nucl.coord(async |context| {
         CompleteTask::new(
-            entry.f_id,
+            item.f_id,
             processing_tokens.as_slice().first().unwrap().unwrap(),
         )
         .step_on(&repo, context)
@@ -355,14 +355,14 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     .await
     .unwrap();
 
-    let rows = nucl
+    let task = nucl
         .coord(async |context| {
             ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert_eq!(rows.unwrap().id(), "rdb-test-prom-snapshot-next");
+    assert_eq!(task.unwrap().id(), "rdb-test-prom-snapshot-next");
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }
@@ -386,7 +386,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
     let now = OffsetDateTime::now_utc();
 
-    let entry = LocalTaskEntryRow {
+    let item = LocalTaskItem {
         f_id: "rdb-test-prom-stale-attempt",
         f_topic: topic,
         f_status: LocalTaskStatus::Pending,
@@ -400,7 +400,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entry)
+        .values(&item)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -446,14 +446,14 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
     assert!(result.is_err());
 
-    let rows = nucl
+    let task = nucl
         .coord(async |context| {
             ClaimPending::new(topic).step_on(&repo, context).await
         })
         .await
         .unwrap();
 
-    assert!(rows.is_none());
+    assert!(task.is_none());
 
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }
@@ -466,8 +466,8 @@ async fn seed_atomic_tasks(
 
     let now = OffsetDateTime::now_utc();
 
-    let entries = ["rdb-test-prom-atomic-first", "rdb-test-prom-atomic-next"]
-        .map(|id| LocalTaskEntryRow {
+    let items = ["rdb-test-prom-atomic-first", "rdb-test-prom-atomic-next"]
+        .map(|id| LocalTaskItem {
             f_id: id,
             f_topic: topic,
             f_status: LocalTaskStatus::Pending,
@@ -479,7 +479,7 @@ async fn seed_atomic_tasks(
         });
 
     diesel::insert_into(t_local_message::table)
-        .values(&entries)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();

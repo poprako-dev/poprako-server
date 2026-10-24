@@ -214,7 +214,7 @@ async fn create_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
+    let error = create(
         (&mock, &mock, &mock, &InvitationConfig::default()),
         token("normal-user"),
         create_instr("team-1", "qid-2"),
@@ -223,7 +223,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().member_invitations.is_empty());
 
@@ -281,13 +281,13 @@ async fn list_infos_non_member_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err =
+    let error =
         list_infos((&mock, &mock), token("stranger"), list_instr("team-1"))
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -328,13 +328,13 @@ async fn update_roles_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err =
+    let error =
         update_roles((&mock,), token("normal-user"), update_instr("inv-1"))
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -372,12 +372,12 @@ async fn delete_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = delete((&mock,), token("normal-user"), "inv-1".into())
+    let error = delete((&mock,), token("normal-user"), "inv-1".into())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().member_invitations.len(), 1);
 }

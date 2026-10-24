@@ -14,7 +14,7 @@ use crate::part_impl::repo::mock_impl::unit::{
     list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::unit::UnitTextPart;
 
 // Reports whether the selected Unit text contains the literal phrase.
@@ -71,12 +71,12 @@ fn search_chapter_ids(
             ids.push(unit_info.id.clone());
 
             if ids.len() >= fetch_count {
-                return accept(ids);
+                return accept!(ids);
             }
         }
     }
 
-    accept(ids)
+    accept!(ids)
 }
 
 // Loads selected Unit infos in stable Chapter Page and linked-list order.
@@ -116,7 +116,7 @@ fn list_infos_in_chapter_order(
         );
     }
 
-    accept(selected_infos)
+    accept!(selected_infos)
 }
 
 impl Run<ListUnitInfosByPageIds<'_>> for Mock {
@@ -153,7 +153,7 @@ impl Step<ListUnitInfosByIds<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListUnitInfosByIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
-        accept(list_infos_by_ids(&context.state, oper.ids))
+        accept!(list_infos_by_ids(&context.state, oper.ids))
     }
 }
 

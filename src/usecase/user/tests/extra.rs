@@ -92,7 +92,7 @@ async fn alloc_avatar_replacement_deletes_old_and_checks_new_generation() {
 async fn alloc_avatar_rolls_back_when_user_is_missing() {
     let mock = Mock::new();
 
-    let err = alloc_avatar::<_, MockContext, _, _>(
+    let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         alloc_instr(1, ImageExt::Png),
@@ -101,7 +101,7 @@ async fn alloc_avatar_rolls_back_when_user_is_missing() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -155,7 +155,7 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 
     assert_eq!(allocated.slot.unwrap().image_ver, 2);
 
-    let err = mark_avatar_uploaded::<MockContext, _>(
+    let error = mark_avatar_uploaded::<MockContext, _>(
         (&mock,),
         token("user-1"),
         "user-1".into(),
@@ -165,7 +165,7 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert_eq!(
         mock.snapshot()
             .objs

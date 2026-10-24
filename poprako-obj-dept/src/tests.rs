@@ -50,23 +50,23 @@ impl KeyMap for PageImage {
     ) -> crate::rest::ObjDeptRest<(Self::Dom, u32)> {
         let filename = value.strip_prefix("page/").ok_or_else(|| {
             ObjDeptError::Invalid {
-                msg: "invalid test key".into(),
+                message: "invalid test key".into(),
             }
         })?;
 
         let stem = filename.strip_suffix(".png").ok_or_else(|| {
             ObjDeptError::Invalid {
-                msg: "invalid test key".into(),
+                message: "invalid test key".into(),
             }
         })?;
 
         let (id, version) =
             stem.rsplit_once('-').ok_or_else(|| ObjDeptError::Invalid {
-                msg: "invalid test key".into(),
+                message: "invalid test key".into(),
             })?;
 
         let version = version.parse().map_err(|_| ObjDeptError::Invalid {
-            msg: "invalid test key".into(),
+            message: "invalid test key".into(),
         })?;
 
         Ok((
@@ -161,7 +161,7 @@ impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
     ) -> Result<ObjAlloc, Self::Error> {
         //
         Err(ObjDeptError::Unrecoverable {
-            msg: "compile-only slot".into(),
+            message: "compile-only slot".into(),
         })
     }
 }
@@ -354,7 +354,7 @@ fn newer_generation_after_head_does_not_retry_old_presence_update() {
 #[cfg(feature = "rdb_impl")]
 #[test]
 fn rdb_pool_wait_timeout_preserves_unavailable_classification() {
-    let error = crate::rdb_impl::rdb_err(RdbError::PoolWaitTimeout);
+    let error = crate::rdb_impl::rdb_error(RdbError::PoolWaitTimeout);
 
     assert!(matches!(error, ObjDeptError::Unavailable { .. }));
 }
@@ -363,14 +363,14 @@ fn rdb_pool_wait_timeout_preserves_unavailable_classification() {
 #[test]
 fn upload_evidence_classification_preserves_active_metadata()
 -> crate::rest::ObjDeptRest<()> {
-    let unavailable = crate::rdb_impl::ObjRdbRow {
+    let unavailable = crate::rdb_impl::ObjRdbRecord {
         ver: 4,
         key: Some("page/page-1-4.png".into()),
         f_is_uploaded: Some(false),
         hash: Some(vec![7; 32]),
         ext: Some(String::from("png")),
     };
-    let available = crate::rdb_impl::ObjRdbRow {
+    let available = crate::rdb_impl::ObjRdbRecord {
         f_is_uploaded: Some(true),
         ..unavailable.clone()
     };

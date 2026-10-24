@@ -34,7 +34,7 @@ impl KeyMap for ChapterArtwork {
                 //
                 !id.is_empty()
                     && !id.contains('/')
-                    && chapter_artwork_complex::valid_extension(ext)
+                    && chapter_artwork_complex::valid_ext(ext)
             })
             .map(|(id, ver, ext)| {
                 //

@@ -66,13 +66,15 @@ pub async fn create(
     Json(instr): Json<CreateTermbaseInstr>,
 ) -> HttpResult<CreateTermbaseVal> {
     //
-    termbase_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
-        user_token,
-        instr,
+    Ok(
+        termbase_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::CREATED),
     )
-    .await?
-    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/termbases` — list team terminology bases.
@@ -103,13 +105,15 @@ pub async fn list_team_infos(
         limit: query.limit,
     };
 
-    termbase_usecase::list_team_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        instr,
+    Ok(
+        termbase_usecase::list_team_infos::<RdbContext<ReptRead>, HybRepo>(
+            (harn.repo(),),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}/termbases` — list visible terminology bases.
@@ -141,13 +145,15 @@ pub async fn list_comic_infos(
         limit: query.limit,
     };
 
-    termbase_usecase::list_comic_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        instr,
+    Ok(
+        termbase_usecase::list_comic_infos::<RdbContext<ReptRead>, HybRepo>(
+            (harn.repo(),),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/termbases/{termbase_id}` — fetch a terminology base.
@@ -170,13 +176,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoView> {
     //
-    termbase_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    Ok(termbase_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         termbase_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/termbases/{termbase_id}` — replace editable fields.
@@ -211,7 +217,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/termbases/{termbase_id}` — delete a terminology base.
@@ -241,5 +247,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

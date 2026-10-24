@@ -16,8 +16,6 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -40,7 +38,9 @@ use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
@@ -158,20 +158,20 @@ where
 
             if let Some(payload) = workflow_record_payload {
                 //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id,
-                    Some(current_user_id.into()),
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    &chapter_info.id,
+                    Some(&current_user_id),
                     payload,
                 );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
             }
 
-            accept(assignment_info)
+            accept!(assignment_info)
         })
         .await?;
 
@@ -230,7 +230,7 @@ fn ensure_member_roles(
         .roles
         .contains_mask(assignment_invitation_info.roles)
     {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {
@@ -246,10 +246,6 @@ fn ensure_member_roles(
 }
 
 // Creates a new assignment or merges the invitation roles into an existing one.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn upsert_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -258,8 +254,8 @@ async fn upsert_assignment<C, R>(
     current_user_id: &str,
 ) -> BaseRest<(AssignmentInfo, Option<ChapterWorkflowRecordPayload>)>
 where
-    C: Context,
-    R: AssignmentRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + Sync,
 {
     if let Some(existing_assignment_info) = existing_assignment_info {
         //
@@ -272,25 +268,23 @@ where
         .await;
     }
 
-    let assignment_entry = AssignmentEntry {
+    let entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
-        chapter_id: assignment_invitation_info.chapter_id.as_str().into(),
-        user_id: current_user_id.into(),
+        chapter_id: assignment_invitation_info.chapter_id.as_str(),
+        user_id: current_user_id,
         roles: assignment_invitation_info.roles,
     };
 
-    let assignment_info = CreateAssignment {
-        entry: &assignment_entry,
-    }
-    .step_on(repo, context)
-    .await?;
+    let assignment_info = CreateAssignment { entry: &entry }
+        .step_on(repo, context)
+        .await?;
 
     let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
         subject_user_id: assignment_info.user_id.clone(),
         roles: assignment_info.roles,
     };
 
-    accept((assignment_info, Some(payload)))
+    accept!((assignment_info, Some(payload)))
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
@@ -308,14 +302,10 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 // Merges invited roles into an existing assignment and records any change.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn merge_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -323,14 +313,14 @@ async fn merge_existing_assignment<C, R>(
     roles: RoleMask,
 ) -> BaseRest<(AssignmentInfo, Option<ChapterWorkflowRecordPayload>)>
 where
-    C: Context,
-    R: AssignmentRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + Sync,
 {
     let assignment_role_update =
         assignment_complex::merge_roles(&existing_assignment_info, roles);
 
     if assignment_role_update.roles == existing_assignment_info.roles {
-        return accept((existing_assignment_info, None));
+        return accept!((existing_assignment_info, None));
     }
 
     let assignment_info = UpdateAssignmentRoles {
@@ -345,5 +335,5 @@ where
         next_roles: assignment_role_update.roles,
     };
 
-    accept((assignment_info, Some(payload)))
+    accept!((assignment_info, Some(payload)))
 }

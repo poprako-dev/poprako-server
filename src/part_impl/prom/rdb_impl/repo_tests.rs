@@ -27,7 +27,7 @@ use poprako_rdb_core::{RdbConn, RdbCore};
 
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::LocalTaskEntryRow;
+use crate::part_impl::prom::rdb_impl::entity::LocalTaskItem;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::shared::RdbContext;
@@ -101,32 +101,32 @@ pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
 
     let now = OffsetDateTime::now_utc();
 
-    let entries = [
-        local_message_entry(
+    let items = [
+        local_message_item(
             "rdb-test-prom-poll-image-first",
             "rdb-test-prom-poll-image",
             LocalTaskStatus::Pending,
             now - Duration::minutes(5),
         ),
-        local_message_entry(
+        local_message_item(
             "rdb-test-prom-poll-image-second",
             "rdb-test-prom-poll-image",
             LocalTaskStatus::Pending,
             now - Duration::minutes(4),
         ),
-        local_message_entry(
+        local_message_item(
             "rdb-test-prom-poll-invitation",
             "rdb-test-prom-poll-invitation",
             LocalTaskStatus::Pending,
             now - Duration::minutes(3),
         ),
-        local_message_entry(
+        local_message_item(
             "rdb-test-prom-poll-chapter-processing",
             "rdb-test-prom-poll-chapter",
             LocalTaskStatus::Processing,
             now - Duration::minutes(2),
         ),
-        local_message_entry(
+        local_message_item(
             "rdb-test-prom-poll-chapter-pending",
             "rdb-test-prom-poll-chapter",
             LocalTaskStatus::Pending,
@@ -137,7 +137,7 @@ pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entries)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -199,14 +199,14 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
 
     let now = OffsetDateTime::now_utc();
 
-    let entries = [
-        local_message_entry(
+    let items = [
+        local_message_item(
             "rdb-test-prom-poll-image-retry",
             "rdb-test-prom-poll-retry-image",
             LocalTaskStatus::Processing,
             now - Duration::minutes(2),
         ),
-        local_message_entry(
+        local_message_item(
             "rdb-test-prom-poll-image-next",
             "rdb-test-prom-poll-retry-image",
             LocalTaskStatus::Pending,
@@ -217,7 +217,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entries)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -241,7 +241,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     .await
     .unwrap();
 
-    let row = RdbNucl::<Serial>::new(shared.clone())
+    let task = RdbNucl::<Serial>::new(shared.clone())
         .coord(async |context| {
             ClaimPending::new("rdb-test-prom-poll-retry-image")
                 .step_on(&repo, context)
@@ -251,7 +251,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
         .unwrap()
         .unwrap();
 
-    assert_eq!(row.id(), "rdb-test-prom-poll-image-next");
+    assert_eq!(task.id(), "rdb-test-prom-poll-image-next");
 
     test_shared::cleanup(&shared, POLL_PREFIX).await.unwrap();
 
@@ -267,7 +267,7 @@ pub async fn wait_message_preserves_retry_budget(shared: RdbCore) {
 
     let now = OffsetDateTime::now_utc();
 
-    let entry = local_message_entry(
+    let item = local_message_item(
         "rdb-test-prom-wait-page-object",
         "rdb-test-prom-wait-chapter",
         LocalTaskStatus::Processing,
@@ -277,7 +277,7 @@ pub async fn wait_message_preserves_retry_budget(shared: RdbCore) {
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entry)
+        .values(&item)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -310,16 +310,16 @@ pub async fn wait_message_preserves_retry_budget(shared: RdbCore) {
     .await
     .unwrap();
 
-    let row: (String, i64) = t_local_message::table
+    let record: (String, i64) = t_local_message::table
         .filter(t_local_message::f_id.eq("rdb-test-prom-wait-page-object"))
         .select((t_local_message::f_status, t_local_message::f_retried_count))
         .first(&mut conn)
         .await
         .unwrap();
 
-    assert_eq!(row.0, LocalTaskStatus::Pending.as_str());
+    assert_eq!(record.0, LocalTaskStatus::Pending.as_str());
 
-    assert_eq!(row.1, 3);
+    assert_eq!(record.1, 3);
 
     test_shared::cleanup(&shared, WAIT_PREFIX).await.unwrap();
 
@@ -337,7 +337,7 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
 
     let now = OffsetDateTime::now_utc();
 
-    let entry = local_message_entry(
+    let item = local_message_item(
         "rdb-test-prom-claim_token-recreate",
         "rdb-test-prom-claim_token-topic",
         LocalTaskStatus::Pending,
@@ -351,13 +351,13 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
     let mut context = RdbContext::<Serial>::new(shared.get().await.unwrap());
 
     diesel::insert_into(t_local_message::table)
-        .values(&entry)
+        .values(&item)
         .execute(&mut conn)
         .await
         .unwrap();
 
     let old = repo
-        .step(&mut context, &ClaimPending::new(entry.f_topic))
+        .step(&mut context, &ClaimPending::new(item.f_topic))
         .await
         .unwrap()
         .unwrap();
@@ -380,13 +380,13 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
     );
 
     diesel::insert_into(t_local_message::table)
-        .values(&entry)
+        .values(&item)
         .execute(&mut conn)
         .await
         .unwrap();
 
     let current = repo
-        .step(&mut context, &ClaimPending::new(entry.f_topic))
+        .step(&mut context, &ClaimPending::new(item.f_topic))
         .await
         .unwrap()
         .unwrap();
@@ -402,7 +402,7 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
     )
     .await;
 
-    verify_reclaimed_attempt(&repo, &mut context, &current, entry.f_topic, now)
+    verify_reclaimed_attempt(&repo, &mut context, &current, item.f_topic, now)
         .await;
 
     test_shared::assert_no_leftovers(&shared, LEASE_PREFIX)
@@ -411,10 +411,6 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
 }
 
 /// Purges expired dead records while pending and recent dead records remain.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     //
     // Internal state field test_shared.
@@ -422,7 +418,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
 
     let now = OffsetDateTime::now_utc();
 
-    let pending_entry = LocalTaskEntryRow {
+    let pending_item = LocalTaskItem {
         f_id: "rdb-test-prom-purge-pending",
         f_topic: "image",
         f_status: LocalTaskStatus::Pending,
@@ -433,7 +429,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
         f_updated_at: now - Duration::days(8),
     };
 
-    let dead_entry = LocalTaskEntryRow {
+    let dead_item = LocalTaskItem {
         f_id: "rdb-test-prom-purge-dead",
         f_topic: "image",
         f_status: LocalTaskStatus::Dead,
@@ -444,7 +440,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
         f_updated_at: now - Duration::days(8),
     };
 
-    let stale_dead_entry = LocalTaskEntryRow {
+    let stale_dead_item = LocalTaskItem {
         f_id: "rdb-test-prom-purge-stale-dead",
         f_topic: "image",
         f_status: LocalTaskStatus::Dead,
@@ -458,7 +454,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     let mut conn = shared.get().await.unwrap();
 
     diesel::insert_into(t_local_message::table)
-        .values(&[pending_entry, dead_entry, stale_dead_entry])
+        .values(&[pending_item, dead_item, stale_dead_item])
         .execute(&mut conn)
         .await
         .unwrap();
@@ -477,7 +473,7 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     assert_eq!(purged_count, 1);
 
     let remaining_ids: Vec<String> = t_local_message::table
-        .filter(t_local_message::f_id.like(format!("{}%", PREFIX)))
+        .filter(t_local_message::f_id.like([PREFIX, "%"].concat()))
         .order_by(t_local_message::f_id.asc())
         .select(t_local_message::f_id)
         .load(&mut conn)
@@ -499,14 +495,14 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
         .unwrap();
 }
 
-// Internal implementation of `local_message_entry`.
-fn local_message_entry(
+// Internal implementation of `local_message_item`.
+fn local_message_item(
     id: &'static str,
     topic: &'static str,
     status: LocalTaskStatus,
     created_at: OffsetDateTime,
-) -> LocalTaskEntryRow<'static> {
-    LocalTaskEntryRow {
+) -> LocalTaskItem<'static> {
+    LocalTaskItem {
         f_id: id,
         f_topic: topic,
         f_status: status,

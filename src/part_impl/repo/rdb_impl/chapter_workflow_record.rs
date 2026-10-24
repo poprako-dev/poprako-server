@@ -16,12 +16,12 @@ use poprako_rdb_core::RdbConn;
 use crate::part::nucl::ReptRead;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos};
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordEntryRow, ChapterWorkflowRecordInfoRow};
+use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordItem, ChapterWorkflowRecordInfoRecord};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
 
@@ -32,42 +32,42 @@ async fn list_infos(
     spec: &ChapterWorkflowRecordListSpec,
 ) -> BaseRest<Vec<ChapterWorkflowRecordInfo>> {
     //
-    let rows = t_chapter_workflow_record
+    let records = t_chapter_workflow_record
         .filter(f_chapter_id.eq(&spec.chapter_id))
         .order_by((f_created_at.desc(), f_id.desc()))
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .select(ChapterWorkflowRecordInfoRow::as_select())
-        .load::<ChapterWorkflowRecordInfoRow>(conn)
+        .select(ChapterWorkflowRecordInfoRecord::as_select())
+        .load::<ChapterWorkflowRecordInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows.into_iter().map(TryInto::try_into).collect()
+    records.into_iter().map(TryInto::try_into).collect()
 }
 
 // Inserts a batch of immutable workflow records in one statement.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entries: &[ChapterWorkflowRecordEntry<'_>],
+    entries: &[ChapterWorkflowRecordEntryShape<'_>],
 ) -> BaseRest<()> {
     //
     if entries.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
-    let rows = entries
+    let items = entries
         .iter()
-        .map(ChapterWorkflowRecordEntryRow::from)
+        .map(ChapterWorkflowRecordItem::from)
         .collect::<Vec<_>>();
 
     diesel::insert_into(t_chapter_workflow_record)
-        .values(&rows)
+        .values(&items)
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {

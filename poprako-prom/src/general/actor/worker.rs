@@ -59,17 +59,14 @@ impl<T> WorkerSlot<T> {
 
 /// Executes each queued attempt within its claim deadline and isolates panics.
 /// Abandoned attempts remain processing until the timed-out attempt is reclaimed.
-#[expect(
-    clippy::future_not_send,
-    reason = "Workers also support locally awaited processors; detached actors enforce Send at their spawn boundary"
-)]
 pub async fn run_worker<T, F, Fut>(
     mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
     completed: Arc<Notify>,
     process: F,
 ) where
-    F: Fn(T) -> Fut,
-    Fut: Future<Output = ()>,
+    T: Send,
+    F: Fn(T) -> Fut + Send + Sync,
+    Fut: Future<Output = ()> + Send,
 {
     //
     while let Some((item, deadline, permit)) = work_recv.recv().await {
@@ -123,7 +120,7 @@ pub async fn shutdown_workers(mut workers: JoinSet<()>, grace: Duration) {
         while let Some(result) = workers.join_next().await {
             //
             if let Err(error) = result {
-                tracing::error!(err = ?error, "prom worker task failed");
+                tracing::error!(error = ?error, "prom worker task failed");
             }
         }
     };

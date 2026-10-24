@@ -14,7 +14,7 @@ use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::obj_url::ObjUrlView;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Origin and thumbnail presentation text for one object.
 pub type ObjUrlViews = (Option<ObjUrlView>, Option<ObjUrlView>);
@@ -131,7 +131,7 @@ where
     O: ObjDeptView<K, C> + Sync,
 {
     if ids.is_empty() {
-        return accept(ObjUrlBatch::default());
+        return accept!(ObjUrlBatch::default());
     }
 
     let mut uses = HashMap::new();
@@ -156,5 +156,5 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    accept(ObjUrlBatch::from_urls(obj_urls, &uses))
+    accept!(ObjUrlBatch::from_urls(obj_urls, &uses))
 }

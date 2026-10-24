@@ -48,7 +48,7 @@ adapter before the use case is called.
   for independent operations and `.step_on(repo, context)` inside that
   transaction, with the required context and isolation-level capabilities.
 - Bind transaction output before returning or converting it. For unit output,
-  await the transaction, then return `accept(())` or the nearby equivalent.
+  await the transaction, then return `accept!(())` or the nearby equivalent.
 - Put reusable chains of at least two repository reads behind associated
   methods on `*Loader` under private `usecase::internal`. Do not wrap a single
   operation in a loader. Model-returning methods include the model suffix,
@@ -70,7 +70,7 @@ Effect consumers, Prom workers, schedulers, and HTTP handlers may:
 - log intentionally consumed failures.
 
 They must not query or mutate domain entities through repository `Oper`s,
-assemble domain write models, enforce permissions, or own business transaction
+assemble domain write models or Shapes, enforce permissions, or own business transaction
 boundaries.
 
 Prom queue lifecycle operations such as claim, retry scheduling, acknowledgement,
@@ -107,3 +107,6 @@ use case and keep delivery policy at the caller boundary.
 
 Report infrastructure exceptions explicitly so an empty search result is not
 mistaken for an unexamined boundary.
+
+For owned Model and borrowed Shape inputs and plans, follow
+[model-shape-boundaries](../model-shape-boundaries/SKILL.md).

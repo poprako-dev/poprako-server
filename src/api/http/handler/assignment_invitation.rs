@@ -72,7 +72,7 @@ pub async fn create(
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
     //
-    assignment_invitation_usecase::create::<
+    Ok(assignment_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -88,7 +88,7 @@ pub async fn create(
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.
@@ -125,13 +125,14 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    assignment_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        instr,
+    Ok(
+        assignment_invitation_usecase::list_infos::<
+            RdbContext<ReptRead>,
+            HybRepo,
+        >((harn.repo(),), user_token, instr)
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/assignment-invitations/{assignment_invitation_id}` — delete.
@@ -161,7 +162,7 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/assignment-invitations/join` — join via invitation code.
@@ -185,7 +186,7 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    assignment_invitation_join_usecase::join::<
+    Ok(assignment_invitation_join_usecase::join::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -196,5 +197,5 @@ pub async fn join(
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }

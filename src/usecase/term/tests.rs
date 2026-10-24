@@ -31,14 +31,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
     // Build a team member fixture with explicit role bits.
     MemberInfo {
-        id: format!("member-{}", user_id),
+        id: ["member-", user_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
@@ -215,8 +211,8 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            msg,
-        } if msg.contains("200")
+            message,
+        } if message.contains("200")
     ));
 
     let snapshot = mock.snapshot();
@@ -252,7 +248,7 @@ async fn list_infos_searches_only_source() {
 
     let source_instr = ListTermInfosInstr {
         termbase_id: "termbase-1".into(),
-        fuzzy_source: Some("\u{2003}source\u{00a0}".into()),
+        fuzzy_source: Some("source".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };

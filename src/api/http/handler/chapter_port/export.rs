@@ -52,11 +52,11 @@ pub async fn export_payload(
     )
     .await?;
 
-    let body = serde_json::to_vec(&val).map_err(|err| {
+    let body = serde_json::to_vec(&val).map_err(|error| {
         //
         tracing::error!(
             operation = "serialize_chapter_export",
-            sdk_err = ?err,
+            sdk_error = ?error,
             "JSON SDK serialization error",
         );
 
@@ -79,11 +79,11 @@ pub fn body_response(
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, payload.content_type)
         .body(Body::from(payload.body))
-        .map_err(|err| {
+        .map_err(|error| {
             //
             tracing::error!(
                 operation = "build_inline_export_response",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "HTTP SDK response build error",
             );
 
@@ -97,21 +97,21 @@ pub fn download_response(
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
     //
-    let filename = format!("{}.{}", filename_base, payload.ext);
+    let filename = [filename_base, ".", payload.ext].concat();
 
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, payload.content_type)
         .header(
             CONTENT_DISPOSITION,
-            format!("attachment; filename=\"{filename}\""),
+            ["attachment; filename=\"", &filename, "\""].concat(),
         )
         .body(Body::from(payload.body))
-        .map_err(|err| {
+        .map_err(|error| {
             //
             tracing::error!(
                 operation = "build_download_export_response",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "HTTP SDK response build error",
             );
 

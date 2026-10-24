@@ -24,8 +24,8 @@ pub fn diesel(source: DieselError) -> BaseError {
             expected_error! {
                 ExpectedVariant::Args,
                 message: trl("error-already-exists");
-                database_err = "unique violation",
-                database_msg = information.message(),
+                database_error = "unique violation",
+                database_message = information.message(),
                 database_details = ?information.details(),
                 database_hint = ?information.hint(),
                 constraint = ?information.constraint_name(),
@@ -42,8 +42,8 @@ pub fn diesel(source: DieselError) -> BaseError {
             //
             retryable_error! {
                 message: trl("error-concurrent-conflict");
-                database_err = "serialization failure",
-                database_msg = information.message(),
+                database_error = "serialization failure",
+                database_message = information.message(),
                 database_details = ?information.details(),
                 database_hint = ?information.hint(),
                 constraint = ?information.constraint_name(),
@@ -58,18 +58,18 @@ pub fn diesel(source: DieselError) -> BaseError {
             expected_error! {
                 ExpectedVariant::Args,
                 message: trl("error-not-found");
-                database_err = "not found",
+                database_error = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() \
                     and map None at call site",
             }
         }
 
-        err => {
+        error => {
             //
             unrecoverable_error! {
-                message: format!("diesel error: {}", err);
+                message: format!("diesel error: {}", error);
                 operation = "execute_database_operation",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "Diesel SDK error",
             }
         }

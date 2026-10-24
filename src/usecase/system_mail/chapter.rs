@@ -48,7 +48,7 @@ pub async fn notify_next_phase<C, R>(
         return;
     };
 
-    let system_mail_entries = build_assignment_mails(
+    let entries = build_assignment_mails(
         repo,
         &chapter_info,
         receiver_role,
@@ -56,7 +56,7 @@ pub async fn notify_next_phase<C, R>(
     )
     .await;
 
-    send_batch(repo, chapter_id, system_mail_entries).await;
+    send_batch(repo, chapter_id, entries).await;
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
@@ -211,20 +211,18 @@ where
 async fn send_batch<R>(
     repo: &R,
     chapter_id: &str,
-    system_mail_entries: Vec<SystemMailEntry>,
+    entries: Vec<SystemMailEntry>,
 ) where
     R: SystemMailRepo + Sync,
 {
-    if system_mail_entries.is_empty() {
+    if entries.is_empty() {
         return;
     }
 
-    if (SendSystemMails {
-        entries: &system_mail_entries,
-    })
-    .run_on(repo)
-    .await
-    .is_err()
+    if (SendSystemMails { entries: &entries })
+        .run_on(repo)
+        .await
+        .is_err()
     {
         tracing::warn!(
             chapter_id = %chapter_id,
@@ -267,7 +265,7 @@ async fn notify_reviewers<C, R>(
         return;
     };
 
-    let system_mail_entries = build_assignment_mails(
+    let entries = build_assignment_mails(
         repo,
         &chapter_info,
         RoleField::REVIEWER,
@@ -275,7 +273,7 @@ async fn notify_reviewers<C, R>(
     )
     .await;
 
-    send_batch(repo, chapter_id, system_mail_entries).await;
+    send_batch(repo, chapter_id, entries).await;
 }
 
 // Builds the i18n template arguments for a chapter progress notification mail.
@@ -324,21 +322,22 @@ fn chapter_mail_args(
 }
 
 // Truncates a title to a maximum number of characters, appending ellipsis if truncated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn truncate_title(title: &str, max_chars: usize) -> String {
     //
     // Internal implementation detail.
     let mut chars = title.chars();
 
-    let short_title = chars.by_ref().take(max_chars).collect::<String>();
+    let mut short_title = chars.by_ref().take(max_chars).collect::<String>();
 
     match chars.next() {
         //
         // Internal implementation detail.
-        Some(_) => format!("{}...", short_title),
+        Some(_) => {
+            //
+            short_title.push_str("...");
+
+            short_title
+        }
 
         None => short_title,
     }

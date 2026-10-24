@@ -89,7 +89,7 @@ impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Create a new member row inside the active transaction context.
+    // Create a new member record inside the active transaction context.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -133,7 +133,7 @@ where
                 update_user_nickname(
                     context.conn(),
                     &repl.user_id,
-                    repl.user_nickname,
+                    repl.trimmed_user_nickname(),
                 )
                 .await
             }
@@ -190,7 +190,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Find one member-row mapping by both user and team identifiers.
+    // Find one member-record mapping by both user and team identifiers.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -261,7 +261,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Delete the member row for the provided identifier from the DB transaction.
+    // Delete the member record for the provided identifier from the DB transaction.
     async fn step(
         &self,
         context: &mut RdbContext<L>,

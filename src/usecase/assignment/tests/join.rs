@@ -87,7 +87,7 @@ async fn join_rejects_role_outside_member_mask() {
 
     mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
 
-    let err = join(
+    let error = join(
         (&mock, &mock),
         token("user-1"),
         JoinChapterAssignmentInstr {
@@ -99,7 +99,7 @@ async fn join_rejects_role_outside_member_mask() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]

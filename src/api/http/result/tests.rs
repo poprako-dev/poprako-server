@@ -44,12 +44,12 @@ fn http_body_serializes_success_envelope() {
 #[test]
 fn retryable_error_maps_to_conflict() {
     let http_error = HttpError::from(BaseError::Retryable {
-        msg: "retry request".to_string(),
+        message: "retry request".to_string(),
     });
 
     assert_eq!(http_error.status, StatusCode::CONFLICT);
     assert_eq!(http_error.code.get(), 8);
-    assert_eq!(http_error.msg.as_deref(), Some("retry request"));
+    assert_eq!(http_error.message.as_deref(), Some("retry request"));
 
     assert_eq!(
         serde_json::to_value(http_error).expect("HTTP error serializes"),
@@ -60,13 +60,13 @@ fn retryable_error_maps_to_conflict() {
 #[test]
 fn unavailable_error_maps_to_service_unavailable() {
     let http_error = HttpError::from(BaseError::Unavailable {
-        msg: "driver detail".to_string(),
+        message: "driver detail".to_string(),
     });
 
     assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(http_error.code.get(), 9);
     assert_eq!(
-        http_error.msg.as_deref(),
+        http_error.message.as_deref(),
         Some(trl("error-unavailable").as_str()),
     );
 }
@@ -74,7 +74,7 @@ fn unavailable_error_maps_to_service_unavailable() {
 #[test]
 fn obj_dept_unavailable_error_maps_to_service_unavailable() {
     let base_error = BaseError::from(ObjDeptError::Unavailable {
-        msg: "object database capacity unavailable".to_string(),
+        message: "object database capacity unavailable".to_string(),
     });
 
     let http_error = HttpError::from(base_error);
@@ -82,7 +82,7 @@ fn obj_dept_unavailable_error_maps_to_service_unavailable() {
     assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(http_error.code.get(), 9);
     assert_eq!(
-        http_error.msg.as_deref(),
+        http_error.message.as_deref(),
         Some(trl("error-unavailable").as_str()),
     );
 }
@@ -127,7 +127,7 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
 
         assert!(logs.contains("source_line="), "{logs}");
 
-        assert!(logs.contains("err_message="), "{logs}");
+        assert!(logs.contains("error_message="), "{logs}");
 
         assert!(!logs.contains("err_msg="), "{logs}");
 
@@ -171,12 +171,7 @@ async fn sdk_client_errors_keep_original_diagnostics_at_warning_level() {
 
         assert!(logs.contains(reason), "{logs}");
 
-        let diagnostic_field = match uri {
-            "/mismatch" => "err_msg=",
-            _ => "err_message=",
-        };
-
-        assert!(logs.contains(diagnostic_field), "{logs}");
+        assert!(logs.contains("error_message="), "{logs}");
 
         assert!(!logs.contains("private-invalid-token"), "{logs}");
 
@@ -246,7 +241,7 @@ async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
             "{logs}",
         );
 
-        assert!(logs.contains("err_message="), "{logs}");
+        assert!(logs.contains("error_message="), "{logs}");
 
         assert!(logs.contains("source_file="), "{logs}");
     }

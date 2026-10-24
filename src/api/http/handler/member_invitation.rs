@@ -78,7 +78,7 @@ pub async fn create(
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
     //
-    member_invitation_usecase::create::<
+    Ok(member_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -94,7 +94,7 @@ pub async fn create(
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.
@@ -131,13 +131,13 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    member_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    Ok(member_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
@@ -172,7 +172,7 @@ pub async fn update_roles(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/member-invitations/{member_invitation_id}` — delete an invitation.
@@ -202,5 +202,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

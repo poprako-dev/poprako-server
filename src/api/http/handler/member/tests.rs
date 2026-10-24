@@ -13,13 +13,10 @@ use axum::http::Uri;
 use axum::response::IntoResponse;
 
 // Build a local URI from the query string and reuse `Query::try_from_uri` to parse a MemberMeListQuery.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn parse_query(query: &str) -> MemberMeListQuery {
     //
-    let uri = format!("http://localhost/members/me?{}", query)
+    let uri = ["http://localhost/members/me?", query]
+        .concat()
         .parse::<Uri>()
         .unwrap();
 
@@ -64,9 +61,13 @@ fn member_me_query_accepts_public_limit_boundaries() {
 #[test]
 fn member_me_query_rejects_limit_outside_public_range() {
     for limit in [0, 201] {
-        let uri = format!("http://localhost/members/me?offset=0&limit={limit}")
-            .parse::<Uri>()
-            .unwrap();
+        let uri = [
+            "http://localhost/members/me?offset=0&limit=",
+            &limit.to_string(),
+        ]
+        .concat()
+        .parse::<Uri>()
+        .unwrap();
 
         let rejection =
             Query::<MemberMeListQuery>::try_from_uri(&uri).unwrap_err();

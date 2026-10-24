@@ -199,7 +199,7 @@ async fn failed_commit_does_not_publish_token() {
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
-    mock.flags.lock().unwrap().commit_failure = true;
+    mock.set_commit_failure(true);
 
     assert!(
         save_edits(
@@ -215,7 +215,7 @@ async fn failed_commit_does_not_publish_token() {
 
     assert!(mock.snapshot().units.is_empty());
 
-    mock.flags.lock().unwrap().commit_failure = false;
+    mock.set_commit_failure(false);
 
     save_edits(
         (&mock, &mock),

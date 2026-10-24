@@ -65,13 +65,13 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    comment_usecase::create::<RdbContext<ReptRead>, HybRepo>(
+    Ok(comment_usecase::create::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams/{team_id}/comments` — list a team's comments.
@@ -104,11 +104,13 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    comment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        comment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }

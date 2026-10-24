@@ -219,7 +219,7 @@ async fn create_non_admin_is_rejected() {
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
-    let err = create(
+    let error = create(
         (&mock, &mock),
         token("normal-user"),
         create_instr("target-user", "team-1"),
@@ -228,7 +228,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().members.len(), 1);
 }
@@ -252,7 +252,7 @@ async fn create_duplicate_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
+    let error = create(
         (&mock, &mock),
         token("admin-user"),
         create_instr("target-user", "team-1"),
@@ -261,7 +261,7 @@ async fn create_duplicate_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().members.len(), 2);
 }
@@ -511,7 +511,7 @@ async fn list_infos_non_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("stranger-user"),
         list_instr("team-1"),
@@ -520,13 +520,13 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[test]
 fn list_infos_rejects_invalid_combination() {
     //
-    let err = TryInto::<MemberListSpec>::try_into(&ListMemberInfosInstr {
+    let error = TryInto::<MemberListSpec>::try_into(ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         fuzzy_nickname: None,
@@ -538,17 +538,13 @@ fn list_infos_rejects_invalid_combination() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
-    let instr = ListMemberInfosInstr {
+    let member_list_spec: MemberListSpec = ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: None,
         fuzzy_nickname: None,
@@ -556,23 +552,13 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
         incl_opt: Vec::new(),
         offset: 3,
         limit: crate::value::pagination::PubListLimit::new(5).unwrap(),
-    };
+    }
+    .try_into()
+    .unwrap();
 
-    let member_list_spec: MemberListSpec = (&instr).try_into().unwrap();
-
-    let MemberListSpec::User {
-        owner_id,
-        offset,
-        limit,
-        ..
-    } = member_list_spec
-    else {
-        panic!("expected mine list spec");
-    };
-
-    assert_eq!(owner_id, "user-1");
-
-    assert_eq!(offset, 3);
-
-    assert_eq!(limit.get(), 5);
+    assert!(matches!(
+        member_list_spec,
+        MemberListSpec::User { owner_id, offset, limit, .. }
+            if owner_id == "user-1" && offset == 3 && limit.get() == 5
+    ));
 }

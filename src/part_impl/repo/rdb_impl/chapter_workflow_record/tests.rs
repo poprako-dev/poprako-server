@@ -13,7 +13,6 @@ use poprako_rdb_core::RdbCore;
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter_workflow_record::{
     CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos,
@@ -22,6 +21,7 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
@@ -32,10 +32,6 @@ const PREFIX: &str = "rdb-test-chapter-workflow-record-domain-";
 /// Verifies JSONB payloads, deterministic paging, and explicit deletion.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     shared: RdbCore,
 ) {
@@ -54,17 +50,17 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     let created_at = OffsetDateTime::UNIX_EPOCH + Duration::seconds(1);
 
     let entries = [
-        ChapterWorkflowRecordEntry {
-            id: format!("{}record-a", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
-            actor_user_id: Some(chapter_fixture.creator_form.id.clone().into()),
+        ChapterWorkflowRecordEntryShape {
+            id: [PREFIX, "record-a"].concat(),
+            chapter_id: &chapter_fixture.chapter_info.id,
+            actor_user_id: Some(&chapter_fixture.creator_form.id),
             payload: ChapterWorkflowRecordPayload::ChapterCreated,
             created_at,
         },
-        ChapterWorkflowRecordEntry {
-            id: format!("{}record-b", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
-            actor_user_id: Some(chapter_fixture.creator_form.id.clone().into()),
+        ChapterWorkflowRecordEntryShape {
+            id: [PREFIX, "record-b"].concat(),
+            chapter_id: &chapter_fixture.chapter_info.id,
+            actor_user_id: Some(&chapter_fixture.creator_form.id),
             payload: ChapterWorkflowRecordPayload::StageTransitioned {
                 stage: Stage::Translate,
                 previous_phase: StagePhase::Pending,
@@ -73,9 +69,9 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
             },
             created_at,
         },
-        ChapterWorkflowRecordEntry {
-            id: format!("{}record-c", PREFIX),
-            chapter_id: chapter_fixture.chapter_entry.id.clone().into(),
+        ChapterWorkflowRecordEntryShape {
+            id: [PREFIX, "record-c"].concat(),
+            chapter_id: &chapter_fixture.chapter_info.id,
             actor_user_id: None,
             payload: ChapterWorkflowRecordPayload::ChapterPinned,
             created_at: OffsetDateTime::UNIX_EPOCH,
@@ -92,7 +88,7 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     .unwrap();
 
     let list_spec = ChapterWorkflowRecordListSpec {
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(2).unwrap(),
     };

@@ -39,12 +39,12 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::ChapterWorkflowRecordInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::ChapterWorkflowRecordInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRecord;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, f_id as invitation_id, t_assignment_invitation};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
@@ -52,7 +52,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
 
@@ -62,17 +62,17 @@ async fn load_archive_root(
     source_comic_id: &str,
 ) -> BaseRest<(ComicInfo, WorksetInfo)> {
     //
-    let comic_row = t_comic
+    let record = t_comic
         .filter(comic_id.eq(source_comic_id))
         .filter(comic_deleted_at.is_null())
-        .select(ComicInfoRow::as_select())
+        .select(ComicInfoRecord::as_select())
         .for_update()
-        .get_result::<ComicInfoRow>(conn)
+        .get_result::<ComicInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(comic_row) = comic_row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -84,18 +84,18 @@ async fn load_archive_root(
         });
     };
 
-    let comic_info = TryInto::<ComicInfo>::try_into(comic_row)?;
+    let comic_info = TryInto::<ComicInfo>::try_into(record)?;
 
-    let workset_row = t_workset
+    let workset_record = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
-        .select(WorksetInfoRow::as_select())
+        .select(WorksetInfoRecord::as_select())
         .for_update()
-        .get_result::<WorksetInfoRow>(conn)
+        .get_result::<WorksetInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(workset_row) = workset_row else {
+    let Some(workset_record) = workset_record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -108,9 +108,9 @@ async fn load_archive_root(
         });
     };
 
-    let workset_info = WorksetInfo::try_from(workset_row)?;
+    let workset_info = WorksetInfo::try_from(workset_record)?;
 
-    accept((comic_info, workset_info))
+    accept!((comic_info, workset_info))
 }
 
 // Lock and load the source Comic's ordered Chapters.
@@ -119,21 +119,21 @@ async fn load_archive_chapters(
     source_comic_id: &str,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
-    let chapter_rows = t_chapter
+    let chapter_records = t_chapter
         .filter(chapter_comic_id.eq(source_comic_id))
-        .select(ChapterInfoRow::as_select())
+        .select(ChapterInfoRecord::as_select())
         .order_by(chapter_id.asc())
         .for_update()
-        .load::<ChapterInfoRow>(conn)
+        .load::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let chapter_infos = chapter_rows
+    let chapter_infos = chapter_records
         .into_iter()
         .map(ChapterInfo::try_from)
         .collect::<BaseRest<Vec<ChapterInfo>>>()?;
 
-    accept(chapter_infos)
+    accept!(chapter_infos)
 }
 
 // Lock and load workflow records, invitations, assignments, and assignees.
@@ -146,20 +146,20 @@ async fn load_archive_chapter_relations(
     HashMap<String, UserInfo>,
 )> {
     //
-    let workflow_record_rows = t_chapter_workflow_record
+    let workflow_records = t_chapter_workflow_record
         .filter(workflow_record_chapter_id.eq_any(source_chapter_ids))
-        .select(ChapterWorkflowRecordInfoRow::as_select())
+        .select(ChapterWorkflowRecordInfoRecord::as_select())
         .order_by((
             workflow_record_chapter_id.asc(),
             workflow_record_created_at.asc(),
             workflow_record_id.asc(),
         ))
         .for_update()
-        .load::<ChapterWorkflowRecordInfoRow>(conn)
+        .load::<ChapterWorkflowRecordInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let workflow_record_infos = workflow_record_rows
+    let workflow_record_infos = workflow_records
         .into_iter()
         .map(ChapterWorkflowRecordInfo::try_from)
         .collect::<BaseRest<Vec<_>>>()?;
@@ -172,15 +172,15 @@ async fn load_archive_chapter_relations(
         .await
         .map_err(diesel)?;
 
-    let assignment_rows = t_assignment
+    let assignment_records = t_assignment
         .filter(assignment_chapter_id.eq_any(source_chapter_ids))
-        .select(AssignmentInfoRow::as_select())
+        .select(AssignmentInfoRecord::as_select())
         .for_update()
-        .load::<AssignmentInfoRow>(conn)
+        .load::<AssignmentInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let assignment_infos = assignment_rows
+    let assignment_infos = assignment_records
         .into_iter()
         .map(AssignmentInfo::try_from)
         .collect::<BaseRest<Vec<_>>>()?;
@@ -190,29 +190,29 @@ async fn load_archive_chapter_relations(
         .map(|assignment_info| assignment_info.user_id.clone())
         .collect::<Vec<_>>();
 
-    let user_rows = t_user
+    let user_records = t_user
         .filter(user_id.eq_any(&assigned_user_ids))
-        .select(UserInfoRow::as_select())
+        .select(UserInfoRecord::as_select())
         .for_update()
-        .load::<UserInfoRow>(conn)
+        .load::<UserInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let user_infos = user_rows
+    let user_infos = user_records
         .into_iter()
-        .map(|user_row| {
+        .map(|user_record| {
             //
-            let user_info = TryInto::<UserInfo>::try_into(user_row)?;
+            let user_info = TryInto::<UserInfo>::try_into(user_record)?;
 
             Ok((user_info.id.clone(), user_info))
         })
         .collect::<BaseRest<HashMap<_, _>>>()?;
 
-    accept((workflow_record_infos, assignment_infos, user_infos))
+    accept!((workflow_record_infos, assignment_infos, user_infos))
 }
 
 // Loaded descendants needed to assemble Chapter snapshots.
-struct ArchiveChapterParts {
+struct ArchiveChapterDescendants {
     // Chapters included in the archive.
     chapter_infos: Vec<ChapterInfo>,
 
@@ -235,10 +235,10 @@ struct ArchiveChapterParts {
 // Assemble loaded archive descendants into Chapter snapshots.
 fn assemble_chapter_snapshots(
     source_comic_id: &str,
-    coord_fields: ArchiveChapterParts,
+    coord_fields: ArchiveChapterDescendants,
 ) -> BaseRest<Vec<ComicArchiveChapterSnapshot>> {
     //
-    let ArchiveChapterParts {
+    let ArchiveChapterDescendants {
         chapter_infos,
         workflow_record_infos,
         assignment_infos,
@@ -317,7 +317,7 @@ fn assemble_chapter_snapshots(
         })
         .collect();
 
-    accept(chapter_snapshots)
+    accept!(chapter_snapshots)
 }
 
 /// Lock every active descendant needed by an archive transaction.
@@ -349,7 +349,7 @@ async fn get_snapshot_excluded(
 
     let chapter_snapshots = assemble_chapter_snapshots(
         source_comic_id,
-        ArchiveChapterParts {
+        ArchiveChapterDescendants {
             chapter_infos,
             workflow_record_infos,
             assignment_infos,
@@ -360,7 +360,7 @@ async fn get_snapshot_excluded(
         },
     )?;
 
-    accept(ComicArchiveSnapshot {
+    accept!(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,

@@ -7,7 +7,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::model::write::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
@@ -67,7 +67,7 @@ pub fn parse_label_plus_unit_header(
     let line = trim_label_plus_structure_line(line);
 
     let Some(rest) = line.strip_prefix("----------------[") else {
-        return accept(None);
+        return accept!(None);
     };
 
     let Some((index_text, rest)) = rest.split_once("]----------------[") else {
@@ -138,7 +138,7 @@ pub fn parse_label_plus_unit_header(
         }
     };
 
-    accept(Some(LabelPlusUnit {
+    accept!(Some(LabelPlusUnit {
         index: index - 1,
         x_coord,
         y_coord,
@@ -154,7 +154,7 @@ pub fn flush_label_plus_unit(
 ) -> BaseRest<()> {
     //
     let Some(label_plus_unit) = current_unit.take() else {
-        return accept(());
+        return accept!(());
     };
 
     let Some(page_units) = current_page.as_mut() else {
@@ -195,7 +195,7 @@ pub fn flush_label_plus_unit(
 
     main_text.clear();
 
-    accept(())
+    accept!(())
 }
 
 /// Validate and order one parsed `LabelPlus` page.
@@ -226,7 +226,7 @@ pub fn finalize_label_plus_page(
 
     page.sort_by_key(|unit| unit.index);
 
-    accept(())
+    accept!(())
 }
 
 /// Validate the fixed `LabelPlus` preamble and its separator layout.
@@ -276,7 +276,7 @@ where
         return Err(invalid_label_plus_content("LabelPlus content is missing"));
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Parse a complete `LabelPlus` document into chapter import pages.
@@ -389,7 +389,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         ));
     }
 
-    accept(pages)
+    accept!(pages)
 }
 
 // Construct a localized limit error for LabelPlus input.

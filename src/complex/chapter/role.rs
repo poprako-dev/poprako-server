@@ -2,7 +2,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -40,7 +40,7 @@ pub fn check_workflow_role(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Verify the caller may join a chapter with the requested roles.
@@ -66,7 +66,7 @@ pub fn check_join_role(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 // Resolve the assignment roles that can apply one workflow transition.
@@ -104,11 +104,11 @@ const fn required_roles_for_transition(
 }
 
 // Build and log one expected chapter-role permission error.
-fn reject(msg_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject(message_key: &str, event: &'static str) -> BaseRest<()> {
     //
     Err(expected_error! {
         ExpectedVariant::Perm,
-        message: trl(msg_key);
+        message: trl(message_key);
         event,
         "chapter role requirement not met",
     })

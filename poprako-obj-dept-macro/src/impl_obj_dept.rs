@@ -160,7 +160,7 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
                     _ => Ok(
                         ::poprako_obj_dept::model::task::ObjTaskAction::Operator
                             {
-                            msg: "unknown object topic".into(),
+                            message: "unknown object topic".into(),
                         },
                     ),
                 }
@@ -173,10 +173,6 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
 }
 
 // Parses a named field in a macro input declaration.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn parse_field(input: ParseStream<'_>, expected: &str) -> Result<()> {
     //
     let field = input.parse::<Ident>()?;
@@ -185,7 +181,7 @@ fn parse_field(input: ParseStream<'_>, expected: &str) -> Result<()> {
         //
         return Err(syn::Error::new(
             field.span(),
-            format!("expected `{}`", expected),
+            ["expected `", expected, "`"].concat(),
         ));
     }
 

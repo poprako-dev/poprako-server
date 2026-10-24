@@ -2,6 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::term::TermInfo;
 use crate::model::write::term::{TermEntry, TermRepl};
+use crate::shape::write::term::{TermEntryShape, TermReplShape};
 use crate::value::pagination::PubListLimit;
 
 /// Creates a term.
@@ -9,7 +10,7 @@ use crate::value::pagination::PubListLimit;
 #[oper(output = TermInfo)]
 pub struct CreateTerm<'a> {
     /// The term entry to insert.
-    pub entry: &'a TermEntry<'a>,
+    pub entry: &'a TermEntry,
 }
 
 /// Looks up a term by identifier.
@@ -56,7 +57,7 @@ pub struct LockTerm<'a> {
 #[oper(output = ())]
 pub struct UpdateTerm<'a> {
     /// The update payload for the term.
-    pub update: &'a TermRepl<'a>,
+    pub update: &'a TermRepl,
 }
 
 /// Applies imported terminology inserts and replacements together.
@@ -67,9 +68,9 @@ pub struct UpsertTerms<'a> {
     pub termbase_id: &'a str,
 
     /// New terminology entries to insert.
-    pub entries: &'a [TermEntry<'a>],
+    pub entries: &'a [TermEntryShape<'a>],
     /// Existing terminology entries to replace.
-    pub updates: &'a [TermRepl<'a>],
+    pub updates: &'a [TermReplShape<'a>],
 }
 
 /// Deletes one term.

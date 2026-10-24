@@ -11,7 +11,7 @@ pub mod perm {
     use crate::model::read::proj::assignment::AssignmentInfo;
     use crate::model::read::proj::member::MemberInfo;
     use crate::model::read::proj::user::UserInfo;
-    use crate::result::{BaseRest, ExpectedVariant, accept};
+    use crate::result::{BaseRest, ExpectedVariant};
     use crate::value::role::{RoleField, RoleMask};
 
     /// Evidence that grants access to a chapter assignment list.
@@ -92,12 +92,12 @@ pub mod perm {
         //
         match access {
             //
-            UserAssignmentListAccess::Owner => accept(()),
+            UserAssignmentListAccess::Owner => accept!(()),
 
             UserAssignmentListAccess::SuperAdmin { user_info }
                 if user_info.is_sadmin =>
             {
-                accept(())
+                accept!(())
             }
 
             UserAssignmentListAccess::SuperAdmin { .. } => reject(
@@ -153,7 +153,7 @@ pub mod perm {
         //
         match access {
             //
-            AssignmentDeleteAccess::Owner => accept(()),
+            AssignmentDeleteAccess::Owner => accept!(()),
 
             AssignmentDeleteAccess::Admin { member_info } => {
                 check_user_is_team_admin(member_info)
@@ -172,13 +172,13 @@ pub mod perm {
     // Build and log one expected assignment permission error.
     fn reject(
         variant: ExpectedVariant,
-        msg_key: &str,
+        message_key: &str,
         event: &'static str,
     ) -> BaseRest<()> {
         //
         Err(expected_error! {
             variant,
-            message: trl(msg_key);
+            message: trl(message_key);
             event,
             "assignment permission denied",
         })
@@ -208,7 +208,7 @@ pub mod perm {
             );
         }
 
-        accept(())
+        accept!(())
     }
 }
 

@@ -144,17 +144,13 @@ impl Mock {
     /// Seed one verified page-image object for read-projection tests.
     /// # Panics
     /// Panics if the mock state, flags, or event mutex is poisoned.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn seed_page_image_obj(&self, id: &str, ext: &str) {
         //
         let meta = ObjMeta {
             key: ObjKey {
                 id: id.to_owned(),
                 ver: 1,
-                image: format!("page/chapter_test/{}-1.{}", id, ext),
+                image: ["page/chapter_test/", id, "-1.", ext].concat(),
             },
             is_avail: true,
             hash: vec![0; 32],

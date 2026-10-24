@@ -10,7 +10,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue_import::PageIssueImport;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Constructs one localized issue validation or permission error.
 pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
@@ -35,7 +35,7 @@ pub fn ensure_rect(rect: IssueRect) -> BaseRest<()> {
         && rect.x_coord + rect.width <= 1.0
         && rect.y_coord + rect.height <= 1.0
     {
-        return accept(());
+        return accept!(());
     }
 
     Err(error(ExpectedVariant::Args, "error-issue-rect"))
@@ -65,7 +65,7 @@ pub fn ensure_import_issue(
         //
         for issue in &page.issues {
             //
-            if issue.variant.trim().is_empty()
+            if issue.trimmed_variant().is_empty()
                 || issue
                     .layer_name
                     .as_ref()
@@ -80,5 +80,5 @@ pub fn ensure_import_issue(
         }
     }
 
-    accept(())
+    accept!(())
 }

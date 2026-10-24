@@ -27,7 +27,7 @@ use crate::part::repo::oper::subtree_delete::{
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::subtree_delete::delete_chapter_objs;
 
 /// Deletes one chapter and its descendant core records.
@@ -124,11 +124,11 @@ where
             .step_on(repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Pin the newest remaining chapter after deleting the pinned chapter.
@@ -146,7 +146,7 @@ where
         .await?;
 
     let Some(chapter_info) = chapter_infos.first() else {
-        return accept(());
+        return accept!(());
     };
 
     let chapter_info_update = ChapterPatch {
@@ -168,5 +168,5 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }

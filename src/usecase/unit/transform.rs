@@ -31,7 +31,7 @@ use crate::part::repo::oper::page::{GetPageUnitScopeExcluded, ListPageInfos};
 use crate::part::repo::oper::unit::ListUnitInfosByIds;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::stage as stage_usecase;
 use crate::usecase::unit::page_edit as unit_page_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
@@ -103,7 +103,7 @@ pub fn build_page_edits(
         edits.push(edit);
     }
 
-    accept(edits)
+    accept!(edits)
 }
 
 // Groups the Chapter-scoped models used by a Unit transformation.
@@ -217,7 +217,7 @@ where
         })
         .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Selects the text part and Units to transform.
@@ -295,7 +295,7 @@ where
         }
     }
 
-    accept(TransformScope {
+    accept!(TransformScope {
         chapter_info,
         page_infos,
         unit_infos,
@@ -335,7 +335,7 @@ where
         build_page_edits(page_id, part, unit_transforms, unit_infos, user_id)?;
 
     if edits.is_empty() {
-        return accept(None);
+        return accept!(None);
     }
 
     let page_scope = GetPageUnitScopeExcluded { id: page_id }
@@ -346,7 +346,7 @@ where
         unit_page_edit_usecase::apply_edits(repo, context, &page_scope, edits)
             .await?;
 
-    accept(Some(page_edit.into_changes()))
+    accept!(Some(page_edit.into_changes()))
 }
 
 // Aggregates persisted Unit changes across the transformed Pages.
@@ -380,7 +380,7 @@ where
     } = changes;
 
     if applied_edits.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     AdjustChapterUnitCountDelta {
@@ -410,5 +410,5 @@ where
     )
     .await?;
 
-    accept(())
+    accept!(())
 }

@@ -3,7 +3,7 @@
 use std::fmt::{self, Debug};
 
 use diesel_async::pooled_connection::deadpool::BuildError;
-use poprako_obj_dept::rdb_impl::rdb_err;
+use poprako_obj_dept::rdb_impl::rdb_error;
 use poprako_obj_dept::rest::ObjDeptError;
 use poprako_rdb_core::RdbError;
 
@@ -117,35 +117,36 @@ fn explicit_rejection_filter_override_disables_native_events() {
 fn previously_logged_pool_errors_keep_classification_without_conversion_logs() {
     let logs = capture(Some("trace"), || {
         let source = RdbError::PoolGet {
-            msg: "connection creation failed".into(),
+            message: "connection creation failed".into(),
         };
 
-        let error = rdb_err(source);
+        let error = rdb_error(source);
 
         assert_eq!(
             error,
             ObjDeptError::Retryable {
-                msg: "failed to acquire RDB connection: connection creation \
+                message:
+                    "failed to acquire RDB connection: connection creation \
                     failed"
-                    .into(),
+                        .into(),
             }
         );
 
-        let error = rdb_err(RdbError::PoolBuild {
+        let error = rdb_error(RdbError::PoolBuild {
             source: BuildError::NoRuntimeSpecified,
         });
 
         assert_eq!(
             error,
             ObjDeptError::Retryable {
-                msg: format!(
+                message: format!(
                     "failed to build RDB pool: {}",
                     BuildError::NoRuntimeSpecified
                 ),
             }
         );
 
-        let error = rdb_err(RdbError::PoolWaitTimeout);
+        let error = rdb_error(RdbError::PoolWaitTimeout);
 
         assert!(matches!(error, ObjDeptError::Unavailable { .. }));
     });

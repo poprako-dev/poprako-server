@@ -5,14 +5,14 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_team` table. Returned by Diesel queries.
+/// Raw database record for the `t_team` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_team)]
-pub struct TeamInfoRow {
+pub struct TeamInfoRecord {
     pub f_id: String,
 
     pub f_name: String,
@@ -29,7 +29,7 @@ pub struct TeamInfoRow {
 /// Insertable struct for creating a new record in the `t_team` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
-pub struct TeamEntryRow<'a> {
+pub struct TeamItem<'a> {
     pub f_id: &'a str,
 
     pub f_name: &'a str,
@@ -43,17 +43,17 @@ pub struct TeamEntryRow<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
-/// Aspect struct for updating specific fields of a team record identified by id.
+/// Pack struct for updating specific fields of a team record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_team)]
-pub struct TeamAspectRow<'a> {
+pub struct TeamPack<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<&'a str>,
 
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TeamAspectRow<'a> {
+impl<'a> TeamPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -82,13 +82,13 @@ impl<'a> TeamAspectRow<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl TryFrom<TeamInfoRow> for TeamInfo {
+impl TryFrom<TeamInfoRecord> for TeamInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(v: TeamInfoRow) -> BaseRest<Self> {
+    fn try_from(v: TeamInfoRecord) -> BaseRest<Self> {
         //
-        accept(Self {
+        accept!(Self {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),

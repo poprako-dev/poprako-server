@@ -41,10 +41,6 @@ fn single_use_url_moves_generated_bytes_and_consumes_its_entry() {
 }
 
 #[test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
 fn repeated_url_shares_generated_bytes_until_final_consumption() {
     //
     let origin = Url::parse("https://obj.test/repeated").unwrap();
@@ -66,16 +62,12 @@ fn repeated_url_shares_generated_bytes_until_final_consumption() {
 
     let (second, _) = batch.take("object-1").unwrap();
 
-    let Some(CachedObjUrls::Repeated {
-        remaining, origin, ..
-    }) = batch.urls.get("object-1")
-    else {
-        panic!("the final consumer must retain the shared cache entry");
-    };
-
-    assert_eq!(*remaining, 1);
-
-    assert_eq!(Arc::strong_count(origin.as_ref().unwrap()), 3);
+    assert!(matches!(
+        batch.urls.get("object-1"),
+        Some(CachedObjUrls::Repeated { remaining, origin, .. })
+            if *remaining == 1
+                && Arc::strong_count(origin.as_ref().unwrap()) == 3
+    ));
 
     let (last, _) = batch.take("object-1").unwrap();
 

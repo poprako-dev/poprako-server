@@ -27,7 +27,7 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::page::list as page_list_usecase;
 use crate::util::next_snowflake_id;
 
@@ -99,29 +99,31 @@ where
 
             let imported_page_count = pages.len();
 
-            let mut issue_entries = Vec::new();
+            let mut entries = Vec::new();
 
-            for page in &pages {
+            for page in pages {
                 //
-                for (index, issue) in page.issues.iter().enumerate() {
+                for (index, issue) in page.issues.into_iter().enumerate() {
                     //
-                    let issue_entry = IssueEntry {
+                    let entry = IssueEntry {
                         id: next_snowflake_id(),
-                        page_artwork_id: &page.page_artwork_id,
+                        page_artwork_id: page.page_artwork_id.clone(),
                         index,
-                        variant: issue.variant.trim(),
-                        layer_name: issue.layer_name.as_deref(),
+                        variant: issue.variant,
+                        layer_name: issue.layer_name,
                         rect: issue.rect,
-                        note: &issue.note,
+                        note: issue.note,
                     };
 
-                    issue_entries.push(issue_entry);
+                    entries.push(entry);
                 }
             }
 
+            let imported_issue_count = entries.len();
+
             let chapter_issues_repl = ChapterIssuesRepl {
-                chapter_id: &chapter_info.id,
-                entries: &issue_entries,
+                chapter_id: chapter_info.id,
+                entries,
             };
 
             ReplaceChapterIssues {
@@ -136,14 +138,14 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ImportChapterIssuesVal {
+            accept!(ImportChapterIssuesVal {
                 imported_page_count,
-                imported_issue_count: issue_entries.len(),
+                imported_issue_count,
             })
         })
         .await?;
 
-    accept(imported)
+    accept!(imported)
 }
 
 /// Reads a Chapter's issues ordered by composite page and issue position.
@@ -174,5 +176,5 @@ where
     .run_on(repo)
     .await?;
 
-    accept(issue_infos.into_iter().map(Into::into).collect())
+    accept!(issue_infos.into_iter().map(Into::into).collect())
 }

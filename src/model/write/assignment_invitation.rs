@@ -3,7 +3,7 @@
 use crate::value::role::RoleMask;
 
 /// The data needed to insert an assignment invitation row.
-pub struct AssignmentInvitationEntry<'a> {
+pub struct AssignmentInvitationEntry {
     /// Unique identifier to insert for the new invitation row.
     pub id: String,
 
@@ -13,11 +13,18 @@ pub struct AssignmentInvitationEntry<'a> {
     /// Foreign key identifying the user extending the invitation.
     pub inviter_id: String,
     /// Qualified identifier of the user being invited.
-    pub invitee_qid: &'a str,
+    pub invitee_qid: String,
 
     /// Unique secret token generated for this invitation.
     pub code: String,
 
     /// Bitmask of workflow roles offered by this invitation.
     pub roles: RoleMask,
+}
+
+impl AssignmentInvitationEntry {
+    /// Borrows normalized invitee qid without copying its storage.
+    pub fn trimmed_invitee_qid(&self) -> &str {
+        self.invitee_qid.trim()
+    }
 }

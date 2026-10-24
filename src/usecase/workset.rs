@@ -31,7 +31,7 @@ use crate::part::repo::oper::workset::{
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -77,25 +77,23 @@ where
                 .step_on(repo, context)
                 .await?;
 
-            let workset_entry = WorksetEntry {
+            let entry = WorksetEntry {
                 id: workset_complex::gen_id(),
                 team_id: instr.team_id,
                 index,
-                name: instr.name.trim(),
-                description: instr.description.as_deref().map(str::trim),
+                name: instr.name,
+                description: instr.description,
             };
 
-            let workset_info = CreateWorkset {
-                entry: &workset_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let workset_info = CreateWorkset { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
-            accept(workset_info.id)
+            accept!(workset_info.id)
         })
         .await?;
 
-    accept(CreateWorksetVal { id: workset_id })
+    accept!(CreateWorksetVal { id: workset_id })
 }
 
 /// Fetches a workset by ID.
@@ -125,7 +123,7 @@ where
 
     let workset_info = GetWorksetInfo { id: &id }.run_on(repo).await?;
 
-    accept(workset_info.into())
+    accept!(workset_info.into())
 }
 
 /// Lists worksets for a team.
@@ -169,7 +167,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(workset_infos.into_iter().map(Into::into).collect())
+    accept!(workset_infos.into_iter().map(Into::into).collect())
 }
 
 /// Updates a workset's name and description.
@@ -199,8 +197,8 @@ where
 
     let workset_info_update = WorksetRepl {
         id: instr.id,
-        name: instr.name.trim(),
-        description: instr.description.as_deref().map(str::trim),
+        name: instr.name,
+        description: instr.description,
     };
 
     UpdateWorkset {
@@ -209,7 +207,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a workset and its child data.
@@ -262,9 +260,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

@@ -1,14 +1,3 @@
-#![allow(
-    clippy::option_if_let_else,
-    reason = "Generic serialization and schema derives emit this lint on non-Option fields"
-)]
-// FIXME: This module-level allow is needed because Clippy reports
-// `option_if_let_else` inside the generated `Serialize` implementation for
-// `HttpBody<T>`, at the ordinary generic `data: T` field. `T` is not an
-// `Option`, and the source contains no matching `if let` expression; Clippy's
-// suggested `map_or_else` call on `T` is therefore not applicable. Reproduce
-// and report this case upstream, then remove the allow if the false positive
-// is fixed.
 //! HTTP boundary result types: success envelope, error envelope, and the
 //! `Accept` trait that turns a usecase value into a valued response.
 //!
@@ -29,7 +18,8 @@ use axum::http::StatusCode;
 use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
-use serde::Serialize;
+use serde::ser::SerializeStruct as _;
+use serde::{Serialize, Serializer};
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
@@ -54,12 +44,12 @@ pub struct HttpError {
     /// Human-readable error detail, omitted when absent.
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
-    msg: Option<String>,
+    message: Option<String>,
 }
 
 impl HttpError {
     /// Builds an error from an expected application variant and message.
-    pub fn expected(variant: ExpectedVariant, msg: &str) -> Self {
+    pub fn expected(variant: ExpectedVariant, message: &str) -> Self {
         //
         let (status, code) = match variant {
             //
@@ -73,24 +63,24 @@ impl HttpError {
         Self {
             status,
             code: nonzero_code(code),
-            msg: Some(msg.to_string()),
+            message: Some(message.to_string()),
         }
     }
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
-    pub fn unprocessable(msg: &str) -> Self {
+    pub fn unprocessable(message: &str) -> Self {
         //
         tracing::warn!(
             status = 422,
-            err_variant = "PathBodyMismatch",
-            err_msg = msg,
+            error_variant = "PathBodyMismatch",
+            error_message = message,
             "HTTP argument error",
         );
 
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: nonzero_code(7),
-            msg: Some(msg.to_string()),
+            message: Some(message.to_string()),
         }
     }
 
@@ -99,7 +89,7 @@ impl HttpError {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: nonzero_code(1),
-            msg: Some(trl("error-internal")),
+            message: Some(trl("error-internal")),
         }
     }
 
@@ -108,7 +98,7 @@ impl HttpError {
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),
-            msg: Some(trl("error-unavailable")),
+            message: Some(trl("error-unavailable")),
         }
     }
 }
@@ -121,7 +111,7 @@ impl std::fmt::Display for HttpError {
             f,
             "HttpError(code={}, message={})",
             self.code,
-            self.msg.as_deref().unwrap_or("(no message)"),
+            self.message.as_deref().unwrap_or("(no message)"),
         )
     }
 }
@@ -132,14 +122,14 @@ impl From<BaseError> for HttpError {
         //
         match source {
             //
-            BaseError::Expected { variant, msg } => {
-                Self::expected(variant, &msg)
+            BaseError::Expected { variant, message } => {
+                Self::expected(variant, &message)
             }
 
-            BaseError::Retryable { msg } => Self {
+            BaseError::Retryable { message } => Self {
                 status: StatusCode::CONFLICT,
                 code: nonzero_code(8),
-                msg: Some(msg),
+                message: Some(message),
             },
 
             BaseError::Unavailable { .. } => Self::unavailable(),
@@ -161,21 +151,14 @@ impl IntoResponse for HttpError {
 /// Serializes as the standard JSON success envelope. HTTP metadata such as
 /// status code, extra headers, and `Set-Cookie` values are not part of the JSON
 /// body.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpBody<T> {
     /// HTTP status code set on the response (e.g. 200, 201).
-    #[serde(skip)]
-    #[cfg_attr(feature = "swagger", schema(ignore))]
     status: StatusCode,
 
     /// Extra HTTP headers merged into the response (e.g. Set-Cookie).
-    #[serde(skip)]
-    #[cfg_attr(feature = "swagger", schema(ignore))]
     headers: HeaderMap,
 
     /// Application-level success code, 0 for normal success.
-    #[cfg_attr(feature = "swagger", schema(value_type = u16, example = 0))]
     code: u16,
 
     /// Business payload returned to the client.
@@ -201,6 +184,89 @@ impl<T> HttpBody<T> {
         }
 
         self
+    }
+}
+
+#[cfg(feature = "swagger")]
+impl<T> utoipa::__dev::ComposeSchema for HttpBody<T>
+where
+    T: ToSchema,
+{
+    // Builds the same envelope schema while composing the requested payload schema.
+    fn compose(
+        generics: Vec<utoipa::openapi::RefOr<utoipa::openapi::schema::Schema>>,
+    ) -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        //
+        let data_schema = generics.first().cloned().unwrap_or_else(T::schema);
+
+        let mut code_schema = utoipa::openapi::schema::ObjectBuilder::new()
+            .schema_type(utoipa::openapi::schema::Type::Integer)
+            .format(Some(utoipa::openapi::schema::SchemaFormat::KnownFormat(
+                utoipa::openapi::schema::KnownFormat::Int32,
+            )))
+            .description(Some(
+                "Application-level success code, 0 for normal success.",
+            ))
+            .minimum(Some(0))
+            .build();
+
+        code_schema.example = Some(0.into());
+
+        utoipa::openapi::schema::ObjectBuilder::new()
+            .description(Some(concat!(
+                "Success response body wrapping a usecase value.\n\n",
+                "Serializes as the standard JSON success envelope. ",
+                "HTTP metadata such as\n",
+                "status code, extra headers, and `Set-Cookie` values ",
+                "are not part of the JSON\n",
+                "body.",
+            )))
+            .property("code", code_schema)
+            .property("data", data_schema)
+            .required("code")
+            .required("data")
+            .into()
+    }
+}
+
+#[cfg(feature = "swagger")]
+impl<T> ToSchema for HttpBody<T>
+where
+    T: ToSchema,
+{
+    // Collects the payload's nested component schemas.
+    fn schemas(
+        schemas: &mut Vec<(
+            String,
+            utoipa::openapi::RefOr<utoipa::openapi::schema::Schema>,
+        )>,
+    ) {
+        T::schemas(schemas);
+    }
+
+    // Keeps the generic envelope's established schema name.
+    fn name() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("HttpBody")
+    }
+}
+
+impl<T> Serialize for HttpBody<T>
+where
+    T: Serialize,
+{
+    // Serializes only the stable application envelope fields.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        //
+        let mut body = serializer.serialize_struct("HttpBody", 2)?;
+
+        body.serialize_field("code", &self.code)?;
+
+        body.serialize_field("data", &self.data)?;
+
+        body.end()
     }
 }
 
@@ -286,18 +352,12 @@ pub type HttpResult<T> = Result<HttpBody<T>, HttpError>;
 /// Result of an empty success response (`204 No Content`).
 pub type HttpNoContent = Result<NoContent, HttpError>;
 
-/// Converts a usecase value into a valued [`HttpResult`] with the given status.
-/// NOTE: accept is not only used for return a successful `Ok`, but also
-/// provide type infos in type inferences, so it is necessary.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "HTTP success constructors preserve the shared handler Result type and type inference"
-)]
-pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
+/// Converts a usecase value into a valued success body.
+pub fn accept<T>(data: T, status_code: StatusCode) -> HttpBody<T>
 where
     T: Serialize,
 {
-    Ok(HttpBody::new(status_code, data))
+    HttpBody::new(status_code, data)
 }
 
 /// Trait form of [`accept`] so handlers can write `value.accept(StatusCode::OK)`.
@@ -305,8 +365,8 @@ pub trait Accept {
     /// The serializable response payload type returned by [`accept`].
     type Data: Serialize;
 
-    /// Wraps `self` into an [`HttpResult`] carrying the provided status code.
-    fn accept(self, status_code: StatusCode) -> HttpResult<Self::Data>;
+    /// Wraps `self` into an [`HttpBody`] carrying the provided status code.
+    fn accept(self, status_code: StatusCode) -> HttpBody<Self::Data>;
 }
 
 impl<T> Accept for T
@@ -317,18 +377,14 @@ where
     type Data = T;
 
     // Wraps a success body with the provided status code.
-    fn accept(self, status_code: StatusCode) -> HttpResult<Self::Data> {
+    fn accept(self, status_code: StatusCode) -> HttpBody<Self::Data> {
         accept(self, status_code)
     }
 }
 
-/// Returns a `204 No Content` result with an empty body.
-#[expect(
-    clippy::unnecessary_wraps,
-    reason = "Success constructors preserve the shared HTTP handler Result contract"
-)]
-pub fn no_content() -> Result<NoContent, HttpError> {
-    Ok(NoContent::new())
+/// Returns a `204 No Content` response with an empty body.
+pub fn no_content() -> NoContent {
+    NoContent::new()
 }
 
 // Converts one HTTP application code into its non-zero representation.

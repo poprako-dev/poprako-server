@@ -1,4 +1,4 @@
-//! Typed composite page rows.
+//! Typed composite page records.
 
 use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
@@ -9,12 +9,12 @@ use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_artwork;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
-/// Composite page metadata row.
+/// Composite page metadata record.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page_artwork)]
-pub struct PageArtworkRow {
+pub struct PageArtworkRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -26,26 +26,26 @@ pub struct PageArtworkRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<PageArtworkRow> for PageArtworkInfo {
+impl TryFrom<PageArtworkRecord> for PageArtworkInfo {
     type Error = BaseError;
 
-    fn try_from(row: PageArtworkRow) -> BaseRest<Self> {
+    fn try_from(record: PageArtworkRecord) -> BaseRest<Self> {
         //
-        accept(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            index: usize_from_i32(row.f_index, "t_page_artwork.f_index")?,
-            raw_ident: row.f_raw_ident,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+        accept!(Self {
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            index: usize_from_i32(record.f_index, "t_page_artwork.f_index")?,
+            raw_ident: record.f_raw_ident,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
 
-/// Borrowed batch insertion row for page artwork entries.
+/// Borrowed batch insertion item for page artwork entries.
 #[derive(Insertable)]
 #[diesel(table_name = t_page_artwork)]
-pub struct PageArtworkEntryRow<'a> {
+pub struct PageArtworkItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -57,14 +57,14 @@ pub struct PageArtworkEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a PageArtworkEntry> for PageArtworkEntryRow<'a> {
+impl<'a> TryFrom<&'a PageArtworkEntry> for PageArtworkItem<'a> {
     type Error = BaseError;
 
     fn try_from(entry: &'a PageArtworkEntry) -> BaseRest<Self> {
         //
         let now = OffsetDateTime::now_utc();
 
-        accept(Self {
+        accept!(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_index: i32_from_usize(entry.index, "t_page_artwork.f_index")?,

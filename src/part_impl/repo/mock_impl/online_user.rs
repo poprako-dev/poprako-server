@@ -6,7 +6,7 @@ use poprako_orchestra::Run;
 
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<MarkUserOnline<'_>> for Mock {
     // Keep mock failures on the shared repository error channel.
@@ -22,7 +22,7 @@ impl Run<MarkUserOnline<'_>> for Mock {
             Instant::now(),
         );
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -38,6 +38,6 @@ impl Run<ListOnlineUserIds<'_>> for Mock {
             .online_users
             .list_online_user_ids_at(oper.team_id, Instant::now());
 
-        accept(online_user_ids)
+        accept!(online_user_ids)
     }
 }

@@ -7,7 +7,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::{image as image_complex, page as page_complex};
 use crate::config::image::ImageConfig;
 use crate::model::write::page::PageImageSpec;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::image::ImageKind;
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 
@@ -62,7 +62,7 @@ pub fn validate_page_specs(
         }
     }
 
-    accept(page_count)
+    accept!(page_count)
 }
 
 /// Validates the 200-page manifest cap, which bounds practical upload and review capacity.
@@ -73,17 +73,17 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
-            message: invalid_page_count_msg();
+            message: invalid_page_count_message();
             page_count,
             "invalid page count",
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 // Builds the translated page-count validation message.
-fn invalid_page_count_msg() -> String {
+fn invalid_page_count_message() -> String {
     //
     let args = HashMap::from([
         ("min_count".into(), MIN_CHAPTER_PAGE_COUNT.into()),

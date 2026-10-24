@@ -20,9 +20,7 @@ use poprako_rdb_core::RdbConn;
 use crate::complex::unit_save as unit_save_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::write::unit::UnitEdit;
-use crate::part_impl::repo::rdb_impl::entity::unit::{
-    UnitAspectRow, UnitEntryRow,
-};
+use crate::part_impl::repo::rdb_impl::entity::unit::{UnitItem, UnitPack};
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i64;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
@@ -31,7 +29,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_proofread_text, f_translated_text, f_translation_note, f_typography_note,
     f_updated_at, f_x_coord, f_y_coord, t_unit as unit_table,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 use crate::util::Patch;
 
@@ -50,7 +48,7 @@ type UnitExpr<'a, SqlType> =
     Box<dyn BoxableExpression<t_unit::table, Pg, SqlType = SqlType> + 'a>;
 
 // Existing Unit mutations keyed in deterministic ID order.
-type UnitChanges<'a> = BTreeMap<&'a str, UnitAspectRow<'a>>;
+type UnitPacks<'a> = BTreeMap<&'a str, UnitPack<'a>>;
 
 /// Applies normalized Unit edits and returns the latest visible counters.
 #[instrument(level = "info", skip_all)]
@@ -82,34 +80,33 @@ pub async fn apply_edits(
         )?;
     }
 
-    let mut create_entries = Vec::new();
+    let mut items = Vec::new();
 
     for edit in &write_plan.creates {
         //
         let UnitEdit::Create { next_id, .. } = edit else {
-            return Err(invalid_unit_edit_plan_err());
+            return Err(invalid_unit_edit_plan_error());
         };
 
-        let create_entry =
-            UnitEntryRow::from_edit(page_id, edit, next_id.as_deref())
-                .ok_or_else(invalid_unit_edit_plan_err)?;
+        let item = UnitItem::from_edit(page_id, edit, next_id.as_deref())
+            .ok_or_else(invalid_unit_edit_plan_error)?;
 
-        create_entries.push(create_entry);
+        items.push(item);
     }
 
-    apply_create_rows(conn, page_id, &create_entries).await?;
+    apply_create_items(conn, page_id, &items).await?;
 
-    let mut changes = UnitChanges::new();
+    let mut packs = UnitPacks::new();
 
     for (id, mutation) in &write_plan.changes {
         //
-        let mut change = UnitAspectRow::new();
+        let mut pack = UnitPack::new();
 
         if let Some(edit) = mutation.edit {
-            change = change.apply_edit(edit);
+            pack = pack.apply_edit(edit);
         }
 
-        change.f_next_id = match &mutation.next_id {
+        pack.f_next_id = match &mutation.next_id {
             //
             Patch::Skip => None,
 
@@ -118,14 +115,14 @@ pub async fn apply_edits(
             Patch::Assign { value } => Some(Some(*value)),
         };
 
-        change.f_hidden_at = mutation
+        pack.f_hidden_at = mutation
             .is_hidden
             .map(|hidden| hidden.then(OffsetDateTime::now_utc));
 
-        changes.insert(*id, change);
+        packs.insert(*id, pack);
     }
 
-    apply_update_rows(conn, page_id, &changes).await?;
+    apply_update_packs(conn, page_id, &packs).await?;
 
     count_visible_units(conn, page_id).await
 }
@@ -140,7 +137,7 @@ fn ensure_affected(
 ) -> BaseRest<()> {
     //
     if affected == expected {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -156,7 +153,7 @@ fn ensure_affected(
 }
 
 // Reports an impossible mismatch between normalized edits and their plan.
-fn invalid_unit_edit_plan_err() -> BaseError {
+fn invalid_unit_edit_plan_error() -> BaseError {
     //
     unrecoverable_error! {
         message: "normalized Unit edits disagree with edit plan".into();
@@ -165,96 +162,89 @@ fn invalid_unit_edit_plan_err() -> BaseError {
 }
 
 // Insert an exact Unit row set in one statement.
-async fn apply_create_rows(
+async fn apply_create_items(
     conn: &mut RdbConn,
     page_id: &str,
-    entries: &[UnitEntryRow<'_>],
+    items: &[UnitItem<'_>],
 ) -> BaseRest<()> {
     //
-    if entries.is_empty() {
-        return accept(());
+    if items.is_empty() {
+        return accept!(());
     }
 
     let affected = diesel::insert_into(unit_table)
-        .values(entries)
+        .values(items)
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    ensure_affected(page_id, "batch", "create", affected, entries.len())
+    ensure_affected(page_id, "batch", "create", affected, items.len())
 }
 
 // Applies every existing-row mutation through one typed CASE update.
-async fn apply_update_rows(
+async fn apply_update_packs(
     conn: &mut RdbConn,
     page_id: &str,
-    changes: &UnitChanges<'_>,
+    packs: &UnitPacks<'_>,
 ) -> BaseRest<()> {
     //
-    if changes.is_empty() {
-        return accept(());
+    if packs.is_empty() {
+        return accept!(());
     }
 
-    let ids = changes.keys().copied().collect::<Vec<_>>();
+    let ids = packs.keys().copied().collect::<Vec<_>>();
 
     let next_id_case =
-        nullable_text_case(changes, Box::new(f_next_id), |change| {
-            change.f_next_id
-        });
+        nullable_text_case(packs, Box::new(f_next_id), |pack| pack.f_next_id);
 
     let hidden_at_case =
-        nullable_timestamp_case(changes, Box::new(f_hidden_at), |change| {
-            change.f_hidden_at
+        nullable_timestamp_case(packs, Box::new(f_hidden_at), |pack| {
+            pack.f_hidden_at
         });
 
     let is_bubble_case =
-        bool_case(changes, Box::new(f_is_bubble), |change| change.f_is_bubble);
+        bool_case(packs, Box::new(f_is_bubble), |pack| pack.f_is_bubble);
 
     let is_flagged_case =
-        bool_case(changes, Box::new(f_is_flagged), |change| {
-            change.f_is_flagged
-        });
+        bool_case(packs, Box::new(f_is_flagged), |pack| pack.f_is_flagged);
 
     let is_proofread_case =
-        bool_case(changes, Box::new(f_is_proofread), |change| {
-            change.f_is_proofread
-        });
+        bool_case(packs, Box::new(f_is_proofread), |pack| pack.f_is_proofread);
 
     let x_coord_case =
-        double_case(changes, Box::new(f_x_coord), |change| change.f_x_coord);
+        double_case(packs, Box::new(f_x_coord), |pack| pack.f_x_coord);
 
     let y_coord_case =
-        double_case(changes, Box::new(f_y_coord), |change| change.f_y_coord);
+        double_case(packs, Box::new(f_y_coord), |pack| pack.f_y_coord);
 
     let translated_text_case =
-        nullable_text_case(changes, Box::new(f_translated_text), |change| {
-            change.f_translated_text
+        nullable_text_case(packs, Box::new(f_translated_text), |pack| {
+            pack.f_translated_text
         });
 
     let translator_id_case =
-        nullable_text_case(changes, Box::new(f_last_translator_id), |change| {
-            change.f_last_translator_id
+        nullable_text_case(packs, Box::new(f_last_translator_id), |pack| {
+            pack.f_last_translator_id
         });
 
     let proofread_text_case =
-        nullable_text_case(changes, Box::new(f_proofread_text), |change| {
-            change.f_proofread_text
+        nullable_text_case(packs, Box::new(f_proofread_text), |pack| {
+            pack.f_proofread_text
         });
 
-    let proofreader_id_case = nullable_text_case(
-        changes,
-        Box::new(f_last_proofreader_id),
-        |change| change.f_last_proofreader_id,
-    );
+    let proofreader_id_case =
+        nullable_text_case(packs, Box::new(f_last_proofreader_id), |pack| {
+            pack.f_last_proofreader_id
+        });
 
     let typography_note_case =
-        nullable_text_case(changes, Box::new(f_typography_note), |change| {
-            change.f_typography_note
+        nullable_text_case(packs, Box::new(f_typography_note), |pack| {
+            pack.f_typography_note
         });
 
     let translation_note_case =
-        nullable_text_case(changes, Box::new(f_translation_note), |change| {
-            change.f_translation_note
+        nullable_text_case(packs, Box::new(f_translation_note), |pack| {
+            pack.f_translation_note
         });
 
     let updated_at = OffsetDateTime::now_utc();
@@ -284,7 +274,7 @@ async fn apply_update_rows(
     .await
     .map_err(diesel)?;
 
-    ensure_affected(page_id, "batch", "update", affected, changes.len())
+    ensure_affected(page_id, "batch", "update", affected, packs.len())
 }
 
 // Aggregates visible Unit counters inside PostgreSQL.
@@ -317,7 +307,7 @@ async fn count_visible_units(
         .await
         .map_err(diesel)?;
 
-    accept(UnitCountMetrics {
+    accept!(UnitCountMetrics {
         total: usize_from_i64(total, "count visible Units")?,
         translated: usize_from_i64(
             translated,
@@ -329,18 +319,18 @@ async fn count_visible_units(
 
 // Builds a typed nullable-text CASE expression for one column.
 fn nullable_text_case<'a, F>(
-    changes: &'a UnitChanges<'a>,
+    packs: &'a UnitPacks<'a>,
     mut expr: UnitExpr<'a, Nullable<Text>>,
     field: F,
 ) -> Option<UnitExpr<'a, Nullable<Text>>>
 where
-    F: Fn(&UnitAspectRow<'a>) -> Option<Option<&'a str>>,
+    F: Fn(&UnitPack<'a>) -> Option<Option<&'a str>>,
 {
     let mut has_values = false;
 
-    for (id, change) in changes {
+    for (id, pack) in packs {
         //
-        let Some(value) = field(change) else {
+        let Some(value) = field(pack) else {
             continue;
         };
 
@@ -357,18 +347,18 @@ where
 
 // Builds a typed nullable-timestamp CASE expression for one column.
 fn nullable_timestamp_case<'a, F>(
-    changes: &'a UnitChanges<'a>,
+    packs: &'a UnitPacks<'a>,
     mut expr: UnitExpr<'a, Nullable<Timestamptz>>,
     field: F,
 ) -> Option<UnitExpr<'a, Nullable<Timestamptz>>>
 where
-    F: Fn(&UnitAspectRow<'a>) -> Option<Option<OffsetDateTime>>,
+    F: Fn(&UnitPack<'a>) -> Option<Option<OffsetDateTime>>,
 {
     let mut has_values = false;
 
-    for (id, change) in changes {
+    for (id, pack) in packs {
         //
-        let Some(value) = field(change) else {
+        let Some(value) = field(pack) else {
             continue;
         };
 
@@ -388,18 +378,18 @@ where
 
 // Builds a typed boolean CASE expression for one column.
 fn bool_case<'a, F>(
-    changes: &'a UnitChanges<'a>,
+    packs: &'a UnitPacks<'a>,
     mut expr: UnitExpr<'a, Bool>,
     field: F,
 ) -> Option<UnitExpr<'a, Bool>>
 where
-    F: Fn(&UnitAspectRow<'a>) -> Option<bool>,
+    F: Fn(&UnitPack<'a>) -> Option<bool>,
 {
     let mut has_values = false;
 
-    for (id, change) in changes {
+    for (id, pack) in packs {
         //
-        let Some(value) = field(change) else {
+        let Some(value) = field(pack) else {
             continue;
         };
 
@@ -416,18 +406,18 @@ where
 
 // Builds a typed double-precision CASE expression for one column.
 fn double_case<'a, F>(
-    changes: &'a UnitChanges<'a>,
+    packs: &'a UnitPacks<'a>,
     mut expr: UnitExpr<'a, Double>,
     field: F,
 ) -> Option<UnitExpr<'a, Double>>
 where
-    F: Fn(&UnitAspectRow<'a>) -> Option<f64>,
+    F: Fn(&UnitPack<'a>) -> Option<f64>,
 {
     let mut has_values = false;
 
-    for (id, change) in changes {
+    for (id, pack) in packs {
         //
-        let Some(value) = field(change) else {
+        let Some(value) = field(pack) else {
             continue;
         };
 

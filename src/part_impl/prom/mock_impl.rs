@@ -19,7 +19,7 @@ use crate::part::prom::payload::PromPayload;
 use crate::part_impl::prom::dispatch;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::mock_impl::MockContext;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// One deferred action recorded by the mock transaction context.
 #[cfg_attr(test, derive(Clone))]
@@ -70,12 +70,14 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
         match flow {
             DispatchFlow::Complete | DispatchFlow::Wait { .. } => {}
 
-            DispatchFlow::Retry { err_msg }
-            | DispatchFlow::Dead { err_msg } => {
-                return Err(BaseError::Unrecoverable { msg: err_msg });
+            DispatchFlow::Retry { error_message }
+            | DispatchFlow::Dead { error_message } => {
+                return Err(BaseError::Unrecoverable {
+                    message: error_message,
+                });
             }
         }
     }
 
-    accept(())
+    accept!(())
 }

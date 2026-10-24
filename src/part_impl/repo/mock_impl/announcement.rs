@@ -14,7 +14,7 @@ use crate::part::repo::oper::announcement::{
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::announcement::AnnouncementInclOpt;
 
 // Internal implementation of `find_user`.
@@ -86,7 +86,7 @@ fn list_announcements(
 // Internal implementation of `create_announcement`.
 fn create_announcement(
     state: &mut MockState,
-    entry: &AnnouncementEntry<'_>,
+    entry: &AnnouncementEntry,
 ) -> BaseRest<AnnouncementInfo> {
     //
     // Internal implementation detail.
@@ -104,14 +104,14 @@ fn create_announcement(
         team_id: entry.team_id.clone(),
         user_id: entry.user_id.clone(),
         user: None,
-        title: entry.title.to_owned(),
-        content: entry.content.to_owned(),
+        title: entry.trimmed_title().to_owned(),
+        content: entry.trimmed_content().to_owned(),
         created_at: now(),
     };
 
     state.announcements.push(announcement_info.clone());
 
-    accept(announcement_info)
+    accept!(announcement_info)
 }
 
 // Loads an announcement from mock storage for mutation.
@@ -131,7 +131,7 @@ fn get_announcement_info(
 // Replaces an announcement's editable fields in mock storage.
 fn update_announcement(
     state: &mut MockState,
-    update: &AnnouncementRepl<'_>,
+    update: &AnnouncementRepl,
 ) -> BaseRest<()> {
     //
     let announcement_info = state
@@ -140,11 +140,11 @@ fn update_announcement(
         .find(|announcement_info| announcement_info.id == update.id)
         .ok_or_else(|| expected("error-announcement-not-found"))?;
 
-    announcement_info.title = update.title.to_owned();
+    announcement_info.title = update.trimmed_title().to_owned();
 
-    announcement_info.content = update.content.to_owned();
+    announcement_info.content = update.trimmed_content().to_owned();
 
-    accept(())
+    accept!(())
 }
 
 // Deletes an announcement from mock storage.
@@ -158,7 +158,7 @@ fn delete_announcement(state: &mut MockState, id: &str) -> BaseRest<()> {
 
     state.announcements.remove(announcement_index);
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListAnnouncementInfos<'_>> for Mock {
@@ -177,7 +177,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_announcements(&state, oper.spec))
+        accept!(list_announcements(&state, oper.spec))
     }
 }
 

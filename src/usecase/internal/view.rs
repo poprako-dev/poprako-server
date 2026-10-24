@@ -25,7 +25,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
 use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::page::PinnedChapterSnapshot;
 use crate::usecase::internal::view::snapshot::{ObjViewIds, ObjViewSnapshot};
 
@@ -81,7 +81,7 @@ where
         ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
             .await?;
 
-    accept(snapshot.comic(model))
+    accept!(snapshot.comic(model))
 }
 
 /// Resolves chapter models from one request-scoped object URL snapshot.
@@ -109,7 +109,7 @@ where
         ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
             .await?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|model| snapshot.chapter(model))
@@ -137,7 +137,7 @@ where
 
     let mut snapshot = ObjViewSnapshot::load(obj_dept, ids).await?;
 
-    accept(snapshot.assignment(model))
+    accept!(snapshot.assignment(model))
 }
 
 /// Resolves assignment models from one request-scoped object URL snapshot.
@@ -165,7 +165,7 @@ where
         ObjViewSnapshot::load_with_comic_fallbacks(repo, obj_dept, ids, None)
             .await?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|model| snapshot.assignment(model))
@@ -312,7 +312,7 @@ where
         pinned_chapter_assignments.push(assignments);
     }
 
-    accept(ListComicInfosVal {
+    accept!(ListComicInfosVal {
         comics,
         pinned_chapters,
         pinned_chapter_assignments,

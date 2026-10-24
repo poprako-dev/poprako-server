@@ -28,7 +28,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::page::list as page_list_usecase;
 
 /// Reads ordered composite pages independently of source Pages.
@@ -105,5 +105,5 @@ where
         })
         .collect();
 
-    accept(page_artwork_info_views)
+    accept!(page_artwork_info_views)
 }

@@ -4,14 +4,14 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::role::RoleField;
 
 /// Verify that membership evidence exists.
 pub const fn check_user_is_team_member(
     _member_info: &MemberInfo,
 ) -> BaseRest<()> {
-    accept(())
+    accept!(())
 }
 
 /// Verify that membership evidence contains a translator or proofreader role.
@@ -30,7 +30,7 @@ pub fn check_user_is_team_translator_or_proofreader(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Verify that membership evidence contains the admin role.
@@ -44,14 +44,14 @@ pub fn check_user_is_team_admin(member_info: &MemberInfo) -> BaseRest<()> {
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Verify that assignment evidence exists.
 pub const fn check_user_is_chapter_assignee(
     _assignment_info: &AssignmentInfo,
 ) -> BaseRest<()> {
-    accept(())
+    accept!(())
 }
 
 /// Verify that assignment evidence contains a translator or proofreader role.
@@ -69,15 +69,15 @@ pub fn check_user_is_chapter_translator_or_proofreader(
         );
     }
 
-    accept(())
+    accept!(())
 }
 
 // Build and log one expected permission error.
-fn reject_perm(msg_key: &str, event: &'static str) -> BaseRest<()> {
+fn reject_perm(message_key: &str, event: &'static str) -> BaseRest<()> {
     //
     Err(expected_error! {
         ExpectedVariant::Perm,
-        message: trl(msg_key);
+        message: trl(message_key);
         event,
         "permission denied",
     })

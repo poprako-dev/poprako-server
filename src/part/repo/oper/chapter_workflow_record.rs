@@ -4,7 +4,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 
 /// Lists a page of workflow records for one chapter in reverse chronological order.
 #[derive(Oper)]
@@ -19,5 +19,5 @@ pub struct ListChapterWorkflowRecordInfos<'a> {
 #[oper(output = ())]
 pub struct CreateChapterWorkflowRecords<'a> {
     /// Entries to persist together.
-    pub entries: &'a [ChapterWorkflowRecordEntry<'a>],
+    pub entries: &'a [ChapterWorkflowRecordEntryShape<'a>],
 }

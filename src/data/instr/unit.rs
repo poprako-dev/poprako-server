@@ -21,7 +21,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTextTransform, UnitTransform};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::util::Patch;
 
 #[cfg(feature = "swagger")]
@@ -79,7 +79,7 @@ impl UnitTextTransformInstr {
             return Err(invalid_unit_transform("empty_origin"));
         }
 
-        accept(UnitTextTransform {
+        accept!(UnitTextTransform {
             origin: self.origin,
             target: self.target,
         })
@@ -124,7 +124,7 @@ impl UnitTransformInstr {
             .map(UnitTextTransformInstr::into_model)
             .collect::<BaseRest<Vec<_>>>()?;
 
-        accept(UnitTransform {
+        accept!(UnitTransform {
             unit_id: self.unit_id,
             transforms,
         })
@@ -358,7 +358,7 @@ impl UnitEditInstr {
                     last_proofreader_id: user_id.to_string(),
                 });
 
-                accept(UnitEdit::Create {
+                accept!(UnitEdit::Create {
                     id,
                     next_id,
                     is_bubble,
@@ -387,7 +387,7 @@ impl UnitEditInstr {
 
                 let next_id = resolve_patch_id(next_id, local_id_map)?;
 
-                accept(UnitEdit::Save {
+                accept!(UnitEdit::Save {
                     id,
                     next_id,
                     is_bubble,
@@ -407,7 +407,7 @@ impl UnitEditInstr {
                 })
             }
 
-            Self::Delete { id } => accept(UnitEdit::Delete {
+            Self::Delete { id } => accept!(UnitEdit::Delete {
                 id: resolve_id(id, local_id_map)?,
             }),
         }
@@ -453,7 +453,7 @@ where
         .map(|edit| edit.into_model(user_id, &local_id_map))
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(edits)
+    accept!(edits)
 }
 
 // Build the client-visible error for an invalid Unit transform request.
@@ -480,7 +480,7 @@ fn validate_id(id: &str) -> BaseRest<()> {
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 // Resolve a local reference id or return it as-is if it is already a real id.
@@ -493,7 +493,7 @@ fn resolve_id(
 
     local_id_map
         .get(&id)
-        .map_or_else(|| accept(id), |resolved_id| accept(resolved_id.clone()))
+        .map_or_else(|| accept!(id), |resolved_id| accept!(resolved_id.clone()))
 }
 
 // Resolve a patch id, handling Clear, Assign, and Skip variants.
@@ -504,12 +504,12 @@ fn resolve_patch_id(
     //
     match value {
         //
-        Patch::Clear => accept(Patch::Clear),
+        Patch::Clear => accept!(Patch::Clear),
 
-        Patch::Assign { value: id } => accept(Patch::Assign {
+        Patch::Assign { value: id } => accept!(Patch::Assign {
             value: resolve_id(id, local_id_map)?,
         }),
 
-        Patch::Skip => accept(Patch::Skip),
+        Patch::Skip => accept!(Patch::Skip),
     }
 }

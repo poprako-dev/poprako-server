@@ -3,9 +3,8 @@ use poprako_orchestra::Oper;
 use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
-use crate::model::write::chapter::{
-    ChapterEntry, ChapterPatch, ChapterStageRepl,
-};
+use crate::model::write::chapter::{ChapterPatch, ChapterStageRepl};
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::Stage;
 
@@ -14,7 +13,7 @@ use crate::value::chapter::stage::Stage;
 #[oper(output = ChapterInfo)]
 pub struct CreateChapter<'a> {
     /// The chapter entry data.
-    pub entry: &'a ChapterEntry<'a>,
+    pub entry: &'a ChapterEntryShape<'a>,
 }
 
 /// Gets a chapter that must exist.
@@ -92,7 +91,7 @@ pub struct ListPinnedChapterInfos<'a> {
 #[oper(output = ())]
 pub struct UpdateChapter<'a> {
     /// The chapter update data.
-    pub update: &'a ChapterPatch<'a>,
+    pub update: &'a ChapterPatch,
 }
 
 /// Updates a chapter's stage.
@@ -162,9 +161,9 @@ pub struct UnpinOtherChapters<'a> {
 /// Records the first successful business confirmation of an artwork generation.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct SetChapterConfirmedArtworkVersion<'a> {
+pub struct SetChapterConfirmedArtworkVer<'a> {
     /// Locked owning Chapter.
     pub id: &'a str,
     /// Successfully confirmed generation.
-    pub version: u32,
+    pub ver: u32,
 }

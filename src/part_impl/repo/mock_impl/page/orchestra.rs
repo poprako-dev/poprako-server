@@ -21,7 +21,7 @@ use crate::part_impl::repo::mock_impl::page::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
     // Internal type alias for `Error`.
@@ -88,7 +88,7 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_first_pages(&state, oper.chapter_ids))
+        accept!(list_first_pages(&state, oper.chapter_ids))
     }
 }
 
@@ -261,7 +261,7 @@ impl<'a> Step<SetPageUnitCountMetrics<'a>, MockContext> for Mock {
 
         page_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -291,7 +291,7 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
             page_info.updated_at = now();
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -356,7 +356,7 @@ impl<'a> Step<ApplyPageManifest<'a>, MockContext> for Mock {
             page_infos.push(page_info.clone());
         }
 
-        accept(page_infos)
+        accept!(page_infos)
     }
 }
 
@@ -403,7 +403,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
                     .page_raw_idents
                     .retain(|page_id, _| !ids.contains(page_id));
 
-                accept(())
+                accept!(())
             }
 
             DeletePages::Ids { ids } => {
@@ -424,7 +424,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
                     .page_raw_idents
                     .retain(|page_id, _| !ids.contains(page_id));
 
-                accept(())
+                accept!(())
             }
         }
     }

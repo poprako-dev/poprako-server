@@ -15,7 +15,7 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
 use crate::value::comic_archive::artwork::ArchivedPageArtworkPayload;
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
@@ -250,12 +250,12 @@ impl ComicArchiveMonth {
                 ("max_count".into(), MAX_EXPORT_MONTHS.into()),
             ]);
 
-            let err_msg =
+            let error_message =
                 trl_kv("error-invalid-comic-archive-month-count", &args);
 
             return Err(expected_error! {
                 ExpectedVariant::Args,
-                message: err_msg;
+                message: error_message;
                 label_count = labels.len(),
                 "invalid comic archive month count",
             });
@@ -288,7 +288,7 @@ impl ComicArchiveMonth {
 
         months.sort_by_key(|month| month.start);
 
-        accept(months)
+        accept!(months)
     }
 
     // Construct a month slot from validated label, year, and month components.
@@ -353,7 +353,7 @@ impl ComicArchiveMonth {
                 }
             })?;
 
-        accept(Self {
+        accept!(Self {
             label,
             start: PrimitiveDateTime::new(start_date, Time::MIDNIGHT)
                 .assume_utc(),
@@ -411,5 +411,5 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         }
     })?;
 
-    accept((year, month))
+    accept!((year, month))
 }

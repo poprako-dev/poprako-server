@@ -2,7 +2,6 @@ use super::*;
 
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::result::accept;
 
 #[tokio::test]
 async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
@@ -29,7 +28,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
         })
         .map(|unit_info| unit_info.id.clone())
         .ok_or_else(|| BaseError::Unrecoverable {
-            msg: "test fixture Unit is missing".into(),
+            message: "test fixture Unit is missing".into(),
         })?;
 
     save_edits(
@@ -58,7 +57,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
 
     assert_eq!(listed.total_unit_count, 2);
 
-    accept(())
+    accept!(())
 }
 
 #[tokio::test]

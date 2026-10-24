@@ -10,20 +10,22 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::oper::ListObjMetas;
 
 use crate::complex::chapter_port::export_translation as chapter_translation_export_complex;
 use crate::data::val::chapter_port::{
     ChapterPageRawIdentVal, ExportChapterTranslationsVal,
 };
-use crate::model::read::proj::page::PageInfo;
+use crate::data::view::chapter_port::ChapterTranslationPortView;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::page::{PageInfo, PageRawIdentInfo};
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::translation_document::{
     ChapterTranslationDocument, PageTranslationDocument,
     UnitTranslationDocument,
 };
 use crate::model::shared::user::UserToken;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -41,7 +43,8 @@ use crate::part::repo::oper::unit::ListUnitInfosByPageIds;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter::stage::Stage;
@@ -50,11 +53,25 @@ use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
 
+// Borrows loaded chapter, page, and object data during synchronous assembly.
+struct ChapterExportSnapshot<'a> {
+    // Chapter identity and the owned comic title moved into the native document.
+    chapter_info: &'a ChapterInfo,
+    // Comic title moved into the native export document.
+    comic_title: String,
+
+    // Ordered content and source filenames from the same read snapshot.
+    page_infos: &'a [PageInfo],
+    // Translation units grouped into pages during assembly.
+    unit_infos: Vec<UnitInfo>,
+    // Original filenames read alongside the chapter pages.
+    raw_ident_infos: &'a [PageRawIdentInfo],
+
+    // Metadata used to render page image extensions without another lookup.
+    obj_metas: &'a HashMap<String, ObjMeta>,
+}
+
 /// Exports one chapter in every selected translation format.
-#[expect(
-    clippy::too_many_lines,
-    reason = "coordinates chapter export assembly"
-)]
 #[instrument(
     level = "info",
     skip(nucl, repo, obj_dept, token),
@@ -136,6 +153,50 @@ where
         None => Vec::new(),
     };
 
+    let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
+        .run_on(obj_dept)
+        .await
+        .map_err(BaseError::from)?;
+
+    let snapshot = ChapterExportSnapshot {
+        chapter_info: &chapter_info,
+        comic_title: comic_info.title,
+        page_infos: &page_infos,
+        unit_infos,
+        raw_ident_infos: &raw_ident_infos,
+        obj_metas: &obj_metas,
+    };
+
+    let val = make_export_val(snapshot, formats, with_raw_ident);
+
+    persist_export_record(
+        (nucl, repo),
+        &chapter_info.id,
+        token.user_id,
+        formats,
+        actor_has_artwork_assignment,
+    )
+    .await?;
+
+    accept!(val)
+}
+
+// Assembles requested exchange documents from the loaded export snapshot.
+fn make_export_val(
+    snapshot: ChapterExportSnapshot<'_>,
+    formats: ExportFormatSpec,
+    with_raw_ident: bool,
+) -> ExportChapterTranslationsVal {
+    //
+    let ChapterExportSnapshot {
+        chapter_info,
+        comic_title,
+        page_infos,
+        unit_infos,
+        raw_ident_infos,
+        obj_metas,
+    } = snapshot;
+
     let raw_ident_by_page_id = raw_ident_infos
         .iter()
         .map(|info| (info.page_id.clone(), info.raw_ident.clone()))
@@ -161,11 +222,6 @@ where
 
     let mut ext_by_page_id = HashMap::<String, String>::new();
 
-    let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
-        .run_on(obj_dept)
-        .await
-        .map_err(BaseError::from)?;
-
     for unit_info in unit_infos
         .into_iter()
         .filter(|unit_info| unit_info.hidden_at.is_none())
@@ -177,7 +233,7 @@ where
             .push(unit_info);
     }
 
-    for page_info in &page_infos {
+    for page_info in page_infos {
         //
         if let Some(obj_meta) = obj_metas.get(&page_info.id) {
             ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext.clone());
@@ -186,45 +242,19 @@ where
 
     let poprako = formats.includes_poprako().then(|| {
         //
-        let page_documents = page_infos
-            .iter()
-            .map(|page_info| {
-                //
-                let unit_documents = units_by_page_id
-                    .get(&page_info.id)
-                    .map_or(&[][..], Vec::as_slice)
-                    .iter()
-                    .enumerate()
-                    .map(|(index, unit_info)| {
-                        make_unit_export(page_info, index, unit_info)
-                    })
-                    .collect();
-
-                PageTranslationDocument {
-                    page_id: page_info.id.clone(),
-                    page_index: page_info.index,
-                    units: unit_documents,
-                }
-            })
-            .collect();
-
-        let document = ChapterTranslationDocument {
-            chapter_id: chapter_info.id.clone(),
-            chapter_index: chapter_info.index,
-            chapter_subtitle: non_empty(&chapter_info.subtitle),
-            comic_id: chapter_info.comic_id.clone(),
-            comic_title: comic_info.title,
-            pages: page_documents,
-        };
-
-        document.into()
+        make_native_document(
+            chapter_info,
+            comic_title,
+            page_infos,
+            &units_by_page_id,
+        )
     });
 
-    let val = ExportChapterTranslationsVal {
+    ExportChapterTranslationsVal {
         label_plus: formats.includes_label_plus().then(|| {
             //
             chapter_translation_export_complex::make_label_plus(
-                &page_infos,
+                page_infos,
                 &units_by_page_id,
                 &ext_by_page_id,
                 &raw_ident_by_page_id,
@@ -232,18 +262,107 @@ where
         }),
         poprako,
         raw_idents,
+    }
+}
+
+// Persists a completed export and conditionally starts typesetting/redraw in one transaction.
+async fn persist_export_record<N, C, R>(
+    (nucl, repo): (&N, &R),
+    chapter_id: &str,
+    actor_user_id: String,
+    formats: ExportFormatSpec,
+    actor_has_artwork_assignment: bool,
+) -> BaseRest<()>
+where
+    C: Context + Send,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
+    C::Level: AtLeast<ReptRead>,
+    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
+{
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let chapter_info = GetChapterInfoExcluded {
+                id: chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let entry = ChapterWorkflowRecordEntryShape::new(
+                chapter_info.id.as_str(),
+                Some(actor_user_id.as_str()),
+                ChapterWorkflowRecordPayload::TranslationExported { formats },
+            );
+
+            CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&entry),
+            }
+            .step_on(repo, context)
+            .await?;
+
+            if actor_has_artwork_assignment {
+                //
+                stage_usecase::start_pending_stages(
+                    repo,
+                    context,
+                    stage_usecase::PendingStageStart::new(
+                        &chapter_info.id,
+                        Some(&actor_user_id),
+                        ChapterWorkflowRecordOrigin::TranslationExport,
+                    ),
+                    &[Stage::TypesetRedraw],
+                )
+                .await?;
+            }
+
+            accept!(())
+        })
+        .await?;
+
+    accept!(())
+}
+
+// Renders the native document while preserving page and unit ordering.
+fn make_native_document(
+    chapter_info: &ChapterInfo,
+    comic_title: String,
+    page_infos: &[PageInfo],
+    units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
+) -> ChapterTranslationPortView {
+    //
+    let page_documents = page_infos
+        .iter()
+        .map(|page_info| {
+            //
+            let unit_documents = units_by_page_id
+                .get(&page_info.id)
+                .map_or(&[][..], Vec::as_slice)
+                .iter()
+                .enumerate()
+                .map(|(index, unit_info)| {
+                    make_unit_export(page_info, index, unit_info)
+                })
+                .collect();
+
+            PageTranslationDocument {
+                page_id: page_info.id.clone(),
+                page_index: page_info.index,
+                units: unit_documents,
+            }
+        })
+        .collect();
+
+    let document = ChapterTranslationDocument {
+        chapter_id: chapter_info.id.clone(),
+        chapter_index: chapter_info.index,
+        chapter_subtitle: non_empty(&chapter_info.subtitle),
+        comic_id: chapter_info.comic_id.clone(),
+        comic_title,
+        pages: page_documents,
     };
 
-    persist_export_record(
-        (nucl, repo),
-        &chapter_info.id,
-        token.user_id,
-        formats,
-        actor_has_artwork_assignment,
-    )
-    .await?;
-
-    accept(val)
+    document.into()
 }
 
 // Builds a [`UnitTranslationDocument`] from page and unit info.
@@ -281,62 +400,4 @@ fn non_empty(text: &str) -> Option<String> {
     }
 
     Some(text.to_string())
-}
-
-// Persists a completed export and conditionally starts typesetting/redraw in one transaction.
-async fn persist_export_record<N, C, R>(
-    (nucl, repo): (&N, &R),
-    chapter_id: &str,
-    actor_user_id: String,
-    formats: ExportFormatSpec,
-    actor_has_artwork_assignment: bool,
-) -> BaseRest<()>
-where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
-    C::Level: AtLeast<ReptRead>,
-    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
-{
-    let () = nucl
-        .coord(async move |context| {
-            //
-            let chapter_info = GetChapterInfoExcluded {
-                id: chapter_id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.as_str(),
-                Some(actor_user_id.as_str().into()),
-                ChapterWorkflowRecordPayload::TranslationExported { formats },
-            );
-
-            CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
-            }
-            .step_on(repo, context)
-            .await?;
-
-            if actor_has_artwork_assignment {
-                //
-                stage_usecase::start_pending_stages(
-                    repo,
-                    context,
-                    stage_usecase::PendingStageStart::new(
-                        &chapter_info.id,
-                        Some(&actor_user_id),
-                        ChapterWorkflowRecordOrigin::TranslationExport,
-                    ),
-                    &[Stage::TypesetRedraw],
-                )
-                .await?;
-            }
-
-            accept(())
-        })
-        .await?;
-
-    accept(())
 }

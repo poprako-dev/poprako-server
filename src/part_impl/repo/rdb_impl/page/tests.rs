@@ -86,7 +86,7 @@ async fn verify_page_counters(
 
     let page_infos = repo
         .run(&ListPageInfos {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .unwrap();
@@ -105,18 +105,14 @@ async fn verify_page_counters(
 }
 
 // Verify a newly created page starts with empty counters and a current timestamp.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn create_second_page(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> (PageManifestEntry, OffsetDateTime) {
     let second_page_entry = PageManifestEntry {
-        id: format!("{}page-later", PREFIX),
-        chapter_id: page_fixture.chapter_entry.id.clone(),
+        id: [PREFIX, "page-later"].concat(),
+        chapter_id: page_fixture.chapter_info.id.clone(),
         index: 1,
     };
 
@@ -134,7 +130,7 @@ async fn create_second_page(
 
             page_infos.into_iter().next().ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    msg: "page creation returned no row".into(),
+                    message: "page creation returned no record".into(),
                 }
             })
         })
@@ -164,12 +160,12 @@ async fn verify_manifest_reorder(
     let manifest_entries = vec![
         PageManifestEntry {
             id: second_page_entry.id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
+            chapter_id: page_fixture.chapter_info.id.clone(),
             index: 0,
         },
         PageManifestEntry {
             id: page_fixture.page_entry.id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
+            chapter_id: page_fixture.chapter_info.id.clone(),
             index: 1,
         },
     ];
@@ -179,7 +175,7 @@ async fn verify_manifest_reorder(
         repo.step(
             context,
             &ShiftPageIndexesTemporary {
-                chapter_id: &page_fixture.chapter_entry.id,
+                chapter_id: &page_fixture.chapter_info.id,
             },
         )
         .await?;
@@ -202,7 +198,7 @@ async fn verify_manifest_reorder(
 
     let reordered_page_infos = repo
         .run(&ListPageInfos {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .unwrap();
@@ -215,7 +211,7 @@ async fn verify_manifest_reorder(
         ],
     );
 
-    let chapter_ids = vec![page_fixture.chapter_entry.id.as_str()];
+    let chapter_ids = vec![page_fixture.chapter_info.id.as_str()];
 
     let first_page_infos = repo
         .run(&ListFirstPageInfos {
@@ -226,7 +222,7 @@ async fn verify_manifest_reorder(
 
     let first_page_info = first_page_infos
         .iter()
-        .find(|page_info| page_info.chapter_id == page_fixture.chapter_entry.id)
+        .find(|page_info| page_info.chapter_id == page_fixture.chapter_info.id)
         .expect("first page info for the chapter");
 
     assert_eq!(first_page_info.id, second_page_entry.id);
@@ -243,12 +239,12 @@ async fn verify_manifest_rollback(
     let rollback_entries = vec![
         PageManifestEntry {
             id: page_fixture.page_entry.id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
+            chapter_id: page_fixture.chapter_info.id.clone(),
             index: 0,
         },
         PageManifestEntry {
             id: second_page_entry.id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
+            chapter_id: page_fixture.chapter_info.id.clone(),
             index: 1,
         },
     ];
@@ -259,7 +255,7 @@ async fn verify_manifest_rollback(
             repo.step(
                 context,
                 &ShiftPageIndexesTemporary {
-                    chapter_id: &page_fixture.chapter_entry.id,
+                    chapter_id: &page_fixture.chapter_info.id,
                 },
             )
             .await?;
@@ -273,7 +269,7 @@ async fn verify_manifest_rollback(
             .await?;
 
             Err::<(), BaseError>(BaseError::Unrecoverable {
-                msg: "force page-manifest rollback".into(),
+                message: "force page-manifest rollback".into(),
             })
         })
         .await;
@@ -282,7 +278,7 @@ async fn verify_manifest_rollback(
 
     let rolled_back_page_infos = repo
         .run(&ListPageInfos {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .unwrap();
@@ -306,7 +302,7 @@ async fn verify_tombstoned_page(
 
     diesel::update(
         t_chapter::table
-            .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id)),
+            .filter(t_chapter::f_id.eq(&page_fixture.chapter_info.id)),
     )
     .set(t_chapter::f_deleted_at.eq(Some(time::OffsetDateTime::now_utc())))
     .execute(&mut conn)
@@ -340,8 +336,8 @@ async fn verify_page_count_bound(
 ) {
     let overflow_entries = (2..=MAX_CHAPTER_PAGE_COUNT)
         .map(|index| PageManifestEntry {
-            id: format!("{PREFIX}page-overflow-{index:03}"),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
+            id: [PREFIX, "page-overflow-", &format!("{:03}", &index)].concat(),
+            chapter_id: page_fixture.chapter_info.id.clone(),
             index,
         })
         .collect::<Vec<_>>();
@@ -363,7 +359,7 @@ async fn verify_page_count_bound(
 
     let list_error = repo
         .run(&ListPageInfos {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .err()
@@ -373,7 +369,7 @@ async fn verify_page_count_bound(
 
     let diff_error = repo
         .run(&ListPageUnitDiffStats {
-            chapter_id: &page_fixture.chapter_entry.id,
+            chapter_id: &page_fixture.chapter_info.id,
         })
         .await
         .err()
@@ -386,7 +382,7 @@ async fn verify_page_count_bound(
             repo.step(
                 context,
                 &ListPageInfosExcluded {
-                    chapter_id: &page_fixture.chapter_entry.id,
+                    chapter_id: &page_fixture.chapter_info.id,
                 },
             )
             .await
@@ -453,10 +449,10 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
 pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
-    use crate::model::write::page::PageRawIdentsRepl;
     use crate::part::repo::oper::page::{
         DeletePages, ListPageRawIdentInfos, UpdatePageRawIdents,
     };
+    use crate::shape::write::page::PageRawIdentsReplShape;
 
     const RAW_PREFIX: &str = "rdb-test-page-raw-ident-";
 
@@ -483,8 +479,8 @@ pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
         (None, None),
         (None, None),
     ] {
-        let repls = PageRawIdentsRepl {
-            idents: &[(page_id, repl)],
+        let repls = PageRawIdentsReplShape {
+            idents: vec![(page_id, repl)],
         };
 
         nucl.coord(async |context| {
@@ -515,8 +511,8 @@ pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
         }
     }
 
-    let repls = PageRawIdentsRepl {
-        idents: &[
+    let repls = PageRawIdentsReplShape {
+        idents: vec![
             (page_id, Some("rollback.png")),
             ("missing-page", Some("invalid.png")),
         ],
@@ -538,8 +534,8 @@ pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
         .is_empty()
     );
 
-    let repls = PageRawIdentsRepl {
-        idents: &[(page_id, Some("delete.png"))],
+    let repls = PageRawIdentsReplShape {
+        idents: vec![(page_id, Some("delete.png"))],
     };
 
     nucl.coord(async |context| {

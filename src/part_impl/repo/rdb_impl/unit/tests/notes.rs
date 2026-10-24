@@ -172,7 +172,7 @@ async fn verify_patches(
 
             assert_eq!(second.translation_note.as_deref(), Some("内部沟通"));
 
-            accept(())
+            accept!(())
         })
         .await
         .unwrap();
@@ -209,9 +209,9 @@ async fn verify_diff_stats(
                     is_proofread: false,
                     proofread_text: Some("appended body".into()),
                     last_proofreader_id: fixture
-                        .chapter_entry
+                        .chapter_info
                         .creator_id
-                        .to_string(),
+                        .clone(),
                 },
             },
         };
@@ -238,14 +238,14 @@ async fn verify_diff_stats(
 
         assert_eq!(counts.translated, 2);
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 
     let stats = repo
         .run(&ListPageUnitDiffStats {
-            chapter_id: &fixture.chapter_entry.id,
+            chapter_id: &fixture.chapter_info.id,
         })
         .await
         .unwrap();

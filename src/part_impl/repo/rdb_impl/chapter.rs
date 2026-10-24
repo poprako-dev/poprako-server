@@ -17,7 +17,7 @@ use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfos,
     ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
-    SetChapterConfirmedArtworkVersion, SetChapterPageCountMetrics,
+    SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::HybRepo;
@@ -28,7 +28,7 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     list_pinned_infos_by_comic_ids, lock_chapters, set_page_counts,
     start_stage, unpin_others, update_info, update_stage,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -111,7 +111,7 @@ impl Run<StartChapterStage<'_>> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Enter a chapter state transition request and return whether any row changed.
+    // Enter a chapter state transition request and return whether any record changed.
     async fn run(&self, oper: &StartChapterStage<'_>) -> BaseRest<bool> {
         submit_query!(self.rdb_core, start_stage, oper.id, oper.stage)
     }
@@ -199,7 +199,7 @@ impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Align error type for read queries that intentionally exclude soft-deleted rows.
+    // Align error type for read queries that intentionally exclude soft-deleted records.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
@@ -428,7 +428,7 @@ where
     }
 }
 
-impl<L> Step<SetChapterConfirmedArtworkVersion<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SetChapterConfirmedArtworkVer<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -443,7 +443,7 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &SetChapterConfirmedArtworkVersion<'_>,
+        oper: &SetChapterConfirmedArtworkVer<'_>,
     ) -> BaseRest<()> {
         //
         use crate::part_impl::repo::rdb_impl::schema::t_chapter;
@@ -453,14 +453,11 @@ where
         use diesel_async::RunQueryDsl as _;
 
         diesel::update(t_chapter::table.find(oper.id))
-            .set(
-                t_chapter::f_confirmed_artwork_version
-                    .eq(i64::from(oper.version)),
-            )
+            .set(t_chapter::f_confirmed_artwork_version.eq(i64::from(oper.ver)))
             .execute(context.conn())
             .await
             .map_err(map_diesel)?;
 
-        accept(())
+        accept!(())
     }
 }

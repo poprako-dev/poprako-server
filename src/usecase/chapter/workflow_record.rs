@@ -12,7 +12,7 @@ use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::chapter_workflow_record::ListChapterWorkflowRecordInfos;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -53,7 +53,7 @@ where
         .run_on(repo)
         .await?;
 
-    accept(
+    accept!(
         record_infos
             .into_iter()
             .map(ChapterWorkflowRecordInfoView::from)

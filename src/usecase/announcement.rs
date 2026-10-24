@@ -32,7 +32,7 @@ use crate::part::repo::oper::announcement::{
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::announcement::view::announcement_info_views;
 
 /// Lists announcements under a team.
@@ -82,7 +82,7 @@ where
     let announcement_info_vals =
         announcement_info_views(obj_dept, announcement_infos).await?;
 
-    accept(announcement_info_vals)
+    accept!(announcement_info_vals)
 }
 
 /// Creates an announcement under a team.
@@ -122,21 +122,18 @@ where
 
     announcement_perm_complex::ensure_user_can_create(&member_info)?;
 
-    let announcement_entry = AnnouncementEntry {
+    let entry = AnnouncementEntry {
         id: announcement_complex::gen_id(),
         team_id: instr.team_id,
         user_id: token.user_id,
-        title: instr.title.trim(),
-        content: instr.content.trim(),
+        title: instr.title,
+        content: instr.content,
     };
 
-    let announcement_info = CreateAnnouncement {
-        entry: &announcement_entry,
-    }
-    .run_on(repo)
-    .await?;
+    let announcement_info =
+        CreateAnnouncement { entry: &entry }.run_on(repo).await?;
 
-    accept(CreateAnnouncementVal {
+    accept!(CreateAnnouncementVal {
         id: announcement_info.id,
     })
 }
@@ -186,8 +183,8 @@ where
 
     let announcement_repl = AnnouncementRepl {
         id: instr.id,
-        title: instr.title.trim(),
-        content: instr.content.trim(),
+        title: instr.title,
+        content: instr.content,
     };
 
     UpdateAnnouncement {
@@ -196,7 +193,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes an announcement.
@@ -246,5 +243,5 @@ where
     .run_on(repo)
     .await?;
 
-    accept(())
+    accept!(())
 }

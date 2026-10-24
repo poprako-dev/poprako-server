@@ -10,9 +10,9 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
 use crate::value::incl::expand_incl_opts;
@@ -38,7 +38,7 @@ pub fn get_chapter_by_id(
 
     apply_chapter_incls(state, &mut chapter_info, incl_opt);
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 /// Resolves the minimal Unit edit scope through its owning Page.
@@ -57,7 +57,7 @@ pub fn get_unit_edit_scope_by_page_id(
 
     let chapter_info = get_chapter_by_id(state, &page_info.chapter_id, &[])?;
 
-    accept(ChapterUnitEditScope {
+    accept!(ChapterUnitEditScope {
         id: chapter_info.id,
         comic_id: chapter_info.comic_id,
         is_published: chapter_info.stages.has_phase(
@@ -93,13 +93,13 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 /// Returns the expected already-exists error for a duplicate chapter identifier.
 pub fn create_chapter(
     state: &mut MockState,
-    chapter_entry: &ChapterEntry<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) -> BaseRest<ChapterInfo> {
     //
     if state
         .chapters
         .iter()
-        .any(|chapter_info| chapter_info.id == chapter_entry.id)
+        .any(|chapter_info| chapter_info.id == entry.id)
     {
         return Err(expected("error-already-exists"));
     }
@@ -108,18 +108,18 @@ pub fn create_chapter(
 
     let chapter_info = ChapterInfo {
         confirmed_artwork_ver: None,
-        id: chapter_entry.id.clone(),
-        comic_id: chapter_entry.comic_id.to_string(),
+        id: entry.id.clone(),
+        comic_id: entry.comic_id.to_string(),
         comic: None,
-        is_pinned: chapter_entry.is_pinned,
-        index: chapter_entry.index,
-        subtitle: chapter_entry.subtitle.to_string(),
+        is_pinned: entry.is_pinned,
+        index: entry.index,
+        subtitle: entry.trimmed_subtitle().to_string(),
         page_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).ok().unwrap(),
-        creator_id: chapter_entry.creator_id.to_string(),
+        creator_id: entry.creator_id.to_string(),
         creator: None,
         created_at: time,
         updated_at: time,
@@ -127,7 +127,7 @@ pub fn create_chapter(
 
     state.chapters.push(chapter_info.clone());
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 /// Enriches chapter include fields for the requested relation set.

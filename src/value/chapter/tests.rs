@@ -116,25 +116,25 @@ fn accepts_pending_revert_noop() {
 #[test]
 fn rejects_publish_revert() {
     //
-    let err = try_modify_stage(
+    let error = try_modify_stage(
         (Stage::Publish, StagePhase::Completed),
         StageOper::Revert,
     )
     .err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }
 
 #[test]
 fn rejects_completed_advance() {
     //
-    let err = try_modify_stage(
+    let error = try_modify_stage(
         (Stage::Translate, StagePhase::Completed),
         StageOper::Advance,
     )
     .err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }
 
 #[test]
@@ -142,9 +142,9 @@ fn rejects_active_one_shot_mask() {
     //
     let active_raw_provide_mask = 0b01;
 
-    let err = StageMask::try_from(active_raw_provide_mask).err();
+    let error = StageMask::try_from(active_raw_provide_mask).err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }
 
 #[test]
@@ -152,9 +152,9 @@ fn rejects_ignore_regular_mask() {
     //
     let ignore_translate_mask = 0b11 << 2;
 
-    let err = StageMask::try_from(ignore_translate_mask).err();
+    let error = StageMask::try_from(ignore_translate_mask).err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }
 
 #[test]
@@ -172,9 +172,9 @@ fn rejects_active_one_shot_filter_mask() {
     //
     let active_review_mask = 0b01 << 8;
 
-    let err = StageMask::try_filter_from(active_review_mask).err();
+    let error = StageMask::try_filter_from(active_review_mask).err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn rejects_invalid_set_phase() {
     //
     let mask = StageMask::try_from(0u32).unwrap();
 
-    let err = mask.try_set_phase(Stage::Publish, StagePhase::Active).err();
+    let error = mask.try_set_phase(Stage::Publish, StagePhase::Active).err();
 
-    assert!(err.is_some());
+    assert!(error.is_some());
 }

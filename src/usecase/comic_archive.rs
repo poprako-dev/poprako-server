@@ -33,7 +33,7 @@ use crate::part::repo::oper::comic_archive::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
@@ -116,7 +116,7 @@ where
         .map(|(month, payloads)| (month.label, payloads))
         .collect::<BTreeMap<_, _>>();
 
-    accept(ExportComicArchivesVal(exports))
+    accept!(ExportComicArchivesVal(exports))
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
@@ -174,7 +174,7 @@ where
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let comic_archive_entry = comic_archive_complex::prepare_entry(
+            let entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 token.user_id,
                 archived_at,
@@ -182,44 +182,38 @@ where
             .await?;
 
             ClearObjs::<ComicCover>::new(std::slice::from_ref(
-                &comic_archive_entry.record.source_comic_id,
+                &entry.record.source_comic_id,
             ))
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
 
-            DeleteObjs::<PageArtworkImage>::new(
-                &comic_archive_entry.source_page_artwork_ids,
-            )
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
-
-            DeleteObjs::<PageImage>::new(&comic_archive_entry.source_page_ids)
+            DeleteObjs::<PageArtworkImage>::new(&entry.source_page_artwork_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;
 
-            DeleteObjs::<ChapterArtwork>::new(
-                &comic_archive_entry.source_chapter_ids,
-            )
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+            DeleteObjs::<PageImage>::new(&entry.source_page_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
-            CommitComicArchive {
-                entry: &comic_archive_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            DeleteObjs::<ChapterArtwork>::new(&entry.source_chapter_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
-            let record = comic_archive_entry.record;
+            CommitComicArchive { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
-            accept(ArchiveComicVal {
+            let record = entry.record;
+
+            accept!(ArchiveComicVal {
                 archived_id: record.id,
             })
         })
         .await?;
 
-    accept(archive_comic_val)
+    accept!(archive_comic_val)
 }

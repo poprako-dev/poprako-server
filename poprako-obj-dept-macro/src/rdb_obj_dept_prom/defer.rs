@@ -3,63 +3,14 @@ use quote::quote;
 use syn::{Ident, Path};
 
 /// Generates transaction-side single and batch task creation.
-#[expect(
-    clippy::too_many_lines,
-    reason = "task identity insertion and validation form one atomic generated contract"
-)]
 pub fn expand_module(table: &Path) -> TokenStream {
     //
+    let task_records = task_records(table);
+
+    let validate_identities = validate_identities();
+
     quote! {
-        #[derive(::diesel::Queryable, ::diesel::Selectable)]
-        #[diesel(table_name = #table)]
-        #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct TaskIdentityRow {
-            #[diesel(column_name = f_id)]
-            id: String,
-
-            #[diesel(column_name = f_topic)]
-            topic: String,
-            #[diesel(column_name = f_oper)]
-            oper: String,
-
-            #[diesel(column_name = f_obj_id)]
-            obj_id: String,
-            #[diesel(column_name = f_version)]
-            ver: i64,
-            #[diesel(column_name = f_key)]
-            image: String,
-
-            #[diesel(column_name = f_generation)]
-            gen_no: i64,
-            #[diesel(column_name = f_status)]
-            status: String,
-        }
-
-        #[derive(::diesel::Insertable)]
-        #[diesel(table_name = #table)]
-        struct TaskInsertRow<'a> {
-            #[diesel(column_name = f_id)]
-            id: &'a str,
-
-            #[diesel(column_name = f_topic)]
-            topic: &'a str,
-            #[diesel(column_name = f_oper)]
-            oper: &'a str,
-
-            #[diesel(column_name = f_obj_id)]
-            obj_id: &'a str,
-            #[diesel(column_name = f_version)]
-            ver: i64,
-            #[diesel(column_name = f_key)]
-            image: &'a str,
-
-            #[diesel(column_name = f_generation)]
-            gen_no: i64,
-            #[diesel(column_name = f_status)]
-            status: &'a str,
-            #[diesel(column_name = f_visible_at)]
-            visible_at: ::time::OffsetDateTime,
-        }
+        #task_records
 
         pub struct PreparedTask {
             pub id: String,
@@ -107,9 +58,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 return Ok(());
             }
 
-            let rows = tasks
+            let items = tasks
                 .iter()
-                .map(|task| TaskInsertRow {
+                .map(|task| TaskItem {
                     id: &task.id,
                     topic,
                     oper: task.oper,
@@ -123,109 +74,22 @@ pub fn expand_module(table: &Path) -> TokenStream {
                 .collect::<Vec<_>>();
 
             ::diesel::insert_into(#table::table)
-                .values(&rows)
+                .values(&items)
                 .on_conflict(#table::f_id)
                 .do_update()
                 .set(#table::f_id.eq(::diesel::upsert::excluded(#table::f_id)))
                 .execute(conn)
                 .await
-                .map_err(diesel_err)?;
+                .map_err(diesel_error)?;
 
             let ids = tasks.iter().map(|task| &task.id).collect::<Vec<_>>();
-            let rows = #table::table
+            let records = #table::table
                 .filter(#table::f_id.eq_any(ids))
-                .select(TaskIdentityRow::as_select())
-                .load::<TaskIdentityRow>(conn)
+                .select(TaskIdentityRecord::as_select())
+                .load::<TaskIdentityRecord>(conn)
                 .await
-                .map_err(diesel_err)?;
-            let rows = rows
-                .into_iter()
-                .map(|row| {
-                    let TaskIdentityRow {
-                        id,
-                        topic,
-                        oper,
-                        obj_id,
-                        ver,
-                        image,
-                        gen_no: gen_value,
-                        status,
-                    } = row;
-
-                    (
-                        id,
-                        (
-                            topic,
-                            oper,
-                            obj_id,
-                            ver,
-                            image,
-                            gen_value,
-                            status,
-                        ),
-                    )
-                })
-                .collect::<HashMap<_, _>>();
-
-            if rows.len() != tasks.len() {
-                //
-                return Err(ObjDeptError::Unrecoverable {
-                    msg: "object task batch identity is incomplete".into(),
-                });
-            }
-
-            for task in tasks {
-                //
-                let Some(row) = rows.get(&task.id) else {
-                    //
-                    return Err(ObjDeptError::Unrecoverable {
-                        msg: "object task batch identity is incomplete".into(),
-                    });
-                };
-
-                let (
-                    row_topic,
-                    row_oper,
-                    row_obj_id,
-                    row_ver,
-                    row_image,
-                    row_gen,
-                    row_status,
-                ) = row;
-
-                let is_same_identity = row_topic == topic
-                    && row_oper == task.oper
-                    && row_obj_id == &task.key.id
-                    && *row_ver == i64::from(task.key.ver)
-                    && row_image == &task.key.image
-                    && *row_gen == ORDINARY_GENERATION;
-
-                if !is_same_identity {
-                    //
-                    return Err(ObjDeptError::Unrecoverable {
-                        msg: "object task identity conflict".into(),
-                    });
-                }
-
-                match row_status.as_str() {
-                    //
-                    PENDING | PROCESSING => {}
-
-                    OPERATOR => {
-                        return
-                            Err(ObjDeptError::
-                                conflict("object task requires operator \
-                                    repair".into()));
-                    }
-
-                    _ => {
-                        //
-                        return Err(ObjDeptError::Unrecoverable {
-                            msg: "invalid object task status".into(),
-                        });
-                    }
-                }
-            }
+                .map_err(diesel_error)?;
+            #validate_identities
 
             Ok(())
         }
@@ -284,7 +148,7 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                             .ok_or_else(|| {
                                 ::poprako_obj_dept::rest::ObjDeptError::
                                     Unrecoverable {
-                                    msg:
+                                    message:
                                         "object check visibility \
                                             overflow".into(),
                                 }
@@ -329,6 +193,163 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                 tasks.dedup_by(|left, right| left.id == right.id);
 
                 #module::defer_tasks(context.conn(), topic, &tasks).await
+            }
+        }
+    }
+}
+
+// Generates task records.
+fn task_records(table: &Path) -> TokenStream {
+    //
+    quote! {
+        //
+        #[derive(::diesel::Queryable, ::diesel::Selectable)]
+        #[diesel(table_name = #table)]
+        #[diesel(check_for_backend(::diesel::pg::Pg))]
+        struct TaskIdentityRecord {
+            #[diesel(column_name = f_id)]
+            id: String,
+
+            #[diesel(column_name = f_topic)]
+            topic: String,
+            #[diesel(column_name = f_oper)]
+            oper: String,
+
+            #[diesel(column_name = f_obj_id)]
+            obj_id: String,
+            #[diesel(column_name = f_version)]
+            ver: i64,
+            #[diesel(column_name = f_key)]
+            image: String,
+
+            #[diesel(column_name = f_generation)]
+            gen_no: i64,
+            #[diesel(column_name = f_status)]
+            status: String,
+        }
+
+        #[derive(::diesel::Insertable)]
+        #[diesel(table_name = #table)]
+        struct TaskItem<'a> {
+            #[diesel(column_name = f_id)]
+            id: &'a str,
+
+            #[diesel(column_name = f_topic)]
+            topic: &'a str,
+            #[diesel(column_name = f_oper)]
+            oper: &'a str,
+
+            #[diesel(column_name = f_obj_id)]
+            obj_id: &'a str,
+            #[diesel(column_name = f_version)]
+            ver: i64,
+            #[diesel(column_name = f_key)]
+            image: &'a str,
+
+            #[diesel(column_name = f_generation)]
+            gen_no: i64,
+            #[diesel(column_name = f_status)]
+            status: &'a str,
+            #[diesel(column_name = f_visible_at)]
+            visible_at: ::time::OffsetDateTime,
+        }
+    }
+}
+
+// Generates validate identities.
+fn validate_identities() -> TokenStream {
+    //
+    quote! {
+        //
+        let records = records
+            .into_iter()
+            .map(|record| {
+                //
+                let TaskIdentityRecord {
+                    id,
+                    topic,
+                    oper,
+                    obj_id,
+                    ver,
+                    image,
+                    gen_no: gen_value,
+                    status,
+                } = record;
+
+                (
+                    id,
+                    (
+                        topic,
+                        oper,
+                        obj_id,
+                        ver,
+                        image,
+                        gen_value,
+                        status,
+                    ),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        if records.len() != tasks.len() {
+            //
+            return Err(ObjDeptError::Unrecoverable {
+                message: "object task batch identity is incomplete".into(),
+            });
+        }
+
+        for task in tasks {
+            //
+            let Some(record) = records.get(&task.id) else {
+                //
+                return Err(ObjDeptError::Unrecoverable {
+                    message: "object task batch identity is incomplete"
+                        .into(),
+                });
+            };
+
+            let (
+                record_topic,
+                record_oper,
+                record_obj_id,
+                record_ver,
+                record_image,
+                record_gen,
+                record_status,
+            ) = record;
+
+            let is_same_identity = record_topic == topic
+                && record_oper == task.oper
+                && record_obj_id == &task.key.id
+                && *record_ver == i64::from(task.key.ver)
+                && record_image == &task.key.image
+                && *record_gen == ORDINARY_GENERATION;
+
+            if !is_same_identity {
+                //
+                return Err(ObjDeptError::Unrecoverable {
+                    message: "object task identity conflict".into(),
+                });
+            }
+
+            match record_status.as_str() {
+                //
+                PENDING | PROCESSING => {}
+
+                OPERATOR => {
+                    //
+                    return
+                        Err(ObjDeptError::
+                            conflict("object task requires operator \
+                                repair".into()));
+                }
+
+                _ => {
+                    //
+                    return Err(ObjDeptError::Unrecoverable {
+                        message: "invalid object task status".into(),
+                    });
+                }
             }
         }
     }

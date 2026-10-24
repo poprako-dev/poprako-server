@@ -40,10 +40,6 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
     //
     // Build a basic workset fixture for pagination and mutation tests.
@@ -53,7 +49,7 @@ fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
         id: id.into(),
         team_id: team_id.into(),
         index,
-        name: format!("workset-{}", index),
+        name: ["workset-", &index.to_string()].concat(),
         description: None,
         comic_count: 0,
         created_at: time,
@@ -90,14 +86,10 @@ fn token(user_id: &str) -> UserToken {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     // Build an admin member fixture for workset admin-only operations.
     MemberInfo {
-        id: format!("member-{}-{}", user_id, team_id),
+        id: ["member-", user_id, "-", team_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
@@ -226,14 +218,15 @@ async fn create_rolls_back_missing_team() {
 
     mock.seed_member(admin_member("user-1", "missing"));
 
-    let err = create((&mock, &mock), token("user-1"), create_instr("missing"))
-        .await
-        .err()
-        .unwrap();
+    let error =
+        create((&mock, &mock), token("user-1"), create_instr("missing"))
+            .await
+            .err()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(snapshot.worksets.is_empty());
 }
@@ -261,12 +254,12 @@ async fn get_info_propagates_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = get_info((&mock,), token("user-1"), "missing".into())
+    let error = get_info((&mock,), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -359,7 +352,7 @@ async fn update_info_propagates_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = update_info(
+    let error = update_info(
         (&mock,),
         token("user-1"),
         UpdateWorksetInfoInstr {
@@ -372,7 +365,7 @@ async fn update_info_propagates_missing_workset() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -489,14 +482,14 @@ async fn delete_rolls_back_missing_workset() {
 
     let cover_key = seed_comic_cover(&mock, "comic-1");
 
-    let err = delete((&mock, &mock), token("user-1"), "missing".into())
+    let error = delete((&mock, &mock), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert_eq!(snapshot.worksets.len(), 1);
     assert_eq!(snapshot.comics.len(), 1);
     assert_eq!(

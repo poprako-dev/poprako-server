@@ -12,14 +12,14 @@ use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
 // Build the client-visible error for an unresolvable comic or chapter.
 fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
     //
-    let (msg, resource_kind, resource_id) = match oper {
+    let (message, resource_kind, resource_id) = match oper {
         //
         ResolveTeamId::Comic { id } => {
             (trl("error-comic-not-found"), "comic", *id)
@@ -32,7 +32,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
 
     expected_error! {
         ExpectedVariant::Args,
-        message: msg;
+        message: message;
         resource_kind = %resource_kind,
         resource_id = %resource_id,
         operation = "resolve team id",
@@ -74,7 +74,7 @@ async fn resolve_team_id(
         return Err(missing_resource(oper));
     };
 
-    accept(team_id)
+    accept!(team_id)
 }
 
 impl Run<ResolveTeamId<'_>> for HybRepo {

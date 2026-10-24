@@ -25,7 +25,6 @@ use crate::data::view::chapter::ChapterInfoView;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -43,7 +42,8 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::chapter_creation as chapter_creation_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
@@ -92,7 +92,7 @@ where
     let chapter_info_vals =
         chapter_info_views(repo, obj_dept, chapter_infos).await?;
 
-    accept(chapter_info_vals)
+    accept!(chapter_info_vals)
 }
 
 /// Fetches a chapter by ID.
@@ -127,7 +127,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(ChapterInfoView::from(chapter_info))
+    accept!(ChapterInfoView::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -162,7 +162,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(chapter_info.map(ChapterInfoView::from))
+    accept!(chapter_info.map(ChapterInfoView::from))
 }
 
 /// Creates a new chapter.
@@ -240,11 +240,11 @@ where
             )
             .await?;
 
-            accept(chapter_info.id)
+            accept!(chapter_info.id)
         })
         .await?;
 
-    accept(CreateChapterVal { id: chapter_id })
+    accept!(CreateChapterVal { id: chapter_id })
 }
 
 /// Updates chapter metadata.
@@ -291,11 +291,11 @@ where
 
         chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-        let subtitle = instr.subtitle.as_deref().map(str::trim);
-
-        match subtitle {
+        match instr.subtitle {
             //
-            Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
+            Some(next_subtitle)
+                if next_subtitle.trim() != chapter_info.subtitle =>
+            {
                 //
                 let chapter_info_update = ChapterPatch {
                     id: instr.id,
@@ -309,17 +309,20 @@ where
                 .step_on(repo, context)
                 .await?;
 
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                let entry = ChapterWorkflowRecordEntryShape::new(
                     chapter_info.id.as_str(),
-                    Some(token.user_id.as_str().into()),
+                    Some(token.user_id.as_str()),
                     ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
                         previous_subtitle: chapter_info.subtitle,
-                        next_subtitle: next_subtitle.to_owned(),
+                        next_subtitle: chapter_info_update
+                            .trimmed_subtitle()
+                            .unwrap_or_default()
+                            .to_owned(),
                     },
                 );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
@@ -334,11 +337,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Marks a chapter as the pinned chapter for its comic.
@@ -427,33 +430,31 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut workflow_record_entries = Vec::with_capacity(2);
+            let mut entries = Vec::with_capacity(2);
 
-            if let Some(prev_pinned_chapter) = prev_pinned_chapter
+            if let Some(prev_pinned_chapter) = &prev_pinned_chapter
                 && prev_pinned_chapter.id != chapter_info.id
             {
                 //
-                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    prev_pinned_chapter.id,
-                    Some(token.user_id.as_str().into()),
+                entries.push(ChapterWorkflowRecordEntryShape::new(
+                    &prev_pinned_chapter.id,
+                    Some(token.user_id.as_str()),
                     ChapterWorkflowRecordPayload::ChapterUnpinned,
                 ));
             }
 
             if !chapter_info.is_pinned {
                 //
-                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+                entries.push(ChapterWorkflowRecordEntryShape::new(
                     chapter_info.id.as_str(),
-                    Some(token.user_id.as_str().into()),
+                    Some(token.user_id.as_str()),
                     ChapterWorkflowRecordPayload::ChapterPinned,
                 ));
             }
 
-            CreateChapterWorkflowRecords {
-                entries: &workflow_record_entries,
-            }
-            .step_on(repo, context)
-            .await?;
+            CreateChapterWorkflowRecords { entries: &entries }
+                .step_on(repo, context)
+                .await?;
 
             TouchComicLastActive {
                 id: &chapter_info.comic_id,
@@ -461,9 +462,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

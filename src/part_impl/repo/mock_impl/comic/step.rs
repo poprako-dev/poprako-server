@@ -12,7 +12,7 @@ use crate::part_impl::repo::mock_impl::comic::{
 };
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     // Use base errors for create step inside transaction context.
@@ -44,9 +44,9 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             id: oper.entry.id.clone(),
             workset_id: oper.entry.workset_id.to_string(),
             index: oper.entry.index,
-            title: oper.entry.title.to_owned(),
-            author: oper.entry.author.to_owned(),
-            description: oper.entry.description.map(str::to_owned),
+            title: oper.entry.trimmed_title().to_owned(),
+            author: oper.entry.trimmed_author().to_owned(),
+            description: oper.entry.trimmed_description().map(str::to_owned),
             chapter_count: 0,
             creator_id: oper.entry.creator_id.to_string(),
             workset: None,
@@ -60,7 +60,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 
         context.state.comics.push(comic.clone());
 
-        accept(comic)
+        accept!(comic)
     }
 }
 
@@ -114,7 +114,7 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListComicInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
-        accept(list_comic_infos(&context.state, oper.spec))
+        accept!(list_comic_infos(&context.state, oper.spec))
     }
 }
 
@@ -152,7 +152,7 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
             .filter(|chapter_info| chapter_info.comic_id == oper.id)
             .count();
 
-        accept(index)
+        accept!(index)
     }
 }
 
@@ -187,7 +187,7 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 
         comic.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -222,6 +222,6 @@ impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
 
         comic.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }

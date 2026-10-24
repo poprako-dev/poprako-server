@@ -35,7 +35,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -64,21 +64,18 @@ where
         + Send
         + Sync,
 {
-    let termbase_entry = termbase_complex::build_entry(
+    let entry = termbase_complex::build_entry(
         instr.team_id,
         instr.comic_id,
-        &instr.name,
-        instr.description.as_deref(),
+        instr.name,
+        instr.description,
         token.user_id.clone(),
     )?;
 
     let termbase_id = nucl
         .coord(async move |context| {
             //
-            let team_id = match (
-                &termbase_entry.team_id,
-                &termbase_entry.comic_id,
-            ) {
+            let team_id = match (&entry.team_id, &entry.comic_id) {
                 //
                 (Some(team_id), None) => {
                     //
@@ -111,8 +108,8 @@ where
                     //
                     return Err(unrecoverable_error! {
                         message: "validated termbase scope is invalid".into();
-                        team_id = ?termbase_entry.team_id,
-                        comic_id = ?termbase_entry.comic_id,
+                        team_id = ?entry.team_id,
+                        comic_id = ?entry.comic_id,
                         "validated termbase scope is invalid",
                     });
                 }
@@ -127,12 +124,12 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_msg =
+                let error_message =
                     trl("error-team-translator-or-proofreader-required");
 
                 return Err(expected_error! {
                     ExpectedVariant::Perm,
-                    message: err_msg;
+                    message: error_message;
                     team_id = %team_id,
                     user_id = %token.user_id,
                     "termbase creator membership missing",
@@ -141,17 +138,15 @@ where
 
             termbase_perm_complex::ensure_user_can_write_team(&member_info)?;
 
-            let termbase_info = CreateTermbase {
-                entry: &termbase_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let termbase_info = CreateTermbase { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
-            accept(termbase_info.id)
+            accept!(termbase_info.id)
         })
         .await?;
 
-    accept(CreateTermbaseVal { id: termbase_id })
+    accept!(CreateTermbaseVal { id: termbase_id })
 }
 
 /// Fetches a terminology base by ID.
@@ -183,7 +178,7 @@ where
 
     termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    accept(termbase_info.into())
+    accept!(termbase_info.into())
 }
 
 /// Lists terminology bases directly owned by a team.
@@ -224,10 +219,8 @@ where
     termbase_perm_complex::ensure_user_can_read_team(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Team {
-        team_id: &instr.team_id,
-        fuzzy_name: termbase_complex::normalize_fuzzy_name(
-            instr.fuzzy_name.as_deref(),
-        ),
+        team_id: instr.team_id,
+        fuzzy_name: instr.fuzzy_name,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -238,7 +231,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(termbase_infos.into_iter().map(Into::into).collect())
+    accept!(termbase_infos.into_iter().map(Into::into).collect())
 }
 
 /// Lists team and comic terminology bases visible from a comic.
@@ -269,10 +262,8 @@ where
     termbase_perm_complex::ensure_user_can_read_comic(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Comic {
-        comic_id: &instr.comic_id,
-        fuzzy_name: termbase_complex::normalize_fuzzy_name(
-            instr.fuzzy_name.as_deref(),
-        ),
+        comic_id: instr.comic_id,
+        fuzzy_name: instr.fuzzy_name,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -283,7 +274,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(termbase_infos.into_iter().map(Into::into).collect())
+    accept!(termbase_infos.into_iter().map(Into::into).collect())
 }
 
 /// Replaces a terminology base's name and description.
@@ -307,8 +298,8 @@ where
 {
     let termbase_info_update = termbase_complex::build_update(
         instr.id,
-        &instr.name,
-        instr.description.as_deref(),
+        instr.name,
+        instr.description,
     )?;
 
     nucl.coord(async move |context| {
@@ -338,11 +329,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a terminology base and all child terms.
@@ -390,11 +381,11 @@ where
 
         delete_cascade(repo, context, &termbase_info.id).await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes one terminology base and all child terms in a transaction.
@@ -423,5 +414,5 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }

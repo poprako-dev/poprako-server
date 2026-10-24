@@ -12,8 +12,8 @@ use poprako_rdb_core::RdbCore;
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::chapter::{ChapterEntry, ChapterStageRepl};
-use crate::model::write::comic::{ComicEntry, ComicRepl};
+use crate::model::write::chapter::ChapterStageRepl;
+use crate::model::write::comic::ComicRepl;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{CreateChapter, UpdateChapterStage};
@@ -25,6 +25,8 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
+use crate::shape::write::chapter::ChapterEntryShape;
+use crate::shape::write::comic::ComicEntryShape;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicInclOpt;
@@ -37,11 +39,11 @@ async fn verify_related_workset_team(
     comic_fixture: &ComicFixture,
 ) {
     let comic_list_spec = ComicListSpec {
-        workset_id: &comic_fixture.workset_entry.id,
-        fuzzy_title: Some("Comic"),
+        workset_id: comic_fixture.workset_entry.id.clone(),
+        fuzzy_title: Some("Comic".into()),
         stages: None,
         status: None,
-        incl_opt: &[ComicInclOpt::WorksetTeam],
+        incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -83,10 +85,10 @@ async fn verify_related_workset_team(
 // Verify updated title, author search, and one-based display index search.
 async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     let comic_info_update = ComicRepl {
-        id: comic_fixture.comic_entry.id.clone(),
-        title: "RDB Comic Updated",
-        author: "RDB Author Updated",
-        description: Some("updated"),
+        id: comic_fixture.comic_info.id.clone(),
+        title: "RDB Comic Updated".into(),
+        author: "RDB Author Updated".into(),
+        description: Some("updated".into()),
     };
 
     repo.run(&UpdateComic {
@@ -97,7 +99,7 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 
     let comic_info = repo
         .run(&GetComicInfo {
-            id: &comic_fixture.comic_entry.id,
+            id: &comic_fixture.comic_info.id,
             incls: &[],
         })
         .await
@@ -106,11 +108,11 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     assert_eq!(comic_info.title, "RDB Comic Updated");
 
     let comic_list_spec = ComicListSpec {
-        workset_id: &comic_fixture.workset_entry.id,
-        fuzzy_title: Some("RDB Author Updated"),
+        workset_id: comic_fixture.workset_entry.id.clone(),
+        fuzzy_title: Some("RDB Author Updated".into()),
         stages: None,
         status: None,
-        incl_opt: &[],
+        incl_opt: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -126,15 +128,15 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 
     assert_eq!(
         comic_infos.as_slice().first().unwrap().id,
-        comic_fixture.comic_entry.id
+        comic_fixture.comic_info.id
     );
 
     let comic_list_spec = ComicListSpec {
-        workset_id: &comic_fixture.workset_entry.id,
-        fuzzy_title: Some("1"),
+        workset_id: comic_fixture.workset_entry.id.clone(),
+        fuzzy_title: Some("1".into()),
         stages: None,
         status: None,
-        incl_opt: &[],
+        incl_opt: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -156,11 +158,11 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%", "_", "\\"] {
         //
         let comic_list_spec = ComicListSpec {
-            workset_id: &comic_fixture.workset_entry.id,
-            fuzzy_title: Some(fuzzy_title),
+            workset_id: comic_fixture.workset_entry.id.clone(),
+            fuzzy_title: Some(fuzzy_title.into()),
             stages: None,
             status: None,
-            incl_opt: &[],
+            incl_opt: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -176,10 +178,10 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     }
 
     let comic_info_update = ComicRepl {
-        id: comic_fixture.comic_entry.id.clone(),
-        title: "RDB 100%_Comic\\Updated",
-        author: "RDB Author Updated",
-        description: Some("updated"),
+        id: comic_fixture.comic_info.id.clone(),
+        title: "RDB 100%_Comic\\Updated".into(),
+        author: "RDB Author Updated".into(),
+        description: Some("updated".into()),
     };
 
     repo.run(&UpdateComic {
@@ -191,11 +193,11 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%_", "\\Updated"] {
         //
         let comic_list_spec = ComicListSpec {
-            workset_id: &comic_fixture.workset_entry.id,
-            fuzzy_title: Some(fuzzy_title),
+            workset_id: comic_fixture.workset_entry.id.clone(),
+            fuzzy_title: Some(fuzzy_title.into()),
             stages: None,
             status: None,
-            incl_opt: &[],
+            incl_opt: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -212,40 +214,36 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 }
 
 // Seed another workset to ensure stage filters do not leak across worksets.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn seed_sibling_stages(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
 ) {
     let sibling_workset = WorksetEntry {
-        id: format!("{}sibling-workset", PREFIX),
+        id: [PREFIX, "sibling-workset"].concat(),
         team_id: comic_fixture.team_entry.id.clone(),
         index: 1,
-        name: "Sibling Workset",
+        name: "Sibling Workset".into(),
         description: None,
     };
 
-    let sibling_comic = ComicEntry {
-        id: format!("{}sibling-comic", PREFIX),
-        workset_id: sibling_workset.id.clone().into(),
+    let sibling_comic = ComicEntryShape {
+        id: [PREFIX, "sibling-comic"].concat(),
+        workset_id: &sibling_workset.id,
         index: 0,
-        title: "Sibling Comic",
-        author: "Sibling Author",
+        title: "Sibling Comic".into(),
+        author: "Sibling Author".into(),
         description: None,
-        creator_id: comic_fixture.creator_form.id.clone().into(),
+        creator_id: &comic_fixture.creator_form.id,
     };
 
-    let sibling_chapter = ChapterEntry {
-        id: format!("{}sibling-chapter", PREFIX),
-        comic_id: sibling_comic.id.clone().into(),
+    let sibling_chapter = ChapterEntryShape {
+        id: [PREFIX, "sibling-chapter"].concat(),
+        comic_id: &sibling_comic.id,
         is_pinned: true,
         index: 0,
         subtitle: "Sibling Chapter".into(),
-        creator_id: comic_fixture.creator_form.id.clone().into(),
+        creator_id: &comic_fixture.creator_form.id,
     };
 
     let sibling_stage_update = ChapterStageRepl {
@@ -302,7 +300,7 @@ async fn verify_single_stage_filters(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    chapter_entry: &ChapterEntry<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) {
     let legal_stage_phases = [
         (Stage::RawProvide, StagePhase::Pending),
@@ -329,7 +327,7 @@ async fn verify_single_stage_filters(
             .unwrap();
 
         let stage_update = ChapterStageRepl {
-            id: chapter_entry.id.clone(),
+            id: entry.id.clone(),
             stages,
         };
 
@@ -346,11 +344,11 @@ async fn verify_single_stage_filters(
         .unwrap();
 
         let comic_list_spec = ComicListSpec {
-            workset_id: &comic_fixture.workset_entry.id,
+            workset_id: comic_fixture.workset_entry.id.clone(),
             fuzzy_title: None,
             stages: Some(single_stage_filter(stage, phase)),
             status: None,
-            incl_opt: &[],
+            incl_opt: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -371,7 +369,7 @@ async fn verify_combined_stage_filters(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    chapter_entry: &ChapterEntry<'_>,
+    entry: &ChapterEntryShape<'_>,
 ) {
     let combined_stages = StageMask::try_from(0)
         .unwrap()
@@ -381,7 +379,7 @@ async fn verify_combined_stage_filters(
         .unwrap();
 
     let combined_update = ChapterStageRepl {
-        id: chapter_entry.id.clone(),
+        id: entry.id.clone(),
         stages: combined_stages,
     };
 
@@ -398,14 +396,14 @@ async fn verify_combined_stage_filters(
     .unwrap();
 
     let combined_filter_spec = ComicListSpec {
-        workset_id: &comic_fixture.workset_entry.id,
+        workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: None,
         stages: Some(stage_filter(&[
             (Stage::Translate, StagePhase::Active),
             (Stage::Proofread, StagePhase::Completed),
         ])),
         status: None,
-        incl_opt: &[],
+        incl_opt: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -420,15 +418,15 @@ async fn verify_combined_stage_filters(
     assert_eq!(combined_comic_infos.len(), 1);
     assert_eq!(
         combined_comic_infos.as_slice().first().unwrap().id,
-        comic_fixture.comic_entry.id
+        comic_fixture.comic_info.id
     );
 
     let no_stage_filter_spec = ComicListSpec {
-        workset_id: &comic_fixture.workset_entry.id,
+        workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: None,
         stages: Some(StageMask::try_filter_from(0xFFF).unwrap()),
         status: None,
-        incl_opt: &[],
+        incl_opt: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -447,10 +445,6 @@ async fn verify_combined_stage_filters(
 /// Verifies comic roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -469,25 +463,19 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     verify_literal_search(&repo, &comic_fixture).await;
 
-    let chapter_entry = ChapterEntry {
-        id: format!("{}stage-chapter", PREFIX),
-        comic_id: comic_fixture.comic_entry.id.clone().into(),
+    let entry = ChapterEntryShape {
+        id: [PREFIX, "stage-chapter"].concat(),
+        comic_id: &comic_fixture.comic_info.id,
         is_pinned: true,
         index: 0,
         subtitle: "Stage Chapter".into(),
-        creator_id: comic_fixture.creator_form.id.clone().into(),
+        creator_id: &comic_fixture.creator_form.id,
     };
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateChapter {
-                entry: &chapter_entry,
-            },
-        )
-        .await?;
+        repo.step(context, &CreateChapter { entry: &entry }).await?;
 
         Ok::<(), crate::result::BaseError>(())
     })
@@ -496,11 +484,9 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     seed_sibling_stages(&repo, &nucl, &comic_fixture).await;
 
-    verify_single_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
-        .await;
+    verify_single_stage_filters(&repo, &nucl, &comic_fixture, &entry).await;
 
-    verify_combined_stage_filters(&repo, &nucl, &comic_fixture, &chapter_entry)
-        .await;
+    verify_combined_stage_filters(&repo, &nucl, &comic_fixture, &entry).await;
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 

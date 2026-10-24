@@ -196,7 +196,7 @@ async fn list_infos_non_member_is_rejected() {
 
     mock.seed_comment(comment("comment-1", "team-1", "author-user", now()));
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("outsider-user"),
         list_instr("team-1", Vec::new()),
@@ -205,7 +205,7 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -255,12 +255,12 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let err = create(&mock, token("outsider-user"), create_instr("team-1"))
+    let error = create(&mock, token("outsider-user"), create_instr("team-1"))
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().comments.is_empty());
 }

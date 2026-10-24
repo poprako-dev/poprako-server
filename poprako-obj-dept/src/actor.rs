@@ -24,42 +24,43 @@ pub const ATTEMPT_TIMEOUT: std::time::Duration =
     std::time::Duration::from_mins(1);
 
 // Maps one adapter failure to its mechanical durable-task action.
-fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
+fn action_from_error(error: ObjDeptError) -> ObjTaskAction {
     //
-    match err {
+    match error {
         //
-        ObjDeptError::Retryable { msg }
-        | ObjDeptError::Unavailable { msg }
-        | ObjDeptError::Conflict { msg } => ObjTaskAction::Retry { msg },
+        ObjDeptError::Retryable { message }
+        | ObjDeptError::Unavailable { message }
+        | ObjDeptError::Conflict { message } => {
+            ObjTaskAction::Retry { message }
+        }
 
-        ObjDeptError::Invalid { msg } | ObjDeptError::Unrecoverable { msg } => {
-            ObjTaskAction::Operator { msg }
+        ObjDeptError::Invalid { message }
+        | ObjDeptError::Unrecoverable { message } => {
+            ObjTaskAction::Operator { message }
         }
     }
 }
 
 // Persists one actor decision through the durable-task adapter.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn persist_action<P>(
     prom: &P,
     task: &ObjDeptPromTask,
     action: &ObjTaskAction,
 ) -> ObjDeptRest<usize>
 where
-    P: ObjDeptProm,
+    P: ObjDeptProm + Send + Sync,
 {
     //
     match action {
         //
         ObjTaskAction::Complete => prom.complete_task(task).await,
 
-        ObjTaskAction::Retry { msg } => prom.retry_task(task, msg).await,
+        ObjTaskAction::Retry { message } => {
+            prom.retry_task(task, message).await
+        }
 
-        ObjTaskAction::Operator { msg } => {
-            prom.mark_task_operator(task, msg).await
+        ObjTaskAction::Operator { message } => {
+            prom.mark_task_operator(task, message).await
         }
     }
 }
@@ -74,19 +75,15 @@ async fn wait_poll(token: &CancellationToken) -> bool {
 }
 
 // Runs typed dispatch and persists its fenced task mutation.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_attempt<P, H, F>(
     prom: &P,
     handler: &H,
     task: &ObjDeptPromTask,
 ) -> ObjDeptRest<usize>
 where
-    P: ObjDeptProm,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     //
     let action = match validate_task(task) {
@@ -95,17 +92,17 @@ where
             //
             Ok(action) => action,
 
-            Err(err) => action_from_err(err),
+            Err(error) => action_from_error(error),
         },
 
-        Err(err) => action_from_err(err),
+        Err(error) => action_from_error(error),
     };
 
-    if let ObjTaskAction::Operator { msg } = &action {
+    if let ObjTaskAction::Operator { message } = &action {
         //
         tracing::error!(
             task_id = task.id,
-            err_msg = %msg,
+            error_message = %message,
             "ObjDept task requires operator repair",
         );
     }
@@ -115,15 +112,11 @@ where
 
 // Keeps the actor helper call graph in the repository's required order.
 // Claims immediately, drains visible work, and waits only when no task is available.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_claim_loop<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
-    P: ObjDeptProm,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     loop {
         //
@@ -148,11 +141,11 @@ where
                 continue;
             }
 
-            Ok(Err(err)) => {
+            Ok(Err(error)) => {
                 //
                 tracing::error!(
                     operation = "claim_obj_task",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "ObjDept task claim failed",
                 );
 
@@ -197,9 +190,9 @@ where
                 "ObjDept task changed multiple rows",
             ),
 
-            Ok(Err(err)) => tracing::error!(
+            Ok(Err(error)) => tracing::error!(
                 task_id = task.id,
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "ObjDept task update failed",
             ),
 
@@ -214,7 +207,7 @@ where
 // Runs maintenance immediately and then at an independent fixed cadence.
 async fn run_maintenance_loop<P>(prom: P, token: CancellationToken)
 where
-    P: ObjDeptProm,
+    P: ObjDeptProm + Send + Sync,
 {
     loop {
         //
@@ -230,9 +223,9 @@ where
             //
             Ok(Ok(_)) => {}
 
-            Ok(Err(err)) => tracing::error!(
+            Ok(Err(error)) => tracing::error!(
                 operation = "reset_obj_tasks",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "ObjDept task reset failed",
             ),
 
@@ -249,15 +242,11 @@ where
 }
 
 // Runs claim and maintenance under one cancellation supervisor.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
-    P: ObjDeptProm + Clone,
-    H: Fn(ObjDeptPromTask) -> F,
-    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+    P: ObjDeptProm + Clone + Send + Sync,
+    H: Fn(ObjDeptPromTask) -> F + Send + Sync,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     let claim_loop = run_claim_loop(prom.clone(), handler, token.clone());
 

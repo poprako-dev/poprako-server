@@ -62,18 +62,20 @@ pub async fn import_translation(
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
     //
-    chapter_port_import_translation_usecase::import_translation::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-    >(
-        (harn.nucl().rept_read(), harn.repo()),
-        user_token,
-        instr,
-        chapter_id,
+    Ok(
+        chapter_port_import_translation_usecase::import_translation::<
+            _,
+            RdbContext<ReptRead>,
+            HybRepo,
+        >(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            instr,
+            chapter_id,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.
@@ -147,10 +149,6 @@ pub async fn export_translation(
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn export_translation_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -158,7 +156,7 @@ pub async fn export_translation_download(
     Query(instr): Query<ExportChapterTranslationInstr>,
 ) -> Result<Response, HttpError> {
     //
-    let filename = format!("chapter_{}", chapter_id);
+    let filename = ["chapter_", &chapter_id].concat();
 
     let payload = export::export_payload(
         &harn,
@@ -194,7 +192,7 @@ pub async fn alloc_artwork(
     Json(instr): Json<AllocChapterArtworkInstr>,
 ) -> HttpResult<AllocChapterArtworkVal> {
     //
-    chapter_port_artwork_usecase::alloc_artwork::<
+    Ok(chapter_port_artwork_usecase::alloc_artwork::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -211,7 +209,7 @@ pub async fn alloc_artwork(
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// Optimistically confirms artwork and atomically completes typesetting/redraw.
@@ -255,7 +253,7 @@ pub async fn mark_artwork_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// Returns the original object URL of the current available artwork.
@@ -278,11 +276,11 @@ pub async fn export_artwork(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ExportChapterArtworkVal> {
     //
-    chapter_port_artwork_usecase::export_artwork::<
+    Ok(chapter_port_artwork_usecase::export_artwork::<
         RdbContext<ReptRead>,
         HybRepo,
         _,
     >((harn.repo(), harn.obj_dept()), user_token, chapter_id)
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }

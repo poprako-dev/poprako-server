@@ -70,7 +70,7 @@ macro_rules! __general_prom_delivery {
                 async fn retry(
                     &self,
                     task: &ClaimedTask,
-                    msg: &str,
+                    message: &str,
                     visible_at: OffsetDateTime,
                     retry_delta: i64,
                 ) -> Result<(), Self::Error> {
@@ -79,7 +79,7 @@ macro_rules! __general_prom_delivery {
                             RetryTask::new(
                                 task.id(),
                                 task.claim_token(),
-                                msg,
+                                message,
                                 &visible_at,
                                 retry_delta,
                             )
@@ -94,13 +94,17 @@ macro_rules! __general_prom_delivery {
                 async fn dead(
                     &self,
                     task: &ClaimedTask,
-                    msg: &str,
+                    message: &str,
                 ) -> Result<(), Self::Error> {
                     self.nucl
                         .coord(async |context| {
-                            FailTask::new(task.id(), task.claim_token(), msg)
-                                .step_on(&self.repo, context)
-                                .await
+                            FailTask::new(
+                                task.id(),
+                                task.claim_token(),
+                                message,
+                            )
+                            .step_on(&self.repo, context)
+                            .await
                         })
                         .await?;
 

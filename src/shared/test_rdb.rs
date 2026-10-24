@@ -35,10 +35,6 @@ fn run_migrations(database_url: &str) {
         .expect("test PostgreSQL migrations should succeed");
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn start() -> TestRdb {
     //
     let container = Postgres::default()
@@ -57,8 +53,14 @@ pub async fn start() -> TestRdb {
         .await
         .expect("test PostgreSQL port should be available");
 
-    let database_url =
-        format!("postgres://postgres:postgres@{}:{}/postgres", host, port);
+    let database_url = [
+        "postgres://postgres:postgres@",
+        &host.to_string(),
+        ":",
+        &port.to_string(),
+        "/postgres",
+    ]
+    .concat();
 
     run_migrations(&database_url);
 

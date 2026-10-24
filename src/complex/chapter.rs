@@ -27,7 +27,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{
     Stage, StageOper, StagePhase, try_modify_stage,
@@ -39,18 +39,14 @@ pub fn gen_id() -> String {
     next_snowflake_id()
 }
 
-/// Returns the trimmed user-supplied subtitle if non-empty, or a generated
-/// default in the format "Ch. N" (1-based).
-pub fn subtitle_or_default(
-    subtitle: Option<&str>,
-    index: usize,
-) -> Cow<'_, str> {
+/// Moves the supplied subtitle when it contains non-whitespace text, or
+/// generates a default in the format "Ch. N" (1-based).
+/// Persistence borrows its trimmed view from the chapter Shape.
+pub fn subtitle_or_default(subtitle: Option<String>, index: usize) -> String {
     //
-    let subtitle = subtitle.map(str::trim);
-
     subtitle
-        .filter(|value| !value.is_empty())
-        .map_or_else(|| Cow::Owned(default_subtitle(index)), Cow::Borrowed)
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| default_subtitle(index))
 }
 
 /// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]
@@ -70,7 +66,7 @@ pub fn build_stage_update(
         stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
     };
 
-    accept(chapter_stage_update)
+    accept!(chapter_stage_update)
 }
 
 /// Rejects a minimal persisted Chapter scope once it has been published.
@@ -91,7 +87,7 @@ pub fn ensure_writable_state(
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Rejects user mutations once a chapter has been published.

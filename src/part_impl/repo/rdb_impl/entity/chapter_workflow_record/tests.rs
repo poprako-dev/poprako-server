@@ -67,7 +67,7 @@ fn payloads_round_trip_through_rdb_storage_forms() {
     }
 }
 
-// legacy_export_payload_decodes_as_one_hot_spec(ChapterWorkflowRecordPayload)(compatibility): existing singular-format rows remain readable after aggregate exports are introduced.
+// legacy_export_payload_decodes_as_one_hot_spec(ChapterWorkflowRecordPayload)(compatibility): existing singular-format records remain readable after aggregate exports are introduced.
 #[test]
 fn legacy_export_payload_decodes_as_one_hot_spec() {
     let payload = decode_payload(

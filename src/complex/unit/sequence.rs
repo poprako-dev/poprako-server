@@ -5,7 +5,7 @@ mod tests;
 
 use std::collections::HashMap;
 
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 /// Orders a complete persisted Unit chain without changing record content.
 ///
@@ -23,7 +23,7 @@ where
 {
     //
     if units.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let mut index_by_id = HashMap::with_capacity(units.len());
@@ -31,7 +31,7 @@ where
     for (index, unit) in units.iter().enumerate() {
         //
         if index_by_id.insert(id_of(unit), index).is_some() {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
     }
 
@@ -46,16 +46,16 @@ where
             Some(next_id) => {
                 //
                 let Some(next_index) = index_by_id.get(next_id).copied() else {
-                    return Err(corrupt_unit_chain_err());
+                    return Err(corrupt_unit_chain_error());
                 };
 
                 let Some(has_predecessor) = has_predecessor.get_mut(next_index)
                 else {
-                    return Err(corrupt_unit_chain_err());
+                    return Err(corrupt_unit_chain_error());
                 };
 
                 if std::mem::replace(has_predecessor, true) {
-                    return Err(corrupt_unit_chain_err());
+                    return Err(corrupt_unit_chain_error());
                 }
 
                 Some(next_index)
@@ -72,11 +72,11 @@ where
     );
 
     let Some(head_index) = head_indexes.next() else {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     };
 
     if head_indexes.next().is_some() {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     }
 
     let mut ordered_indexes = Vec::with_capacity(units.len());
@@ -86,20 +86,20 @@ where
     while let Some(index) = current_index {
         //
         if ordered_indexes.len() >= units.len() {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
 
         ordered_indexes.push(index);
 
         let Some(next_index) = next_index_by_index.get(index).copied() else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         current_index = next_index;
     }
 
     if ordered_indexes.len() != units.len() {
-        return Err(corrupt_unit_chain_err());
+        return Err(corrupt_unit_chain_error());
     }
 
     drop(index_by_id);
@@ -116,17 +116,17 @@ where
             .get(desired_original_index)
             .copied()
         else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         let Some(displaced_original_index) =
             original_index_by_position.get(target_position).copied()
         else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         if target_position >= units.len() || current_position >= units.len() {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         }
 
         units.swap(target_position, current_position);
@@ -136,7 +136,7 @@ where
         let Some(desired_position) =
             position_by_original_index.get_mut(desired_original_index)
         else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         *desired_position = target_position;
@@ -144,17 +144,17 @@ where
         let Some(displaced_position) =
             position_by_original_index.get_mut(displaced_original_index)
         else {
-            return Err(corrupt_unit_chain_err());
+            return Err(corrupt_unit_chain_error());
         };
 
         *displaced_position = current_position;
     }
 
-    accept(())
+    accept!(())
 }
 
 // Returns an unrecoverable error for a corrupt Unit chain.
-fn corrupt_unit_chain_err() -> BaseError {
+fn corrupt_unit_chain_error() -> BaseError {
     //
     unrecoverable_error! {
         message: "persisted Unit chain is corrupt".to_string();

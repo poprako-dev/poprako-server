@@ -7,7 +7,7 @@ use poprako_obj_dept::ObjDeptView;
 use crate::data::view::member::MemberInfoView;
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::obj_dept::{TeamAvatar, UserAvatar};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::usecase::team::view::{
     avatar_urls as team_avatar_urls, team_info_view_from_urls,
 };
@@ -57,7 +57,7 @@ where
         team_info_view_from_urls(team_info, avatar_urls)
     });
 
-    accept(MemberInfoView::from_model(model, user, team))
+    accept!(MemberInfoView::from_model(model, user, team))
 }
 
 /// Resolves member models with one query per avatar object type.
@@ -88,7 +88,7 @@ where
         team_avatar_urls(obj_dept, team_ids),
     )?;
 
-    accept(
+    accept!(
         models
             .into_iter()
             .map(|mut model| {

@@ -104,7 +104,7 @@ async fn mark_self_online_rejects_non_member() {
         credential("online-usecase-outsider-1", "password"),
     );
 
-    let err = mark_self_online(
+    let error = mark_self_online(
         (&mock,),
         token("online-usecase-outsider-1"),
         "online-usecase-team-2".into(),
@@ -113,7 +113,7 @@ async fn mark_self_online_rejects_non_member() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(
         mock.snapshot().users.first().unwrap().last_active_at,
@@ -125,7 +125,7 @@ async fn mark_self_online_rejects_non_member() {
 async fn list_online_user_ids_rejects_non_member() {
     let mock = Mock::new();
 
-    let err = list_online_user_ids(
+    let error = list_online_user_ids(
         (&mock,),
         token("online-usecase-outsider-2"),
         "online-usecase-team-3".into(),
@@ -134,7 +134,7 @@ async fn list_online_user_ids_rejects_non_member() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -143,13 +143,13 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
 
     mock.seed_member(member("member-missing-user", "missing-user", "team-1"));
 
-    let err =
+    let error =
         mark_self_online((&mock,), token("missing-user"), "team-1".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let online_user_ids =
         list_online_user_ids((&mock,), token("missing-user"), "team-1".into())

@@ -3,13 +3,13 @@
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for terminology-base lists.
-pub enum TermbaseListSpec<'a> {
+pub enum TermbaseListSpec {
     /// List terminology bases directly owned by a team.
     Team {
         /// ID of the team whose termbases to list.
-        team_id: &'a str,
+        team_id: String,
         /// Optional fuzzy name filter.
-        fuzzy_name: Option<&'a str>,
+        fuzzy_name: Option<String>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -19,12 +19,26 @@ pub enum TermbaseListSpec<'a> {
     /// List terminology bases visible from a comic.
     Comic {
         /// ID of the comic whose associated termbases to list.
-        comic_id: &'a str,
+        comic_id: String,
         /// Optional fuzzy name filter.
-        fuzzy_name: Option<&'a str>,
+        fuzzy_name: Option<String>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
         limit: PubListLimit,
     },
+}
+
+impl TermbaseListSpec {
+    /// Borrows the name filter, omitting whitespace-only searches.
+    pub fn trimmed_fuzzy_name(&self) -> Option<&str> {
+        //
+        let (Self::Team { fuzzy_name, .. } | Self::Comic { fuzzy_name, .. }) =
+            self;
+
+        fuzzy_name
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+    }
 }

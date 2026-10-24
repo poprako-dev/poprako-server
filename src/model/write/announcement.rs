@@ -2,7 +2,7 @@
 
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
-pub struct AnnouncementEntry<'a> {
+pub struct AnnouncementEntry {
     /// Unique identifier to insert for the new announcement row.
     pub id: String,
 
@@ -12,19 +12,43 @@ pub struct AnnouncementEntry<'a> {
     pub user_id: String,
 
     /// Headline text for the new announcement.
-    pub title: &'a str,
+    pub title: String,
     /// Full body text for the new announcement.
-    pub content: &'a str,
+    pub content: String,
+}
+
+impl AnnouncementEntry {
+    /// Borrows normalized title without copying its storage.
+    pub fn trimmed_title(&self) -> &str {
+        self.title.trim()
+    }
+
+    /// Borrows normalized content without copying its storage.
+    pub fn trimmed_content(&self) -> &str {
+        self.content.trim()
+    }
 }
 
 /// Mutable announcement content fields.
 #[cfg_attr(test, derive(Clone))]
-pub struct AnnouncementRepl<'a> {
+pub struct AnnouncementRepl {
     /// Identifier of the announcement to update.
     pub id: String,
 
     /// Updated headline text.
-    pub title: &'a str,
+    pub title: String,
     /// Updated body content.
-    pub content: &'a str,
+    pub content: String,
+}
+
+impl AnnouncementRepl {
+    /// Borrows normalized title without copying its storage.
+    pub fn trimmed_title(&self) -> &str {
+        self.title.trim()
+    }
+
+    /// Borrows normalized content without copying its storage.
+    pub fn trimmed_content(&self) -> &str {
+        self.content.trim()
+    }
 }

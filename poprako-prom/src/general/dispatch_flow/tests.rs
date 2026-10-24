@@ -4,7 +4,7 @@ use super::*;
 fn fourth_failure_becomes_dead() {
     let dispatch_flow = enforce_retry_limit(
         DispatchFlow::Retry {
-            err_msg: "failed".into(),
+            error_message: "failed".into(),
         },
         3,
     );
@@ -17,7 +17,7 @@ fn first_three_failures_remain_retryable() {
     for retried_count in 0..3 {
         let dispatch_flow = enforce_retry_limit(
             DispatchFlow::Retry {
-                err_msg: "failed".into(),
+                error_message: "failed".into(),
             },
             retried_count,
         );
@@ -30,7 +30,7 @@ fn first_three_failures_remain_retryable() {
 fn waiting_does_not_consume_retry_limit() {
     let dispatch_flow = enforce_retry_limit(
         DispatchFlow::Wait {
-            err_msg: "external state is pending".into(),
+            error_message: "external state is pending".into(),
         },
         i64::MAX,
     );

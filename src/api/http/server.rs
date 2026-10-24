@@ -21,17 +21,9 @@ use crate::api::http::state::AppHarn;
 ///
 /// Returns an error when metrics initialization, listener binding, or serving
 /// fails.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
 where
-    A: ToSocketAddrs + std::fmt::Debug,
+    A: ToSocketAddrs + std::fmt::Debug + Send + Sync,
 {
     init_prometheus()?;
 
@@ -41,11 +33,13 @@ where
             //
             tracing::error!(
                 operation = "bind_http_listener",
-                sdk_err = ?error,
+                sdk_error = ?error,
                 "Tokio SDK listener bind error",
             );
         })
-        .with_context(|| format!("failed to bind listener on {:?}", addr))?;
+        .with_context(|| {
+            ["failed to bind listener on ", &format!("{:?}", &addr)].concat()
+        })?;
 
     tracing::info!(addr = ?addr, "listening");
 
@@ -61,7 +55,7 @@ where
         //
         tracing::error!(
             operation = "serve_http",
-            sdk_err = ?error,
+            sdk_error = ?error,
             "Axum SDK server error",
         );
     })
@@ -79,7 +73,7 @@ async fn shutdown_signal() {
 
         tracing::error!(
             operation = "install_ctrl_c_handler",
-            sdk_err = %failure,
+            sdk_error = %failure,
             "Tokio signal handler installation failed",
         );
 
@@ -96,11 +90,11 @@ async fn shutdown_signal() {
                 //
                 Ok(terminate_recv) => terminate_recv,
 
-                Err(err) => {
+                Err(error) => {
                     //
                     tracing::error!(
                         operation = "install_sigterm_handler",
-                        sdk_err = ?err,
+                        sdk_error = ?error,
                         "Tokio signal handler installation failed",
                     );
 

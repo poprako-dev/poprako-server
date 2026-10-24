@@ -4,19 +4,19 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
-use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
+use crate::shape::write::chapter::ChapterEntryShape;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 
-/// Raw database row for the `t_chapter` table. Returned by Diesel queries.
+/// Raw database record for the `t_chapter` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterInfoRow {
+pub struct ChapterInfoRecord {
     pub f_id: String,
 
     pub f_comic_id: String,
@@ -40,7 +40,8 @@ pub struct ChapterInfoRow {
     pub f_reviewed_at: Option<OffsetDateTime>,
     pub f_published_at: Option<OffsetDateTime>,
 
-    pub f_confirmed_artwork_version: Option<i64>,
+    #[diesel(column_name = f_confirmed_artwork_version)]
+    pub f_confirmed_artwork_ver: Option<i64>,
 
     pub f_creator_id: String,
 
@@ -48,10 +49,10 @@ pub struct ChapterInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-/// Minimal database row selected while locking a Unit edit's Chapter.
+/// Minimal database record selected while locking a Unit edit's Chapter.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterUnitEditScopeRow {
+pub struct ChapterUnitEditScopeRecord {
     pub f_id: String,
 
     pub f_comic_id: String,
@@ -59,64 +60,64 @@ pub struct ChapterUnitEditScopeRow {
     pub f_published_at: Option<OffsetDateTime>,
 }
 
-impl From<ChapterUnitEditScopeRow> for ChapterUnitEditScope {
-    fn from(row: ChapterUnitEditScopeRow) -> Self {
+impl From<ChapterUnitEditScopeRecord> for ChapterUnitEditScope {
+    fn from(record: ChapterUnitEditScopeRecord) -> Self {
         Self {
-            id: row.f_id,
-            comic_id: row.f_comic_id,
-            is_published: row.f_published_at.is_some(),
+            id: record.f_id,
+            comic_id: record.f_comic_id,
+            is_published: record.f_published_at.is_some(),
         }
     }
 }
 
-impl TryFrom<ChapterInfoRow> for ChapterInfo {
+impl TryFrom<ChapterInfoRecord> for ChapterInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(row: ChapterInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(record: ChapterInfoRecord) -> Result<Self, Self::Error> {
         //
-        let stages = workflow_stage_mask_from_row(&row)?;
+        let stages = workflow_stage_mask_from_record(&record)?;
 
         Ok(Self {
-            id: row.f_id,
-            comic_id: row.f_comic_id,
+            id: record.f_id,
+            comic_id: record.f_comic_id,
             comic: None,
-            is_pinned: row.f_is_pinned,
-            index: usize_from_i32(row.f_index, "t_chapter.f_index")?,
-            subtitle: row.f_subtitle,
+            is_pinned: record.f_is_pinned,
+            index: usize_from_i32(record.f_index, "t_chapter.f_index")?,
+            subtitle: record.f_subtitle,
             page_count: usize_from_i32(
-                row.f_page_count,
+                record.f_page_count,
                 "t_chapter.f_page_count",
             )?,
             total_unit_count: usize_from_i32(
-                row.f_total_unit_count,
+                record.f_total_unit_count,
                 "t_chapter.f_total_unit_count",
             )?,
             translated_unit_count: usize_from_i32(
-                row.f_translated_unit_count,
+                record.f_translated_unit_count,
                 "t_chapter.f_translated_unit_count",
             )?,
             proofread_unit_count: usize_from_i32(
-                row.f_proofread_unit_count,
+                record.f_proofread_unit_count,
                 "t_chapter.f_proofread_unit_count",
             )?,
             stages,
-            confirmed_artwork_ver: row
-                .f_confirmed_artwork_version
+            confirmed_artwork_ver: record
+                .f_confirmed_artwork_ver
                 .map(u32::try_from)
                 .transpose()
                 .map_err(|_| {
                     //
                     unrecoverable_error! {
                         message: "invalid confirmed artwork version".into();
-                        artwork_ver = ?row.f_confirmed_artwork_version,
+                        artwork_ver = ?record.f_confirmed_artwork_ver,
                         "invalid confirmed artwork version",
                     }
                 })?,
-            creator_id: row.f_creator_id,
+            creator_id: record.f_creator_id,
             creator: None,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
@@ -124,7 +125,7 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
 /// Insertable struct for creating a new record in the `t_chapter` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterEntryRow<'a> {
+pub struct ChapterItem<'a> {
     pub f_id: &'a str,
 
     pub f_comic_id: &'a str,
@@ -139,22 +140,20 @@ pub struct ChapterEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a ChapterEntry<'_>> for ChapterEntryRow<'a> {
+impl<'a> TryFrom<&'a ChapterEntryShape<'_>> for ChapterItem<'a> {
     type Error = BaseError;
 
-    fn try_from(
-        chapter_entry: &'a ChapterEntry<'_>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(entry: &'a ChapterEntryShape<'_>) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 
         Ok(Self {
-            f_id: &chapter_entry.id,
-            f_comic_id: &chapter_entry.comic_id,
-            f_is_pinned: chapter_entry.is_pinned,
-            f_index: i32_from_usize(chapter_entry.index, "t_chapter.f_index")?,
-            f_subtitle: &chapter_entry.subtitle,
-            f_creator_id: &chapter_entry.creator_id,
+            f_id: &entry.id,
+            f_comic_id: entry.comic_id,
+            f_is_pinned: entry.is_pinned,
+            f_index: i32_from_usize(entry.index, "t_chapter.f_index")?,
+            f_subtitle: entry.trimmed_subtitle(),
+            f_creator_id: entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         })
@@ -164,7 +163,7 @@ impl<'a> TryFrom<&'a ChapterEntry<'_>> for ChapterEntryRow<'a> {
 /// Aspect struct for updating specific fields of a chapter record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterAspectRow<'a> {
+pub struct ChapterPack<'a> {
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
     pub f_uploaded_at: Option<Option<OffsetDateTime>>,
@@ -185,7 +184,7 @@ pub struct ChapterAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> ChapterAspectRow<'a> {
+impl<'a> ChapterPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -333,7 +332,7 @@ fn one_shot_timestamp(
 
 /// Resolve a two-step stage (Translate, Proofread, `TypesetRedraw`) to its
 /// start/completed timestamps. Returns `(Option<Option>, Option<Option>)` for
-/// use in `ChapterAspectRow` fields where `Some(None)` means "clear the column"
+/// use in `ChapterPack` fields where `Some(None)` means "clear the column"
 /// and `Some(Some(ts))` means "set the column".
 fn two_step_timestamps(
     stages: StageMask,
@@ -356,33 +355,42 @@ fn two_step_timestamps(
     }
 }
 
-/// Build a `StageMask` from a `ChapterInfoRow` by converting each column-pair into
+/// Build a `StageMask` from a `ChapterInfoRecord` by converting each column-pair into
 /// its corresponding `StagePhase`.
-fn workflow_stage_mask_from_row(
-    row: &ChapterInfoRow,
+fn workflow_stage_mask_from_record(
+    record: &ChapterInfoRecord,
 ) -> Result<StageMask, BaseError> {
     //
     let stages = StageMask::try_from(0u32)?
         .try_set_phase(
             Stage::RawProvide,
-            phase_from_one_shot(row.f_uploaded_at),
+            phase_from_one_shot(record.f_uploaded_at),
         )?
         .try_set_phase(
             Stage::Translate,
-            phase_from_two_step(row.f_translating_at, row.f_translated_at),
+            phase_from_two_step(
+                record.f_translating_at,
+                record.f_translated_at,
+            ),
         )?
         .try_set_phase(
             Stage::Proofread,
-            phase_from_two_step(row.f_proofreading_at, row.f_proofread_at),
+            phase_from_two_step(
+                record.f_proofreading_at,
+                record.f_proofread_at,
+            ),
         )?
         .try_set_phase(
             Stage::TypesetRedraw,
-            phase_from_two_step(row.f_typesetting_at, row.f_typeset_at),
+            phase_from_two_step(record.f_typesetting_at, record.f_typeset_at),
         )?
-        .try_set_phase(Stage::Review, phase_from_one_shot(row.f_reviewed_at))?
+        .try_set_phase(
+            Stage::Review,
+            phase_from_one_shot(record.f_reviewed_at),
+        )?
         .try_set_phase(
             Stage::Publish,
-            phase_from_one_shot(row.f_published_at),
+            phase_from_one_shot(record.f_published_at),
         )?;
 
     Ok(stages)

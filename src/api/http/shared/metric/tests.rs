@@ -109,3 +109,21 @@ fn record_without_matched_path_changes_only_total() {
 
     assert!(metric_total.by_path.is_empty());
 }
+
+// average_latency_ms(average_latency_ms)(positive): full-width counters remain finite and preserve the microsecond unit.
+// average_latency_ms(average_latency_ms)(negative): empty counters never divide by zero.
+#[test]
+fn average_latency_handles_full_width_counters() {
+    //
+    assert!(average_latency_ms(u64::MAX, 0).abs() < f64::EPSILON);
+
+    let average = average_latency_ms(u64::MAX, u64::MAX);
+
+    assert!((average - 0.001).abs() < f64::EPSILON);
+
+    let maximum = average_latency_ms(u64::MAX, 1);
+
+    assert!(maximum.is_finite());
+
+    assert!(maximum > 1.0e16);
+}

@@ -6,7 +6,7 @@ use crate::complex::util::{
 };
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Concrete evidence that grants chapter export access.
 pub enum ChapterExportAccess<'a> {
@@ -41,19 +41,19 @@ pub fn ensure_user_can_export_translation(
 
     match access_check {
         //
-        Ok(()) => accept(()),
+        Ok(()) => accept!(()),
 
         Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             ..
         }) => {
             //
-            let err_msg = trl("error-chapter-port-export-perm-required");
+            let error_message = trl("error-chapter-port-export-perm-required");
 
             // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                message: error_message,
             })
         }
 
@@ -68,19 +68,19 @@ pub fn ensure_user_can_import_translation(
     //
     match check_user_is_chapter_translator_or_proofreader(assignment_info) {
         //
-        Ok(()) => accept(()),
+        Ok(()) => accept!(()),
 
         Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             ..
         }) => {
             //
-            let err_msg = trl("error-chapter-port-import-perm-required");
+            let error_message = trl("error-chapter-port-import-perm-required");
 
             // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                message: error_message,
             })
         }
 

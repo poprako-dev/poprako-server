@@ -22,6 +22,8 @@ mod harn;
 mod log;
 // Business entity models and their read, write, and shared forms.
 mod model;
+// Borrowed domain payloads for explicitly justified copy avoidance.
+mod shape;
 // Port trait definitions (repo, auth, image, prom, effect) for the application
 // core.
 mod part;

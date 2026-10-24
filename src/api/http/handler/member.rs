@@ -78,13 +78,13 @@ pub async fn create(
     Json(instr): Json<CreateMemberInstr>,
 ) -> HttpResult<CreateMemberVal> {
     //
-    member_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(member_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
@@ -114,13 +114,15 @@ pub async fn list_infos(
     Query(instr): Query<ListMemberInfosInstr>,
 ) -> HttpResult<Vec<MemberInfoView>> {
     //
-    member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
@@ -152,13 +154,15 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        member_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
@@ -195,7 +199,7 @@ pub async fn update_roles(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/members/{member_id}` — delete a member.
@@ -227,7 +231,7 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/members/join` — join a team via invitation code.
@@ -251,11 +255,13 @@ pub async fn join(
     Json(instr): Json<JoinTeamInstr>,
 ) -> HttpResult<MemberInfoView> {
     //
-    member_usecase::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        member_usecase::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
+            (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::CREATED),
     )
-    .await?
-    .accept(StatusCode::CREATED)
 }

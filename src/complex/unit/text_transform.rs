@@ -7,7 +7,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::util::Patch;
 use crate::value::unit::UnitTextPart;
 
@@ -27,13 +27,13 @@ pub fn build_transform_edit(
     };
 
     let Some(original) = original else {
-        return accept(None);
+        return accept!(None);
     };
 
     let transformed = transform_text(original, unit_transform)?;
 
     let Some(transformed) = transformed else {
-        return accept(None);
+        return accept!(None);
     };
 
     let (translation, revision) = match part {
@@ -60,7 +60,7 @@ pub fn build_transform_edit(
         ),
     };
 
-    accept(Some(UnitEdit::Save {
+    accept!(Some(UnitEdit::Save {
         id: unit_info.id.clone(),
         next_id: Patch::Skip,
         is_bubble: None,
@@ -120,7 +120,7 @@ fn transform_text(
     }
 
     if matches.is_empty() {
-        return accept(None);
+        return accept!(None);
     }
 
     let mut transformed = String::with_capacity(original.len());
@@ -162,7 +162,7 @@ fn transform_text(
 
     transformed.push_str(unchanged);
 
-    accept((transformed != original).then_some(transformed))
+    accept!((transformed != original).then_some(transformed))
 }
 
 // Build the client-visible error for an invalid Unit transform.

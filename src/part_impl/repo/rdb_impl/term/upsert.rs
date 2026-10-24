@@ -11,12 +11,12 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::model::write::term::{TermEntry, TermRepl};
-use crate::part_impl::repo::rdb_impl::entity::term::TermEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::term::TermItem;
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
+use crate::shape::write::term::{TermEntryShape, TermReplShape};
 use crate::shared::result::diesel;
 
 // Boxed Diesel expressions used to build typed Term batch updates.
@@ -28,18 +28,18 @@ type TermExpr<'a, SqlType> =
 pub async fn upsert_terms(
     conn: &mut RdbConn,
     termbase_id: &str,
-    entries: &[TermEntry<'_>],
-    updates: &[TermRepl<'_>],
+    entries: &[TermEntryShape<'_>],
+    updates: &[TermReplShape<'_>],
 ) -> BaseRest<()> {
     //
     ensure_upsert_ids(termbase_id, entries, updates)?;
 
     if !entries.is_empty() {
         //
-        let rows = entries.iter().map(TermEntryRow::from).collect::<Vec<_>>();
+        let items = entries.iter().map(TermItem::from).collect::<Vec<_>>();
 
         let affected = diesel::insert_into(t_term)
-            .values(&rows)
+            .values(&items)
             .execute(conn)
             .await
             .map_err(diesel)?;
@@ -49,10 +49,7 @@ pub async fn upsert_terms(
 
     if !updates.is_empty() {
         //
-        let ids = updates
-            .iter()
-            .map(|update| update.id.as_str())
-            .collect::<Vec<_>>();
+        let ids = updates.iter().map(|update| update.id).collect::<Vec<_>>();
 
         let source_case =
             text_case(updates, Box::new(f_source), |update| update.source);
@@ -84,14 +81,14 @@ pub async fn upsert_terms(
         ensure_upsert_affected("update", affected, updates.len())?;
     }
 
-    accept(())
+    accept!(())
 }
 
 // Validates Termbase scope and uniqueness before executing a batch.
 fn ensure_upsert_ids(
     termbase_id: &str,
-    entries: &[TermEntry<'_>],
-    updates: &[TermRepl<'_>],
+    entries: &[TermEntryShape<'_>],
+    updates: &[TermReplShape<'_>],
 ) -> BaseRest<()> {
     //
     let entries_in_scope =
@@ -104,11 +101,11 @@ fn ensure_upsert_ids(
     let ids_unique = entries
         .iter()
         .map(|entry| entry.id.as_str())
-        .chain(updates.iter().map(|update| update.id.as_str()))
+        .chain(updates.iter().map(|update| update.id))
         .all(|id| ids.insert(id));
 
     if entries_in_scope && ids_unique {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -121,7 +118,7 @@ fn ensure_upsert_ids(
 }
 
 // Builds a typed CASE expression for text replacements.
-// Verifies that a batch operation changed exactly the requested rows.
+// Verifies that a batch operation changed exactly the requested items.
 fn ensure_upsert_affected(
     operation: &str,
     affected: usize,
@@ -129,7 +126,7 @@ fn ensure_upsert_affected(
 ) -> BaseRest<()> {
     //
     if affected == expected {
-        return accept(());
+        return accept!(());
     }
 
     Err(unrecoverable_error! {
@@ -143,57 +140,56 @@ fn ensure_upsert_affected(
 
 // Builds a typed CASE expression for text replacements.
 fn text_case<'a, F>(
-    updates: &'a [TermRepl<'a>],
-    mut expression: TermExpr<'a, Text>,
+    updates: &'a [TermReplShape<'a>],
+    mut expr: TermExpr<'a, Text>,
     field: F,
 ) -> TermExpr<'a, Text>
 where
-    F: Fn(&'a TermRepl<'a>) -> &'a str,
+    F: Fn(&'a TermReplShape<'a>) -> &'a str,
 {
     for update in updates {
         //
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Text>(
-                f_id.eq(update.id.as_str()),
+                f_id.eq(update.id),
                 field(update),
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }
 
 // Builds a typed CASE expression for nullable text replacements.
 fn nullable_text_case<'a, F>(
-    updates: &'a [TermRepl<'a>],
-    mut expression: TermExpr<'a, Nullable<Text>>,
+    updates: &'a [TermReplShape<'a>],
+    mut expr: TermExpr<'a, Nullable<Text>>,
     field: F,
 ) -> TermExpr<'a, Nullable<Text>>
 where
-    F: Fn(&'a TermRepl<'a>) -> Option<&'a str>,
+    F: Fn(&'a TermReplShape<'a>) -> Option<&'a str>,
 {
     for update in updates {
         //
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Nullable<Text>>(
-                f_id.eq(update.id.as_str()),
+                f_id.eq(update.id),
                 field(update),
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }
 
 // Builds a typed CASE expression for target-array replacements.
 fn targets_case<'a>(
-    updates: &'a [TermRepl<'a>],
+    updates: &'a [TermReplShape<'a>],
 ) -> TermExpr<'a, Array<Nullable<Text>>> {
     //
-    let mut expression =
-        Box::new(f_targets) as TermExpr<'a, Array<Nullable<Text>>>;
+    let mut expr = Box::new(f_targets) as TermExpr<'a, Array<Nullable<Text>>>;
 
     for update in updates {
         //
@@ -203,14 +199,14 @@ fn targets_case<'a>(
             .map(|target| Some(*target))
             .collect::<Vec<_>>();
 
-        expression = Box::new(
+        expr = Box::new(
             diesel::dsl::case_when::<_, _, Array<Nullable<Text>>>(
-                f_id.eq(update.id.as_str()),
+                f_id.eq(update.id),
                 targets,
             )
-            .otherwise(expression),
+            .otherwise(expr),
         );
     }
 
-    expression
+    expr
 }

@@ -57,10 +57,6 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     mock.seed_workset(workset("workset-1", "team-1"));
 
@@ -71,7 +67,7 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "comic-1".into(),
         ver: version,
-        image: format!("comic_cover/comic-1-{}.png", version),
+        image: ["comic_cover/comic-1-", &version.to_string(), ".png"].concat(),
     };
 
     let meta = ObjMeta {
@@ -218,14 +214,15 @@ async fn create_rolls_back_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = create((&mock, &mock), token("user-1"), create_instr("missing"))
-        .await
-        .err()
-        .unwrap();
+    let error =
+        create((&mock, &mock), token("user-1"), create_instr("missing"))
+            .await
+            .err()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(snapshot.comics.is_empty());
 }
@@ -260,9 +257,9 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
     seed_comic_cover_scope(&mock, 3);
 
-    let err = mark_comic_cover(&mock, 2).await.err().unwrap();
+    let error = mark_comic_cover(&mock, 2).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(
         !mock
@@ -284,7 +281,7 @@ async fn get_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = get_info(
+    let error = get_info(
         (&mock, &mock),
         token("user-1"),
         "missing".into(),
@@ -294,7 +291,7 @@ async fn get_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -461,7 +458,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("user-1"),
         ListComicInfosInstr {
@@ -479,7 +476,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -577,7 +574,7 @@ async fn update_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = update_info(
+    let error = update_info(
         (&mock,),
         token("user-1"),
         UpdateComicInfoInstr {
@@ -591,5 +588,5 @@ async fn update_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }

@@ -8,7 +8,7 @@ use poprako_prom::general::rdb_impl::LocalTaskStatus;
 
 use crate::part::nucl::Serial;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::LocalTaskEntryRow;
+use crate::part_impl::prom::rdb_impl::entity::LocalTaskItem;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, PurgeDead, RdbPromRepo, ResetStuck,
 };
@@ -28,10 +28,6 @@ diesel::table! {
 // claim_reads_are_bounded(ClaimPending)(negative): an unrelated topic's backlog cannot add heap reads to this topic's claim.
 #[tokio::test]
 #[serial_test::serial(prom_rdb)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn claim_reads_are_bounded() {
     //
     let test_rdb = start().await;
@@ -43,13 +39,13 @@ async fn claim_reads_are_bounded() {
     let now = OffsetDateTime::now_utc();
 
     let ids = (0..8192)
-        .map(|index| format!("prom-cost-{:05}", index))
+        .map(|index| ["prom-cost-", &format!("{:05}", &index)].concat())
         .collect::<Vec<_>>();
 
-    let entries = ids
+    let items = ids
         .iter()
         .enumerate()
-        .map(|(index, id)| LocalTaskEntryRow {
+        .map(|(index, id)| LocalTaskItem {
             f_id: id,
             f_topic: match index {
                 //
@@ -67,7 +63,7 @@ async fn claim_reads_are_bounded() {
         .collect::<Vec<_>>();
 
     diesel::insert_into(t_local_message::table)
-        .values(&entries)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();
@@ -91,14 +87,14 @@ async fn claim_reads_are_bounded() {
                 .await
                 .unwrap();
 
-            let row = ClaimPending::new("chapter")
+            let task = ClaimPending::new("chapter")
                 .step_on(&repo, context)
                 .await?
                 .unwrap();
 
-            assert_eq!(row.topic(), "chapter");
+            assert_eq!(task.topic(), "chapter");
 
-            assert_eq!(row.id(), "prom-cost-00000");
+            assert_eq!(task.id(), "prom-cost-00000");
 
             let after = pg_stat_xact_user_tables::table
                 .filter(pg_stat_xact_user_tables::relname.eq("t_local_message"))
@@ -156,7 +152,7 @@ async fn maintenance_preserves_other_topics() {
 
     let now = OffsetDateTime::now_utc();
 
-    let entries = [
+    let items = [
         ("chapter-processing", "chapter", LocalTaskStatus::Processing),
         (
             "invitation-processing",
@@ -166,7 +162,7 @@ async fn maintenance_preserves_other_topics() {
         ("chapter-dead", "chapter", LocalTaskStatus::Dead),
         ("invitation-dead", "invitation", LocalTaskStatus::Dead),
     ]
-    .map(|(id, topic, status)| LocalTaskEntryRow {
+    .map(|(id, topic, status)| LocalTaskItem {
         f_id: id,
         f_topic: topic,
         f_status: status,
@@ -179,7 +175,7 @@ async fn maintenance_preserves_other_topics() {
     });
 
     diesel::insert_into(t_local_message::table)
-        .values(&entries)
+        .values(&items)
         .execute(&mut conn)
         .await
         .unwrap();

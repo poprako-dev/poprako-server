@@ -47,13 +47,13 @@ pub async fn get_my_info(
     //
     let id = user_token.user_id.clone();
 
-    user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    Ok(user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/users/{user_id}` — a user's profile by id.
@@ -76,13 +76,13 @@ pub async fn get_info(
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<UserInfoView> {
     //
-    user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    Ok(user_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         token,
         user_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/users/{user_id}` — update a user's profile.
@@ -116,7 +116,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `PUT /api/v1/users/{user_id}/password` — replace the current user's password.
@@ -149,7 +149,7 @@ pub async fn update_password(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/users/{user_id}` — delete a user account.
@@ -181,7 +181,7 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/alloc` — allocate an avatar upload slot.
@@ -208,18 +208,20 @@ pub async fn alloc_avatar(
     //
     ensure_current_user(&user_id, &user_token)?;
 
-    user_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (
-            harn.nucl().rept_read(),
-            harn.repo(),
-            harn.obj_dept(),
-            &harn.config().image,
-        ),
-        user_token,
-        instr,
+    Ok(
+        user_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
+            (
+                harn.nucl().rept_read(),
+                harn.repo(),
+                harn.obj_dept(),
+                &harn.config().image,
+            ),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/mark-uploaded` — confirm an avatar upload.
@@ -251,5 +253,5 @@ pub async fn mark_avatar_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

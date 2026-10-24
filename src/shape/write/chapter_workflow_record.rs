@@ -3,22 +3,20 @@
 #[cfg(test)]
 mod tests;
 
-use std::borrow::Cow;
-
 use time::OffsetDateTime;
 
 use crate::util::next_snowflake_id;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// One immutable chapter workflow record to persist within a transaction.
-pub struct ChapterWorkflowRecordEntry<'a> {
+pub struct ChapterWorkflowRecordEntryShape<'a> {
     /// Unique record identifier.
     pub id: String,
 
     /// Chapter that owns this record.
-    pub chapter_id: Cow<'a, str>,
+    pub chapter_id: &'a str,
     /// User that caused the event, or `None` for a system operation.
-    pub actor_user_id: Option<Cow<'a, str>>,
+    pub actor_user_id: Option<&'a str>,
 
     /// Typed event details. Its kind is derived at storage time.
     pub payload: ChapterWorkflowRecordPayload,
@@ -27,21 +25,18 @@ pub struct ChapterWorkflowRecordEntry<'a> {
     pub created_at: OffsetDateTime,
 }
 
-impl<'a> ChapterWorkflowRecordEntry<'a> {
+impl<'a> ChapterWorkflowRecordEntryShape<'a> {
     /// Constructs one immutable record with a snowflake ID and current UTC time.
     ///
-    /// Existing identifiers stay borrowed; owned identifiers are moved unchanged.
-    pub fn new<C>(
-        chapter_id: C,
-        actor_user_id: Option<Cow<'a, str>>,
+    /// Chapter and actor identifiers borrow their owners through persistence.
+    pub fn new(
+        chapter_id: &'a str,
+        actor_user_id: Option<&'a str>,
         payload: ChapterWorkflowRecordPayload,
-    ) -> Self
-    where
-        C: Into<Cow<'a, str>>,
-    {
+    ) -> Self {
         Self {
             id: next_snowflake_id(),
-            chapter_id: chapter_id.into(),
+            chapter_id,
             actor_user_id,
             payload,
             created_at: OffsetDateTime::now_utc(),

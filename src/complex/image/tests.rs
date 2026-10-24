@@ -49,15 +49,15 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
         .err()
         .unwrap();
 
-        let BaseError::Expected { msg, .. } = failure else {
+        let BaseError::Expected { message, .. } = failure else {
             panic!("invalid image length must remain client-correctable");
         };
 
         let configured_mib = IMAGE_CONFIG.limit_for(image_kind);
 
-        assert!(msg.contains(&configured_mib.to_string()));
+        assert!(message.contains(&configured_mib.to_string()));
 
-        assert!(msg.contains("MiB"));
+        assert!(message.contains("MiB"));
     }
 }
 
@@ -74,13 +74,13 @@ fn missing_byte_length_uses_the_runtime_page_limit_in_its_message() {
         ImageKind::PageImage,
     );
 
-    let BaseError::Expected { msg, .. } = failure else {
+    let BaseError::Expected { message, .. } = failure else {
         panic!("missing image length must remain client-correctable");
     };
 
-    assert!(msg.contains('4'));
+    assert!(message.contains('4'));
 
-    assert!(msg.contains("MiB"));
+    assert!(message.contains("MiB"));
 
-    assert!(!msg.contains("20 MiB"));
+    assert!(!message.contains("20 MiB"));
 }

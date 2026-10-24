@@ -17,7 +17,7 @@ pub struct ListAnnouncementInfos<'a> {
 #[oper(output = AnnouncementInfo)]
 pub struct CreateAnnouncement<'a> {
     /// The announcement entry data.
-    pub entry: &'a AnnouncementEntry<'a>,
+    pub entry: &'a AnnouncementEntry,
 }
 
 /// Looks up an announcement by identifier.
@@ -33,7 +33,7 @@ pub struct GetAnnouncementInfo<'a> {
 #[oper(output = ())]
 pub struct UpdateAnnouncement<'a> {
     /// The replacement announcement content.
-    pub update: &'a AnnouncementRepl<'a>,
+    pub update: &'a AnnouncementRepl,
 }
 
 /// Deletes an announcement by identifier.

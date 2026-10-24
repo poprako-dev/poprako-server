@@ -1,9 +1,12 @@
-use diesel::PgTextExpressionMethods as _;
+use diesel::pg::Pg;
 use diesel::prelude::{
     BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
     QueryDsl as _, SelectableHelper as _,
 };
 use diesel::sql_types::Bool;
+use diesel::{
+    BoxableExpression, PgTextExpressionMethods as _, SelectableExpression,
+};
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -14,12 +17,12 @@ use poprako_util::i18n::trl;
 use crate::complex::comic as comic_complex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::comic::{ComicEntry, ComicRepl};
+use crate::model::write::comic::ComicRepl;
 use crate::part_impl::repo::rdb_impl::comic::stage_filter::{
     StageFilter, stage_filter,
 };
 use crate::part_impl::repo::rdb_impl::entity::comic::{
-    ComicAspectRow, ComicEntryRow, ComicInfoRow,
+    ComicInfoRecord, ComicItem, ComicPack,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
@@ -28,8 +31,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
     f_deleted_at, f_id, f_index, f_last_active_at, f_workset_id, t_comic,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::comic::ComicEntryShape;
 use crate::shared::result::diesel;
+use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::index::user_index_to_stored_index;
@@ -59,7 +64,7 @@ pub fn missing_comic(id: &str, operation: &str) -> BaseError {
     }
 }
 
-/// Queries a single comic row by ID and populates its includes.
+/// Queries a single comic record by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
@@ -67,11 +72,11 @@ pub async fn get_info_by_id(
     incl_opt: &[ComicInclOpt],
 ) -> BaseRest<ComicInfo> {
     //
-    let row = t_comic
+    let record = t_comic
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(ComicInfoRow::as_select())
-        .get_result::<ComicInfoRow>(conn)
+        .select(ComicInfoRecord::as_select())
+        .get_result::<ComicInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -87,7 +92,7 @@ pub async fn get_info_by_id(
             }
         })?;
 
-    let mut info = row.try_into()?;
+    let mut info = record.try_into()?;
 
     incl::comic::populate_comic_incls(
         conn,
@@ -96,21 +101,20 @@ pub async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
-/// Queries comic rows filtered by workset, optional fuzzy title, and stages.
+/// Queries comic records filtered by workset, optional fuzzy title, and stages.
 #[instrument(level = "info", skip_all)]
-#[expect(clippy::too_many_lines, reason = "builds the typed Comic list query")]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ComicListSpec<'_>,
+    spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
     let mut query = t_comic
-        .filter(f_workset_id.eq(spec.workset_id))
+        .filter(f_workset_id.eq(&spec.workset_id))
         .filter(f_deleted_at.is_null())
-        .select(ComicInfoRow::as_select())
+        .select(ComicInfoRecord::as_select())
         .into_boxed();
 
     match spec.status {
@@ -126,7 +130,7 @@ pub async fn list_infos(
         None => {}
     }
 
-    if let Some(fuzzy_title) = &spec.fuzzy_title {
+    if let Some(fuzzy_title) = spec.trimmed_fuzzy_title() {
         //
         let pattern = format!("%{}%", escape_ilike_pattern(fuzzy_title));
 
@@ -147,139 +151,45 @@ pub async fn list_infos(
             //
             StageFilter::None => {}
 
-            StageFilter::Impossible => return accept(Vec::new()),
+            StageFilter::Impossible => return accept!(Vec::new()),
 
             StageFilter::Mask { mask: stage_mask } => {
                 //
-                let raw_matches = stage_mask
-                    .ignores_stage(Stage::RawProvide)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::RawProvide)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_uploaded_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::RawProvide)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_uploaded_at.is_not_null()));
-
-                let translate_matches = stage_mask
-                    .ignores_stage(Stage::Translate)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::Translate)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_translating_at.is_null())
-                        .and(t_chapter::f_translated_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Translate)
-                        == StagePhase::Active)
-                        .sql_bool()
-                        .and(t_chapter::f_translating_at.is_not_null())
-                        .and(t_chapter::f_translated_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Translate)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_translated_at.is_not_null()));
-
-                let proofread_matches = stage_mask
-                    .ignores_stage(Stage::Proofread)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::Proofread)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_proofreading_at.is_null())
-                        .and(t_chapter::f_proofread_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Proofread)
-                        == StagePhase::Active)
-                        .sql_bool()
-                        .and(t_chapter::f_proofreading_at.is_not_null())
-                        .and(t_chapter::f_proofread_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Proofread)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_proofread_at.is_not_null()));
-
-                let typeset_matches = stage_mask
-                    .ignores_stage(Stage::TypesetRedraw)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_typesetting_at.is_null())
-                        .and(t_chapter::f_typeset_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
-                        == StagePhase::Active)
-                        .sql_bool()
-                        .and(t_chapter::f_typesetting_at.is_not_null())
-                        .and(t_chapter::f_typeset_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_typeset_at.is_not_null()));
-
-                let review_matches = stage_mask
-                    .ignores_stage(Stage::Review)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::Review)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_reviewed_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Review)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_reviewed_at.is_not_null()));
-
-                let publish_matches = stage_mask
-                    .ignores_stage(Stage::Publish)
-                    .sql_bool()
-                    .or((stage_mask.get_phase(Stage::Publish)
-                        == StagePhase::Pending)
-                        .sql_bool()
-                        .and(t_chapter::f_published_at.is_null()))
-                    .or((stage_mask.get_phase(Stage::Publish)
-                        == StagePhase::Completed)
-                        .sql_bool()
-                        .and(t_chapter::f_published_at.is_not_null()));
-
                 let matching_chapter = t_chapter::table
                     .filter(t_chapter::f_comic_id.eq(f_id))
                     .filter(t_chapter::f_is_pinned.eq(true))
                     .filter(t_chapter::f_deleted_at.is_null())
-                    .filter(raw_matches)
-                    .filter(translate_matches)
-                    .filter(proofread_matches)
-                    .filter(typeset_matches)
-                    .filter(review_matches)
-                    .filter(publish_matches);
+                    .filter(instant_stage_matches(stage_mask))
+                    .filter(ongoing_stage_matches(stage_mask));
 
                 query = query.filter(diesel::dsl::exists(matching_chapter));
             }
         }
     }
 
-    let rows = query
+    let records = query
         .order_by((f_last_active_at.desc(), f_index.asc()))
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<ComicInfoRow>(conn)
+        .load::<ComicInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut infos = rows
+    let mut infos = records
         .into_iter()
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<ComicInfo>>>()?;
 
-    incl::comic::populate_comic_incls(conn, &mut infos, spec.incl_opt).await?;
+    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
-/// Updates the title, author, description, and composed title of a comic row.
+/// Updates the title, author, description, and composed title of a comic record.
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ComicRepl<'_>,
+    update: &ComicRepl,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -288,14 +198,14 @@ pub async fn update_info(
 
     let composed_title = comic_complex::compose_title(
         comic_info.index,
-        update.author,
-        update.title,
+        update.trimmed_author(),
+        update.trimmed_title(),
     );
 
-    let aspect = ComicAspectRow::new(now)
-        .title(update.title)
-        .author(update.author)
-        .description(update.description)
+    let pack = ComicPack::new(now)
+        .title(update.trimmed_title())
+        .author(update.trimmed_author())
+        .description(update.trimmed_description())
         .composed_title(composed_title);
 
     let updated_count = diesel::update(
@@ -303,7 +213,7 @@ pub async fn update_info(
             .filter(f_id.eq(update.id.as_str()))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -312,29 +222,29 @@ pub async fn update_info(
         return Err(missing_comic(&update.id, "update comic info"));
     }
 
-    accept(())
+    accept!(())
 }
 
-/// Inserts a new comic row from the given entry and returns the created info.
+/// Inserts a new comic record from the given comic entry and returns the created info.
 #[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
-    comic_entry: &ComicEntry<'_>,
+    entry: &ComicEntryShape<'_>,
 ) -> BaseRest<ComicInfo> {
     //
-    let entry = ComicEntryRow::try_from(comic_entry)?;
+    let item = ComicItem::try_from(entry)?;
 
-    let row = diesel::insert_into(t_comic)
-        .values(&entry)
-        .returning(ComicInfoRow::as_returning())
-        .get_result::<ComicInfoRow>(conn)
+    let record = diesel::insert_into(t_comic)
+        .values(&item)
+        .returning(ComicInfoRecord::as_returning())
+        .get_result::<ComicInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    row.try_into()
+    record.try_into()
 }
 
-/// Locks a single comic row by ID.
+/// Locks a single comic record by ID.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -342,12 +252,12 @@ pub async fn get_info_excluded(
     incls: &[ComicInclOpt],
 ) -> BaseRest<ComicInfo> {
     //
-    let row = t_comic
+    let record = t_comic
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(ComicInfoRow::as_select())
+        .select(ComicInfoRecord::as_select())
         .for_update()
-        .get_result::<ComicInfoRow>(conn)
+        .get_result::<ComicInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -363,7 +273,7 @@ pub async fn get_info_excluded(
             }
         })?;
 
-    let mut comic_info = row.try_into()?;
+    let mut comic_info = record.try_into()?;
 
     incl::comic::populate_comic_incls(
         conn,
@@ -372,7 +282,7 @@ pub async fn get_info_excluded(
     )
     .await?;
 
-    accept(comic_info)
+    accept!(comic_info)
 }
 
 /// Atomically increments and returns the previous `chapter_next_index` value.
@@ -396,7 +306,7 @@ pub async fn incr_chapter_next_index(
         return Err(missing_comic(id, "allocate comic chapter index"));
     };
 
-    accept(usize_from_i32(prev, "t_comic.f_chapter_next_index")?)
+    accept!(usize_from_i32(prev, "t_comic.f_chapter_next_index")?)
 }
 
 /// Adjusts a comic's chapter count by the given delta.
@@ -419,21 +329,21 @@ pub async fn update_chapter_count(
         return Err(missing_comic(id, "update comic chapter count"));
     }
 
-    accept(())
+    accept!(())
 }
 
-/// Updates the `last_active_at` timestamp on a comic row to now.
+/// Updates the `last_active_at` timestamp on a comic record to now.
 #[instrument(level = "info", skip_all)]
 pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ComicAspectRow::new(now).last_active_at(now);
+    let pack = ComicPack::new(now).last_active_at(now);
 
     let updated_count = diesel::update(
         t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -442,7 +352,7 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         return Err(missing_comic(id, "touch comic last active"));
     }
 
-    accept(())
+    accept!(())
 }
 
 // Parse a numeric fuzzy-title value into its stored comic index.
@@ -454,6 +364,143 @@ fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
         .ok()
         .and_then(user_index_to_stored_index)
         .and_then(|index| i32::try_from(index).ok())
+}
+
+// Typed predicates on Chapter columns remain composable in correlated queries.
+type ChapterStagePredicate<Source> =
+    Box<dyn BoxableExpression<Source, Pg, SqlType = Bool>>;
+
+// Match workflow stages that transition directly from pending to completed.
+fn instant_stage_matches<Source>(
+    stage_mask: StageMask,
+) -> ChapterStagePredicate<Source>
+where
+    t_chapter::f_uploaded_at: SelectableExpression<Source>,
+    t_chapter::f_reviewed_at: SelectableExpression<Source>,
+    t_chapter::f_published_at: SelectableExpression<Source>,
+{
+    //
+    let raw_matches =
+        stage_mask
+            .ignores_stage(Stage::RawProvide)
+            .sql_bool()
+            .or((stage_mask.get_phase(Stage::RawProvide)
+                == StagePhase::Pending)
+                .sql_bool()
+                .and(t_chapter::f_uploaded_at.is_null()))
+            .or((stage_mask.get_phase(Stage::RawProvide)
+                == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_uploaded_at.is_not_null()));
+
+    let review_matches = stage_mask
+        .ignores_stage(Stage::Review)
+        .sql_bool()
+        .or((stage_mask.get_phase(Stage::Review) == StagePhase::Pending)
+            .sql_bool()
+            .and(t_chapter::f_reviewed_at.is_null()))
+        .or(
+            (stage_mask.get_phase(Stage::Review) == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_reviewed_at.is_not_null()),
+        );
+
+    let publish_matches = stage_mask
+        .ignores_stage(Stage::Publish)
+        .sql_bool()
+        .or(
+            (stage_mask.get_phase(Stage::Publish) == StagePhase::Pending)
+                .sql_bool()
+                .and(t_chapter::f_published_at.is_null()),
+        )
+        .or(
+            (stage_mask.get_phase(Stage::Publish) == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_published_at.is_not_null()),
+        );
+
+    Box::new(raw_matches.and(review_matches).and(publish_matches))
+}
+
+// Match workflow stages whose start and completion timestamps define phases.
+fn ongoing_stage_matches<Source>(
+    stage_mask: StageMask,
+) -> ChapterStagePredicate<Source>
+where
+    t_chapter::f_translating_at: SelectableExpression<Source>,
+    t_chapter::f_translated_at: SelectableExpression<Source>,
+    t_chapter::f_proofreading_at: SelectableExpression<Source>,
+    t_chapter::f_proofread_at: SelectableExpression<Source>,
+    t_chapter::f_typesetting_at: SelectableExpression<Source>,
+    t_chapter::f_typeset_at: SelectableExpression<Source>,
+{
+    //
+    let translate_matches = stage_mask
+        .ignores_stage(Stage::Translate)
+        .sql_bool()
+        .or(
+            (stage_mask.get_phase(Stage::Translate) == StagePhase::Pending)
+                .sql_bool()
+                .and(t_chapter::f_translating_at.is_null())
+                .and(t_chapter::f_translated_at.is_null()),
+        )
+        .or(
+            (stage_mask.get_phase(Stage::Translate) == StagePhase::Active)
+                .sql_bool()
+                .and(t_chapter::f_translating_at.is_not_null())
+                .and(t_chapter::f_translated_at.is_null()),
+        )
+        .or(
+            (stage_mask.get_phase(Stage::Translate) == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_translated_at.is_not_null()),
+        );
+
+    let proofread_matches = stage_mask
+        .ignores_stage(Stage::Proofread)
+        .sql_bool()
+        .or(
+            (stage_mask.get_phase(Stage::Proofread) == StagePhase::Pending)
+                .sql_bool()
+                .and(t_chapter::f_proofreading_at.is_null())
+                .and(t_chapter::f_proofread_at.is_null()),
+        )
+        .or(
+            (stage_mask.get_phase(Stage::Proofread) == StagePhase::Active)
+                .sql_bool()
+                .and(t_chapter::f_proofreading_at.is_not_null())
+                .and(t_chapter::f_proofread_at.is_null()),
+        )
+        .or(
+            (stage_mask.get_phase(Stage::Proofread) == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_proofread_at.is_not_null()),
+        );
+
+    let typeset_matches =
+        stage_mask
+            .ignores_stage(Stage::TypesetRedraw)
+            .sql_bool()
+            .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                == StagePhase::Pending)
+                .sql_bool()
+                .and(t_chapter::f_typesetting_at.is_null())
+                .and(t_chapter::f_typeset_at.is_null()))
+            .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                == StagePhase::Active)
+                .sql_bool()
+                .and(t_chapter::f_typesetting_at.is_not_null())
+                .and(t_chapter::f_typeset_at.is_null()))
+            .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                == StagePhase::Completed)
+                .sql_bool()
+                .and(t_chapter::f_typeset_at.is_not_null()));
+
+    Box::new(
+        translate_matches
+            .and(proofread_matches)
+            .and(typeset_matches),
+    )
 }
 
 // Escape wildcard characters for a PostgreSQL ILIKE pattern.

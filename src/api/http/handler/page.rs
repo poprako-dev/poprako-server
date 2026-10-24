@@ -55,13 +55,15 @@ pub async fn list_infos(
     //
     let instr = ListPageInfosInstr { chapter_id };
 
-    page_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        page_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` — list Unit text statistics for Pages with revision differences.
@@ -87,13 +89,13 @@ pub async fn list_unit_diff_stats(
     //
     let instr = ListPageUnitDiffStatsInstr { chapter_id };
 
-    page_list_usecase::list_unit_diff_stats::<RdbContext<ReptRead>, HybRepo>(
+    Ok(page_list_usecase::list_unit_diff_stats::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats` — list Pages containing visible flagged Units.
@@ -119,13 +121,12 @@ pub async fn list_unit_flagged_stats(
     //
     let instr = ListPageUnitFlaggedStatsInstr { chapter_id };
 
-    page_list_usecase::list_unit_flagged_stats::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        instr,
-    )
+    Ok(page_list_usecase::list_unit_flagged_stats::<
+        RdbContext<ReptRead>,
+        HybRepo,
+    >((harn.repo(),), user_token, instr)
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/pages/{page_id}` — fetch one page.
@@ -148,13 +149,15 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<PageInfoView> {
     //
-    page_list_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        page_id,
+    Ok(
+        page_list_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            page_id,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.
@@ -182,7 +185,7 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/pages/alloc` — allocate all page images.
@@ -212,7 +215,7 @@ pub async fn alloc_chapter_pages(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
-    page_alloc_usecase::alloc_chapter_pages::<
+    Ok(page_alloc_usecase::alloc_chapter_pages::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -230,7 +233,7 @@ pub async fn alloc_chapter_pages(
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/pages/{page_id}/image/alloc` — allocate a replacement page image.
@@ -256,7 +259,7 @@ pub async fn alloc_image(
     Json(instr): Json<AllocPageImageInstr>,
 ) -> HttpResult<AllocatedPageVal> {
     //
-    page_alloc_usecase::alloc_image::<_, RdbContext<ReptRead>, HybRepo, _, _>(
+    Ok(page_alloc_usecase::alloc_image::<_, RdbContext<ReptRead>, HybRepo, _, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -269,7 +272,7 @@ pub async fn alloc_image(
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/pages/{page_id}/image/mark-uploaded` — confirm a page image upload.
@@ -302,5 +305,5 @@ pub async fn mark_image_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

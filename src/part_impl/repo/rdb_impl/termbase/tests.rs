@@ -37,21 +37,17 @@ use crate::value::role::{RoleField, RoleMask};
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
 // Verify comic listings include team and owning-comic bases while excluding siblings.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn verify_comic_termbase_scope(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
-    termbase_entry: &TermbaseEntry<'_>,
+    termbase_entry: &TermbaseEntry,
 ) {
     let comic_termbase_entry = TermbaseEntry {
-        id: format!("{}comic-base", PREFIX),
+        id: [PREFIX, "comic-base"].concat(),
         team_id: None,
-        comic_id: Some(comic_fixture.comic_entry.id.clone()),
-        name: "Comic Glossary",
+        comic_id: Some(comic_fixture.comic_info.id.clone()),
+        name: "Comic Glossary".into(),
         description: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
@@ -59,7 +55,7 @@ async fn verify_comic_termbase_scope(
     create_termbase(repo, nucl, &comic_termbase_entry).await;
 
     let mut sibling_comic_entry = test_shared::form::comic_entry(
-        &format!("{}sibling-", PREFIX),
+        &[PREFIX, "sibling-"].concat(),
         &comic_fixture.workset_entry,
         &comic_fixture.creator_form,
     );
@@ -79,10 +75,10 @@ async fn verify_comic_termbase_scope(
     .unwrap();
 
     let sibling_termbase_entry = TermbaseEntry {
-        id: format!("{}sibling-base", PREFIX),
+        id: [PREFIX, "sibling-base"].concat(),
         team_id: None,
         comic_id: Some(sibling_comic_entry.id.clone()),
-        name: "Sibling Glossary",
+        name: "Sibling Glossary".into(),
         description: None,
         creator_id: comic_fixture.creator_form.id.clone(),
     };
@@ -90,7 +86,7 @@ async fn verify_comic_termbase_scope(
     create_termbase(repo, nucl, &sibling_termbase_entry).await;
 
     let comic_list_spec = TermbaseListSpec::Comic {
-        comic_id: &comic_fixture.comic_entry.id,
+        comic_id: comic_fixture.comic_info.id.clone(),
         fuzzy_name: None,
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
@@ -127,16 +123,10 @@ async fn verify_comic_termbase_scope(
 async fn create_termbase(
     repo: &HybRepo,
     nucl: &RdbNucl,
-    termbase_entry: &TermbaseEntry<'_>,
+    entry: &TermbaseEntry,
 ) -> TermbaseInfo {
     nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreateTermbase {
-                entry: termbase_entry,
-            },
-        )
-        .await
+        repo.step(context, &CreateTermbase { entry }).await
     })
     .await
     .unwrap()
@@ -145,10 +135,6 @@ async fn create_termbase(
 /// Verifies termbase unique and query roundtrip.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
@@ -162,11 +148,11 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
-        id: format!("{}main", PREFIX),
+        id: [PREFIX, "main"].concat(),
         team_id: Some(comic_fixture.team_entry.id.clone()),
         comic_id: None,
-        name: "100%_Glossary",
-        description: Some("not searchable"),
+        name: "100%_Glossary".into(),
+        description: Some("not searchable".into()),
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
@@ -178,8 +164,8 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         .await;
 
     let list_spec = TermbaseListSpec::Team {
-        team_id: &comic_fixture.team_entry.id,
-        fuzzy_name: Some("%_G"),
+        team_id: comic_fixture.team_entry.id.clone(),
+        fuzzy_name: Some("%_G".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -214,8 +200,8 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     assert_eq!(counted.term_count, 1);
 
     let duplicate_entry = TermbaseEntry {
-        id: format!("{}duplicate", PREFIX),
-        name: " 100%_GLOSSARY ",
+        id: [PREFIX, "duplicate"].concat(),
+        name: " 100%_GLOSSARY ".into(),
         ..termbase_entry.clone()
     };
 
@@ -327,7 +313,7 @@ async fn append_roundtrip_and_concurrent_merges() {
     let member_entry = MemberEntry {
         id: "append-rdb-member".into(),
         user_id: fixture.user_entry.id.clone(),
-        user_nickname: fixture.user_entry.nickname.to_string(),
+        user_nickname: fixture.user_entry.nickname.clone(),
         team_id: fixture.team_entry.id.clone(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     };
@@ -346,8 +332,8 @@ async fn append_roundtrip_and_concurrent_merges() {
         id: "append-rdb-base".into(),
         team_id: Some(fixture.team_entry.id),
         comic_id: None,
-        name: "Kept name",
-        description: Some("Kept description"),
+        name: "Kept name".into(),
+        description: Some("Kept description".into()),
         creator_id: fixture.user_entry.id.clone(),
     };
 

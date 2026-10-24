@@ -6,7 +6,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::util::Patch;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
@@ -141,7 +141,7 @@ impl<'a> UnitEditSequencePlan<'a> {
             }
         }
 
-        accept(Self {
+        accept!(Self {
             #[cfg(test)]
             ordered_ids,
             next_ids,
@@ -257,7 +257,7 @@ impl<'a> UnitSequence<'a> {
             prev_id = Some(id);
         }
 
-        accept(Self {
+        accept!(Self {
             nodes,
             head_id,
             tail_id: prev_id,
@@ -299,7 +299,7 @@ impl<'a> UnitSequence<'a> {
 
         self.tail_id = Some(id);
 
-        accept(())
+        accept!(())
     }
 
     /// Moves one existing ID immediately before a successor, or to the tail.
@@ -365,7 +365,7 @@ impl<'a> UnitSequence<'a> {
             next_id: None,
         };
 
-        accept(())
+        accept!(())
     }
 
     /// Inserts a detached node immediately before an existing anchor.
@@ -391,7 +391,7 @@ impl<'a> UnitSequence<'a> {
             None => self.head_id = Some(id),
         }
 
-        accept(())
+        accept!(())
     }
 
     /// Inserts a detached node at the current tail.
@@ -413,7 +413,7 @@ impl<'a> UnitSequence<'a> {
 
         self.tail_id = Some(id);
 
-        accept(())
+        accept!(())
     }
 
     /// Consumes the structure into a validated traversal and successor map.
@@ -449,7 +449,7 @@ impl<'a> UnitSequence<'a> {
             ));
         }
 
-        accept((ordered_ids, next_ids))
+        accept!((ordered_ids, next_ids))
     }
 }
 
@@ -457,7 +457,7 @@ impl<'a> UnitSequence<'a> {
 fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
     //
     if visible_count <= MAX_PAGE_UNIT_COUNT {
-        return accept(());
+        return accept!(());
     }
 
     Err(expected_error! {
@@ -471,10 +471,10 @@ fn validate_visible_count(visible_count: usize) -> BaseRest<()> {
 }
 
 // Build an unrecoverable error for a corrupt internal sequence.
-fn invalid_sequence(msg: &'static str) -> BaseError {
+fn invalid_sequence(message: &'static str) -> BaseError {
     //
     unrecoverable_error! {
-        message: msg.into();
+        message: message.into();
         "invalid Unit sequence",
     }
 }

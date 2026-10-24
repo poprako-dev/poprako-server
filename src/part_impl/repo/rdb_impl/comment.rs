@@ -19,13 +19,13 @@ use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::comment::{
-    CommentEntryRow, CommentInfoRow,
+    CommentInfoRecord, CommentItem,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::{
     f_created_at, f_team_id, t_comment,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 
 // Query comment infos matching the given list spec, with optional includes.
@@ -35,17 +35,17 @@ async fn list_infos(
     spec: &CommentListSpec,
 ) -> BaseRest<Vec<CommentInfo>> {
     //
-    let rows = t_comment
+    let records = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
-        .select(CommentInfoRow::as_select())
+        .select(CommentInfoRecord::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<CommentInfoRow>(conn)
+        .load::<CommentInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut infos = rows
+    let mut infos = records
         .into_iter()
         .map(Into::into)
         .collect::<Vec<CommentInfo>>();
@@ -53,26 +53,26 @@ async fn list_infos(
     incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
-// Insert a new comment from the given entry and return the created info.
+// Insert a new comment from the given domain entry and return the created info.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entry: &CommentEntry<'_>,
+    entry: &CommentEntry,
 ) -> BaseRest<CommentInfo> {
     //
-    let entry = CommentEntryRow::from(entry);
+    let item = CommentItem::from(entry);
 
-    let row = diesel::insert_into(t_comment)
-        .values(&entry)
-        .returning(CommentInfoRow::as_returning())
-        .get_result::<CommentInfoRow>(conn)
+    let record = diesel::insert_into(t_comment)
+        .values(&item)
+        .returning(CommentInfoRecord::as_returning())
+        .get_result::<CommentInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept!(record.into())
 }
 
 impl Run<ListCommentInfos<'_>> for HybRepo {

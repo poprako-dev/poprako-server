@@ -30,10 +30,6 @@ const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
 /// Verifies assignment invitation roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn assignment_invitation_roundtrip_uses_testcontainer(
     shared: RdbCore,
 ) {
@@ -51,11 +47,11 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let assignment_invitation_entry = AssignmentInvitationEntry {
-        id: format!("{}assignment-invitation", PREFIX),
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        id: [PREFIX, "assignment-invitation"].concat(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         inviter_id: chapter_fixture.creator_form.id.clone(),
-        invitee_qid: &format!("{}invitee", PREFIX),
-        code: format!("{}code", PREFIX),
+        invitee_qid: [PREFIX, "invitee"].concat(),
+        code: [PREFIX, "code"].concat(),
         roles: RoleMask::from(RoleField::REVIEWER),
     };
 
@@ -83,7 +79,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
     .unwrap();
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
-        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        chapter_id: chapter_fixture.chapter_info.id.clone(),
         is_pending: Some(false),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),

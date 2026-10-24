@@ -8,9 +8,6 @@ use crate::complex::{
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter::ChapterEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -22,7 +19,10 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, TouchComicLastActive, UpdateComicChapterCount,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter::ChapterEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
@@ -93,8 +93,7 @@ where
         .step_on(repo, context)
         .await?;
 
-    let subtitle =
-        chapter_complex::subtitle_or_default(subtitle.as_deref(), index);
+    let subtitle = chapter_complex::subtitle_or_default(subtitle, index);
 
     let chapter_id = chapter_complex::gen_id();
 
@@ -105,13 +104,13 @@ where
     .step_on(repo, context)
     .await?;
 
-    let chapter_entry = ChapterEntry {
+    let chapter_entry = ChapterEntryShape {
         id: chapter_id,
-        comic_id: comic_info.id.as_str().into(),
+        comic_id: comic_info.id.as_str(),
         is_pinned: true,
         index,
         subtitle,
-        creator_id: token.user_id.as_str().into(),
+        creator_id: token.user_id.as_str(),
     };
 
     let chapter_info = CreateChapter {
@@ -135,10 +134,10 @@ where
 
     if let Some(roles) = preset_assignment_roles {
         //
-        let assignment_entry = AssignmentEntry {
+        let assignment_entry = AssignmentEntryShape {
             id: assignment_complex::gen_id(),
-            chapter_id: chapter_info.id.as_str().into(),
-            user_id: token.user_id.as_str().into(),
+            chapter_id: chapter_info.id.as_str(),
+            user_id: token.user_id.as_str(),
             roles,
         };
 
@@ -162,7 +161,7 @@ where
     )
     .await?;
 
-    accept(chapter_info)
+    accept!(chapter_info)
 }
 
 // Records creation and any displaced pinned chapter in the workflow history.
@@ -177,28 +176,26 @@ where
     C: Context,
     R: ChapterWorkflowRecordRepo<C> + Sync,
 {
-    let mut workflow_record_entries = Vec::with_capacity(2);
+    let mut entries = Vec::with_capacity(2);
 
     if let Some(prev_pinned_chapter_id) = prev_pinned_chapter_id {
         //
-        workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+        entries.push(ChapterWorkflowRecordEntryShape::new(
             prev_pinned_chapter_id,
-            Some(user_id.into()),
+            Some(user_id),
             ChapterWorkflowRecordPayload::ChapterUnpinned,
         ));
     }
 
-    workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+    entries.push(ChapterWorkflowRecordEntryShape::new(
         chapter_id,
-        Some(user_id.into()),
+        Some(user_id),
         ChapterWorkflowRecordPayload::ChapterCreated,
     ));
 
-    CreateChapterWorkflowRecords {
-        entries: &workflow_record_entries,
-    }
-    .step_on(repo, context)
-    .await?;
+    CreateChapterWorkflowRecords { entries: &entries }
+        .step_on(repo, context)
+        .await?;
 
-    accept(())
+    accept!(())
 }

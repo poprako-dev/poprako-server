@@ -48,7 +48,7 @@ pub enum RdbError {
     /// A pooled connection could not be acquired.
     PoolGet {
         /// Safe diagnostic from the pool implementation.
-        msg: String,
+        message: String,
     },
 
     /// Waiting for a pooled connection exceeded the configured bound.
@@ -57,24 +57,26 @@ pub enum RdbError {
 
 impl std::fmt::Display for RdbError {
     // Formats an infrastructure failure without adding contextual classification.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //
         match self {
             //
             Self::PoolBuild { source } => {
-                write!(formatter, "failed to build RDB pool: {}", source)
+                //
+                formatter.write_str("failed to build RDB pool: ")?;
+
+                std::fmt::Display::fmt(source, formatter)
             }
 
-            Self::PoolGet { msg } => {
-                write!(formatter, "failed to acquire RDB connection: {}", msg)
+            Self::PoolGet { message } => {
+                //
+                formatter.write_str("failed to acquire RDB connection: ")?;
+
+                formatter.write_str(message)
             }
 
             Self::PoolWaitTimeout => {
-                write!(formatter, "timed out waiting for an RDB connection")
+                formatter.write_str("timed out waiting for an RDB connection")
             }
         }
     }
@@ -124,7 +126,7 @@ impl RdbCore {
                 //
                 tracing::error!(
                     operation = "build_rdb_pool",
-                    sdk_err = ?source,
+                    sdk_error = ?source,
                     "RDB pool SDK error",
                 );
 
@@ -145,14 +147,14 @@ impl RdbCore {
         //
         let started_at = Instant::now();
 
-        let connection = self.pool.get().await;
+        let conn = self.pool.get().await;
 
         metrics::histogram!("rdb_pool_acquire_duration_seconds")
             .record(started_at.elapsed().as_secs_f64());
 
-        match connection {
+        match conn {
             //
-            Ok(connection) => Ok(connection),
+            Ok(conn) => Ok(conn),
 
             Err(source) => Err(pool_get_error(&source)),
         }
@@ -174,7 +176,7 @@ fn pool_get_error(source: &PoolError) -> RdbError {
 
     tracing::error!(
         operation = "acquire_rdb_connection",
-        sdk_err = ?source,
+        sdk_error = ?source,
         "RDB pool SDK error",
     );
 
@@ -183,7 +185,7 @@ fn pool_get_error(source: &PoolError) -> RdbError {
         PoolError::Timeout(TimeoutType::Wait) => RdbError::PoolWaitTimeout,
 
         _ => RdbError::PoolGet {
-            msg: source.to_string(),
+            message: source.to_string(),
         },
     }
 }

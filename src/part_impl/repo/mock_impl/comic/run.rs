@@ -9,7 +9,7 @@ use crate::part_impl::repo::mock_impl::comic::{
     get_comic_info, list_comic_infos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, expected, now};
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     // Use base error type for get-by-id read operation.
@@ -43,7 +43,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_comic_infos(&state, oper.spec))
+        accept!(list_comic_infos(&state, oper.spec))
     }
 }
 
@@ -68,15 +68,16 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
             .find(|comic| comic.id == oper.update.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        comic.title = oper.update.title.to_owned();
+        comic.title = oper.update.trimmed_title().to_owned();
 
-        comic.author = oper.update.author.to_owned();
+        comic.author = oper.update.trimmed_author().to_owned();
 
-        comic.description = oper.update.description.map(str::to_owned);
+        comic.description =
+            oper.update.trimmed_description().map(str::to_owned);
 
         comic.updated_at = now();
 
-        let rest = accept(());
+        let rest = accept!(());
 
         drop(state);
 

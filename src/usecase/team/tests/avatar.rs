@@ -112,7 +112,7 @@ async fn alloc_avatar_rolls_back_when_team_is_missing() {
 
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = alloc_avatar::<_, MockContext, _, _>(
+    let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
@@ -122,7 +122,7 @@ async fn alloc_avatar_rolls_back_when_team_is_missing() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
     assert!(mock.snapshot().obj_tasks.is_empty());
 }
@@ -140,7 +140,7 @@ async fn alloc_avatar_rejects_byte_length_above_team_limit() {
     let mut instr = alloc_instr(1, ImageExt::Png);
     instr.new_byte_len = 1024 * 1024 + 1;
 
-    let err = alloc_avatar::<_, MockContext, _, _>(
+    let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &image_config),
         token("user-1"),
         "team-1".into(),
@@ -150,7 +150,7 @@ async fn alloc_avatar_rejects_byte_length_above_team_limit() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert!(mock.snapshot().objs.is_empty());
 }
 
@@ -217,9 +217,9 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 
     assert_eq!(allocated.slot.unwrap().image_ver, 2);
 
-    let err = mark_team_avatar(&mock, 1).await.err().unwrap();
+    let error = mark_team_avatar(&mock, 1).await.err().unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
     assert_eq!(
         mock.snapshot()
             .objs
@@ -302,7 +302,7 @@ async fn delete_missing_team_rolls_back_avatar_debt() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
     seed_team_avatar(&mock, 2);
 
-    let err = delete::delete::<_, MockContext, _>(
+    let error = delete::delete::<_, MockContext, _>(
         (&mock, &mock),
         token("user-1"),
         "team-1".into(),
@@ -311,7 +311,7 @@ async fn delete_missing_team_rolls_back_avatar_debt() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 

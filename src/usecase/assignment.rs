@@ -24,8 +24,6 @@ use crate::data::instr::assignment::{
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -46,7 +44,9 @@ use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::assignment_info_views;
@@ -93,7 +93,7 @@ where
     let assignment_info_vals =
         assignment_info_views(repo, obj_dept, assignment_infos).await?;
 
-    accept(assignment_info_vals)
+    accept!(assignment_info_vals)
 }
 
 /// Joins a chapter assignment with requested roles.
@@ -197,18 +197,16 @@ where
                 }
             } else {
                 //
-                let assignment_entry = AssignmentEntry {
+                let entry = AssignmentEntryShape {
                     id: assignment_complex::gen_id(),
-                    chapter_id: instr.chapter_id.into(),
-                    user_id: token.user_id.as_str().into(),
+                    chapter_id: &instr.chapter_id,
+                    user_id: token.user_id.as_str(),
                     roles: instr.roles,
                 };
 
-                let assignment_info = CreateAssignment {
-                    entry: &assignment_entry,
-                }
-                .step_on(repo, context)
-                .await?;
+                let assignment_info = CreateAssignment { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
                 let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
                     subject_user_id: assignment_info.user_id.clone(),
@@ -220,24 +218,24 @@ where
 
             if let Some(payload) = workflow_record_payload {
                 //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id,
-                    Some(token.user_id.into()),
+                let entry = ChapterWorkflowRecordEntryShape::new(
+                    &chapter_info.id,
+                    Some(&token.user_id),
                     payload,
                 );
 
                 CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
+                    entries: std::slice::from_ref(&entry),
                 }
                 .step_on(repo, context)
                 .await?;
             }
 
-            accept(assignment_info)
+            accept!(assignment_info)
         })
         .await?;
 
-    accept(AssignmentInfoView::from(assignment_info))
+    accept!(AssignmentInfoView::from(assignment_info))
 }
 
 /// Deletes one assignment by identifier.
@@ -311,9 +309,9 @@ where
             .step_on(repo, context)
             .await?;
 
-        let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-            chapter_info.id,
-            Some(token.user_id.into()),
+        let entry = ChapterWorkflowRecordEntryShape::new(
+            &chapter_info.id,
+            Some(&token.user_id),
             ChapterWorkflowRecordPayload::AssignmentDeleted {
                 subject_user_id: assignment_info.user_id,
                 previous_roles: assignment_info.roles,
@@ -321,25 +319,21 @@ where
         );
 
         CreateChapterWorkflowRecords {
-            entries: std::slice::from_ref(&workflow_record_entry),
+            entries: std::slice::from_ref(&entry),
         }
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
     let () = ();
 
-    accept(())
+    accept!(())
 }
 
 // Ensure the current user may list assignments for the requested scope.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn ensure_user_can_list<C, R>(
     repo: &R,
     token: &UserToken,
@@ -347,7 +341,7 @@ async fn ensure_user_can_list<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + UserRepo<C>,
+    R: AssignmentRepo<C> + MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Sync,
 {
     match assignment_list_spec {
         //

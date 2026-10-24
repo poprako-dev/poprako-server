@@ -14,7 +14,7 @@ use crate::part::repo::oper::subtree_delete::{
     LockSubtreeDeleteScope, MarkSubtree, SubtreeRoot,
 };
 use crate::part::repo::subtree_delete::SubtreeRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Atomically hides a Team and marks its hierarchy for background cleanup.
 #[instrument(
@@ -66,9 +66,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

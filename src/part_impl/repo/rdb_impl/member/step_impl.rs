@@ -16,7 +16,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part_impl::repo::rdb_impl::entity::member::{
-    MemberAspectRow, MemberEntryRow, MemberInfoRow,
+    MemberInfoRecord, MemberItem, MemberPack,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_user_last_active_at, f_user_nickname, t_member,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -51,36 +51,32 @@ pub async fn find_info_by_user_id_and_team_id(
     team_id: &str,
 ) -> BaseRest<Option<MemberInfo>> {
     //
-    let row = t_member
+    let record = t_member
         .filter(f_user_id.eq(user_id))
         .filter(f_team_id.eq(team_id))
         .filter(f_team_id.eq_any(active_team_ids!()))
-        .select(MemberInfoRow::as_select())
-        .get_result::<MemberInfoRow>(conn)
+        .select(MemberInfoRecord::as_select())
+        .get_result::<MemberInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    accept(row.map(Into::into))
+    accept!(record.map(Into::into))
 }
 
 /// Query a paginated, filtered list of member infos.
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &MemberListSpec<'_>,
+    spec: &MemberListSpec,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows =
+    let records =
         match spec {
             //
             MemberListSpec::Team {
                 team_id,
-                fuzzy_nickname,
+                fuzzy_nickname: _,
                 role,
                 offset,
                 limit,
@@ -88,17 +84,18 @@ pub async fn list_infos(
             } => {
                 //
                 let mut query = t_member
-                    .filter(f_team_id.eq(*team_id))
+                    .filter(f_team_id.eq(team_id))
                     .filter(f_team_id.eq_any(active_team_ids!()))
-                    .select(MemberInfoRow::as_select())
+                    .select(MemberInfoRecord::as_select())
                     .into_boxed();
 
-                if let Some(nickname) = fuzzy_nickname {
+                if let Some(nickname) = spec.trimmed_fuzzy_nickname() {
                     //
                     let escaped = escape_ilike_pattern(nickname);
 
                     query = query.filter(
-                        f_user_nickname.ilike(format!("%{}%", escaped)),
+                        f_user_nickname
+                            .ilike(["%", escaped.as_str(), "%"].concat()),
                     );
                 }
 
@@ -146,7 +143,7 @@ pub async fn list_infos(
                     .order_by((f_user_last_active_at.desc(), f_id.asc()))
                     .offset(i64::from(*offset))
                     .limit(i64::from(limit.get()))
-                    .load::<MemberInfoRow>(conn)
+                    .load::<MemberInfoRecord>(conn)
                     .await
                     .map_err(diesel)?
             }
@@ -157,18 +154,18 @@ pub async fn list_infos(
                 limit,
                 ..
             } => t_member
-                .filter(f_user_id.eq(*owner_id))
+                .filter(f_user_id.eq(owner_id))
                 .filter(f_team_id.eq_any(active_team_ids!()))
-                .select(MemberInfoRow::as_select())
+                .select(MemberInfoRecord::as_select())
                 .order_by((f_user_last_active_at.desc(), f_id.asc()))
                 .offset(i64::from(*offset))
                 .limit(i64::from(limit.get()))
-                .load::<MemberInfoRow>(conn)
+                .load::<MemberInfoRecord>(conn)
                 .await
                 .map_err(diesel)?,
         };
 
-    let mut infos = rows
+    let mut infos = records
         .into_iter()
         .map(Into::into)
         .collect::<Vec<MemberInfo>>();
@@ -176,7 +173,7 @@ pub async fn list_infos(
     incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
         .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
 /// Load a single member info by ID with optional includes.
@@ -187,16 +184,16 @@ pub async fn get_info_by_id(
     incl_opt: &[MemberInclOpt],
 ) -> BaseRest<MemberInfo> {
     //
-    let row = t_member
+    let record = t_member
         .filter(f_id.eq(id))
         .filter(f_team_id.eq_any(active_team_ids!()))
-        .select(MemberInfoRow::as_select())
-        .get_result::<MemberInfoRow>(conn)
+        .select(MemberInfoRecord::as_select())
+        .get_result::<MemberInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -208,7 +205,7 @@ pub async fn get_info_by_id(
         });
     };
 
-    let mut info = row.into();
+    let mut info = record.into();
 
     incl::member::populate_member_incls(
         conn,
@@ -217,7 +214,7 @@ pub async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 /// Insert a new member and return its info.
@@ -229,19 +226,19 @@ pub async fn create(
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = entity_from_entry(entry, now);
+    let item = item_from_entry(entry, now);
 
-    let row = diesel::insert_into(t_member)
-        .values(&entry)
-        .returning(MemberInfoRow::as_returning())
-        .get_result::<MemberInfoRow>(conn)
+    let record = diesel::insert_into(t_member)
+        .values(&item)
+        .returning(MemberInfoRecord::as_returning())
+        .get_result::<MemberInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept!(record.into())
 }
 
-/// Update the user-nickname for every member row owned by the given user.
+/// Update the user-nickname for every member record owned by the given user.
 #[instrument(level = "info", skip_all)]
 pub async fn update_user_nickname(
     conn: &mut RdbConn,
@@ -251,38 +248,38 @@ pub async fn update_user_nickname(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = MemberAspectRow::new(now).user_nickname(nickname);
+    let pack = MemberPack::new(now).user_nickname(nickname);
 
     diesel::update(
         t_member
             .filter(f_user_id.eq(user_id))
             .filter(f_team_id.eq_any(active_team_ids!())),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-/// Query all member infos for a team, locking the rows for update.
+/// Query all member infos for a team, locking the records for update.
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows = t_member
+    let records = t_member
         .filter(f_team_id.eq(team_id))
         .filter(f_team_id.eq_any(active_team_ids!()))
-        .select(MemberInfoRow::as_select())
+        .select(MemberInfoRecord::as_select())
         .for_update()
-        .load::<MemberInfoRow>(conn)
+        .load::<MemberInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 /// Query all member infos for a user without acquiring a lock.
@@ -292,15 +289,15 @@ pub async fn list_infos_by_user_id(
     user_id: &str,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows = t_member
+    let records = t_member
         .filter(f_user_id.eq(user_id))
         .filter(f_team_id.eq_any(active_team_ids!()))
-        .select(MemberInfoRow::as_select())
-        .load::<MemberInfoRow>(conn)
+        .select(MemberInfoRecord::as_select())
+        .load::<MemberInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    accept!(records.into_iter().map(Into::into).collect())
 }
 
 /// Update the role mask and refresh assignment timestamps for a member.
@@ -312,19 +309,19 @@ pub async fn update_role(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = aspect_from_role_update(update, now);
+    let pack = pack_from_role_update(update, now);
 
     diesel::update(
         t_member
             .filter(f_id.eq(update.id.as_str()))
             .filter(f_team_id.eq_any(active_team_ids!())),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 /// Delete a member by ID.
@@ -340,10 +337,10 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .await
     .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-/// Delete every membership for a user, including rows under tombstoned teams.
+/// Delete every membership for a user, including records under tombstoned teams.
 #[instrument(level = "info", skip_all)]
 pub async fn delete_user_memberships(
     conn: &mut RdbConn,
@@ -355,7 +352,7 @@ pub async fn delete_user_memberships(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Escape SQL ILIKE wildcards so user input remains literal.
@@ -411,14 +408,11 @@ struct RoleTimestamps {
 }
 
 // Convert MemberEntry into insert payload, including per-role timestamp defaults.
-fn entity_from_entry(
-    entry: &MemberEntry,
-    now: OffsetDateTime,
-) -> MemberEntryRow<'_> {
+fn item_from_entry(entry: &MemberEntry, now: OffsetDateTime) -> MemberItem<'_> {
     //
     let timestamps = role_timestamps_from_mask(entry.roles, now);
 
-    MemberEntryRow {
+    MemberItem {
         f_id: &entry.id,
         f_user_id: &entry.user_id,
         f_user_nickname: &entry.user_nickname,
@@ -438,17 +432,17 @@ fn entity_from_entry(
     }
 }
 
-// Build update aspect from role change payload, applying now-stamped enabled roles.
-fn aspect_from_role_update(
+// Build update pack from role change payload, applying now-stamped enabled roles.
+fn pack_from_role_update(
     update: &MemberRoleRepl,
     now: OffsetDateTime,
-) -> MemberAspectRow<'_> {
+) -> MemberPack<'_> {
     //
     let timestamps = role_timestamps_from_mask(update.roles, now);
 
-    let mut aspect = MemberAspectRow::new(now);
+    let mut pack = MemberPack::new(now);
 
-    aspect = aspect
+    pack = pack
         .assigned_raw_provider_at(timestamps.raw_provider)
         .assigned_translator_at(timestamps.translator)
         .assigned_proofreader_at(timestamps.proofreader)
@@ -459,7 +453,7 @@ fn aspect_from_role_update(
         .assigned_admin_at(timestamps.admin)
         .assigned_bot_at(timestamps.bot);
 
-    aspect
+    pack
 }
 
 // Convert role mask into assignment timestamps by stamping enabled roles with now.

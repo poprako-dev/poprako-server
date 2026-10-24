@@ -27,7 +27,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -57,11 +57,11 @@ where
         + Send
         + Sync,
 {
-    let term_entry = term_complex::build_entry(
+    let entry = term_complex::build_entry(
         instr.termbase_id,
-        &instr.source,
-        instr.targets.iter().map(String::as_str).collect(),
-        instr.comment.as_deref(),
+        instr.source,
+        instr.targets,
+        instr.comment,
         token.user_id.clone(),
     )?;
 
@@ -69,7 +69,7 @@ where
         .coord(async move |context| {
             //
             let termbase_info = GetTermbaseInfoExcluded {
-                id: &term_entry.termbase_id,
+                id: &entry.termbase_id,
             }
             .step_on(repo, context)
             .await?;
@@ -92,9 +92,8 @@ where
                 1,
             )?;
 
-            let term_info = CreateTerm { entry: &term_entry }
-                .step_on(repo, context)
-                .await?;
+            let term_info =
+                CreateTerm { entry: &entry }.step_on(repo, context).await?;
 
             UpdateTermbaseTermCount {
                 id: &termbase_info.id,
@@ -103,11 +102,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(term_info.id)
+            accept!(term_info.id)
         })
         .await?;
 
-    accept(CreateTermVal { id: term_id })
+    accept!(CreateTermVal { id: term_id })
 }
 
 /// Fetches a terminology entry by ID.
@@ -145,7 +144,7 @@ where
 
     termbase_perm_complex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    accept(term_info.into())
+    accept!(term_info.into())
 }
 
 /// Lists terminology entries inside one terminology base.
@@ -193,7 +192,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(term_infos.into_iter().map(Into::into).collect())
+    accept!(term_infos.into_iter().map(Into::into).collect())
 }
 
 /// Replaces a terminology entry's source, targets, and comment.
@@ -224,9 +223,9 @@ where
 {
     let term_info_update = term_complex::build_update(
         instr.id,
-        &instr.source,
-        instr.targets.iter().map(String::as_str).collect(),
-        instr.comment.as_deref(),
+        instr.source,
+        instr.targets,
+        instr.comment,
     )?;
 
     let term_info = GetTermInfo {
@@ -274,11 +273,11 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes a terminology entry.
@@ -343,9 +342,9 @@ where
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await?;
 
-    accept(())
+    accept!(())
 }

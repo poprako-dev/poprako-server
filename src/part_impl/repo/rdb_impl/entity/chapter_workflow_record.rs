@@ -8,9 +8,9 @@ use serde_json::json;
 use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record;
 use crate::result::BaseError;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordKind, ChapterWorkflowRecordPayload,
@@ -204,10 +204,10 @@ fn decode_payload(
     serde_json::from_value(serde_json::Value::Object(payload_fields))
 }
 
-/// Raw database row returned from `t_chapter_workflow_record`.
+/// Raw database record returned from `t_chapter_workflow_record`.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter_workflow_record)]
-pub struct ChapterWorkflowRecordInfoRow {
+pub struct ChapterWorkflowRecordInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -217,15 +217,15 @@ pub struct ChapterWorkflowRecordInfoRow {
     pub f_created_at: OffsetDateTime,
 }
 
-impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
+impl TryFrom<ChapterWorkflowRecordInfoRecord> for ChapterWorkflowRecordInfo {
     type Error = BaseError;
 
     fn try_from(
-        row: ChapterWorkflowRecordInfoRow,
+        record: ChapterWorkflowRecordInfoRecord,
     ) -> Result<Self, Self::Error> {
         //
         let kind = serde_json::from_value::<ChapterWorkflowRecordKind>(
-            serde_json::Value::String(row.f_kind),
+            serde_json::Value::String(record.f_kind),
         )
         .map_err(|error| {
             //
@@ -233,40 +233,40 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
                 message: "persisted chapter workflow record kind is corrupt"
                     .into();
                 operation = "decode_chapter_workflow_record_kind",
-                record_id = %row.f_id,
-                err = ?error,
+                record_id = %record.f_id,
+                error = ?error,
                 "persisted chapter workflow record is corrupt",
             }
         })?;
 
-        let payload = decode_payload(kind, row.f_payload).map_err(|error| {
+        let payload = decode_payload(kind, record.f_payload).map_err(|error| {
             //
             unrecoverable_error! {
                 message: "persisted chapter workflow record payload is corrupt"
                     .into();
                 operation = "decode_chapter_workflow_record_payload",
-                record_id = %row.f_id,
+                record_id = %record.f_id,
                 kind = ?kind,
-                err = ?error,
+                error = ?error,
                 "persisted chapter workflow record is corrupt",
             }
         })?;
 
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            actor_user_id: row.f_actor_user_id,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            actor_user_id: record.f_actor_user_id,
             kind,
             payload,
-            created_at: row.f_created_at,
+            created_at: record.f_created_at,
         })
     }
 }
 
-/// Insertable immutable workflow record row.
+/// Insertable immutable workflow record.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter_workflow_record)]
-pub struct ChapterWorkflowRecordEntryRow<'a> {
+pub struct ChapterWorkflowRecordItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -276,14 +276,14 @@ pub struct ChapterWorkflowRecordEntryRow<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ChapterWorkflowRecordEntry<'_>>
-    for ChapterWorkflowRecordEntryRow<'a>
+impl<'a> From<&'a ChapterWorkflowRecordEntryShape<'_>>
+    for ChapterWorkflowRecordItem<'a>
 {
-    fn from(entry: &'a ChapterWorkflowRecordEntry<'_>) -> Self {
+    fn from(entry: &'a ChapterWorkflowRecordEntryShape<'_>) -> Self {
         Self {
             f_id: &entry.id,
-            f_chapter_id: &entry.chapter_id,
-            f_actor_user_id: entry.actor_user_id.as_deref(),
+            f_chapter_id: entry.chapter_id,
+            f_actor_user_id: entry.actor_user_id,
             f_kind: entry.payload.kind().as_str().to_string(),
             f_payload: encode_payload(&entry.payload),
             f_created_at: entry.created_at,

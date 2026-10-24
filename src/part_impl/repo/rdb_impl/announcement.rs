@@ -24,28 +24,28 @@ use crate::part::repo::oper::announcement::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
-    AnnouncementEntryRow, AnnouncementInfoRow,
+    AnnouncementInfoRecord, AnnouncementItem,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
     f_content, f_created_at, f_id, f_team_id, f_title, t_announcement,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
-// Loads an announcement row by identifier.
+// Loads an announcement record by identifier.
 #[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
     //
-    let row = t_announcement
+    let record = t_announcement
         .filter(f_id.eq(id))
-        .select(AnnouncementInfoRow::as_select())
-        .get_result::<AnnouncementInfoRow>(conn)
+        .select(AnnouncementInfoRecord::as_select())
+        .get_result::<AnnouncementInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -56,27 +56,27 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
         });
     };
 
-    accept(row.into())
+    accept!(record.into())
 }
 
-// Queries announcement rows filtered by team ID, ordered by creation time descending.
+// Queries announcement records filtered by team ID, ordered by creation time descending.
 #[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
 ) -> BaseRest<Vec<AnnouncementInfo>> {
     //
-    let rows = t_announcement
+    let records = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
-        .select(AnnouncementInfoRow::as_select())
+        .select(AnnouncementInfoRecord::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit.get()))
-        .load::<AnnouncementInfoRow>(conn)
+        .load::<AnnouncementInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut infos = rows
+    let mut infos = records
         .into_iter()
         .map(Into::into)
         .collect::<Vec<AnnouncementInfo>>();
@@ -88,45 +88,48 @@ async fn list_infos(
     )
     .await?;
 
-    accept(infos)
+    accept!(infos)
 }
 
-// Inserts a new announcement row from the given entry and returns the created info.
+// Inserts a new announcement record from the given entry and returns the created info.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    entry: &AnnouncementEntry<'_>,
+    entry: &AnnouncementEntry,
 ) -> BaseRest<AnnouncementInfo> {
     //
-    let entry = AnnouncementEntryRow::from(entry);
+    let item = AnnouncementItem::from(entry);
 
-    let row = diesel::insert_into(t_announcement)
-        .values(&entry)
-        .returning(AnnouncementInfoRow::as_returning())
-        .get_result::<AnnouncementInfoRow>(conn)
+    let record = diesel::insert_into(t_announcement)
+        .values(&item)
+        .returning(AnnouncementInfoRecord::as_returning())
+        .get_result::<AnnouncementInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept!(record.into())
 }
 
 // Replaces an announcement's editable fields.
 #[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
-    update: &AnnouncementRepl<'_>,
+    update: &AnnouncementRepl,
 ) -> BaseRest<()> {
     //
     diesel::update(t_announcement.filter(f_id.eq(&update.id)))
-        .set((f_title.eq(&update.title), f_content.eq(&update.content)))
+        .set((
+            f_title.eq(update.trimmed_title()),
+            f_content.eq(update.trimmed_content()),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-// Deletes an announcement row by identifier.
+// Deletes an announcement record by identifier.
 #[instrument(level = "info", skip_all)]
 async fn delete_announcement(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -135,7 +138,7 @@ async fn delete_announcement(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListAnnouncementInfos<'_>> for HybRepo {

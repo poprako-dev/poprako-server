@@ -161,14 +161,10 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
 }
 
 // Build a member fixture with deterministic role assignment.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     // Build a team member fixture with a stable role assignment.
     MemberInfo {
-        id: format!("member-{}", user_id),
+        id: ["member-", user_id].concat(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: now(),
@@ -180,10 +176,6 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
 }
 
 // Build an assignment fixture for role-merge/duplication assertions.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -194,7 +186,7 @@ fn assignment(
     let time = now();
 
     AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
+        id: ["assignment-", chapter_id, "-", user_id].concat(),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,
@@ -340,7 +332,7 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
+    let error = create(
         (&mock, &mock, &mock, &InvitationConfig::default()),
         token("admin-user"),
         create_data("target-qid"),
@@ -349,7 +341,7 @@ async fn create_existing_assignment_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().assignment_invitations.is_empty());
 
@@ -391,13 +383,13 @@ async fn delete_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err =
+    let error =
         delete((&mock, &mock), token("normal-user"), "invitation-1".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }

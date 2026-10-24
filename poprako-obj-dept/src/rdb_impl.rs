@@ -8,19 +8,19 @@ use crate::key::{KeyMap, ObjKey};
 use crate::model::meta::ObjMeta;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
-/// Standardized latest object row decoded from a concrete Diesel table.
+/// Standardized latest object record decoded from a concrete Diesel table.
 #[derive(Clone, PartialEq, Eq)]
-pub struct ObjRdbRow {
+pub struct ObjRdbRecord {
     /// Stored generation watermark.
     pub ver: i64,
 
-    /// Complete physical key, or none for a detached row.
+    /// Complete physical key, or none for a detached record.
     pub key: Option<String>,
-    /// Current upload evidence, or none for a detached row.
+    /// Current upload evidence, or none for a detached record.
     pub f_is_uploaded: Option<bool>,
-    /// Current content hash, or none for a detached row.
+    /// Current content hash, or none for a detached record.
     pub hash: Option<Vec<u8>>,
-    /// Current object suffix, or none for a detached row.
+    /// Current object suffix, or none for a detached record.
     pub ext: Option<String>,
 }
 
@@ -40,26 +40,25 @@ pub struct ObjRdbWrite<'a> {
     pub ext: &'a str,
 }
 
-/// Converts one concrete typed row into public object metadata.
+/// Converts one concrete typed record into public object metadata.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error when the row is inconsistent or out of range.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
-pub fn decode_row<K>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
+/// Returns an unrecoverable error when the record is inconsistent or out of range.
+pub fn decode_record<K>(
+    id: &str,
+    record: ObjRdbRecord,
+) -> ObjDeptRest<Option<ObjMeta>>
 where
     K: KeyMap<Img = String>,
 {
     //
     let ver =
-        u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
-            msg: "object ver is outside u32".into(),
+        u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
+            message: "object ver is outside u32".into(),
         })?;
 
-    match (row.key, row.f_is_uploaded, row.hash, row.ext) {
+    match (record.key, record.f_is_uploaded, record.hash, record.ext) {
         //
         (None, None, None, None) => Ok(None),
 
@@ -81,27 +80,28 @@ where
         }
 
         _ => Err(ObjDeptError::Unrecoverable {
-            msg: format!("invalid object row: {}", id),
+            message: ["invalid object row: ", id].concat(),
         }),
     }
 }
 
-/// Allocates the next ver after validating the current row.
+/// Allocates the next ver after validating the current record.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error for an invalid row or ver overflow.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
-pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
+/// Returns an unrecoverable error for an invalid record or ver overflow.
+pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
     //
-    let ver = match row {
+    let ver = match record {
         //
-        Some(row) => {
+        Some(record) => {
             //
-            match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+            match (
+                &record.key,
+                &record.f_is_uploaded,
+                &record.hash,
+                &record.ext,
+            ) {
                 //
                 (None, None, None, None)
                 | (Some(_), Some(_), Some(_), Some(_)) => {}
@@ -109,13 +109,15 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
                 _ => {
                     //
                     return Err(ObjDeptError::Unrecoverable {
-                        msg: format!("invalid object row: {}", id),
+                        message: ["invalid object row: ", id].concat(),
                     });
                 }
             }
 
-            u32::try_from(row.ver).map_err(|_| ObjDeptError::Unrecoverable {
-                msg: "object ver is outside u32".into(),
+            u32::try_from(record.ver).map_err(|_| {
+                ObjDeptError::Unrecoverable {
+                    message: "object ver is outside u32".into(),
+                }
             })?
         }
 
@@ -124,38 +126,39 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
 
     ver.checked_add(1)
         .ok_or_else(|| ObjDeptError::Unrecoverable {
-            msg: "object ver overflow".into(),
+            message: "object ver overflow".into(),
         })
 }
 
-/// Rebuilds the exact active logical key from a validated row.
+/// Rebuilds the exact active logical key from a validated record.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error when the row is inconsistent or out of range.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
+/// Returns an unrecoverable error when the record is inconsistent or out of range.
 pub fn active_key<K>(
     id: &str,
-    row: Option<&ObjRdbRow>,
+    record: Option<&ObjRdbRecord>,
 ) -> ObjDeptRest<Option<ObjKey>>
 where
     K: KeyMap<Img = String>,
 {
     //
-    let Some(row) = row else {
+    let Some(record) = record else {
         return Ok(None);
     };
 
-    match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+    match (
+        &record.key,
+        &record.f_is_uploaded,
+        &record.hash,
+        &record.ext,
+    ) {
         //
         (Some(key), Some(_), Some(_), Some(ext)) => {
             //
-            let ver = u32::try_from(row.ver).map_err(|_| {
+            let ver = u32::try_from(record.ver).map_err(|_| {
                 ObjDeptError::Unrecoverable {
-                    msg: "object ver is outside u32".into(),
+                    message: "object ver is outside u32".into(),
                 }
             })?;
 
@@ -171,13 +174,13 @@ where
         (None, None, None, None) => Ok(None),
 
         _ => Err(ObjDeptError::Unrecoverable {
-            msg: format!("invalid object row: {}", id),
+            message: ["invalid object row: ", id].concat(),
         }),
     }
 }
 
 /// Maps and traces a Diesel adapter failure.
-pub fn diesel_err(source: DieselError) -> ObjDeptError {
+pub fn diesel_error(source: DieselError) -> ObjDeptError {
     //
     match &source {
         //
@@ -188,7 +191,7 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             //
             tracing::warn!(
                 operation = "access_obj_dept_rdb",
-                sdk_err = ?source,
+                sdk_error = ?source,
                 "retryable Diesel SDK error",
             );
         }
@@ -197,7 +200,7 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             //
             tracing::error!(
                 operation = "access_obj_dept_rdb",
-                sdk_err = ?source,
+                sdk_error = ?source,
                 "Diesel SDK error",
             );
         }
@@ -209,44 +212,37 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
             DatabaseErrorKind::SerializationFailure,
             info,
         ) => ObjDeptError::Retryable {
-            msg: info.message().to_owned(),
+            message: info.message().to_owned(),
         },
 
         source => ObjDeptError::Unrecoverable {
-            msg: source.to_string(),
+            message: source.to_string(),
         },
     }
 }
 
 /// Maps an RDB pool failure already traced by its production adapter.
 #[must_use]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
-pub fn rdb_err(source: RdbError) -> ObjDeptError {
+pub fn rdb_error(source: RdbError) -> ObjDeptError {
     //
     match source {
         //
         RdbError::PoolBuild { source } => ObjDeptError::Retryable {
-            msg: format!("failed to build RDB pool: {}", source),
+            message: ["failed to build RDB pool: ", &source.to_string()]
+                .concat(),
         },
 
-        RdbError::PoolGet { msg } => ObjDeptError::Retryable {
-            msg: format!("failed to acquire RDB connection: {}", msg),
+        RdbError::PoolGet { message } => ObjDeptError::Retryable {
+            message: ["failed to acquire RDB connection: ", &message].concat(),
         },
 
         RdbError::PoolWaitTimeout => ObjDeptError::Unavailable {
-            msg: "timed out waiting for an RDB connection".into(),
+            message: "timed out waiting for an RDB connection".into(),
         },
     }
 }
 
 // Validates a stored physical key against its relational metadata.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn validate_key<K>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
 where
     K: KeyMap<Img = String>,
@@ -256,7 +252,7 @@ where
 
     let (dom, decoded_ver) =
         K::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
-            msg: format!("invalid object key: {}", id),
+            message: ["invalid object key: ", id].concat(),
         })?;
 
     let is_consistent = K::id(&dom) == id
@@ -269,7 +265,7 @@ where
         () if is_consistent => Ok(()),
 
         () => Err(ObjDeptError::Unrecoverable {
-            msg: format!("inconsistent object key: {}", id),
+            message: ["inconsistent object key: ", id].concat(),
         }),
     }
 }

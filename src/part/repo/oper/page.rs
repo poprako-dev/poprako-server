@@ -5,7 +5,8 @@ use crate::model::read::proj::page::{
     PageUnitScope,
 };
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageManifestEntry, PageRawIdentsRepl};
+use crate::model::write::page::PageManifestEntry;
+use crate::shape::write::page::PageRawIdentsReplShape;
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -127,7 +128,7 @@ pub struct ListPageRawIdentInfos<'a> {
 #[oper(output = ())]
 pub struct UpdatePageRawIdents<'a> {
     /// Paired filenames with distinct resolved page identifiers.
-    pub repl: &'a PageRawIdentsRepl<'a>,
+    pub repl: &'a PageRawIdentsReplShape<'a>,
 }
 
 /// Lists visible flagged Unit counts for matching Pages in a Chapter.

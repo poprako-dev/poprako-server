@@ -18,13 +18,10 @@ use crate::part::repo::oper::team::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `create_team`.
-fn create_team(
-    state: &mut MockState,
-    entry: &TeamEntry<'_>,
-) -> BaseRest<TeamInfo> {
+fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -36,15 +33,15 @@ fn create_team(
 
     let team_info = TeamInfo {
         id: entry.id.clone(),
-        name: entry.name.to_string(),
-        description: entry.description.to_string(),
+        name: entry.trimmed_name().to_string(),
+        description: entry.trimmed_description().to_string(),
         created_at: time,
         updated_at: time,
     };
 
     state.teams.push(team_info.clone());
 
-    accept(team_info)
+    accept!(team_info)
 }
 
 // Internal implementation of `get_team_info`.
@@ -119,13 +116,13 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
         .find(|team_info| team_info.id == oper.repl.id)
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    team_info.name = oper.repl.name.to_owned();
+    team_info.name = oper.repl.trimmed_name().to_owned();
 
-    team_info.description = oper.repl.description.to_owned();
+    team_info.description = oper.repl.trimmed_description().to_owned();
 
     team_info.updated_at = now();
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Run<CreateTeam<'a>> for Mock {
@@ -175,7 +172,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_team_infos(&state, oper))
+        accept!(list_team_infos(&state, oper))
     }
 }
 
@@ -216,7 +213,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
         if context.create_team_failure {
             //
             return Err(BaseError::Unrecoverable {
-                msg: "mock team creation failed".into(),
+                message: "mock team creation failed".into(),
             });
         }
 
@@ -279,7 +276,7 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
         // Internal implementation detail.
         get_team_info(&context.state, oper.id)?;
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -319,6 +316,6 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
             .filter(|workset_info| workset_info.team_id == oper.id)
             .count();
 
-        accept(workset_index)
+        accept!(workset_index)
     }
 }

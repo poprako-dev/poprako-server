@@ -19,11 +19,13 @@ for when to run it. Do not reproduce its checks in skills.
 
 - Server persisted projections and list specs live in `model::read`;
   entries, modifications, replacements, and reservations in `model::write`.
+- For owned Model and borrowed Shape boundaries, read
+  [model-shape-boundaries](../model-shape-boundaries/SKILL.md).
 - For DTO roles and suffixes, read
   [data-dto-boundaries](../data-dto-boundaries/SKILL.md) when changing DTOs.
 - Use specific domain locals such as `comic_info`, `chapter_entry`,
   `cover_reservation`, and `system_mail_infos`.
-- Bind domain payloads, including DTOs and write models, before passing them
+- Bind domain payloads, including DTOs, write models, and Shapes, before passing them
   to operations. Construct one-shot Orchestra descriptors inline in the
   consuming `run_on` or `step_on` call.
 - For transaction ownership, pure rules, and reusable read chains, read

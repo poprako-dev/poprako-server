@@ -80,15 +80,12 @@ fn token(user_id: &str) -> UserToken {
 }
 
 // Seeds one current user-avatar generation that is not yet available.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
         ver: version,
-        image: format!("user_avatar/{}-{}.png", user_id, version),
+        image: ["user_avatar/", user_id, "-", &version.to_string(), ".png"]
+            .concat(),
     };
 
     let meta = ObjMeta {
@@ -184,12 +181,12 @@ async fn get_info_propagates_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = get_info((&mock, &mock), token("user-1"), "user-1".into())
+    let error = get_info((&mock, &mock), token("user-1"), "user-1".into())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -232,7 +229,7 @@ async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
 
     seed_user_avatar(&mock, "user-1", 3);
 
-    let err = mark_avatar_uploaded::<MockContext, _>(
+    let error = mark_avatar_uploaded::<MockContext, _>(
         (&mock,),
         token("user-1"),
         "user-1".into(),
@@ -242,7 +239,7 @@ async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
 
@@ -266,7 +263,7 @@ async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
 
     seed_user_avatar(&mock, "user-1", 3);
 
-    let err = mark_avatar_uploaded::<MockContext, _>(
+    let error = mark_avatar_uploaded::<MockContext, _>(
         (&mock,),
         token("user-2"),
         "user-1".into(),
@@ -276,7 +273,7 @@ async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -336,7 +333,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
         credential("user-1", "password"),
     );
 
-    let err = update_info(
+    let error = update_info(
         (&mock, &mock),
         token("user-2"),
         update_instr("user-1", "qid-new", "New"),
@@ -345,7 +342,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
 
@@ -359,7 +356,7 @@ async fn update_info_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = update_info(
+    let error = update_info(
         (&mock, &mock),
         token("user-1"),
         update_instr("user-1", "qid-new", "New"),
@@ -368,7 +365,7 @@ async fn update_info_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert!(mock.snapshot().users.is_empty());
 }
@@ -421,7 +418,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
         credential("user-1", "old-password"),
     );
 
-    let err = update_password(
+    let error = update_password(
         (&mock,),
         token("user-1"),
         "user-1".into(),
@@ -431,7 +428,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Auth);
+    assert_expected_variant(&error, ExpectedVariant::Auth);
 
     let snapshot = mock.snapshot();
 

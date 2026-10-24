@@ -17,11 +17,9 @@ use crate::model::write::issue::ChapterIssuesRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::issue::{
-    IssueEntryRow, IssueRow,
-};
+use crate::part_impl::repo::rdb_impl::entity::issue::{IssueItem, IssueRecord};
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
@@ -40,7 +38,7 @@ async fn clear(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
     .await
     .map_err(map_diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Read ordered issues without exposing mutation operations per Page or issue.
@@ -50,42 +48,42 @@ async fn list_infos(
     chapter_id: &str,
 ) -> BaseRest<Vec<IssueInfo>> {
     //
-    let rows = t_issue::table
+    let records = t_issue::table
         .inner_join(t_page_artwork::table)
         .filter(t_page_artwork::f_chapter_id.eq(chapter_id))
         .order((t_page_artwork::f_index.asc(), t_issue::f_index.asc()))
-        .select(IssueRow::as_select())
-        .load::<IssueRow>(conn)
+        .select(IssueRecord::as_select())
+        .load::<IssueRecord>(conn)
         .await
         .map_err(map_diesel)?;
 
-    rows.into_iter().map(TryInto::try_into).collect()
+    records.into_iter().map(TryInto::try_into).collect()
 }
 
 // Chunk the validated replacement below PostgreSQL's bind parameter limit.
 #[instrument(level = "info", skip_all)]
-async fn replace(
+async fn persist_chapter_issues(
     conn: &mut RdbConn,
-    repl: &ChapterIssuesRepl<'_>,
+    repl: &ChapterIssuesRepl,
 ) -> BaseRest<()> {
     //
-    clear(conn, repl.chapter_id).await?;
+    clear(conn, &repl.chapter_id).await?;
 
     for entries in repl.entries.chunks(2000) {
         //
-        let rows = entries
+        let items = entries
             .iter()
-            .map(IssueEntryRow::try_from)
+            .map(IssueItem::try_from)
             .collect::<BaseRest<Vec<_>>>()?;
 
         diesel::insert_into(t_issue::table)
-            .values(&rows)
+            .values(&items)
             .execute(conn)
             .await
             .map_err(map_diesel)?;
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<ListIssueInfos<'_>> for HybRepo {
@@ -116,6 +114,6 @@ where
         context: &mut RdbContext<L>,
         oper: &ReplaceChapterIssues<'_>,
     ) -> BaseRest<()> {
-        replace(context.conn(), oper.repl).await
+        persist_chapter_issues(context.conn(), oper.repl).await
     }
 }

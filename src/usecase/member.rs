@@ -39,7 +39,7 @@ use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::member::view::{member_info_view, member_info_views};
 
 /// Creates one member under a team.
@@ -53,10 +53,6 @@ use crate::usecase::member::view::{member_info_view, member_info_views};
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -64,7 +60,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateMemberVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
 {
@@ -120,7 +116,7 @@ where
                 });
             }
 
-            let member_entry = MemberEntry {
+            let entry = MemberEntry {
                 id: member_complex::gen_id(),
                 user_id: instr.user_id,
                 user_nickname: user_info.nickname,
@@ -128,17 +124,15 @@ where
                 roles,
             };
 
-            let member_info = CreateMember {
-                entry: &member_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let member_info = CreateMember { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
-            accept(member_info.id)
+            accept!(member_info.id)
         })
         .await?;
 
-    accept(CreateMemberVal { id: member_id })
+    accept!(CreateMemberVal { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
@@ -149,10 +143,6 @@ where
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn join_team<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
@@ -160,7 +150,7 @@ pub async fn join_team<N, C, R, O>(
 ) -> BaseRest<MemberInfoView>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: MemberRepo<C>
         + MemberInvitationRepo<C>
@@ -228,7 +218,7 @@ where
                 });
             }
 
-            let member_entry = MemberEntry {
+            let entry = MemberEntry {
                 id: member_complex::gen_id(),
                 user_id: current_user_id,
                 user_nickname: current_user_info.nickname,
@@ -236,11 +226,9 @@ where
                 roles: member_invitation_info.roles,
             };
 
-            let member_info = CreateMember {
-                entry: &member_entry,
-            }
-            .step_on(repo, context)
-            .await?;
+            let member_info = CreateMember { entry: &entry }
+                .step_on(repo, context)
+                .await?;
 
             UpdateMemberInvitation::MarkUsed {
                 id: &member_invitation_info.id,
@@ -248,7 +236,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(member_info)
+            accept!(member_info)
         })
         .await?;
 
@@ -275,7 +263,7 @@ where
     R: MemberRepo<C> + Sync,
     O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let member_list_spec = (&instr).try_into()?;
+    let member_list_spec = instr.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         //
@@ -306,7 +294,7 @@ where
 
     let member_info_vals = member_info_views(obj_dept, member_infos).await?;
 
-    accept(member_info_vals)
+    accept!(member_info_vals)
 }
 
 /// Updates one member's roles.
@@ -319,10 +307,6 @@ where
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -330,7 +314,7 @@ pub async fn update_roles<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: MemberRepo<C> + Send + Sync,
 {
@@ -400,11 +384,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }
 
 /// Deletes one member.
@@ -417,10 +401,6 @@ where
         actor_user_id = %token.user_id,
     ),
 )]
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -428,7 +408,7 @@ pub async fn delete<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: MemberRepo<C> + Send + Sync,
 {
@@ -489,9 +469,9 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(())
+            accept!(())
         })
         .await?;
 
-    accept(())
+    accept!(())
 }

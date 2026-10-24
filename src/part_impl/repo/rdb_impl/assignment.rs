@@ -20,7 +20,7 @@ use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -29,7 +29,7 @@ use crate::part::repo::oper::assignment::{
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::assignment::list::list_infos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
-    AssignmentAspectRow, AssignmentEntryRow, AssignmentInfoRow,
+    AssignmentInfoRecord, AssignmentItem, AssignmentPack,
     AssignmentRoleTimestamps,
 };
 use crate::part_impl::repo::rdb_impl::incl;
@@ -39,7 +39,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 use crate::value::assignment::AssignmentInclOpt;
@@ -56,19 +57,19 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
-// Convert a row into assignment info for orchestration return values.
-fn row_into_info(row: AssignmentInfoRow) -> BaseRest<AssignmentInfo> {
-    row.try_into()
+// Convert a record into assignment info for orchestration return values.
+fn record_into_info(record: AssignmentInfoRecord) -> BaseRest<AssignmentInfo> {
+    record.try_into()
 }
 
-// Convert a row list into assignment infos for list operations.
-fn rows_into_infos(
-    rows: Vec<AssignmentInfoRow>,
+// Convert a record list into assignment infos for list operations.
+fn records_into_infos(
+    records: Vec<AssignmentInfoRecord>,
 ) -> BaseRest<Vec<AssignmentInfo>> {
-    rows.into_iter().map(row_into_info).collect()
+    records.into_iter().map(record_into_info).collect()
 }
 
 // Lookup one assignment by chapter and user id for read operations.
@@ -79,16 +80,16 @@ async fn get_info_by_chapter_id_and_user_id(
     user_id: &str,
 ) -> BaseRest<Option<AssignmentInfo>> {
     //
-    let row = t_assignment
+    let record = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .filter(f_user_id.eq(user_id))
-        .select(AssignmentInfoRow::as_select())
-        .get_result::<AssignmentInfoRow>(conn)
+        .select(AssignmentInfoRecord::as_select())
+        .get_result::<AssignmentInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    row.map(row_into_info).transpose()
+    record.map(record_into_info).transpose()
 }
 
 // Lookup one assignment for user + comic scope and apply include fields.
@@ -100,22 +101,22 @@ async fn find_info_by_user_id_and_comic_id(
     incls: &[AssignmentInclOpt],
 ) -> BaseRest<Option<AssignmentInfo>> {
     //
-    let row = t_assignment
+    let record = t_assignment
         .inner_join(chapter_table)
         .filter(f_user_id.eq(user_id))
         .filter(chapter_comic_id.eq(comic_id))
-        .select(AssignmentInfoRow::as_select())
+        .select(AssignmentInfoRecord::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
-        .get_result::<AssignmentInfoRow>(conn)
+        .get_result::<AssignmentInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
-        return accept(None);
+    let Some(record) = record else {
+        return accept!(None);
     };
 
-    let mut assignment_info = row_into_info(row)?;
+    let mut assignment_info = record_into_info(record)?;
 
     incl::assignment::populate_assignment_incls(
         conn,
@@ -124,7 +125,7 @@ async fn find_info_by_user_id_and_comic_id(
     )
     .await?;
 
-    accept(Some(assignment_info))
+    accept!(Some(assignment_info))
 }
 
 // Query assignment by id and populate optional include fields.
@@ -135,15 +136,15 @@ async fn get_info_by_id(
     incl_opt: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
-    let row = t_assignment
+    let record = t_assignment
         .filter(f_id.eq(id))
-        .select(AssignmentInfoRow::as_select())
-        .get_result::<AssignmentInfoRow>(conn)
+        .select(AssignmentInfoRecord::as_select())
+        .get_result::<AssignmentInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -155,7 +156,7 @@ async fn get_info_by_id(
         });
     };
 
-    let mut info = row_into_info(row)?;
+    let mut info = record_into_info(record)?;
 
     incl::assignment::populate_assignment_incls(
         conn,
@@ -164,7 +165,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    accept(info)
+    accept!(info)
 }
 
 // Query chapter assignments with `FOR UPDATE` for transactional mutation windows.
@@ -174,37 +175,37 @@ async fn list_chapter_assignments_excluded(
     chapter_id: &str,
 ) -> BaseRest<Vec<AssignmentInfo>> {
     //
-    let rows = t_assignment
+    let records = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
-        .select(AssignmentInfoRow::as_select())
+        .select(AssignmentInfoRecord::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
         .for_update()
-        .load::<AssignmentInfoRow>(conn)
+        .load::<AssignmentInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows_into_infos(rows)
+    records_into_infos(records)
 }
 
-// Insert a new assignment row and return created assignment info.
+// Insert a new assignment record and return created assignment info.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    model_entry: &AssignmentEntry<'_>,
+    entry: &AssignmentEntryShape<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = AssignmentEntryRow::from_model_entry(model_entry, now);
+    let item = AssignmentItem::from_entry(entry, now);
 
-    let row = diesel::insert_into(t_assignment)
-        .values(&entry)
-        .returning(AssignmentInfoRow::as_returning())
-        .get_result::<AssignmentInfoRow>(conn)
+    let record = diesel::insert_into(t_assignment)
+        .values(&item)
+        .returning(AssignmentInfoRecord::as_returning())
+        .get_result::<AssignmentInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
 // Update assignment role timestamps and return latest assignment snapshot.
@@ -218,17 +219,18 @@ async fn put_roles(
 
     let timestamps = AssignmentRoleTimestamps::from_mask(update.roles, now);
 
-    let aspect = AssignmentAspectRow::new(now).roles(&timestamps);
+    let pack = AssignmentPack::new(now).roles(&timestamps);
 
-    let row = diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .returning(AssignmentInfoRow::as_returning())
-        .get_result::<AssignmentInfoRow>(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
+    let record =
+        diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
+            .set(&pack)
+            .returning(AssignmentInfoRecord::as_returning())
+            .get_result::<AssignmentInfoRecord>(conn)
+            .await
+            .optional()
+            .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -240,7 +242,7 @@ async fn put_roles(
         });
     };
 
-    row_into_info(row)
+    record_into_info(record)
 }
 
 impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
@@ -416,7 +418,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Insert a new assignment row and return created assignment information.
+    // Insert a new assignment record and return created assignment information.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -459,7 +461,7 @@ async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo

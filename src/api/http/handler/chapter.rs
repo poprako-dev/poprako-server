@@ -93,13 +93,13 @@ pub async fn create(
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
     //
-    chapter_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(chapter_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
@@ -134,13 +134,15 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    chapter_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        chapter_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters/pinned` — fetch the pinned chapter.
@@ -163,13 +165,15 @@ pub async fn get_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoView>> {
     //
-    chapter_usecase::get_pinned::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        comic_id,
+    Ok(
+        chapter_usecase::get_pinned::<RdbContext<ReptRead>, HybRepo>(
+            (harn.repo(),),
+            user_token,
+            comic_id,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
@@ -192,13 +196,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoView> {
     //
-    chapter_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    Ok(chapter_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         chapter_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/workflow-records` — list activity records.
@@ -230,12 +234,14 @@ pub async fn list_workflow_record_infos(
         limit: query.limit,
     };
 
-    chapter_workflow_record_usecase::list_workflow_record_infos::<
-        RdbContext<ReptRead>,
-        HybRepo,
-    >((harn.repo(),), user_token, instr)
-    .await?
-    .accept(StatusCode::OK)
+    Ok(
+        chapter_workflow_record_usecase::list_workflow_record_infos::<
+            RdbContext<ReptRead>,
+            HybRepo,
+        >((harn.repo(),), user_token, instr)
+        .await?
+        .accept(StatusCode::OK),
+    )
 }
 
 /// `PATCH /api/v1/chapters/{chapter_id}` — partially update a chapter's profile.
@@ -271,7 +277,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/mark-pinned` — pin a chapter.
@@ -303,7 +309,7 @@ pub async fn mark_pinned(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/stage/advance` — advance a workflow stage.
@@ -352,7 +358,7 @@ pub async fn advance_stage(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}` — delete a chapter and descendants.
@@ -381,5 +387,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

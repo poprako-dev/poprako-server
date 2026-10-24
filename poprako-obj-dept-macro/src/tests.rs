@@ -4,17 +4,17 @@ use quote::quote;
 use crate::{impl_obj_dept, object};
 
 // Returns the declaration error text, or an empty string when expansion succeeds.
-fn expand_err(input: TokenStream) -> String {
+fn expand_error(input: TokenStream) -> String {
     match object::expand(input) {
         Ok(_) => String::new(),
-        Err(err) => err.to_string(),
+        Err(error) => error.to_string(),
     }
 }
 
 #[test]
 fn object_manifest_rejects_every_duplicate_identity() {
     //
-    let duplicate_marker = expand_err(quote! {
+    let duplicate_marker = expand_error(quote! {
         PageImage {
             table: t_page_image,
             topic: "page_image",
@@ -25,7 +25,7 @@ fn object_manifest_rejects_every_duplicate_identity() {
         },
     });
 
-    let duplicate_table = expand_err(quote! {
+    let duplicate_table = expand_error(quote! {
         PageImage {
             table: t_page_image,
             topic: "page_image",
@@ -36,7 +36,7 @@ fn object_manifest_rejects_every_duplicate_identity() {
         },
     });
 
-    let duplicate_topic = expand_err(quote! {
+    let duplicate_topic = expand_error(quote! {
         PageImage {
             table: t_page_image,
             topic: "page_image",
@@ -106,7 +106,7 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
 
     assert!(manifest.contains("f_updated_at . eq (revision)"));
 
-    assert!(implementations.contains("rows . len () != ids . len ()"));
+    assert!(implementations.contains("records . len () != ids . len ()"));
 
     Ok(())
 }

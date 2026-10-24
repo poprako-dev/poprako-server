@@ -38,7 +38,7 @@ use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::{BaseError, accept};
+use crate::result::BaseError;
 use crate::shared::test_rdb::start;
 use crate::value::image::ImageExt;
 use crate::value::page_artwork::PageArtworkImageKey;
@@ -72,7 +72,7 @@ impl ObjDeptPool for Pool {
         byte_len: u64,
     ) -> ObjDeptRest<ObjDeptPoolSlot> {
         Ok(ObjDeptPoolSlot {
-            url: Url::parse(&format!("https://example.test/upload/{key}"))
+            url: Url::parse(&["https://example.test/upload/", key].concat())
                 .unwrap(),
             headers: BTreeMap::from([
                 ("content-type".into(), content_type.into()),
@@ -210,7 +210,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let fixture = test_shared::seed_chapter(&core, "rdb-test-composite-").await;
 
-    let chapter_id = &fixture.chapter_entry.id;
+    let chapter_id = &fixture.chapter_info.id;
 
     let repo = HybRepo::new(
         core.clone(),
@@ -293,26 +293,26 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .map_err(BaseError::from)?
         );
 
-        let issues = [IssueEntry {
+        let issues = vec![IssueEntry {
             id: "composite-issue".into(),
-            page_artwork_id: "composite-a",
+            page_artwork_id: "composite-a".into(),
             index: 0,
-            variant: "custom",
+            variant: "custom".into(),
             layer_name: None,
             rect: None,
-            note: "review",
+            note: "review".into(),
         }];
 
         let repl = ChapterIssuesRepl {
-            chapter_id,
-            entries: &issues,
+            chapter_id: chapter_id.into(),
+            entries: issues,
         };
 
         ReplaceChapterIssues { repl: &repl }
             .step_on(&repo, context)
             .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
@@ -426,7 +426,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "rollback composite deletion".into(),
+                message: "rollback composite deletion".into(),
             })
         })
         .await;

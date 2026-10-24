@@ -10,7 +10,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::part_impl::repo::mock_impl::{MockState, expected};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::incl::expand_incl_opts;
@@ -208,14 +208,11 @@ fn get_comic_info(
 
     apply_comic_incls(state, &mut comic_info, incls);
 
-    accept(comic_info)
+    accept!(comic_info)
 }
 
 // Build filtered, sorted and paginated comic lists.
-fn list_comic_infos(
-    state: &MockState,
-    spec: &ComicListSpec<'_>,
-) -> Vec<ComicInfo> {
+fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
     //
     let mut comic_infos = state
         .comics
@@ -224,8 +221,7 @@ fn list_comic_infos(
         .filter(|comic_info| !state.deleted_comic_ids.contains(&comic_info.id))
         .filter(|comic_info| {
             //
-            spec.fuzzy_title
-                .as_ref()
+            spec.trimmed_fuzzy_title()
                 .is_none_or(|keyword| comic_matches_fuzzy(comic_info, keyword))
         })
         .filter(|comic_info| {
@@ -244,7 +240,7 @@ fn list_comic_infos(
     });
 
     for comic_info in &mut comic_infos {
-        apply_comic_incls(state, comic_info, spec.incl_opt);
+        apply_comic_incls(state, comic_info, &spec.incl_opt);
     }
 
     let offset = spec.offset as usize;

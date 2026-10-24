@@ -20,6 +20,13 @@ pub struct UnitTranslation {
     pub last_translator_id: String,
 }
 
+impl UnitTranslation {
+    /// Borrows normalized translated text without copying its storage.
+    pub fn trimmed_translated_text(&self) -> &str {
+        self.translated_text.trim()
+    }
+}
+
 /// Revision content and approval state together with its server-derived editor.
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]

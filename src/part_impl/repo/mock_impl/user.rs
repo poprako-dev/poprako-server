@@ -13,17 +13,17 @@ use crate::part::repo::oper::user::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Insert a new user entry into mock state and mirror it into credentials.
-fn create_user(
-    state: &mut MockState,
-    entry: &UserEntry<'_>,
-) -> BaseRest<UserInfo> {
+fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
     //
     // Validate unique id/qid before inserting to avoid inconsistent fixture state.
     if state.users.iter().any(|user| user.id == entry.id)
-        || state.users.iter().any(|user| user.qid == entry.qid)
+        || state
+            .users
+            .iter()
+            .any(|user| user.qid == entry.trimmed_qid())
     {
         return Err(expected("error-already-exists"));
     }
@@ -32,8 +32,8 @@ fn create_user(
 
     let user_info = UserInfo {
         id: entry.id.clone(),
-        qid: entry.qid.to_string(),
-        nickname: entry.nickname.to_string(),
+        qid: entry.trimmed_qid().to_string(),
+        nickname: entry.trimmed_nickname().to_string(),
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -47,7 +47,7 @@ fn create_user(
         password_hash: entry.password_hash.clone(),
     });
 
-    accept(user_info)
+    accept!(user_info)
 }
 
 // Load one user info from mock state by id.
@@ -107,7 +107,9 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
 
     let update = match oper {
         //
-        UpdateUser::Info { repl } => Some((repl.qid, repl.nickname)),
+        UpdateUser::Info { repl } => {
+            Some((repl.trimmed_qid(), repl.trimmed_nickname()))
+        }
 
         UpdateUser::TouchLastActive { .. }
         | UpdateUser::PasswordHash { .. } => None,
@@ -159,7 +161,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
         }
     }
 
-    accept(())
+    accept!(())
 }
 
 impl<'a> Run<GetUserInfo<'a>> for Mock {
@@ -209,7 +211,7 @@ impl<'a> Run<FindUserInfo<'a>> for Mock {
         // Lock state immutably for optional find-by-qid.
         let state = self.state.lock().unwrap();
 
-        accept(find_user_info(&state, oper.qid))
+        accept!(find_user_info(&state, oper.qid))
     }
 }
 
@@ -261,7 +263,7 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &FindUserInfo<'a>,
     ) -> BaseRest<Option<UserInfo>> {
-        accept(find_user_info(&context.state, oper.qid))
+        accept!(find_user_info(&context.state, oper.qid))
     }
 }
 
@@ -346,6 +348,6 @@ impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
             .system_mails
             .retain(|mail| mail.receiver_id != oper.id);
 
-        accept(())
+        accept!(())
     }
 }

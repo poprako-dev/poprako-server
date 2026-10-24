@@ -196,7 +196,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
 
     seed_user(&mock, "outsider-user", false);
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("outsider-user"),
         list_by_chapter_data("chapter-1"),
@@ -205,7 +205,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -217,7 +217,7 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
 
     seed_user(&mock, "target-user", false);
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("viewer-user"),
         list_by_user_data("target-user"),
@@ -226,7 +226,7 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -236,7 +236,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
 
     seed_user(&mock, "viewer-user", false);
 
-    let err = list_infos(
+    let error = list_infos(
         (&mock, &mock),
         token("viewer-user"),
         ListAssignmentInfosInstr {
@@ -252,7 +252,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 // list_infos(list_infos)(negative): chapter assignments cannot be filtered by team-only roles.
@@ -265,11 +265,11 @@ async fn list_infos_rejects_admin_and_bot_filters() {
 
         instr.role = Some(role);
 
-        let err = list_infos((&mock, &mock), token("viewer-user"), instr)
+        let error = list_infos((&mock, &mock), token("viewer-user"), instr)
             .await
             .err()
             .unwrap();
 
-        assert_expected_variant(&err, ExpectedVariant::Args);
+        assert_expected_variant(&error, ExpectedVariant::Args);
     }
 }

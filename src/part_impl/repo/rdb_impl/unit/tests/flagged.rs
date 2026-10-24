@@ -67,17 +67,17 @@ async fn verify_flag_patches(
                     .unwrap()
                     .last_translator_id
                     .as_deref(),
-                Some(fixture.chapter_entry.creator_id.as_ref())
+                Some(fixture.chapter_info.creator_id.as_str())
             );
 
-            accept(())
+            accept!(())
         })
         .await
         .unwrap();
 
         let stats = repo
             .run(&ListPageUnitFlaggedStats {
-                chapter_id: &fixture.chapter_entry.id,
+                chapter_id: &fixture.chapter_info.id,
             })
             .await
             .unwrap();
@@ -111,7 +111,7 @@ pub async fn verify_flags(shared: RdbCore) {
 
     let mut first = create_edit(
         "rdb-test-unit-domain-flagged-a",
-        &fixture.chapter_entry.creator_id,
+        &fixture.chapter_info.creator_id,
         "flagged",
     );
 
@@ -123,7 +123,7 @@ pub async fn verify_flags(shared: RdbCore) {
 
     let second = create_edit(
         "rdb-test-unit-domain-flagged-b",
-        &fixture.chapter_entry.creator_id,
+        &fixture.chapter_info.creator_id,
         "unflagged",
     );
 
@@ -138,14 +138,14 @@ pub async fn verify_flags(shared: RdbCore) {
         )
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 
     let stats = repo
         .run(&ListPageUnitFlaggedStats {
-            chapter_id: &fixture.chapter_entry.id,
+            chapter_id: &fixture.chapter_info.id,
         })
         .await
         .unwrap();

@@ -72,10 +72,6 @@ where
     T: FormatTime,
 {
     // Formats native rejection events without visiting private payload values.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn format_event(
         &self,
         context: &FmtContext<'_, S, N>,
@@ -102,7 +98,11 @@ where
                 if let Some(fields) = extensions.get::<FormattedFields<N>>()
                     && !fields.is_empty()
                 {
-                    write!(writer, "{{{}}}", fields)?;
+                    writer.write_char('{')?;
+
+                    writer.write_str(fields.as_str())?;
+
+                    writer.write_char('}')?;
                 }
 
                 drop(extensions);
@@ -119,12 +119,12 @@ where
 
         let mut fields = RejectionFields {
             writer,
-            result: Ok(()),
+            format_rest: Ok(()),
         };
 
         event.record(&mut fields);
 
-        fields.result?;
+        fields.format_rest?;
 
         writeln!(fields.writer)
     }
@@ -135,36 +135,36 @@ struct RejectionFields<'a> {
     // Output stream borrowed for this rejection event.
     writer: Writer<'a>,
     // First formatting failure, if any.
-    result: FmtResult,
+    format_rest: FmtResult,
 }
 
 impl Visit for RejectionFields<'_> {
     // Records the native numeric HTTP rejection status.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn record_u64(&mut self, field: &Field, value: u64) {
         //
-        if self.result.is_err() || field.name() != "status" {
+        if self.format_rest.is_err() || field.name() != "status" {
             return;
         }
 
-        self.result = write!(self.writer, " status={}", value);
+        self.format_rest = self
+            .writer
+            .write_str(" status=")
+            .and_then(|()| self.writer.write_str(&value.to_string()));
     }
 
     // Records the library-controlled concrete rejection type.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn record_str(&mut self, field: &Field, value: &str) {
         //
-        if self.result.is_err() || field.name() != "rejection_type" {
+        if self.format_rest.is_err() || field.name() != "rejection_type" {
             return;
         }
 
-        self.result = write!(self.writer, " err_variant={:?}", value);
+        self.format_rest =
+            self.writer.write_str(" error_variant=").and_then(|()| {
+                //
+                self.writer
+                    .write_str(&format!("{:?}", tracing::field::debug(value)))
+            });
     }
 
     // Drops all Debug fields without invoking their formatter.

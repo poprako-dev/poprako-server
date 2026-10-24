@@ -19,7 +19,6 @@ use crate::data::val::termbase_port::{
 };
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::term::TermRepl;
 use crate::model::write::termbase::{TermbaseImport, TermbaseRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::comic::ComicRepo;
@@ -38,7 +37,8 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::term::TermReplShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::termbase::TermbaseScope;
@@ -90,11 +90,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ExportTermbaseVal::from_models(termbase_info, term_infos))
+            accept!(ExportTermbaseVal::from_models(termbase_info, term_infos))
         })
         .await?;
 
-    accept(export_termbase_val)
+    accept!(export_termbase_val)
 }
 
 /// Imports a native portable document into a team or comic scope.
@@ -123,7 +123,7 @@ where
         + Send
         + Sync,
 {
-    let termbase_import = termbase_complex::normalize_import((&instr).into())?;
+    let mut termbase_import = termbase_complex::validate_import(instr.into())?;
 
     let import_termbase_val = nucl
         .coord(async move |context| {
@@ -137,7 +137,7 @@ where
 
             let existing_termbase_info = termbase_complex::find_import_target(
                 termbase_infos,
-                termbase_import.name,
+                termbase_import.trimmed_name(),
             );
 
             let Some(termbase_info) = existing_termbase_info else {
@@ -153,19 +153,17 @@ where
                     }
                 };
 
-                let termbase_entry = termbase_complex::build_entry(
+                let entry = termbase_complex::build_entry(
                     team_id,
                     comic_id,
-                    termbase_import.name,
-                    termbase_import.description,
+                    std::mem::take(&mut termbase_import.name),
+                    termbase_import.description.take(),
                     token.user_id.clone(),
                 )?;
 
-                let termbase_info = CreateTermbase {
-                    entry: &termbase_entry,
-                }
-                .step_on(repo, context)
-                .await?;
+                let termbase_info = CreateTermbase { entry: &entry }
+                    .step_on(repo, context)
+                    .await?;
 
                 return apply_import(
                     repo,
@@ -181,7 +179,10 @@ where
             };
 
             if !force_merge {
-                return Err(already_exists_err(termbase_import.name));
+                //
+                return Err(already_exists_error(
+                    termbase_import.trimmed_name(),
+                ));
             }
 
             apply_import(
@@ -198,7 +199,7 @@ where
         })
         .await?;
 
-    accept(import_termbase_val)
+    accept!(import_termbase_val)
 }
 
 /// Appends portable terms to a locked existing base without replacing its metadata.
@@ -224,8 +225,8 @@ where
         + Send
         + Sync,
 {
-    let terms = termbase_complex::normalize_terms(
-        instr.terms.iter().map(Into::into).collect(),
+    let terms = termbase_complex::validate_terms(
+        instr.terms.into_iter().map(Into::into).collect(),
     )?;
 
     let append_termbase_val = nucl
@@ -260,7 +261,7 @@ where
                 &token.user_id,
                 termbase_info.term_count,
                 &existing_term_infos,
-                terms,
+                &terms,
             )?;
 
             let added = term_append_plan.entries.len();
@@ -270,7 +271,7 @@ where
             let term_replacements = term_append_plan
                 .updates
                 .iter()
-                .map(TermRepl::from)
+                .map(TermReplShape::from)
                 .collect::<Vec<_>>();
 
             UpsertTerms {
@@ -308,7 +309,7 @@ where
                 }
             }
 
-            accept(AppendTermbaseVal {
+            accept!(AppendTermbaseVal {
                 added,
                 updated,
                 unchanged: term_count - added - updated,
@@ -316,7 +317,7 @@ where
         })
         .await?;
 
-    accept(append_termbase_val)
+    accept!(append_termbase_val)
 }
 
 // Lock the import scope and resolve its owning team.
@@ -335,7 +336,7 @@ where
             //
             LockTeam { id: team_id }.step_on(repo, context).await?;
 
-            accept(team_id.clone())
+            accept!(team_id.clone())
         }
 
         TermbaseScope::Comic { comic_id } => {
@@ -355,7 +356,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(workset_info.team_id)
+            accept!(workset_info.team_id)
         }
     }
 }
@@ -434,7 +435,7 @@ async fn apply_import<C, R>(
     context: &mut C,
     token: &UserToken,
     destination: ImportDestination,
-    termbase_import: TermbaseImport<'_>,
+    termbase_import: TermbaseImport,
 ) -> BaseRest<ImportTermbaseVal>
 where
     C: Context,
@@ -477,7 +478,7 @@ where
         &token.user_id,
         termbase_info.term_count,
         &existing_term_infos,
-        terms,
+        &terms,
     )?;
 
     let (created_term_count, merged_term_count) = (
@@ -512,7 +513,7 @@ where
         .await?;
     }
 
-    accept(ImportTermbaseVal {
+    accept!(ImportTermbaseVal {
         id: termbase_info.id,
         created,
         created_term_count,
@@ -521,7 +522,7 @@ where
 }
 
 // Construct a stable expected error when a target scope already owns the imported name.
-fn already_exists_err(name: &str) -> BaseError {
+fn already_exists_error(name: &str) -> BaseError {
     //
     expected_error! {
         ExpectedVariant::Args,
@@ -533,5 +534,5 @@ fn already_exists_err(name: &str) -> BaseError {
 
 // Convert one bounded import count into the public response representation.
 const fn import_count(count: usize) -> BaseRest<usize> {
-    accept(count)
+    accept!(count)
 }

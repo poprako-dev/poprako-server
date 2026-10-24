@@ -77,7 +77,7 @@ async fn update_roles_last_admin_role_is_retained() {
 
     seed_admin(&mock);
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
         update_role_instr("member-admin"),
@@ -86,7 +86,7 @@ async fn update_roles_last_admin_role_is_retained() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(
         mock.snapshot().members.first().unwrap().roles,
@@ -115,7 +115,7 @@ async fn update_roles_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("normal-user"),
         update_role_instr("member-target"),
@@ -132,7 +132,7 @@ async fn update_roles_non_admin_is_rejected() {
         .find(|m| m.id == "member-target")
         .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
 }
@@ -144,7 +144,7 @@ async fn update_roles_missing_member_is_rejected() {
 
     seed_admin(&mock);
 
-    let err = update_roles(
+    let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
         update_role_instr("member-missing"),
@@ -153,7 +153,7 @@ async fn update_roles_missing_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -223,13 +223,13 @@ async fn delete_last_admin_member_is_retained() {
 
     seed_admin(&mock);
 
-    let err =
+    let error =
         delete((&mock, &mock), token("admin-user"), "member-admin".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(
         mock.snapshot()
@@ -260,13 +260,13 @@ async fn delete_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err =
+    let error =
         delete((&mock, &mock), token("normal-user"), "member-target".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Perm);
+    assert_expected_variant(&error, ExpectedVariant::Perm);
 
     assert!(
         mock.snapshot()
@@ -283,13 +283,13 @@ async fn delete_missing_member_is_rejected() {
 
     seed_admin(&mock);
 
-    let err =
+    let error =
         delete((&mock, &mock), token("admin-user"), "member-missing".into())
             .await
             .err()
             .unwrap();
 
-    assert_expected_variant(&err, ExpectedVariant::Args);
+    assert_expected_variant(&error, ExpectedVariant::Args);
 
     assert_eq!(mock.snapshot().members.len(), 1);
 }

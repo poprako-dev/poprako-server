@@ -39,10 +39,10 @@ fn translation_export_query_rejects_duplicate_format() {
 #[test]
 fn translation_export_query_parses_raw_ident_switch() {
     for (value, expected) in [("true", true), ("false", false)] {
-        let uri = format!(
-            "http://localhost/translations/export?format=label_plus&\
-            with_raw_ident={value}"
-        )
+        let uri = [
+            "http://localhost/translations/export?format=label_plus&with_raw_ident=",
+            value,
+        ].concat()
         .parse::<Uri>()
         .unwrap();
 

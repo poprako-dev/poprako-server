@@ -14,7 +14,7 @@ use crate::part::repo::oper::subtree_delete::SubtreeRoot;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_workset,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
 /// Build the expected error for a missing active root.
@@ -69,7 +69,7 @@ pub async fn lock_comic_scope(
         .map_err(diesel)?
         .ok_or_else(|| missing("error-comic-not-found", "comic", id))?;
 
-    accept(SubtreeDeleteScope::Comic {
+    accept!(SubtreeDeleteScope::Comic {
         comic_id,
         workset_id,
         team_id,
@@ -124,7 +124,7 @@ pub async fn lock_chapter_scope(
         .map_err(diesel)?
         .ok_or_else(|| missing("error-chapter-not-found", "chapter", id))?;
 
-    accept(SubtreeDeleteScope::Chapter {
+    accept!(SubtreeDeleteScope::Chapter {
         chapter_id,
         comic_id,
         workset_id,
@@ -154,7 +154,7 @@ pub async fn lock_scope(
                 .map_err(diesel)?
                 .ok_or_else(|| missing("error-team-not-found", "team", id))?;
 
-            accept(SubtreeDeleteScope::Team { team_id })
+            accept!(SubtreeDeleteScope::Team { team_id })
         }
 
         SubtreeRoot::Workset { id } => {
@@ -172,7 +172,7 @@ pub async fn lock_scope(
                     missing("error-workset-not-found", "workset", id)
                 })?;
 
-            accept(SubtreeDeleteScope::Workset {
+            accept!(SubtreeDeleteScope::Workset {
                 workset_id,
                 team_id,
             })
@@ -185,10 +185,6 @@ pub async fn lock_scope(
 }
 
 /// Marks one locked aggregate and all hierarchy descendants with one timestamp.
-#[expect(
-    clippy::too_many_lines,
-    reason = "each hierarchy level requires ordered tombstone updates"
-)]
 pub async fn mark_scope(
     conn: &mut RdbConn,
     scope: &SubtreeDeleteScope,
@@ -199,115 +195,15 @@ pub async fn mark_scope(
     match scope {
         //
         SubtreeDeleteScope::Team { team_id } => {
-            //
-            diesel::update(
-                t_team::table
-                    .filter(t_team::f_id.eq(team_id))
-                    .filter(t_team::f_deleted_at.is_null()),
-            )
-            .set(t_team::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            diesel::update(
-                t_workset::table
-                    .filter(t_workset::f_team_id.eq(team_id))
-                    .filter(t_workset::f_deleted_at.is_null()),
-            )
-            .set(t_workset::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            let workset_ids = t_workset::table
-                .filter(t_workset::f_team_id.eq(team_id))
-                .select(t_workset::f_id);
-
-            diesel::update(
-                t_comic::table
-                    .filter(t_comic::f_workset_id.eq_any(workset_ids))
-                    .filter(t_comic::f_deleted_at.is_null()),
-            )
-            .set(t_comic::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            let comic_ids = t_comic::table
-                .inner_join(t_workset::table)
-                .filter(t_workset::f_team_id.eq(team_id))
-                .select(t_comic::f_id);
-
-            diesel::update(
-                t_chapter::table
-                    .filter(t_chapter::f_comic_id.eq_any(comic_ids))
-                    .filter(t_chapter::f_deleted_at.is_null()),
-            )
-            .set(t_chapter::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
+            mark_team(conn, team_id, deleted_at).await?;
         }
 
         SubtreeDeleteScope::Workset { workset_id, .. } => {
-            //
-            diesel::update(
-                t_workset::table
-                    .filter(t_workset::f_id.eq(workset_id))
-                    .filter(t_workset::f_deleted_at.is_null()),
-            )
-            .set(t_workset::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            diesel::update(
-                t_comic::table
-                    .filter(t_comic::f_workset_id.eq(workset_id))
-                    .filter(t_comic::f_deleted_at.is_null()),
-            )
-            .set(t_comic::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            let comic_ids = t_comic::table
-                .filter(t_comic::f_workset_id.eq(workset_id))
-                .select(t_comic::f_id);
-
-            diesel::update(
-                t_chapter::table
-                    .filter(t_chapter::f_comic_id.eq_any(comic_ids))
-                    .filter(t_chapter::f_deleted_at.is_null()),
-            )
-            .set(t_chapter::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
+            mark_workset(conn, workset_id, deleted_at).await?;
         }
 
         SubtreeDeleteScope::Comic { comic_id, .. } => {
-            //
-            diesel::update(
-                t_comic::table
-                    .filter(t_comic::f_id.eq(comic_id))
-                    .filter(t_comic::f_deleted_at.is_null()),
-            )
-            .set(t_comic::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-
-            diesel::update(
-                t_chapter::table
-                    .filter(t_chapter::f_comic_id.eq(comic_id))
-                    .filter(t_chapter::f_deleted_at.is_null()),
-            )
-            .set(t_chapter::f_deleted_at.eq(deleted_at))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
+            mark_comic(conn, comic_id, deleted_at).await?;
         }
 
         SubtreeDeleteScope::Chapter { .. } => {
@@ -321,5 +217,138 @@ pub async fn mark_scope(
         }
     }
 
-    accept(())
+    accept!(())
+}
+
+// Tombstone the team hierarchy in parent-to-child order.
+async fn mark_team(
+    conn: &mut RdbConn,
+    team_id: &str,
+    deleted_at: OffsetDateTime,
+) -> BaseRest<()> {
+    //
+    diesel::update(
+        t_team::table
+            .filter(t_team::f_id.eq(team_id))
+            .filter(t_team::f_deleted_at.is_null()),
+    )
+    .set(t_team::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    diesel::update(
+        t_workset::table
+            .filter(t_workset::f_team_id.eq(team_id))
+            .filter(t_workset::f_deleted_at.is_null()),
+    )
+    .set(t_workset::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    let workset_ids = t_workset::table
+        .filter(t_workset::f_team_id.eq(team_id))
+        .select(t_workset::f_id);
+
+    diesel::update(
+        t_comic::table
+            .filter(t_comic::f_workset_id.eq_any(workset_ids))
+            .filter(t_comic::f_deleted_at.is_null()),
+    )
+    .set(t_comic::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    let comic_ids = t_comic::table
+        .inner_join(t_workset::table)
+        .filter(t_workset::f_team_id.eq(team_id))
+        .select(t_comic::f_id);
+
+    diesel::update(
+        t_chapter::table
+            .filter(t_chapter::f_comic_id.eq_any(comic_ids))
+            .filter(t_chapter::f_deleted_at.is_null()),
+    )
+    .set(t_chapter::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept!(())
+}
+
+// Tombstone the workset hierarchy in parent-to-child order.
+async fn mark_workset(
+    conn: &mut RdbConn,
+    workset_id: &str,
+    deleted_at: OffsetDateTime,
+) -> BaseRest<()> {
+    //
+    diesel::update(
+        t_workset::table
+            .filter(t_workset::f_id.eq(workset_id))
+            .filter(t_workset::f_deleted_at.is_null()),
+    )
+    .set(t_workset::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    diesel::update(
+        t_comic::table
+            .filter(t_comic::f_workset_id.eq(workset_id))
+            .filter(t_comic::f_deleted_at.is_null()),
+    )
+    .set(t_comic::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    let comic_ids = t_comic::table
+        .filter(t_comic::f_workset_id.eq(workset_id))
+        .select(t_comic::f_id);
+
+    diesel::update(
+        t_chapter::table
+            .filter(t_chapter::f_comic_id.eq_any(comic_ids))
+            .filter(t_chapter::f_deleted_at.is_null()),
+    )
+    .set(t_chapter::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept!(())
+}
+
+// Tombstone the comic hierarchy in parent-to-child order.
+async fn mark_comic(
+    conn: &mut RdbConn,
+    comic_id: &str,
+    deleted_at: OffsetDateTime,
+) -> BaseRest<()> {
+    //
+    diesel::update(
+        t_comic::table
+            .filter(t_comic::f_id.eq(comic_id))
+            .filter(t_comic::f_deleted_at.is_null()),
+    )
+    .set(t_comic::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    diesel::update(
+        t_chapter::table
+            .filter(t_chapter::f_comic_id.eq(comic_id))
+            .filter(t_chapter::f_deleted_at.is_null()),
+    )
+    .set(t_chapter::f_deleted_at.eq(deleted_at))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept!(())
 }

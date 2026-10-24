@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // Internal implementation of `same_owner`.
 fn same_owner(
@@ -68,18 +68,18 @@ fn name_conflicts(
 // Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
-    spec: &TermbaseListSpec<'_>,
+    spec: &TermbaseListSpec,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let (mut termbase_infos, fuzzy_name, offset, limit) = match spec {
+    let (mut termbase_infos, offset, limit) = match spec {
         //
         // Internal implementation detail.
         // Internal implementation detail.
         TermbaseListSpec::Team {
             team_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => (
@@ -91,14 +91,13 @@ fn list_infos(
                 })
                 .cloned()
                 .collect::<Vec<_>>(),
-            fuzzy_name,
             *offset,
             limit.get(),
         ),
 
         TermbaseListSpec::Comic {
             comic_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => {
@@ -117,7 +116,7 @@ fn list_infos(
                             workset_info.id == comic_info.workset_id
                         })
                         .ok_or_else(|| BaseError::Unrecoverable {
-                            msg:
+                            message:
                                 "[list_infos] comic references missing workset"
                                     .into(),
                         })?;
@@ -141,14 +140,13 @@ fn list_infos(
                     })
                     .cloned()
                     .collect::<Vec<_>>(),
-                fuzzy_name,
                 *offset,
                 limit.get(),
             )
         }
     };
 
-    if let Some(fuzzy_name) = fuzzy_name {
+    if let Some(fuzzy_name) = spec.trimmed_fuzzy_name() {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -159,7 +157,7 @@ fn list_infos(
         });
     }
 
-    accept(page_infos(termbase_infos, offset, limit))
+    accept!(page_infos(termbase_infos, offset, limit))
 }
 
 // Resolve one termbase by id and return it with expected-args missing error.
@@ -232,7 +230,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
             None,
             oper.entry.team_id.as_deref(),
             oper.entry.comic_id.as_deref(),
-            oper.entry.name,
+            oper.entry.trimmed_name(),
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -243,8 +241,8 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
             id: oper.entry.id.clone(),
             team_id: oper.entry.team_id.clone(),
             comic_id: oper.entry.comic_id.clone(),
-            name: oper.entry.name.to_owned(),
-            description: oper.entry.description.map(str::to_owned),
+            name: oper.entry.trimmed_name().to_owned(),
+            description: oper.entry.trimmed_description().map(str::to_owned),
             term_count: 0,
             creator_id: oper.entry.creator_id.clone(),
             created_at: time,
@@ -253,7 +251,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
 
         context.state.termbases.push(termbase_info.clone());
 
-        accept(termbase_info)
+        accept!(termbase_info)
     }
 }
 
@@ -329,7 +327,7 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
             .cloned()
             .collect();
 
-        accept(termbase_infos)
+        accept!(termbase_infos)
     }
 }
 
@@ -357,7 +355,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
             Some(&oper.update.id),
             current.team_id.as_deref(),
             current.comic_id.as_deref(),
-            oper.update.name,
+            oper.update.trimmed_name(),
         ) {
             return Err(expected("error-already-exists"));
         }
@@ -369,13 +367,14 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
             .find(|termbase_info| termbase_info.id == oper.update.id)
             .ok_or_else(|| expected("error-termbase-not-found"))?;
 
-        termbase_info.name = oper.update.name.to_owned();
+        termbase_info.name = oper.update.trimmed_name().to_owned();
 
-        termbase_info.description = oper.update.description.map(str::to_owned);
+        termbase_info.description =
+            oper.update.trimmed_description().map(str::to_owned);
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -407,7 +406,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -437,7 +436,7 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
 
         termbase_info.updated_at = now();
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -467,6 +466,6 @@ impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
 
         context.state.termbases.remove(position);
 
-        accept(())
+        accept!(())
     }
 }

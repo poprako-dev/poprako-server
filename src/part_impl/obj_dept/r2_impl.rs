@@ -56,10 +56,6 @@ impl R2ObjDeptPool {
     ///
     /// Returns an error when required settings are missing or the client
     /// cannot be constructed.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -89,7 +85,8 @@ impl R2ObjDeptPool {
         );
 
         let endpoint =
-            format!("https://{}.r2.cloudflarestorage.com", account_id);
+            ["https://", account_id.as_str(), ".r2.cloudflarestorage.com"]
+                .concat();
 
         let credentials = Credentials::new(
             access_key_id,
@@ -141,16 +138,16 @@ impl ObjDeptPoolView for R2ObjDeptPool {
                 Ok(false)
             }
 
-            Err(err) => {
+            Err(error) => {
                 //
                 tracing::warn!(
                     operation = "object_exists",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "R2 SDK request error",
                 );
 
                 Err(ObjDeptError::Retryable {
-                    msg: "failed to check physical object".into(),
+                    message: "failed to check physical object".into(),
                 })
             }
         }
@@ -180,16 +177,17 @@ impl ObjDeptPool for R2ObjDeptPool {
             PresigningConfig::builder()
                 .expires_in(PUT_SIGNED_EXPIRATION)
                 .build()
-                .map_err(|err| {
+                .map_err(|error| {
                     //
                     tracing::error!(
                         operation = "gen_obj_slot",
-                        sdk_err = ?err,
+                        sdk_error = ?error,
                         "R2 SDK presigning configuration error",
                     );
 
                     ObjDeptError::Unrecoverable {
-                        msg: "failed to build object presigning config".into(),
+                        message: "failed to build object presigning config"
+                            .into(),
                     }
                 })?,
         );
@@ -203,29 +201,29 @@ impl ObjDeptPool for R2ObjDeptPool {
             .content_length(content_length)
             .presigned(presigning_config)
             .await
-            .map_err(|err| {
+            .map_err(|error| {
                 //
                 tracing::warn!(
                     operation = "gen_obj_slot",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "R2 SDK presigning error",
                 );
 
                 ObjDeptError::Retryable {
-                    msg: "failed to generate object upload URL".into(),
+                    message: "failed to generate object upload URL".into(),
                 }
             })?;
 
-        let url = Url::parse(presigned_request.uri()).map_err(|err| {
+        let url = Url::parse(presigned_request.uri()).map_err(|error| {
             //
             tracing::error!(
                 operation = "gen_obj_slot",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "URL SDK parsing error",
             );
 
             ObjDeptError::Unrecoverable {
-                msg: "failed to parse generated object upload URL".into(),
+                message: "failed to parse generated object upload URL".into(),
             }
         })?;
 
@@ -253,16 +251,16 @@ impl ObjDeptPool for R2ObjDeptPool {
             .send()
             .await
             .map(|_| ())
-            .map_err(|err| {
+            .map_err(|error| {
                 //
                 tracing::warn!(
                     operation = "delete_object",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "R2 SDK request error",
                 );
 
                 ObjDeptError::Retryable {
-                    msg: "failed to delete physical object".into(),
+                    message: "failed to delete physical object".into(),
                 }
             })
     }
@@ -271,31 +269,27 @@ impl ObjDeptPool for R2ObjDeptPool {
 // Parses one assembled public object URL.
 fn parse_public_url(url_string: &str) -> ObjDeptRest<Url> {
     //
-    Url::parse(url_string).map_err(|err| {
+    Url::parse(url_string).map_err(|error| {
         //
         tracing::error!(
             operation = "gen_obj_url",
-            sdk_err = ?err,
+            sdk_error = ?error,
             "URL SDK parsing error",
         );
 
         ObjDeptError::Unrecoverable {
-            msg: "failed to parse physical object URL".into(),
+            message: "failed to parse physical object URL".into(),
         }
     })
 }
 
 // Builds a URL under the configured public object domain.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     //
     if domain.is_empty() {
         //
         return Err(ObjDeptError::Unrecoverable {
-            msg: "object public domain is not configured".into(),
+            message: "object public domain is not configured".into(),
         });
     }
 
@@ -305,24 +299,22 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
         || domain.strip_prefix("https://").is_some();
 
     if has_scheme {
-        return parse_public_url(&format!("{}/{}", domain, path));
+        return parse_public_url(&[domain, "/", path].concat());
     }
 
-    parse_public_url(&format!("https://{}/{}", domain, path))
+    parse_public_url(&["https://", domain, "/", path].concat())
 }
 
 // Builds one Cloudflare image-transformation URL.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
     //
-    let path = format!(
-        "cdn-cgi/image/width={},fit=scale-down,quality=80,format=auto,metadata=\
-            none/{}",
-        width, key,
-    );
+    let path = [
+        "cdn-cgi/image/width=",
+        &width.to_string(),
+        ",fit=scale-down,quality=80,format=auto,metadata=none/",
+        key,
+    ]
+    .concat();
 
     build_public_url(domain, &path)
 }

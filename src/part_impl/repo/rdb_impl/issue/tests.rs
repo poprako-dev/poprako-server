@@ -20,7 +20,7 @@ use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterConfirmedArtworkVersion,
+    GetChapterInfoExcluded, SetChapterConfirmedArtworkVer,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::comic_archive::{
@@ -30,26 +30,26 @@ use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page::DeletePages;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::issue::IssueEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::test_rdb::start;
 
-fn entry<'a>(id: &str, chapter_id: &'a str, index: usize) -> IssueEntry<'a> {
+fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
     IssueEntry {
         id: id.into(),
-        page_artwork_id: chapter_id,
+        page_artwork_id: chapter_id.into(),
         index,
-        variant: "custom category",
-        layer_name: Some("  他们两个…  "),
+        variant: "custom category".into(),
+        layer_name: Some("  他们两个…  ".into()),
         rect: Some(IssueRect {
             x_coord: 0.1,
             y_coord: 0.2,
             width: 0.3,
             height: 0.1,
         }),
-        note: "first line\nsecond line",
+        note: "first line\nsecond line".into(),
     }
 }
 
@@ -57,7 +57,7 @@ async fn replace(
     repo: &HybRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
-    entries: &[IssueEntry<'_>],
+    entries: &[IssueEntry],
 ) -> BaseRest<()> {
     nucl.coord(async |context| {
         let chapter_info = GetChapterInfoExcluded {
@@ -68,8 +68,8 @@ async fn replace(
         .await?;
 
         let chapter_issues_repl = ChapterIssuesRepl {
-            chapter_id,
-            entries,
+            chapter_id: chapter_id.into(),
+            entries: entries.to_vec(),
         };
 
         ReplaceChapterIssues {
@@ -84,7 +84,7 @@ async fn replace(
         .step_on(repo, context)
         .await?;
 
-        accept(())
+        accept!(())
     })
     .await
     .map_err(BaseError::from)
@@ -107,24 +107,24 @@ async fn verify_storage_validation_boundary(
         "blank-variant",
         "blank-layer",
     ] {
-        let issue_entry = entry("review-invalid", chapter_id, 3);
+        let entry = entry("review-invalid", chapter_id, 3);
 
-        let mut row = IssueEntryRow::try_from(&issue_entry).unwrap();
+        let mut item = IssueItem::try_from(&entry).unwrap();
 
         match variant {
-            "partial" => row.f_height = None,
-            "negative-index" => row.f_index = -1,
-            "infinite" => row.f_width = Some(f64::INFINITY),
-            "nan" => row.f_x_coord = Some(f64::NAN),
-            "outside" => row.f_width = Some(1.0),
-            "blank-variant" => row.f_variant = " \n\t",
-            "blank-layer" => row.f_layer_name = Some(" \n\t"),
-            _ => row.f_width = Some(0.0),
+            "partial" => item.f_height = None,
+            "negative-index" => item.f_index = -1,
+            "infinite" => item.f_width = Some(f64::INFINITY),
+            "nan" => item.f_x_coord = Some(f64::NAN),
+            "outside" => item.f_width = Some(1.0),
+            "blank-variant" => item.f_variant = " \n\t",
+            "blank-layer" => item.f_layer_name = Some(" \n\t"),
+            _ => item.f_width = Some(0.0),
         }
 
         assert_eq!(
             diesel::insert_into(t_issue::table)
-                .values(&row)
+                .values(&item)
                 .execute(&mut conn)
                 .await
                 .unwrap(),
@@ -132,7 +132,7 @@ async fn verify_storage_validation_boundary(
         );
 
         assert_eq!(
-            diesel::delete(t_issue::table.filter(t_issue::f_id.eq(&row.f_id)))
+            diesel::delete(t_issue::table.filter(t_issue::f_id.eq(&item.f_id)))
                 .execute(&mut conn)
                 .await
                 .unwrap(),
@@ -251,7 +251,7 @@ async fn verify_archive(
             assert_eq!(active_count, 0);
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "rollback archive fixture".into(),
+                message: "rollback archive fixture".into(),
             })
         })
         .await;
@@ -286,7 +286,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let chapter_id = &fixture.chapter_entry.id;
+    let chapter_id = &fixture.chapter_info.id;
 
     nucl.coord(async |context| {
         let entries = [
@@ -297,7 +297,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
                 raw_ident: None,
             },
             crate::model::write::page_artwork::PageArtworkEntry {
-                id: format!("{chapter_id}-extra"),
+                id: [chapter_id.as_str(), "-extra"].concat(),
                 chapter_id: chapter_id.clone(),
                 index: 7,
                 raw_ident: None,
@@ -319,9 +319,8 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
         entry("review-second", chapter_id, 1),
     ];
 
-    let extra_artwork_id = format!("{chapter_id}-extra");
-
-    entries.get_mut(1).unwrap().page_artwork_id = &extra_artwork_id;
+    entries.get_mut(1).unwrap().page_artwork_id =
+        [chapter_id.as_str(), "-extra"].concat();
 
     entries.get_mut(1).unwrap().index = 0;
 
@@ -401,8 +400,8 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     let failure = nucl
         .coord(async |context| {
             let repl = ChapterIssuesRepl {
-                chapter_id,
-                entries: &[],
+                chapter_id: chapter_id.into(),
+                entries: Vec::new(),
             };
 
             ReplaceChapterIssues { repl: &repl }
@@ -410,7 +409,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
                 .await?;
 
             Err::<(), _>(BaseError::Unrecoverable {
-                msg: "injected failure after clearing review".into(),
+                message: "injected failure after clearing review".into(),
             })
         })
         .await;
@@ -423,9 +422,9 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     );
 
     nucl.coord(async |context| {
-        SetChapterConfirmedArtworkVersion {
+        SetChapterConfirmedArtworkVer {
             id: chapter_id,
-            version: 42,
+            ver: 42,
         }
         .step_on(&repo, context)
         .await?;
@@ -439,17 +438,29 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
         assert_eq!(chapter.confirmed_artwork_ver, Some(42));
 
-        accept(())
+        accept!(())
     })
     .await
     .unwrap();
 
     let first = (0..2100)
-        .map(|index| entry(&format!("review-a-{index}"), chapter_id, index))
+        .map(|index| {
+            entry(
+                &["review-a-", &index.to_string()].concat(),
+                chapter_id,
+                index,
+            )
+        })
         .collect::<Vec<_>>();
 
     let second = (0..2100)
-        .map(|index| entry(&format!("review-b-{index}"), chapter_id, index))
+        .map(|index| {
+            entry(
+                &["review-b-", &index.to_string()].concat(),
+                chapter_id,
+                index,
+            )
+        })
         .collect::<Vec<_>>();
 
     let (first_result, second_result) = tokio::join!(

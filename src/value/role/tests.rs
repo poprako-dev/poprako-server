@@ -31,25 +31,25 @@ fn try_from_accepts_every_singular_bit() {
 #[test]
 fn try_from_rejects_zero() {
     //
-    let err = RoleField::try_from(0).err().unwrap();
+    let error = RoleField::try_from(0).err().unwrap();
 
-    assert_expected_role_error(err);
+    assert_expected_role_error(error);
 }
 
 #[test]
 fn try_from_rejects_composite_bit() {
     //
-    let err = RoleField::try_from(3).err().unwrap();
+    let error = RoleField::try_from(3).err().unwrap();
 
-    assert_expected_role_error(err);
+    assert_expected_role_error(error);
 }
 
 #[test]
 fn try_from_rejects_out_of_range_bit() {
     //
-    let err = RoleField::try_from(1 << 9).err().unwrap();
+    let error = RoleField::try_from(1 << 9).err().unwrap();
 
-    assert_expected_role_error(err);
+    assert_expected_role_error(error);
 }
 
 #[test]
@@ -73,9 +73,9 @@ fn deserialize_accepts_valid_field_value() {
 #[test]
 fn deserialize_rejects_invalid_field_value_with_message() {
     //
-    let err = serde_json::from_str::<RoleField>("3").err().unwrap();
+    let error = serde_json::from_str::<RoleField>("3").err().unwrap();
 
-    assert!(err.to_string().contains(&trl("error-invalid-role")));
+    assert!(error.to_string().contains(&trl("error-invalid-role")));
 }
 
 #[test]
@@ -89,9 +89,9 @@ fn try_from_accepts_valid_role_mask() {
 #[test]
 fn try_from_rejects_zero_role_mask() {
     //
-    let err = RoleMask::try_from(0).err().unwrap();
+    let error = RoleMask::try_from(0).err().unwrap();
 
-    assert_expected_role_error(err);
+    assert_expected_role_error(error);
 }
 
 #[test]
@@ -125,22 +125,22 @@ fn deserialize_accepts_valid_bits() {
 #[test]
 fn deserialize_rejects_invalid_bits_with_message() {
     //
-    let err = serde_json::from_str::<RoleMask>("2147483648")
+    let error = serde_json::from_str::<RoleMask>("2147483648")
         .err()
         .unwrap();
 
-    assert!(err.to_string().contains(&trl("error-invalid-role")));
+    assert!(error.to_string().contains(&trl("error-invalid-role")));
 }
 
 #[expect(
     clippy::panic,
     reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
 )]
-fn assert_expected_role_error(err: BaseError) {
+fn assert_expected_role_error(error: BaseError) {
     //
-    let BaseError::Expected { msg, .. } = err else {
+    let BaseError::Expected { message, .. } = error else {
         panic!("expected role error");
     };
 
-    assert_eq!(msg, trl("error-invalid-role"));
+    assert_eq!(message, trl("error-invalid-role"));
 }

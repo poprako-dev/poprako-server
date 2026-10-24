@@ -71,14 +71,16 @@ pub async fn export_archives(
     Query(instr): Query<ExportComicArchivesInstr>,
 ) -> HttpResult<ExportComicArchivesVal> {
     //
-    comic_archive_usecase::export::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        team_id,
-        instr,
+    Ok(
+        comic_archive_usecase::export::<RdbContext<ReptRead>, HybRepo>(
+            (harn.repo(),),
+            user_token,
+            team_id,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// Query for listing comics within a workset.
@@ -140,13 +142,13 @@ pub async fn create(
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
     //
-    comic_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(comic_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
     .await?
-    .accept(StatusCode::CREATED)
+    .accept(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.
@@ -186,13 +188,15 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    comic_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        instr,
+    Ok(
+        comic_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}` — fetch a comic by id.
@@ -217,14 +221,14 @@ pub async fn get_info(
     Query(instr): Query<GetComicInfoInstr>,
 ) -> HttpResult<ComicInfoView> {
     //
-    comic_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+    Ok(comic_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
@@ -258,7 +262,7 @@ pub async fn update_info(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/alloc` — allocate a cover upload slot.
@@ -283,7 +287,7 @@ pub async fn alloc_cover(
     Json(instr): Json<AllocComicCoverInstr>,
 ) -> HttpResult<AllocComicCoverVal> {
     //
-    comic_alloc_usecase::alloc_cover::<_, RdbContext<ReptRead>, HybRepo, _>(
+    Ok(comic_alloc_usecase::alloc_cover::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -295,7 +299,7 @@ pub async fn alloc_cover(
         instr,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/mark-uploaded` — confirm a cover upload.
@@ -327,7 +331,7 @@ pub async fn mark_cover_uploaded(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }
 
 /// `POST /api/v1/comics/{comic_id}/archive` — archive one comic and clear its active data.
@@ -350,13 +354,15 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     //
-    comic_archive_usecase::archive::<_, RdbContext<Serial>, HybRepo, _>(
-        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
-        user_token,
-        comic_id,
+    Ok(
+        comic_archive_usecase::archive::<_, RdbContext<Serial>, HybRepo, _>(
+            (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
+            user_token,
+            comic_id,
+        )
+        .await?
+        .accept(StatusCode::CREATED),
     )
-    .await?
-    .accept(StatusCode::CREATED)
 }
 
 /// `DELETE /api/v1/comics/{comic_id}` — delete a comic and descendants.
@@ -385,5 +391,5 @@ pub async fn delete(
     )
     .await?;
 
-    no_content()
+    Ok(no_content())
 }

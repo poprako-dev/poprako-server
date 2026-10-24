@@ -40,12 +40,12 @@ use crate::value::unit::UnitTextPart;
 struct Fields(BTreeMap<String, String>);
 
 impl Visit for Fields {
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
-        self.0.insert(field.name().into(), format!("{:?}", value));
+        //
+        self.0.insert(
+            field.name().into(),
+            format!("{:?}", tracing::field::debug(value)),
+        );
     }
 }
 

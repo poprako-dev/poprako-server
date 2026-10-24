@@ -10,8 +10,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::unit as unit_complex;
 use crate::model::read::proj::unit::UnitOrder;
-use crate::model::write::unit::{UnitEdit, UnitWriteChange, UnitWritePlan};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::model::write::unit::UnitEdit;
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::unit::{UnitWriteChangeShape, UnitWritePlanShape};
 use crate::util::Patch;
 
 /// Reports an invalid save identity without exposing payloads.
@@ -29,7 +30,7 @@ pub fn invalid_save() -> BaseError {
 pub fn plan_writes<'a>(
     orders: &'a [UnitOrder],
     edits: &'a [UnitEdit],
-) -> BaseRest<UnitWritePlan<'a>> {
+) -> BaseRest<UnitWritePlanShape<'a>> {
     //
     let sequence = unit_complex::plan_edit_sequence(orders, edits)?;
 
@@ -80,7 +81,7 @@ pub fn plan_writes<'a>(
 
         let order = orders_by_id.get(id).ok_or_else(invalid_plan)?;
 
-        let change = UnitWriteChange {
+        let change = UnitWriteChangeShape {
             next_id: Patch::Skip,
             is_hidden: (order.is_hidden != is_hidden).then_some(is_hidden),
             edit: has_content(edit).then_some(edit),
@@ -112,7 +113,7 @@ pub fn plan_writes<'a>(
         true
     });
 
-    accept(UnitWritePlan {
+    accept!(UnitWritePlanShape {
         creates: creates.into_values().collect(),
         changes,
         skipped_ids,
@@ -168,7 +169,7 @@ fn patch_create(create: &mut UnitEdit, edit: &UnitEdit) -> BaseRest<()> {
 
     patch_initial(translation_note, translation_annotation);
 
-    accept(())
+    accept!(())
 }
 
 // Distinguishes submitted content from order-only or empty saves.

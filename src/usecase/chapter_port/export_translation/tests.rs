@@ -99,10 +99,6 @@ fn chapter(id: &str) -> ChapterInfo {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn assignment(
     chapter_id: &str,
     user_id: &str,
@@ -112,7 +108,7 @@ fn assignment(
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
+        id: ["assignment-", chapter_id, "-", user_id].concat(),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,
@@ -380,15 +376,15 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 {
     use poprako_orchestra::{Nucl as _, OperStep as _};
 
-    use crate::model::write::page::PageRawIdentsRepl;
     use crate::part::repo::oper::page::UpdatePageRawIdents;
+    use crate::shape::write::page::PageRawIdentsReplShape;
 
     let mock = Mock::new();
 
     seed_scope(&mock);
 
-    let repls = PageRawIdentsRepl {
-        idents: &[("page-1", Some("原稿 01.JPG"))],
+    let repls = PageRawIdentsReplShape {
+        idents: vec![("page-1", Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {
@@ -445,8 +441,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
         serde_json::to_value(raw_export.poprako).unwrap()
     );
 
-    let repls = PageRawIdentsRepl {
-        idents: &[("page-2", Some("原稿 01.JPG"))],
+    let repls = PageRawIdentsReplShape {
+        idents: vec![("page-2", Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {

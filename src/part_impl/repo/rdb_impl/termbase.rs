@@ -28,19 +28,19 @@ use crate::part::repo::oper::termbase::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
-    TermbaseEntryRow, TermbaseInfoRow,
+    TermbaseInfoRecord, TermbaseItem,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{
     f_comic_id, f_description, f_id, f_name, f_team_id, f_term_count,
     f_updated_at, t_termbase,
 };
 use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
 // Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
-// Remove one termbase row by id.
+// Remove one termbase record by id.
 #[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -50,7 +50,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Escape wildcard and escape characters before constructing ILIKE patterns.
@@ -62,20 +62,20 @@ fn escape_ilike_pattern(input: &str) -> String {
         .replace('_', "\\_")
 }
 
-// Load one termbase row by id and map DB entity into response shape.
+// Load one termbase record by id and map DB entity into response shape.
 #[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
-    let row = t_termbase
+    let record = t_termbase
         .filter(f_id.eq(id))
-        .select(TermbaseInfoRow::as_select())
-        .get_result::<TermbaseInfoRow>(conn)
+        .select(TermbaseInfoRecord::as_select())
+        .get_result::<TermbaseInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -87,10 +87,10 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
         });
     };
 
-    accept(TermbaseInfo::try_from(row)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
-// Load one termbase row by id with row lock for transactional mutation.
+// Load one termbase record by id with record lock for transactional mutation.
 #[instrument(level = "info", skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -98,16 +98,16 @@ async fn get_info_excluded(
 ) -> BaseRest<TermbaseInfo> {
     //
     // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
-    let row = t_termbase
+    let record = t_termbase
         .filter(f_id.eq(id))
-        .select(TermbaseInfoRow::as_select())
+        .select(TermbaseInfoRecord::as_select())
         .for_update()
-        .get_result::<TermbaseInfoRow>(conn)
+        .get_result::<TermbaseInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -119,41 +119,38 @@ async fn get_info_excluded(
         });
     };
 
-    accept(TermbaseInfo::try_from(row)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
-// List termbase rows with team/comic filter and optional fuzzy name.
+// List termbase records with team/comic filter and optional fuzzy name.
 #[instrument(level = "info", skip_all)]
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermbaseListSpec<'_>,
+    spec: &TermbaseListSpec,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
-    let mut query =
-        t_termbase.select(TermbaseInfoRow::as_select()).into_boxed();
+    let mut query = t_termbase
+        .select(TermbaseInfoRecord::as_select())
+        .into_boxed();
 
-    let (fuzzy_name, offset, limit) = match spec {
+    let (offset, limit) = match spec {
         //
         TermbaseListSpec::Team {
             team_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => {
             //
             query = query.filter(f_team_id.eq(team_id));
 
-            (fuzzy_name, offset, limit)
+            (offset, limit)
         }
 
         TermbaseListSpec::Comic {
             comic_id,
-            fuzzy_name,
+            fuzzy_name: _,
             offset,
             limit,
         } => {
@@ -169,99 +166,99 @@ async fn list_infos(
                     .or(f_comic_id.eq(comic_id)),
             );
 
-            (fuzzy_name, offset, limit)
+            (offset, limit)
         }
     };
 
-    if let Some(fuzzy_name) = fuzzy_name {
+    if let Some(fuzzy_name) = spec.trimmed_fuzzy_name() {
         //
         let escaped = escape_ilike_pattern(fuzzy_name);
 
-        let pattern = format!("%{}%", escaped);
+        let pattern = ["%", escaped.as_str(), "%"].concat();
 
         query = query.filter(f_name.ilike(pattern));
     }
 
-    let rows = query
+    let records = query
         .order_by(f_updated_at.desc())
         .offset(i64::from(*offset))
         .limit(i64::from(limit.get()))
-        .load::<TermbaseInfoRow>(conn)
+        .load::<TermbaseInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    rows.into_iter().map(TermbaseInfo::try_from).collect()
+    records.into_iter().map(TermbaseInfo::try_from).collect()
 }
 
-// List all termbases for team/comic with row lock for later mutation.
+// List all termbases for team/comic with record lock for later mutation.
 #[instrument(level = "info", skip_all)]
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     oper: &ListTermbaseInfosExcluded<'_>,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
-    // Lock cand rows so subsequent writes in caller transaction stay safe.
-    let rows = match oper {
+    // Lock cand records so subsequent writes in caller transaction stay safe.
+    let records = match oper {
         //
         ListTermbaseInfosExcluded::Team { team_id } => t_termbase
             .filter(f_team_id.eq(team_id))
-            .select(TermbaseInfoRow::as_select())
+            .select(TermbaseInfoRecord::as_select())
             .for_update()
-            .load::<TermbaseInfoRow>(conn)
+            .load::<TermbaseInfoRecord>(conn)
             .await
             .map_err(diesel)?,
 
         ListTermbaseInfosExcluded::Comic { comic_id } => t_termbase
             .filter(f_comic_id.eq(comic_id))
-            .select(TermbaseInfoRow::as_select())
+            .select(TermbaseInfoRecord::as_select())
             .for_update()
-            .load::<TermbaseInfoRow>(conn)
+            .load::<TermbaseInfoRecord>(conn)
             .await
             .map_err(diesel)?,
     };
 
-    rows.into_iter().map(TermbaseInfo::try_from).collect()
+    records.into_iter().map(TermbaseInfo::try_from).collect()
 }
 
 // Insert a new termbase and return created info.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    termbase_entry: &TermbaseEntry<'_>,
+    entry: &TermbaseEntry,
 ) -> BaseRest<TermbaseInfo> {
     //
-    // Convert API entry into insert row shape and fetch persisted row.
-    let entry = TermbaseEntryRow::from(termbase_entry);
+    // Convert API entry into insert record shape and fetch persisted record.
+    let item = TermbaseItem::from(entry);
 
-    let row = diesel::insert_into(t_termbase)
-        .values(&entry)
-        .returning(TermbaseInfoRow::as_returning())
-        .get_result::<TermbaseInfoRow>(conn)
+    let record = diesel::insert_into(t_termbase)
+        .values(&item)
+        .returning(TermbaseInfoRecord::as_returning())
+        .get_result::<TermbaseInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(TermbaseInfo::try_from(row)?)
+    accept!(TermbaseInfo::try_from(record)?)
 }
 
 // Update termbase descriptive fields.
 #[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
-    update: &TermbaseRepl<'_>,
+    update: &TermbaseRepl,
 ) -> BaseRest<()> {
     //
     // Keep `updated_at` current while applying partial name/description updates.
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
         .set((
-            f_name.eq(&update.name),
-            f_description.eq(update.description),
+            f_name.eq(update.trimmed_name()),
+            f_description.eq(update.trimmed_description()),
             f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Adjust term count atomically by signed delta.
@@ -282,7 +279,7 @@ async fn update_term_count(
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 // Touch updated_at to indicate activity without changing business fields.
@@ -296,7 +293,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .await
         .map_err(diesel)?;
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetTermbaseInfo<'_>> for HybRepo {
@@ -336,7 +333,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Insert termbase row inside transaction context and return persisted info.
+    // Insert termbase record inside transaction context and return persisted info.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
@@ -378,7 +375,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Read one termbase row with `FOR UPDATE` for subsequent writes.
+    // Read one termbase record with `FOR UPDATE` for subsequent writes.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
@@ -399,7 +396,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Read and lock all rows for a team/comic scope.
+    // Read and lock all records for a team/comic scope.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
@@ -483,7 +480,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Delete termbase row as part of transaction flow.
+    // Delete termbase record as part of transaction flow.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,

@@ -15,7 +15,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::shared::user::UserToken;
 use crate::part::auth::TokenAuth;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
@@ -66,7 +66,7 @@ impl JwtAuth {
             DecodingKey::from_secret(secret.as_bytes()),
         );
 
-        accept(Self {
+        accept!(Self {
             expiration_seconds,
             encoding_key,
             decoding_key,
@@ -80,10 +80,6 @@ impl JwtAuth {
     ///
     /// Returns an error when required environment variables are missing or
     /// malformed.
-    #[expect(
-        clippy::uninlined_format_args,
-        reason = "Repository formatting keeps interpolation arguments explicit"
-    )]
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -97,13 +93,13 @@ impl JwtAuth {
                 || "[JwtAuth::from_env] JWT_EXPIRATION_HOURS must be an integer",
             )?;
 
-        Self::new(&secret, expiration_hours).map_err(|err| match err {
+        Self::new(&secret, expiration_hours).map_err(|error| match error {
             //
-            BaseError::Expected { msg, .. }
-            | BaseError::Retryable { msg }
-            | BaseError::Unavailable { msg }
-            | BaseError::Unrecoverable { msg } => {
-                anyhow::anyhow!("{}", msg)
+            BaseError::Expected { message, .. }
+            | BaseError::Retryable { message }
+            | BaseError::Unavailable { message }
+            | BaseError::Unrecoverable { message } => {
+                anyhow::Error::msg(message)
             }
         })
     }
@@ -165,15 +161,16 @@ impl TokenAuth for JwtAuth {
         let header = Header::new(Algorithm::HS256);
 
         jsonwebtoken::encode(&header, &claims, &self.encoding_key).map_err(
-            |err| {
+            |error| {
                 //
                 unrecoverable_error! {
-                    message: format!(
-                        "[JwtAuth::sign_token] error when encoding: {}",
-                        err,
-                    );
+                    message: [
+                        "[JwtAuth::sign_token] error when encoding: ",
+                        &error.to_string(),
+                    ]
+                    .concat();
                     operation = "sign_token",
-                    sdk_err = ?err,
+                    sdk_error = ?error,
                     "JWT SDK error",
                 }
             },
@@ -190,18 +187,18 @@ impl TokenAuth for JwtAuth {
             &self.decoding_key,
             &Validation::new(Algorithm::HS256),
         )
-        .map_err(|err| {
+        .map_err(|error| {
             //
             expected_error! {
                 ExpectedVariant::Auth,
                 message: trl("error-unauthorized");
                 operation = "verify_token",
-                sdk_err = ?err,
+                sdk_error = ?error,
                 "JWT verification failed",
             }
         })?;
 
-        accept(UserToken {
+        accept!(UserToken {
             user_id: token_data.claims.user_id,
         })
     }

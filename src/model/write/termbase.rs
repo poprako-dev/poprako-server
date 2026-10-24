@@ -4,7 +4,7 @@ use crate::model::write::term::TermImport;
 
 /// The data needed to create a terminology base.
 #[cfg_attr(test, derive(Clone))]
-pub struct TermbaseEntry<'a> {
+pub struct TermbaseEntry {
     /// The unique identifier for the new terminology base.
     pub id: String,
 
@@ -14,33 +14,72 @@ pub struct TermbaseEntry<'a> {
     pub comic_id: Option<String>,
 
     /// Display name for the new terminology base.
-    pub name: &'a str,
+    pub name: String,
     /// Free-text description for the new terminology base.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
 
     /// Foreign key of the user creating this terminology base.
     pub creator_id: String,
 }
 
+impl TermbaseEntry {
+    /// Borrows normalized name without copying its storage.
+    pub fn trimmed_name(&self) -> &str {
+        self.name.trim()
+    }
+
+    /// Borrows normalized description without copying its storage.
+    pub fn trimmed_description(&self) -> Option<&str> {
+        //
+        self.description
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+}
+
 /// Portable terminology-base content supplied for import.
-pub struct TermbaseImport<'a> {
+pub struct TermbaseImport {
     /// Display name for the imported terminology base.
-    pub name: &'a str,
+    pub name: String,
     /// Optional description for the imported terminology base.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
 
     /// Portable terminology entries included in the document.
-    pub terms: Vec<TermImport<'a>>,
+    pub terms: Vec<TermImport>,
+}
+
+impl TermbaseImport {
+    /// Borrows normalized name without copying its storage.
+    pub fn trimmed_name(&self) -> &str {
+        self.name.trim()
+    }
 }
 
 /// Mutable terminology-base profile fields.
 #[cfg_attr(test, derive(Clone))]
-pub struct TermbaseRepl<'a> {
+pub struct TermbaseRepl {
     /// The unique identifier of the termbase to update.
     pub id: String,
 
     /// Updated display name for the terminology base.
-    pub name: &'a str,
+    pub name: String,
     /// Updated description for the terminology base.
-    pub description: Option<&'a str>,
+    pub description: Option<String>,
+}
+
+impl TermbaseRepl {
+    /// Borrows normalized name without copying its storage.
+    pub fn trimmed_name(&self) -> &str {
+        self.name.trim()
+    }
+
+    /// Borrows normalized description without copying its storage.
+    pub fn trimmed_description(&self) -> Option<&str> {
+        //
+        self.description
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
 }

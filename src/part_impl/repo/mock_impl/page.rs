@@ -18,7 +18,7 @@ use crate::part::repo::oper::page::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now, unrecoverable,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 
 // Internal implementation of `list_infos`.
@@ -66,7 +66,7 @@ fn list_bounded_infos(
         ));
     }
 
-    accept(page_infos)
+    accept!(page_infos)
 }
 
 // Read detailed info by page primary key.
@@ -139,7 +139,7 @@ fn list_unit_diff_stats(
         })
         .collect();
 
-    accept(page_unit_diff_stats)
+    accept!(page_unit_diff_stats)
 }
 
 // Read the minimal Page scope used by Unit operations.
@@ -147,7 +147,7 @@ fn get_page_unit_scope(state: &MockState, id: &str) -> BaseRest<PageUnitScope> {
     //
     let page_info = get_page_by_id(state, id)?;
 
-    accept(PageUnitScope {
+    accept!(PageUnitScope {
         id: page_info.id,
         chapter_id: page_info.chapter_id,
         count_metrics: UnitCountMetrics {
@@ -198,7 +198,7 @@ impl Run<ListPageRawIdentInfos<'_>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(
+        accept!(
             state
                 .page_raw_idents
                 .values()
@@ -223,7 +223,7 @@ impl Step<UpdatePageRawIdents<'_>, MockContext> for Mock {
         oper: &UpdatePageRawIdents<'_>,
     ) -> BaseRest<()> {
         //
-        for &(page_id, raw_ident) in oper.repl.idents {
+        for &(page_id, raw_ident) in &oper.repl.idents {
             //
             match raw_ident {
                 //
@@ -264,7 +264,7 @@ impl Step<UpdatePageRawIdents<'_>, MockContext> for Mock {
             }
         }
 
-        accept(())
+        accept!(())
     }
 }
 
@@ -298,5 +298,5 @@ fn list_unit_flagged_stats(
         .filter(|stats| stats.flagged_unit_count > 0)
         .collect();
 
-    accept(page_unit_flagged_stats)
+    accept!(page_unit_flagged_stats)
 }

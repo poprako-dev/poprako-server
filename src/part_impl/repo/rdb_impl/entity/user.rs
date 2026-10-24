@@ -5,14 +5,14 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_user` table. Returned by Diesel queries.
+/// Raw database record for the `t_user` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
-pub struct UserInfoRow {
+pub struct UserInfoRecord {
     pub f_id: String,
 
     pub f_nickname: String,
@@ -26,11 +26,11 @@ pub struct UserInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-/// Raw database row for user credentials (password hash) from the `t_user`
+/// Raw database record for user credentials (password hash) from the `t_user`
 /// table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
-pub struct UserCredsRow {
+pub struct UserCredsRecord {
     pub f_id: String,
 
     pub f_password_hash: String,
@@ -41,7 +41,7 @@ pub struct UserCredsRow {
 /// Insertable struct for creating a new record in the `t_user` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
-pub struct UserEntryRow<'a> {
+pub struct UserItem<'a> {
     pub f_id: &'a str,
 
     pub f_nickname: &'a str,
@@ -60,7 +60,7 @@ pub struct UserEntryRow<'a> {
 /// Aspect struct for updating specific fields of a user record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_user)]
-pub struct UserAspectRow<'a> {
+pub struct UserPack<'a> {
     pub f_nickname: Option<&'a str>,
     pub f_qid: Option<&'a str>,
 
@@ -69,7 +69,7 @@ pub struct UserAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UserAspectRow<'a> {
+impl<'a> UserPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {
@@ -107,29 +107,29 @@ impl<'a> UserAspectRow<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl TryFrom<UserInfoRow> for UserInfo {
+impl TryFrom<UserInfoRecord> for UserInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(v: UserInfoRow) -> BaseRest<Self> {
+    fn try_from(record: UserInfoRecord) -> BaseRest<Self> {
         //
-        accept(Self {
-            id: v.f_id,
-            qid: v.f_qid,
-            nickname: v.f_nickname,
-            is_sadmin: v.f_is_sadmin,
-            last_active_at: v.f_last_active_at,
-            created_at: v.f_created_at,
-            updated_at: v.f_updated_at,
+        accept!(Self {
+            id: record.f_id,
+            qid: record.f_qid,
+            nickname: record.f_nickname,
+            is_sadmin: record.f_is_sadmin,
+            last_active_at: record.f_last_active_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
 
-impl From<UserCredsRow> for UserCredential {
-    fn from(v: UserCredsRow) -> Self {
+impl From<UserCredsRecord> for UserCredential {
+    fn from(record: UserCredsRecord) -> Self {
         Self {
-            user_id: v.f_id,
-            password_hash: v.f_password_hash,
+            user_id: record.f_id,
+            password_hash: record.f_password_hash,
         }
     }
 }

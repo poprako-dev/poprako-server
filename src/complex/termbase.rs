@@ -95,30 +95,26 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::term as term_complex;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
-use crate::model::write::term::{
-    TermAppendPlan, TermAppendRepl, TermEntry, TermImport, TermRepl,
-    TermUpsertPlan,
-};
+use crate::model::write::term::TermImport;
 use crate::model::write::termbase::{
     TermbaseEntry, TermbaseImport, TermbaseRepl,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::term::{
+    TermAppendPlanShape, TermAppendReplShape, TermEntryShape, TermReplShape,
+    TermUpsertPlanShape,
+};
 use crate::util::next_snowflake_id;
 use crate::value::termbase::TERMBASE_TERM_LIMIT;
 
-/// Normalize an optional terminology-base name filter.
-pub fn normalize_fuzzy_name(fuzzy_name: Option<&str>) -> Option<&str> {
-    normalize_optional(fuzzy_name)
-}
-
 /// Build a validated terminology-base entry.
-pub fn build_entry<'a>(
+pub fn build_entry(
     team_id: Option<String>,
     comic_id: Option<String>,
-    name: &'a str,
-    description: Option<&'a str>,
+    name: String,
+    description: Option<String>,
     creator_id: String,
-) -> BaseRest<TermbaseEntry<'a>> {
+) -> BaseRest<TermbaseEntry> {
     //
     match (&team_id, &comic_id) {
         //
@@ -136,10 +132,9 @@ pub fn build_entry<'a>(
         }
     }
 
-    let (name, description) =
-        (normalize_name(name)?, normalize_optional(description));
+    normalize_name(&name)?;
 
-    accept(TermbaseEntry {
+    accept!(TermbaseEntry {
         id: next_snowflake_id(),
         team_id,
         comic_id,
@@ -149,10 +144,8 @@ pub fn build_entry<'a>(
     })
 }
 
-/// Normalize a portable batch and reject duplicate source keys before writing.
-pub fn normalize_terms(
-    input: Vec<TermImport<'_>>,
-) -> BaseRest<Vec<TermImport<'_>>> {
+/// Validate a portable batch while preserving its owned text buffers.
+pub fn validate_terms(input: Vec<TermImport>) -> BaseRest<Vec<TermImport>> {
     //
     if input.len() > TERMBASE_TERM_LIMIT {
         return Err(term_limit_error(0, input.len()));
@@ -170,7 +163,7 @@ pub fn normalize_terms(
             term_import.comment,
         )?;
 
-        if !seen_sources.insert(normalized_key(term_import.source)) {
+        if !seen_sources.insert(normalized_key(term_import.trimmed_source())) {
             //
             return Err(expected_error! {
                 ExpectedVariant::Args,
@@ -183,22 +176,22 @@ pub fn normalize_terms(
         terms.push(term_import);
     }
 
-    accept(terms)
+    accept!(terms)
 }
 
-/// Normalize and validate a native terminology-base import document.
-pub fn normalize_import(
-    termbase_import: TermbaseImport<'_>,
-) -> BaseRest<TermbaseImport<'_>> {
+/// Validate a native terminology-base import document without copying text.
+pub fn validate_import(
+    termbase_import: TermbaseImport,
+) -> BaseRest<TermbaseImport> {
     //
-    let terms = normalize_terms(termbase_import.terms)?;
+    normalize_name(&termbase_import.name)?;
 
-    let (name, description) = (
-        normalize_name(termbase_import.name)?,
-        normalize_optional(termbase_import.description),
-    );
+    let terms = validate_terms(termbase_import.terms)?;
 
-    accept(TermbaseImport {
+    let (name, description) =
+        (termbase_import.name, termbase_import.description);
+
+    accept!(TermbaseImport {
         name,
         description,
         terms,
@@ -238,17 +231,17 @@ pub fn ensure_term_capacity(
         ));
     }
 
-    accept(())
+    accept!(())
 }
 
-/// Build inserts and replacements for a normalized terminology-base import.
+/// Build inserts and replacements for a validated terminology-base import.
 pub fn build_term_upsert_plan<'a>(
-    termbase_id: &str,
-    creator_id: &str,
+    termbase_id: &'a str,
+    creator_id: &'a str,
     current_term_count: usize,
     existing_term_infos: &'a [TermInfo],
-    imported_terms: Vec<TermImport<'a>>,
-) -> BaseRest<TermUpsertPlan<'a>> {
+    imported_terms: &'a [TermImport],
+) -> BaseRest<TermUpsertPlanShape<'a>> {
     //
     let loaded_term_count = existing_term_infos.len();
 
@@ -271,7 +264,7 @@ pub fn build_term_upsert_plan<'a>(
         //
         ensure_term_capacity(current_term_count, 0)?;
 
-        return accept(TermUpsertPlan { entries, updates });
+        return accept!(TermUpsertPlanShape { entries, updates });
     }
 
     let mut existing_terms_by_source =
@@ -286,7 +279,7 @@ pub fn build_term_upsert_plan<'a>(
 
     for imported_term in imported_terms {
         //
-        let source_key = normalized_key(imported_term.source);
+        let source_key = normalized_key(imported_term.trimmed_source());
 
         let existing_term_info = existing_terms_by_source.get(&source_key);
 
@@ -296,44 +289,43 @@ pub fn build_term_upsert_plan<'a>(
                 //
                 let targets = merge_targets(
                     &existing_term_info.targets,
-                    imported_term.targets,
+                    imported_term.trimmed_targets(),
                 );
 
-                updates.push(TermRepl {
-                    id: existing_term_info.id.clone(),
-                    source: imported_term.source,
+                updates.push(TermReplShape {
+                    id: &existing_term_info.id,
+                    source: imported_term.trimmed_source(),
                     targets,
-                    comment: imported_term.comment,
+                    comment: imported_term.trimmed_comment(),
                 });
             }
 
-            None => entries.push(TermEntry {
+            None => entries.push(TermEntryShape {
                 id: next_snowflake_id(),
-                termbase_id: termbase_id.into(),
-                source: imported_term.source,
-                targets: imported_term.targets,
-                comment: imported_term.comment,
-                creator_id: creator_id.into(),
+                termbase_id,
+                source: imported_term.trimmed_source(),
+                targets: imported_term.trimmed_targets().collect(),
+                comment: imported_term.trimmed_comment(),
+                creator_id,
             }),
         }
     }
 
     ensure_term_capacity(current_term_count, entries.len())?;
 
-    accept(TermUpsertPlan { entries, updates })
+    accept!(TermUpsertPlanShape { entries, updates })
 }
 
 /// Build a validated terminology-base profile replacement.
-pub fn build_update<'a>(
+pub fn build_update(
     id: String,
-    name: &'a str,
-    description: Option<&'a str>,
-) -> BaseRest<TermbaseRepl<'a>> {
+    name: String,
+    description: Option<String>,
+) -> BaseRest<TermbaseRepl> {
     //
-    let (name, description) =
-        (normalize_name(name)?, normalize_optional(description));
+    normalize_name(&name)?;
 
-    accept(TermbaseRepl {
+    accept!(TermbaseRepl {
         id,
         name,
         description,
@@ -342,12 +334,12 @@ pub fn build_update<'a>(
 
 /// Plan atomic append writes while retaining identity and skipping unchanged entries.
 pub fn build_term_append_plan<'a>(
-    termbase_id: &str,
-    creator_id: &str,
+    termbase_id: &'a str,
+    creator_id: &'a str,
     current_term_count: usize,
     existing_term_infos: &'a [TermInfo],
-    incoming_terms: Vec<TermImport<'a>>,
-) -> BaseRest<TermAppendPlan<'a>> {
+    incoming_terms: &'a [TermImport],
+) -> BaseRest<TermAppendPlanShape<'a>> {
     //
     let term_upsert_plan = build_term_upsert_plan(
         termbase_id,
@@ -366,7 +358,7 @@ pub fn build_term_append_plan<'a>(
 
     for update in term_upsert_plan.updates {
         // Every replacement was resolved from these persisted entries by the shared planner.
-        let Some(existing) = existing_terms.get(update.id.as_str()) else {
+        let Some(existing) = existing_terms.get(update.id) else {
             //
             return Err(unrecoverable_error! {
                 message: "append replacement has no existing term".into();
@@ -382,7 +374,7 @@ pub fn build_term_append_plan<'a>(
             continue;
         }
 
-        updates.push(TermAppendRepl {
+        updates.push(TermAppendReplShape {
             id: update.id,
             source: &existing.source,
             targets: update.targets,
@@ -390,15 +382,10 @@ pub fn build_term_append_plan<'a>(
         });
     }
 
-    accept(TermAppendPlan {
+    accept!(TermAppendPlanShape {
         entries: term_upsert_plan.entries,
         updates,
     })
-}
-
-// Normalize an optional string by trimming whitespace; empty strings become `None`.
-fn normalize_optional(value: Option<&str>) -> Option<&str> {
-    value.map(str::trim).filter(|value| !value.is_empty())
 }
 
 // Trim a termbase name and reject empty values.
@@ -416,7 +403,7 @@ fn normalize_name(name: &str) -> BaseRest<&str> {
         });
     }
 
-    accept(name)
+    accept!(name)
 }
 
 // Construct the expected capacity error shared by single and imported creates.
@@ -444,10 +431,13 @@ fn normalized_key(value: &str) -> String {
 }
 
 // Merge imported targets after existing values while preserving first spelling and order.
-fn merge_targets<'a>(
+fn merge_targets<'a, I>(
     existing_targets: &'a [String],
-    imported_targets: Vec<&'a str>,
-) -> Vec<&'a str> {
+    imported_targets: I,
+) -> Vec<&'a str>
+where
+    I: Iterator<Item = &'a str>,
+{
     //
     let mut targets = existing_targets
         .iter()

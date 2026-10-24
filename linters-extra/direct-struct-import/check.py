@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Require direct model/data type imports and bare type uses."""
+"""Require direct model/data/shape type imports and bare type uses."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
-DATA_ROLES = ("instr", "val", "view")
+LAYER_ROLES = {"data": ("instr", "val", "view"), "shape": ("read", "write", "shared")}
 
 
 def descendants(node: tree_sitter.Node, kind: str) -> list[tree_sitter.Node]:
@@ -57,10 +57,10 @@ def node_text(source: bytes, node: tree_sitter.Node) -> str:
 
 
 def layer_domains(root: Path, layer: str) -> set[str]:
-    if layer == "data":
+    if layer in LAYER_ROLES:
         return {
             path.stem
-            for role in DATA_ROLES
+            for role in LAYER_ROLES[layer]
             for path in production_files(root, f"src/{layer}/{role}")
         }
 
@@ -160,10 +160,10 @@ def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[st
                 )
 
             if (
-                layer == "data"
+                layer in LAYER_ROLES
                 and segments[:2] == ["crate", layer]
                 and len(segments) == 4
-                and segments[2] in DATA_ROLES
+                and segments[2] in LAYER_ROLES[layer]
                 and segments[3] in domains
                 and source[path_node.end_byte : path_node.end_byte + 3] != b"::{"
             ):
@@ -191,10 +191,10 @@ def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[st
             )
 
         if (
-            layer == "data"
+            layer in LAYER_ROLES
             and len(segments) >= 5
             and segments[:2] == ["crate", layer]
-            and segments[2] in DATA_ROLES
+            and segments[2] in LAYER_ROLES[layer]
             and segments[3] in domains
             and segments[4][:1].isupper()
         ):
@@ -215,7 +215,7 @@ def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[st
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--layer", choices=("model", "data"), required=True)
+    parser.add_argument("--layer", choices=("model", "data", "shape"), required=True)
     parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=False)
     args = parser.parse_args()
     root = args.root.resolve()

@@ -27,7 +27,7 @@ use crate::data::instr::page::{AllocChapterPagesInstr, AllocPageImageInstr};
 use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
-use crate::model::write::page::{PageImageSpec, PageRawIdentsRepl};
+use crate::model::write::page::PageImageSpec;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::Prom;
@@ -42,7 +42,8 @@ use crate::part::repo::oper::page::{
     GetPageInfo, GetPageInfoExcluded, UpdatePageRawIdents,
 };
 use crate::part::repo::page::PageRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::page::PageRawIdentsReplShape;
 use crate::usecase::page::alloc::manifest::apply_manifest;
 use crate::usecase::page::alloc::validation as page_alloc_validation_usecase;
 use crate::util::next_snowflake_id;
@@ -118,7 +119,7 @@ where
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(AllocChapterPagesVal { pages })
+    accept!(AllocChapterPagesVal { pages })
 }
 
 /// Allocates an image generation for one page.
@@ -196,8 +197,8 @@ where
                 .map_err(BaseError::from)?
                 .into_slot();
 
-            let raw_ident_repl = PageRawIdentsRepl {
-                idents: &[(id.as_str(), instr.raw_ident.as_deref())],
+            let raw_ident_repl = PageRawIdentsReplShape {
+                idents: vec![(id.as_str(), instr.raw_ident.as_deref())],
             };
 
             UpdatePageRawIdents {
@@ -226,7 +227,7 @@ where
                 Defer::new(advance_task).step_on(prom, context).await?;
             }
 
-            accept(obj_slot)
+            accept!(obj_slot)
         })
         .await?;
 
@@ -272,7 +273,7 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
         }
     })?;
 
-    accept(AllocatedPageVal {
+    accept!(AllocatedPageVal {
         page_id: alloc.page_id,
         index,
         image_hash: alloc.image_hash,
@@ -282,10 +283,6 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
 }
 
 // Validates the caller and current chapter state.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn ensure_alloc_perm<C, R>(
     repo: &R,
     token: &UserToken,
@@ -293,7 +290,7 @@ async fn ensure_alloc_perm<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: AssignmentRepo<C>,
+    R: AssignmentRepo<C> + Sync,
 {
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id,

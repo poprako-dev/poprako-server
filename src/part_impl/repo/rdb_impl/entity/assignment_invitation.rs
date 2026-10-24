@@ -10,10 +10,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::BaseError;
 use crate::value::role::RoleMask;
 
-/// Raw database row for the `t_assignment_invitation` table. Returned by Diesel queries.
+/// Raw database record for the `t_assignment_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationInfoRow {
+pub struct AssignmentInvitationInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -30,27 +30,29 @@ pub struct AssignmentInvitationInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<AssignmentInvitationInfoRow> for AssignmentInvitationInfo {
+impl TryFrom<AssignmentInvitationInfoRecord> for AssignmentInvitationInfo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(row: AssignmentInvitationInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(
+        record: AssignmentInvitationInfoRecord,
+    ) -> Result<Self, Self::Error> {
         //
         let roles = RoleMask::try_from(u32_from_i64(
-            row.f_role_mask,
+            record.f_role_mask,
             "t_assignment_invitation.f_role_mask",
         )?)?;
 
         Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            inviter_id: row.f_inviter_id,
-            invitee_qid: row.f_invitee_qid,
-            code: row.f_code,
-            is_pending: row.f_pending,
+            id: record.f_id,
+            chapter_id: record.f_chapter_id,
+            inviter_id: record.f_inviter_id,
+            invitee_qid: record.f_invitee_qid,
+            code: record.f_code,
+            is_pending: record.f_pending,
             roles,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
+            created_at: record.f_created_at,
+            updated_at: record.f_updated_at,
         })
     }
 }
@@ -58,7 +60,7 @@ impl TryFrom<AssignmentInvitationInfoRow> for AssignmentInvitationInfo {
 /// Insertable struct for creating a new record in the `t_assignment_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationEntryRow<'a> {
+pub struct AssignmentInvitationItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -75,10 +77,8 @@ pub struct AssignmentInvitationEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a AssignmentInvitationEntry<'a>>
-    for AssignmentInvitationEntryRow<'a>
-{
-    fn from(entry: &'a AssignmentInvitationEntry<'a>) -> Self {
+impl<'a> From<&'a AssignmentInvitationEntry> for AssignmentInvitationItem<'a> {
+    fn from(entry: &'a AssignmentInvitationEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -86,7 +86,7 @@ impl<'a> From<&'a AssignmentInvitationEntry<'a>>
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_inviter_id: &entry.inviter_id,
-            f_invitee_qid: entry.invitee_qid,
+            f_invitee_qid: entry.trimmed_invitee_qid(),
             f_code: &entry.code,
             f_pending: true,
             f_role_mask: i64::from(u32::from(entry.roles)),
@@ -100,12 +100,12 @@ impl<'a> From<&'a AssignmentInvitationEntry<'a>>
 /// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationAspectRow {
+pub struct AssignmentInvitationPack {
     pub f_pending: Option<bool>,
     pub f_updated_at: OffsetDateTime,
 }
 
-impl AssignmentInvitationAspectRow {
+impl AssignmentInvitationPack {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {

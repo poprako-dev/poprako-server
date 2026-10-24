@@ -22,10 +22,10 @@ use crate::result::BaseError;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
-/// Raw database row for the `t_workset` table. Returned by Diesel queries.
+/// Raw database record for the `t_workset` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetInfoRow {
+pub struct WorksetInfoRecord {
     pub f_id: String,
 
     pub f_team_id: String,
@@ -41,10 +41,10 @@ pub struct WorksetInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<WorksetInfoRow> for WorksetInfo {
+impl TryFrom<WorksetInfoRecord> for WorksetInfo {
     type Error = BaseError;
 
-    fn try_from(v: WorksetInfoRow) -> Result<Self, Self::Error> {
+    fn try_from(v: WorksetInfoRecord) -> Result<Self, Self::Error> {
         //
         Ok(Self {
             id: v.f_id,
@@ -67,7 +67,7 @@ impl TryFrom<WorksetInfoRow> for WorksetInfo {
 /// Insertable struct for creating a new record in the `t_workset` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetEntryRow<'a> {
+pub struct WorksetItem<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
@@ -80,19 +80,17 @@ pub struct WorksetEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a WorksetEntry<'a>> for WorksetEntryRow<'a> {
+impl<'a> TryFrom<&'a WorksetEntry> for WorksetItem<'a> {
     type Error = BaseError;
 
-    fn try_from(
-        workset_entry: &'a WorksetEntry<'a>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(entry: &'a WorksetEntry) -> Result<Self, Self::Error> {
         //
         Ok(Self {
-            f_id: &workset_entry.id,
-            f_team_id: &workset_entry.team_id,
-            f_index: i32_from_usize(workset_entry.index, "t_workset.f_index")?,
-            f_name: workset_entry.name,
-            f_description: workset_entry.description,
+            f_id: &entry.id,
+            f_team_id: &entry.team_id,
+            f_index: i32_from_usize(entry.index, "t_workset.f_index")?,
+            f_name: entry.trimmed_name(),
+            f_description: entry.trimmed_description(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
         })
@@ -104,7 +102,7 @@ impl<'a> TryFrom<&'a WorksetEntry<'a>> for WorksetEntryRow<'a> {
 /// Aspect struct for updating specific fields of a workset record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetAspectRow<'a> {
+pub struct WorksetPack<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 
@@ -114,7 +112,7 @@ pub struct WorksetAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> WorksetAspectRow<'a> {
+impl<'a> WorksetPack<'a> {
     #[must_use]
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         Self {

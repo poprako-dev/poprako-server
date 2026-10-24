@@ -12,7 +12,7 @@ use crate::complex::unit_save as unit_save_complex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::util::Patch;
 
 // List units for one page in deterministic next-id order.
@@ -34,7 +34,7 @@ fn list_infos<'a>(
         |unit_info| unit_info.next_id.as_deref(),
     )?;
 
-    accept(unit_infos)
+    accept!(unit_infos)
 }
 
 // Resolve a single mutable unit by page and id for edit application.
@@ -95,7 +95,7 @@ fn unit_from_edit(
 
     let current_time = now();
 
-    accept(UnitInfo {
+    accept!(UnitInfo {
         id: id.clone(),
         page_id: page_id.to_string(),
         next_id: next_id.map(str::to_string),
@@ -253,7 +253,7 @@ fn list_infos_by_page_ids(
         unit_infos.extend(list_infos(state, page_id)?.into_iter().cloned());
     }
 
-    accept(unit_infos)
+    accept!(unit_infos)
 }
 
 // List every requested persisted Unit that currently exists.
@@ -272,7 +272,7 @@ fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
     //
     let unit_infos = list_infos(state, page_id)?;
 
-    accept(
+    accept!(
         unit_infos
             .into_iter()
             .map(|unit_info| UnitOrder {
@@ -341,5 +341,5 @@ fn apply_edits(
 
     let unit_infos = list_infos(state, page_id)?;
 
-    accept(count_infos(&unit_infos))
+    accept!(count_infos(&unit_infos))
 }

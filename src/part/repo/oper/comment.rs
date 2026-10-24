@@ -17,5 +17,5 @@ pub struct ListCommentInfos<'a> {
 #[oper(output = CommentInfo)]
 pub struct CreateComment<'a> {
     /// The comment entry to insert.
-    pub entry: &'a CommentEntry<'a>,
+    pub entry: &'a CommentEntry,
 }

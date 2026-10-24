@@ -24,10 +24,6 @@ const PREFIX: &str = "rdb-test-system-mail-domain-";
 /// Verifies system mail roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -42,14 +38,14 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let system_mail_entries = [
         SystemMailEntry {
-            id: format!("{}system-mail-1", PREFIX),
-            receiver_id: user_fixture.user_entry.id.clone(),
+            id: [PREFIX, "system-mail-1"].concat(),
+            receiver_id: user_fixture.entry.id.clone(),
             title: "RDB Mail One".into(),
             content: "mail one".into(),
         },
         SystemMailEntry {
-            id: format!("{}system-mail-2", PREFIX),
-            receiver_id: user_fixture.user_entry.id.clone(),
+            id: [PREFIX, "system-mail-2"].concat(),
+            receiver_id: user_fixture.entry.id.clone(),
             title: "RDB Mail Two".into(),
             content: "mail two".into(),
         },
@@ -62,7 +58,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
     .unwrap();
 
     let unread_system_mail_list_spec = SystemMailListSpec {
-        receiver_id: user_fixture.user_entry.id.clone(),
+        receiver_id: user_fixture.entry.id.clone(),
         is_read: Some(false),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
@@ -84,13 +80,13 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     repo.run(&MarkSystemMailsRead {
         ids: &system_mail_ids,
-        user_id: &user_fixture.user_entry.id,
+        user_id: &user_fixture.entry.id,
     })
     .await
     .unwrap();
 
     let read_system_mail_list_spec = SystemMailListSpec {
-        receiver_id: user_fixture.user_entry.id.clone(),
+        receiver_id: user_fixture.entry.id.clone(),
         is_read: Some(true),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),

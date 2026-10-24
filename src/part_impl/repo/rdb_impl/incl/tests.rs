@@ -3,13 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-use poprako_rdb_core::RdbConn;
-
 use crate::model::read::proj::user::UserInfo;
-use crate::part_impl::repo::rdb_impl::incl::framework::{
-    BatchByIds, Incl, UserByIds, populate,
-};
-use crate::result::BaseRest;
+use crate::part_impl::repo::rdb_impl::incl::framework::{Incl, UserByIds};
 use crate::value::incl::{InclOpt, expand_incl_opts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

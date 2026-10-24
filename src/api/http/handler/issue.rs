@@ -40,14 +40,16 @@ pub async fn import_issue(
     Json(instr): Json<ImportChapterIssuesInstr>,
 ) -> HttpResult<ImportChapterIssuesVal> {
     //
-    issue_usecase::import_issue::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
-        token,
-        chapter_id,
-        instr,
+    Ok(
+        issue_usecase::import_issue::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            token,
+            chapter_id,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK)
 }
 
 /// Reads the Chapter's issues ordered by composite page and issue position; an empty review returns [].
@@ -69,11 +71,11 @@ pub async fn list_infos(
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<Vec<IssueInfoView>> {
     //
-    issue_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
+    Ok(issue_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         token,
         chapter_id,
     )
     .await?
-    .accept(StatusCode::OK)
+    .accept(StatusCode::OK))
 }

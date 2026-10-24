@@ -31,10 +31,6 @@ fn page(id: &str, index: usize) -> PageInfo {
     }
 }
 
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn page_image(
     id: &str,
     version: u32,
@@ -46,7 +42,15 @@ fn page_image(
         key: ObjKey {
             id: id.into(),
             ver: version,
-            image: format!("page/chapter_test/{}-{}.{}", id, version, ext),
+            image: [
+                "page/chapter_test/",
+                id,
+                "-",
+                &version.to_string(),
+                ".",
+                ext,
+            ]
+            .concat(),
         },
         is_avail: uploaded,
         hash: vec![hash; 32],

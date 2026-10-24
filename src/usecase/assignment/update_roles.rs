@@ -13,8 +13,7 @@ use crate::data::instr::assignment::UpdateAssignmentRolesInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -27,7 +26,9 @@ use crate::part::repo::oper::assignment::{
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shape::write::assignment::AssignmentEntryShape;
+use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
@@ -102,20 +103,16 @@ where
             }
         }
 
-        accept(())
+        accept!(())
     })
     .await?;
 
     let () = ();
 
-    accept(())
+    accept!(())
 }
 
 // Persist an existing assignment role change and its workflow record.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn update_existing_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -124,11 +121,11 @@ async fn update_existing_assignment<C, R>(
     assignment_info: &AssignmentInfo,
 ) -> BaseRest<()>
 where
-    C: Context,
-    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
     if assignment_info.roles == instr.roles {
-        return accept(());
+        return accept!(());
     }
 
     let assignment_role_update = AssignmentRoleRepl {
@@ -142,9 +139,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+    let entry = ChapterWorkflowRecordEntryShape::new(
         instr.chapter_id.as_str(),
-        Some(token.user_id.as_str().into()),
+        Some(token.user_id.as_str()),
         ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
             subject_user_id: assignment_info.user_id.clone(),
             previous_roles: assignment_info.roles,
@@ -153,19 +150,15 @@ where
     );
 
     CreateChapterWorkflowRecords {
-        entries: std::slice::from_ref(&workflow_record_entry),
+        entries: std::slice::from_ref(&entry),
     }
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Create an assignment and record its creation in the chapter workflow.
-#[expect(
-    clippy::future_not_send,
-    reason = "This locally awaited generic interface does not require its future to be Send"
-)]
 async fn create_assignment<C, R>(
     repo: &R,
     context: &mut C,
@@ -174,13 +167,13 @@ async fn create_assignment<C, R>(
     chapter_info: &ChapterInfo,
 ) -> BaseRest<()>
 where
-    C: Context,
-    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C>,
+    C: Context + Send,
+    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
-    let assignment_entry = AssignmentEntry {
+    let assignment_entry = AssignmentEntryShape {
         id: assignment_complex::gen_id(),
-        chapter_id: instr.chapter_id.into(),
-        user_id: instr.user_id.as_str().into(),
+        chapter_id: &instr.chapter_id,
+        user_id: instr.user_id.as_str(),
         roles: instr.roles,
     };
 
@@ -190,9 +183,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+    let workflow_record_entry = ChapterWorkflowRecordEntryShape::new(
         chapter_info.id.as_str(),
-        Some(token.user_id.as_str().into()),
+        Some(token.user_id.as_str()),
         ChapterWorkflowRecordPayload::AssignmentCreated {
             subject_user_id: instr.user_id,
             roles: instr.roles,
@@ -205,7 +198,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(())
+    accept!(())
 }
 
 // Ensure the caller may apply the requested role change.

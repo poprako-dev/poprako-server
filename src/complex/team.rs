@@ -9,7 +9,7 @@ pub mod perm {
     };
     use crate::model::read::proj::member::MemberInfo;
     use crate::model::read::proj::user::UserInfo;
-    use crate::result::{BaseRest, ExpectedVariant, accept};
+    use crate::result::{BaseRest, ExpectedVariant};
 
     /// Verify the caller may mark themselves online in the target team.
     pub const fn ensure_user_can_mark_self_online(
@@ -75,7 +75,7 @@ pub mod perm {
             });
         }
 
-        accept(())
+        accept!(())
     }
 }
 

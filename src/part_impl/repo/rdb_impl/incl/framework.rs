@@ -5,7 +5,7 @@
 //! Two-tier trait design:
 //!
 //! 1. [`BatchByIds`] — per-table, defined once. Knows how to `SELECT * FROM t_xxx WHERE
-//!    f_id IN (...)` and convert rows to domain infos. Shared across every entity that
+//!    f_id IN (...)` and convert records to domain infos. Shared across every entity that
 //!    needs that table's data as an include.
 //!
 //! 2. [`Incl`] — per-include-variant, ~7 lines each. Declares which owner type, which
@@ -32,15 +32,15 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::team::TeamInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::team::TeamInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRecord;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
-use crate::result::{BaseRest, accept};
+use crate::result::BaseRest;
 use crate::shared::result::diesel;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
@@ -49,20 +49,20 @@ use crate::shared::result::diesel;
 ///
 /// Shared across every entity repo that needs eager-loading of this table's data.
 pub trait BatchByIds {
-    /// The Diesel row type (Queryable + Selectable).
-    type Row;
+    /// The Diesel record type (Queryable + Selectable).
+    type Record;
 
-    /// The domain info type produced from each row.
+    /// The domain info type produced from each record.
     type Info;
 
     /// Execute `SELECT * FROM table WHERE f_id IN (...)`.
     fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> impl Future<Output = BaseRest<Vec<Self::Row>>> + Send;
+    ) -> impl Future<Output = BaseRest<Vec<Self::Record>>> + Send;
 
-    /// Convert a row into its id key and domain info.
-    fn into_entry(row: Self::Row) -> BaseRest<(String, Self::Info)>;
+    /// Convert a record into its id key and domain info.
+    fn into_entry(record: Self::Record) -> BaseRest<(String, Self::Info)>;
 }
 
 // ── Incl trait ──────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ where
     }
 
     if key_counts.is_empty() {
-        return accept(());
+        return accept!(());
     }
 
     let id_refs = key_counts.keys().map(String::as_str).collect::<Vec<_>>();
@@ -134,7 +134,7 @@ where
         I::inject(owner, related);
     }
 
-    accept(())
+    accept!(())
 }
 
 // Decrements a reference count and takes ownership of a loaded related entity
@@ -172,18 +172,18 @@ where
     B: BatchByIds,
 {
     //
-    let rows = B::load(conn, ids).await?;
+    let records = B::load(conn, ids).await?;
 
     let mut map = HashMap::new();
 
-    for row in rows {
+    for record in records {
         //
-        let (id, info) = B::into_entry(row)?;
+        let (id, info) = B::into_entry(record)?;
 
         map.insert(id, info);
     }
 
-    accept(map)
+    accept!(map)
 }
 
 // ── Reusable BatchByIds impls (one per table) ───────────────────────────────
@@ -191,35 +191,35 @@ where
 preload_by_ids! {
     //
     UserByIds {
-        row: UserInfoRow,
+        record: UserInfoRecord,
         info: UserInfo,
         table: t_user,
         convert: TryFrom,
     }
 
     TeamByIds {
-        row: TeamInfoRow,
+        record: TeamInfoRecord,
         info: TeamInfo,
         table: t_team,
         convert: TryFrom,
     }
 
     WorksetByIds {
-        row: WorksetInfoRow,
+        record: WorksetInfoRecord,
         info: WorksetInfo,
         table: t_workset,
         convert: TryFrom,
     }
 
     ComicByIds {
-        row: ComicInfoRow,
+        record: ComicInfoRecord,
         info: ComicInfo,
         table: t_comic,
         convert: TryFrom,
     }
 
     ChapterByIds {
-        row: ChapterInfoRow,
+        record: ChapterInfoRecord,
         info: ChapterInfo,
         table: t_chapter,
         convert: TryFrom,

@@ -20,13 +20,13 @@ pub struct ImportTermInstr {
     pub comment: Option<String>,
 }
 
-impl<'a> From<&'a ImportTermInstr> for TermImport<'a> {
+impl From<ImportTermInstr> for TermImport {
     // Convert one import entry into the domain write model.
-    fn from(instr: &'a ImportTermInstr) -> Self {
+    fn from(instr: ImportTermInstr) -> Self {
         Self {
-            source: &instr.source,
-            targets: instr.targets.iter().map(String::as_str).collect(),
-            comment: instr.comment.as_deref(),
+            source: instr.source,
+            targets: instr.targets,
+            comment: instr.comment,
         }
     }
 }
@@ -43,13 +43,13 @@ pub struct ImportTermbaseInstr {
     pub terms: Vec<ImportTermInstr>,
 }
 
-impl<'a> From<&'a ImportTermbaseInstr> for TermbaseImport<'a> {
+impl From<ImportTermbaseInstr> for TermbaseImport {
     // Convert the complete import document into the domain write model.
-    fn from(instr: &'a ImportTermbaseInstr) -> Self {
+    fn from(instr: ImportTermbaseInstr) -> Self {
         Self {
-            name: &instr.name,
-            description: instr.description.as_deref(),
-            terms: instr.terms.iter().map(Into::into).collect(),
+            name: instr.name,
+            description: instr.description,
+            terms: instr.terms.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -67,13 +67,13 @@ pub struct AppendTermbaseTermInstr {
     pub comment: Option<String>,
 }
 
-impl<'a> From<&'a AppendTermbaseTermInstr> for TermImport<'a> {
+impl From<AppendTermbaseTermInstr> for TermImport {
     // Convert append content without introducing terminology-base metadata.
-    fn from(instr: &'a AppendTermbaseTermInstr) -> Self {
+    fn from(instr: AppendTermbaseTermInstr) -> Self {
         Self {
-            source: &instr.source,
-            targets: instr.targets.iter().map(String::as_str).collect(),
-            comment: instr.comment.as_deref(),
+            source: instr.source,
+            targets: instr.targets,
+            comment: instr.comment,
         }
     }
 }

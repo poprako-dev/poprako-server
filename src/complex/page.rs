@@ -12,7 +12,7 @@ pub mod perm {
     };
     use crate::model::read::proj::assignment::AssignmentInfo;
     use crate::model::read::proj::member::MemberInfo;
-    use crate::result::{BaseRest, ExpectedVariant, accept};
+    use crate::result::{BaseRest, ExpectedVariant};
     use crate::value::role::RoleField;
 
     /// Evidence that grants page-list access.
@@ -79,7 +79,7 @@ pub mod perm {
             );
         }
 
-        accept(())
+        accept!(())
     }
 
     // Verify that assignment evidence permits uploading page images.
@@ -95,15 +95,15 @@ pub mod perm {
             );
         }
 
-        accept(())
+        accept!(())
     }
 
     // Build and log one expected page-role permission error.
-    fn reject_role(msg_key: &str, event: &'static str) -> BaseRest<()> {
+    fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
         //
         Err(expected_error! {
             ExpectedVariant::Perm,
-            message: trl(msg_key);
+            message: trl(message_key);
             event,
             "page permission denied",
         })
@@ -112,14 +112,14 @@ pub mod perm {
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant};
 use crate::util::next_snowflake_id;
 
 /// Rejects empty names, control characters, and path separators.
 pub fn ensure_raw_ident(raw_ident: Option<&str>) -> BaseRest<()> {
     //
     let Some(value) = raw_ident else {
-        return accept(());
+        return accept!(());
     };
 
     if value.trim().is_empty()
@@ -135,7 +135,7 @@ pub fn ensure_raw_ident(raw_ident: Option<&str>) -> BaseRest<()> {
         });
     }
 
-    accept(())
+    accept!(())
 }
 
 /// Generate a unique page identifier backed by a snowflake value.

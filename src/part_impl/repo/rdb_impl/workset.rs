@@ -25,14 +25,14 @@ use crate::part::repo::oper::workset::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
-    WorksetAspectRow, WorksetEntryRow, WorksetInfoRow,
+    WorksetInfoRecord, WorksetItem, WorksetPack,
 };
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_comic_count, f_comic_next_index, f_deleted_at, f_id, f_index, f_team_id,
     t_workset,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
@@ -52,17 +52,17 @@ pub fn missing_workset(id: &str, operation: &str) -> BaseError {
 #[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
-    // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
-    let row = t_workset
+    // Fetch the record by primary key and map missing records to `error-workset-not-found`.
+    let record = t_workset
         .filter(f_id.eq(id))
         .filter(f_deleted_at.is_null())
-        .select(WorksetInfoRow::as_select())
-        .get_result::<WorksetInfoRow>(conn)
+        .select(WorksetInfoRecord::as_select())
+        .get_result::<WorksetInfoRecord>(conn)
         .await
         .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    let Some(record) = record else {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
@@ -74,7 +74,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
         });
     };
 
-    accept(WorksetInfo::try_from(row)?)
+    accept!(WorksetInfo::try_from(record)?)
 }
 
 // List worksets for one team with stable index ordering.
@@ -88,37 +88,37 @@ async fn list_infos(
     let query = t_workset
         .filter(f_team_id.eq(oper.team_id))
         .filter(f_deleted_at.is_null())
-        .select(WorksetInfoRow::as_select())
+        .select(WorksetInfoRecord::as_select())
         .order_by(f_index.asc())
         .offset(i64::from(oper.offset))
         .limit(i64::from(oper.limit.get()))
         .into_boxed();
 
-    let rows = query.load::<WorksetInfoRow>(conn).await.map_err(diesel)?;
+    let records = query
+        .load::<WorksetInfoRecord>(conn)
+        .await
+        .map_err(diesel)?;
 
-    rows.into_iter().map(WorksetInfo::try_from).collect()
+    records.into_iter().map(WorksetInfo::try_from).collect()
 }
 
 // Update mutable metadata for an existing workset.
 #[instrument(level = "info", skip_all)]
-async fn update_info(
-    conn: &mut RdbConn,
-    update: &WorksetRepl<'_>,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     //
-    // Build an aspect object and persist nickname/description updates with timestamp.
+    // Build a pack and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();
 
-    let aspect = WorksetAspectRow::new(now)
-        .name(update.name)
-        .description(update.description);
+    let pack = WorksetPack::new(now)
+        .name(update.trimmed_name())
+        .description(update.trimmed_description());
 
     let updated_count = diesel::update(
         t_workset
             .filter(f_id.eq(&update.id))
             .filter(f_deleted_at.is_null()),
     )
-    .set(&aspect)
+    .set(&pack)
     .execute(conn)
     .await
     .map_err(diesel)?;
@@ -127,27 +127,27 @@ async fn update_info(
         return Err(missing_workset(&update.id, "update workset info"));
     }
 
-    accept(())
+    accept!(())
 }
 
 // Insert a new workset and return its public info record.
 #[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
-    workset_entry: &WorksetEntry<'_>,
+    entry: &WorksetEntry,
 ) -> BaseRest<WorksetInfo> {
     //
-    // Convert API entry into row form and read back generated values.
-    let entry = WorksetEntryRow::try_from(workset_entry)?;
+    // Convert the API entry into a database item and read back generated values.
+    let item = WorksetItem::try_from(entry)?;
 
-    let row = diesel::insert_into(t_workset)
-        .values(&entry)
-        .returning(WorksetInfoRow::as_returning())
-        .get_result::<WorksetInfoRow>(conn)
+    let record = diesel::insert_into(t_workset)
+        .values(&item)
+        .returning(WorksetInfoRecord::as_returning())
+        .get_result::<WorksetInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(WorksetInfo::try_from(row)?)
+    accept!(WorksetInfo::try_from(record)?)
 }
 
 // Allocate next comic index atomically for a workset.
@@ -169,7 +169,7 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<usize> {
         return Err(missing_workset(id, "allocate workset comic index"));
     };
 
-    accept(usize_from_i32(index, "t_workset.f_comic_next_index")?)
+    accept!(usize_from_i32(index, "t_workset.f_comic_next_index")?)
 }
 
 // Update comic count by a delta value.
@@ -193,7 +193,7 @@ async fn update_comic_count(
         return Err(missing_workset(id, "update workset comic count"));
     }
 
-    accept(())
+    accept!(())
 }
 
 impl Run<GetWorksetInfo<'_>> for HybRepo {
@@ -287,7 +287,7 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Create workset row and return inserted info representation.
+    // Create workset record and return inserted info representation.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,

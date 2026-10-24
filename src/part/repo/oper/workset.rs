@@ -9,7 +9,7 @@ use crate::value::pagination::PubListLimit;
 #[oper(output = WorksetInfo)]
 pub struct CreateWorkset<'a> {
     /// The workset entry to insert.
-    pub entry: &'a WorksetEntry<'a>,
+    pub entry: &'a WorksetEntry,
 }
 
 /// Looks up a workset by identifier.
@@ -39,7 +39,7 @@ pub struct ListWorksetInfos<'a> {
 #[oper(output = ())]
 pub struct UpdateWorkset<'a> {
     /// The update payload for the workset.
-    pub update: &'a WorksetRepl<'a>,
+    pub update: &'a WorksetRepl,
 }
 
 /// Allocates a sequential index for a new comic under this workset.
