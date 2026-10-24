@@ -86,6 +86,29 @@ impl Step<ReplaceChapterIssues<'_>, MockContext> for Mock {
         oper: &ReplaceChapterIssues<'_>,
     ) -> BaseRest<()> {
         //
+        let ver = context
+            .state
+            .review_versions
+            .entry(oper.repl.chapter_id.clone())
+            .or_default();
+
+        ver.gen_no += 1;
+
+        ver.revision += 1;
+
+        for page in context
+            .state
+            .page_artworks
+            .iter()
+            .filter(|page| page.chapter_id == oper.repl.chapter_id)
+        {
+            *context
+                .state
+                .issue_revisions
+                .entry(page.id.clone())
+                .or_default() += 1;
+        }
+
         clear(context, &oper.repl.chapter_id);
 
         context

@@ -116,3 +116,7 @@ error-page-artwork-not-found = 成稿页不存在。
 error-page-artwork-target = 成稿页 ID 必须互不重复且属于当前章节。
 error-page-artwork-write-role-required = 需要章节嵌字、修图、监稿分配或团队管理员权限。
 error-stale-page-artwork-upload = 成稿图片上传版本已过期。
+
+error-review-changed = 本页或审查已更新，请重新读取后重试
+error-review-category-name = 分类名称不能为空、重复或修改默认分类
+error-review-save-reused = 保存批次标识已用于其他内容

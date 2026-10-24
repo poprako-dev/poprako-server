@@ -16,6 +16,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member repository operations.
 pub mod member;
 /// Member invitation repository operations.

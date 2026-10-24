@@ -12,6 +12,7 @@ use poprako_rdb_core::RdbCore;
 
 use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
+use crate::part_impl::repo::mem_impl::issue_save::IssueSaveCache;
 use crate::part_impl::repo::mem_impl::online_user::OnlineUserCache;
 use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 
@@ -27,6 +28,8 @@ pub struct HybRepo {
     online_users: OnlineUserCache,
     /// Process-local save coordination and bounded successful tokens.
     unit_saves: UnitSaveCache,
+    /// Bounded annotation save receipts.
+    issue_saves: IssueSaveCache,
 }
 
 impl HybRepo {
@@ -38,6 +41,7 @@ impl HybRepo {
             config,
             online_users: OnlineUserCache::new(cache.online_user_ttl),
             unit_saves: UnitSaveCache::new(cache),
+            issue_saves: IssueSaveCache::new(cache),
         }
     }
 }

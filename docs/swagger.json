@@ -999,6 +999,98 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/issues/variants": {
+      "get": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "GET `/chapters/{chapter_id}/issues/variants`.",
+        "operationId": "list_variant_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Resource identity",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current review state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_IssueEditVariantsVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient review permissions"
+          },
+          "409": {
+            "description": "Review, image, or annotation ver changed"
+          },
+          "422": {
+            "description": "Invalid target or annotation contents"
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}/issues/variants/rename": {
+      "post": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "POST `/chapters/{chapter_id}/issues/variants/rename`.",
+        "operationId": "rename_variant",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Resource identity",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameIssueEditVariantInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Current review state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_RenameIssueEditVariantVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient review permissions"
+          },
+          "409": {
+            "description": "Review, image, or annotation ver changed"
+          },
+          "422": {
+            "description": "Invalid target or annotation contents"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/mark-pinned": {
       "post": {
         "tags": [
@@ -2729,6 +2821,107 @@
           },
           "422": {
             "description": "Stale generation, missing page or published Chapter"
+          }
+        }
+      }
+    },
+    "/api/v1/page-artworks/{page_artwork_id}/issues": {
+      "get": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "GET `/page-artworks/{page_artwork_id}/issues`.",
+        "operationId": "get_info",
+        "parameters": [
+          {
+            "name": "page_artwork_id",
+            "in": "path",
+            "description": "Resource identity",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current review state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_IssueEditPageVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient review permissions"
+          },
+          "409": {
+            "description": "Review, image, or annotation ver changed"
+          },
+          "422": {
+            "description": "Invalid target or annotation contents"
+          }
+        }
+      }
+    },
+    "/api/v1/page-artworks/{page_artwork_id}/issues/save": {
+      "post": {
+        "tags": [
+          "issues"
+        ],
+        "summary": "POST `/page-artworks/{page_artwork_id}/issues/save`.",
+        "operationId": "save_infos",
+        "parameters": [
+          {
+            "name": "page_artwork_id",
+            "in": "path",
+            "description": "Resource identity",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "save_id",
+            "in": "query",
+            "description": "Immutable batch UUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePageIssuesInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Current review state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_IssueEditPageVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient review permissions"
+          },
+          "409": {
+            "description": "Review, image, or annotation ver changed"
+          },
+          "422": {
+            "description": "Invalid target or annotation contents"
           }
         }
       }
@@ -8239,6 +8432,111 @@
           }
         }
       },
+      "HttpBody_IssueEditPageVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Editable contents tied to a specific review and image generation.",
+            "required": [
+              "page_artwork_id",
+              "review_key",
+              "revision",
+              "chapter_revision",
+              "issues"
+            ],
+            "properties": {
+              "chapter_revision": {
+                "type": "string",
+                "description": "Decimal chapter revision."
+              },
+              "image_version": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int32",
+                "description": "Current allocated image generation.",
+                "minimum": 0
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IssueEditView"
+                },
+                "description": "Ordered annotations, excluding legacy layer metadata."
+              },
+              "page_artwork_id": {
+                "type": "string",
+                "description": "Owning composite page."
+              },
+              "review_key": {
+                "type": "string",
+                "description": "Opaque whole-review identity."
+              },
+              "revision": {
+                "type": "string",
+                "description": "Decimal page revision."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_IssueEditVariantsVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Stored category references, never the user's local presets.",
+            "required": [
+              "review_key",
+              "revision",
+              "variants"
+            ],
+            "properties": {
+              "review_key": {
+                "type": "string",
+                "description": "Opaque review identity."
+              },
+              "revision": {
+                "type": "string",
+                "description": "Decimal chapter revision."
+              },
+              "variants": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IssueEditVariantCountView"
+                },
+                "description": "Names currently used by at least one annotation."
+              }
+            }
+          }
+        }
+      },
       "HttpBody_ListComicInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -8732,6 +9030,44 @@
               "user_id": {
                 "type": "string",
                 "description": "Unique user identifier."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_RenameIssueEditVariantVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Result of an atomic chapter-wide category rename.",
+            "required": [
+              "summary",
+              "pages"
+            ],
+            "properties": {
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IssueEditPageVal"
+                },
+                "description": "Fresh documents for every changed page."
+              },
+              "summary": {
+                "$ref": "#/components/schemas/IssueEditVariantsVal",
+                "description": "Current usage summary after the rename."
               }
             }
           }
@@ -10896,6 +11232,209 @@
           }
         }
       },
+      "IssueEditEntryInstr": {
+        "type": "object",
+        "description": "Final contents of one stable annotation.",
+        "required": [
+          "id",
+          "variant",
+          "note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable client UUID or existing imported identity."
+          },
+          "note": {
+            "type": "string",
+            "description": "Original text, including empty strings and whitespace."
+          },
+          "rect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IssueEditRectInstr",
+                "description": "Null denotes a whole-page annotation."
+              }
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "description": "Nonblank category name."
+          }
+        },
+        "additionalProperties": false
+      },
+      "IssueEditPageVal": {
+        "type": "object",
+        "description": "Editable contents tied to a specific review and image generation.",
+        "required": [
+          "page_artwork_id",
+          "review_key",
+          "revision",
+          "chapter_revision",
+          "issues"
+        ],
+        "properties": {
+          "chapter_revision": {
+            "type": "string",
+            "description": "Decimal chapter revision."
+          },
+          "image_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Current allocated image generation.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditView"
+            },
+            "description": "Ordered annotations, excluding legacy layer metadata."
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Owning composite page."
+          },
+          "review_key": {
+            "type": "string",
+            "description": "Opaque whole-review identity."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal page revision."
+          }
+        }
+      },
+      "IssueEditRectInstr": {
+        "type": "object",
+        "description": "Rectangle expressed in whole-page normalized coordinates.",
+        "required": [
+          "x_coord",
+          "y_coord",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "height": {
+            "type": "number",
+            "format": "double",
+            "description": "Positive height."
+          },
+          "width": {
+            "type": "number",
+            "format": "double",
+            "description": "Positive width."
+          },
+          "x_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Left edge."
+          },
+          "y_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Top edge."
+          }
+        },
+        "additionalProperties": false
+      },
+      "IssueEditVariantCountView": {
+        "type": "object",
+        "description": "Usage of a category within the current chapter.",
+        "required": [
+          "variant",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of stored references."
+          },
+          "variant": {
+            "type": "string",
+            "description": "Category name."
+          }
+        }
+      },
+      "IssueEditVariantsVal": {
+        "type": "object",
+        "description": "Stored category references, never the user's local presets.",
+        "required": [
+          "review_key",
+          "revision",
+          "variants"
+        ],
+        "properties": {
+          "review_key": {
+            "type": "string",
+            "description": "Opaque review identity."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal chapter revision."
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditVariantCountView"
+            },
+            "description": "Names currently used by at least one annotation."
+          }
+        }
+      },
+      "IssueEditView": {
+        "type": "object",
+        "description": "One editable page annotation.",
+        "required": [
+          "id",
+          "page_artwork_id",
+          "index",
+          "variant",
+          "note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable identity."
+          },
+          "index": {
+            "type": "integer",
+            "description": "Zero-based position.",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string",
+            "description": "Original note text."
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Owning composite page."
+          },
+          "rect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IssueRectView",
+                "description": "Null denotes a whole-page annotation."
+              }
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "description": "Category name."
+          }
+        }
+      },
       "IssueInfoView": {
         "type": "object",
         "description": "Read-only issue in the chapter's single current review.",
@@ -12145,6 +12684,56 @@
           }
         }
       },
+      "RenameIssueEditVariantInstr": {
+        "type": "object",
+        "description": "Renames references only when the chapter snapshot is still current.",
+        "required": [
+          "review_key",
+          "revision",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Current category name."
+          },
+          "review_key": {
+            "type": "string",
+            "description": "Expected review identity."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal chapter revision from the category summary."
+          },
+          "to": {
+            "type": "string",
+            "description": "New category name."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RenameIssueEditVariantVal": {
+        "type": "object",
+        "description": "Result of an atomic chapter-wide category rename.",
+        "required": [
+          "summary",
+          "pages"
+        ],
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditPageVal"
+            },
+            "description": "Fresh documents for every changed page."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/IssueEditVariantsVal",
+            "description": "Current usage summary after the rename."
+          }
+        }
+      },
       "RoleField": {
         "type": "integer",
         "format": "int32",
@@ -12158,6 +12747,42 @@
         "description": "A composite bitmask combining multiple role perm flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = `RAW_PROVIDER`, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
         "example": 34,
         "minimum": 0
+      },
+      "SavePageIssuesInstr": {
+        "type": "object",
+        "description": "Complete ordered page replacement guarded by its loaded context.",
+        "required": [
+          "review_key",
+          "revision",
+          "issues"
+        ],
+        "properties": {
+          "image_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Exact image generation shown while editing, or null.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditEntryInstr"
+            },
+            "description": "Final ordered contents; empty clears the page."
+          },
+          "review_key": {
+            "type": "string",
+            "description": "Opaque review identity returned by the read endpoint."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal page revision returned by the read endpoint."
+          }
+        },
+        "additionalProperties": false
       },
       "SavePageUnitEditsVal": {
         "type": "object",

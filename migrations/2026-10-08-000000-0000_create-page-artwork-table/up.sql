@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS "t_page_artwork" (
 
     "f_raw_ident"  TEXT,
 
+    "f_issue_revision" BIGINT NOT NULL DEFAULT 0,
+
     "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

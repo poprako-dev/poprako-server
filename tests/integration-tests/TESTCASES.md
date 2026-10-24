@@ -137,3 +137,9 @@ The main runner now includes it_13. Final database cleanup also deletes `t_chapt
 
 Rust RDB 测试补充数据库约束、批量插入、替换失败回滚、并发批次隔离和归档快照；Mock 用例覆盖相同业务权限、替换和清理规则。
 Issue variant 会裁剪 Unicode 首尾空白；layer_name 与 note 保持原文。
+
+### Reviewer editor
+
+- IS9: Save a page with a stable client UUID and read the new page revision; response omits legacy layer metadata.
+- IS10: Replay the same save batch without advancing revision; reject a different batch using the stale baseline with HTTP 409.
+- IS11: Read chapter category counts and atomically rename references; fresh page reads return the renamed category.

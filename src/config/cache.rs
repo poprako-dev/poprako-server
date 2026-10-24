@@ -12,6 +12,15 @@ use crate::config::duration;
 #[derive(Clone, Copy, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CacheConfig {
+    /// Estimated memory budget for annotation save receipts, in MiB.
+    pub issue_save_limit_mib: NonZeroU32,
+    /// Maximum receipt retention; replay does not renew it.
+    #[serde(
+        rename = "issue_save_ttl_secs",
+        deserialize_with = "duration::deserialize"
+    )]
+    pub issue_save_ttl: Duration,
+
     /// Estimated memory budget for completed Unit saves, in MiB.
     pub unit_save_limit_mib: NonZeroU32,
     /// Token-count budget enforced through each entry's minimum weight.
@@ -66,6 +75,12 @@ impl CacheConfig {
         );
 
         ensure!(
+            !self.issue_save_ttl.is_zero()
+                && self.issue_save_ttl <= Duration::from_hours(1000 * 365 * 24),
+            "cache.issue_save_ttl_secs must be positive and at most 31536000000"
+        );
+
+        ensure!(
             !self.online_user_ttl.is_zero(),
             "cache.online_user_ttl_secs must be positive"
         );
@@ -78,6 +93,8 @@ impl Default for CacheConfig {
     // Supplies the default runtime policy.
     fn default() -> Self {
         Self {
+            issue_save_limit_mib: NonZeroU32::MIN.saturating_add(15),
+            issue_save_ttl: Duration::from_hours(30 * 24),
             unit_save_limit_mib: NonZeroU32::MIN.saturating_add(255),
             unit_save_token_budget: NonZeroU64::MIN.saturating_add(499_999),
             unit_save_ttl: Duration::from_hours(30 * 24),

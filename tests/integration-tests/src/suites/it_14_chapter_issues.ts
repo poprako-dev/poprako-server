@@ -1,5 +1,6 @@
 // it_14 — Composite page identity, independent ordering and whole-chapter review replacement.
 
+import { verifyReviewEditor } from "./review_editor.ts";
 import assert from "node:assert/strict";
 import { withDatabaseClient } from "../db/seed.ts";
 import { expectError, expectNoContent, expectSuccessData } from "../http/assertions.ts";
@@ -178,6 +179,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     expectSuccessData(await ctx.sadmin.post<SuccessBody<ImportResult>>(base, { pages: [] }), 200);
     assert.deepEqual((await readPages()).length, 3);
     expectSuccessData(await ctx.sadmin.post<SuccessBody<ImportResult>>(base, body), 200);
+    await verifyReviewEditor(ctx.sadmin, chapterId, ids[0]!);
     const current = await read();
 
     // IS5: PSD ZIP confirmations and retries preserve the review across generations.

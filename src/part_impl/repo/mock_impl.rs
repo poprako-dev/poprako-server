@@ -28,6 +28,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Mock in-memory implementations for member repository operations.
 pub mod member;
 /// Mock in-memory implementations for member invitation repository operations.
@@ -99,6 +101,14 @@ use crate::result::{BaseError, ExpectedVariant};
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
+    /// Review versions kept in transactional snapshots.
+    pub review_versions: HashMap<
+        String,
+        crate::model::read::proj::issue_edit::IssueEditReviewVer,
+    >,
+    /// Per-page annotation revisions.
+    pub issue_revisions: HashMap<String, i64>,
+
     /// Current issues, replaced only as a complete chapter review.
     pub issues: Vec<IssueInfo>,
 
@@ -338,6 +348,9 @@ pub struct Mock {
     pub state: Arc<Mutex<MockState>>,
     /// Successful save tokens outside transactional mock snapshots.
     pub unit_saves: UnitSaveCache,
+    /// Bounded annotation save receipts.
+    pub issue_saves:
+        crate::part_impl::repo::mem_impl::issue_save::IssueSaveCache,
 
     // Serialize coordinated snapshots so concurrent replacements cannot lose state.
     transaction_lock: Arc<tokio::sync::Mutex<()>>,

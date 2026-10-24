@@ -104,6 +104,8 @@ impl Step<ReplacePageArtworkManifest<'_>, MockContext> for Mock {
         oper: &ReplacePageArtworkManifest<'_>,
     ) -> BaseRest<()> {
         //
+        super::issue_edit::bump_chapter(context, oper.chapter_id);
+
         let removed_ids = context
             .state
             .page_artworks
@@ -192,6 +194,10 @@ impl Step<UpdatePageArtworkInfo<'_>, MockContext> for Mock {
             .clone_from(&oper.update.raw_ident);
 
         page_artwork_info.updated_at = OffsetDateTime::now_utc();
+
+        let chapter_id = page_artwork_info.chapter_id.clone();
+
+        super::issue_edit::bump_chapter(context, &chapter_id);
 
         accept!(())
     }

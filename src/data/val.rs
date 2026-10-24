@@ -20,6 +20,8 @@ pub mod comic_list;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member value DTOs.
 pub mod member;
 /// Member-invitation value DTOs.

@@ -16,6 +16,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current review issue projections.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member read projection.
 pub mod member;
 /// Member invitation read projection.

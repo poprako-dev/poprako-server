@@ -64,6 +64,8 @@ diesel::table! {
         f_published_at -> Nullable<Timestamptz>,
         f_creator_id -> Text,
         f_deleted_at -> Nullable<Timestamptz>,
+        f_review_generation -> Int8,
+        f_review_revision -> Int8,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
         f_confirmed_artwork_version -> Nullable<Int8>,
@@ -251,6 +253,7 @@ diesel::table! {
         f_chapter_id -> Text,
         f_index -> Int4,
         f_raw_ident -> Nullable<Text>,
+        f_issue_revision -> Int8,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }

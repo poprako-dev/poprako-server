@@ -22,6 +22,8 @@ pub mod comment;
 pub mod image;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member business rules and perm checks.
 pub mod member;
 /// Member invitation business rules and perm checks.
