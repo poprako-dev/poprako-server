@@ -16,7 +16,7 @@ use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos};
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::usecase::team::view::{team_info_view, team_info_views};
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -78,19 +78,12 @@ where
         && affected_user_id != token.user_id
     {
         //
-        let err_msg = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-forbidden");
             user_id = %token.user_id,
             affected_user_id = %affected_user_id,
-            "expected error: team listing ownership required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "team listing ownership required",
         });
     }
 

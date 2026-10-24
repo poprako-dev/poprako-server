@@ -30,8 +30,10 @@ where
 {
     let SubtreeDeleteScope::Chapter { chapter_id, .. } = scope else {
         //
-        return Err(BaseError::Unrecoverable {
-            msg: "chapter object cleanup requires one Chapter scope".into(),
+        return Err(unrecoverable_error! {
+            message: "chapter object cleanup requires one Chapter scope".into();
+            team_id = %scope.team_id(),
+            "chapter object cleanup requires one Chapter scope",
         });
     };
 

@@ -1,5 +1,8 @@
 //! HTTP request correlation and tracing middleware.
 
+#[cfg(test)]
+mod tests;
+
 use std::net::SocketAddr;
 use std::time::Duration;
 
@@ -110,7 +113,7 @@ fn record_request_response(
     );
 }
 
-// Records an HTTP server-error response.
+// Counts failures while leaving response-status diagnostics at their source.
 fn record_request_failure(
     failure: ServerErrorsFailureClass,
     latency: Duration,
@@ -122,6 +125,12 @@ fn record_request_failure(
         "class" => failure.to_string(),
     )
     .increment(1);
+
+    // Application and handler errors have already been recorded. Transport
+    // errors without a response still need diagnostics at this boundary.
+    if matches!(failure, ServerErrorsFailureClass::StatusCode(_)) {
+        return;
+    }
 
     DefaultOnFailure::new().on_failure(failure, latency, span);
 }

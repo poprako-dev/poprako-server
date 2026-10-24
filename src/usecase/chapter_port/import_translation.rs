@@ -223,20 +223,13 @@ where
     .await?
     .ok_or_else(|| {
         //
-        let err_msg = trl("error-chapter-port-import-perm-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-chapter-port-import-perm-required");
             chapter_id,
             user_id = %token.user_id,
             operation = "import chapter translation",
-            "expected error: chapter import assignment required",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "chapter import assignment required",
         }
     })?;
 
@@ -318,10 +311,11 @@ where
             .find(|page| page.page_index == page_scope.index)
             .ok_or_else(|| {
                 //
-                BaseError::expected(
+                expected_error! {
                     ExpectedVariant::Args,
-                    trl("error-invalid-chapter-import-content"),
-                )
+                    message: trl("error-invalid-chapter-import-content");
+                    "imported chapter page is missing",
+                }
             })?;
 
         let page_import_outcome = replace_page_units(

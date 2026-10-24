@@ -16,7 +16,7 @@ use serde::Deserialize;
 
 use crate::api::http::result::HttpError;
 use crate::data::instr::unit::UnitEditInstr;
-use crate::result::{BaseError, ExpectedVariant};
+use crate::result::ExpectedVariant;
 use crate::test_util::http_logging::capture_request;
 
 #[derive(Deserialize)]
@@ -353,10 +353,11 @@ async fn business_and_framework_422_have_distinct_diagnostics() {
     let router = Router::new().route(
         "/input",
         post(|Json(_): Json<Input>| async {
-            HttpError::from(BaseError::expected(
+            HttpError::from(expected_error! {
                 ExpectedVariant::Args,
-                "business validation failed".into(),
-            ))
+                message: "business validation failed".into();
+                "business validation failed",
+            })
         }),
     );
 

@@ -51,10 +51,11 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                return Err(BaseError::expected(
+                return Err(expected_error! {
                     ExpectedVariant::Perm,
-                    trl("error-team-admin-required"),
-                ));
+                    message: trl("error-team-admin-required");
+                    "team administrator role required",
+                });
             };
 
             team_perm_complex::ensure_user_can_delete(&member_info)?;

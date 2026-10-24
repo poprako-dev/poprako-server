@@ -63,9 +63,10 @@ where
 
     marked.then_some(()).ok_or_else(|| {
         //
-        BaseError::expected(
+        expected_error! {
             ExpectedVariant::Args,
-            trl("error-stale-cover-upload"),
-        )
+            message: trl("error-stale-cover-upload");
+            "comic cover upload generation is stale",
+        }
     })
 }

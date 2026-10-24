@@ -12,10 +12,6 @@ use crate::result::{BaseError, ExpectedVariant};
 /// Converts a Diesel error into the appropriate `RegularError` variant.
 ///
 /// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub fn diesel(source: DieselError) -> BaseError {
     //
     match source {
@@ -25,11 +21,9 @@ pub fn diesel(source: DieselError) -> BaseError {
             information,
         ) => {
             //
-            let msg = trl("error-already-exists");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-already-exists");
                 database_err = "unique violation",
                 database_msg = information.message(),
                 database_details = ?information.details(),
@@ -37,12 +31,7 @@ pub fn diesel(source: DieselError) -> BaseError {
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
-                "expected error constructed from Diesel database error",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+                "database uniqueness constraint violated",
             }
         }
 
@@ -51,9 +40,8 @@ pub fn diesel(source: DieselError) -> BaseError {
             information,
         ) => {
             //
-            let msg = trl("error-concurrent-conflict");
-
-            tracing::warn!(
+            retryable_error! {
+                message: trl("error-concurrent-conflict");
                 database_err = "serialization failure",
                 database_msg = information.message(),
                 database_details = ?information.details(),
@@ -61,40 +49,28 @@ pub fn diesel(source: DieselError) -> BaseError {
                 constraint = ?information.constraint_name(),
                 table = ?information.table_name(),
                 column = ?information.column_name(),
-                "retryable error constructed from Diesel database error",
-            );
-
-            BaseError::Retryable { msg }
+                "database transaction conflict",
+            }
         }
 
         DieselError::NotFound => {
             //
-            let msg = trl("error-not-found");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-not-found");
                 database_err = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() \
-                    and map None at call site"
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+                    and map None at call site",
             }
         }
 
         err => {
             //
-            tracing::error!(
+            unrecoverable_error! {
+                message: format!("diesel error: {}", err);
                 operation = "execute_database_operation",
                 sdk_err = ?err,
                 "Diesel SDK error",
-            );
-
-            BaseError::Unrecoverable {
-                msg: format!("diesel error: {}", err),
             }
         }
     }

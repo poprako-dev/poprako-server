@@ -356,13 +356,23 @@ where
     let download_url = artwork_urls
         .get(&chapter_info.id)
         .and_then(|urls| urls.origin_url.as_ref())
-        .ok_or_else(|| BaseError::Unrecoverable {
-            msg: "available artwork has no original URL".into(),
+        .ok_or_else(|| {
+            //
+            unrecoverable_error! {
+                message: "available artwork has no original URL".into();
+                chapter_id = %chapter_info.id,
+                artwork_ver = artwork_meta.key.ver,
+                "available artwork has no original URL",
+            }
         })?;
 
     let hash_bytes = artwork_meta.hash.as_slice().try_into().map_err(|_| {
-        BaseError::Unrecoverable {
-            msg: "invalid stored artwork SHA-256 length".into(),
+        //
+        unrecoverable_error! {
+            message: "invalid stored artwork SHA-256 length".into();
+            chapter_id = %chapter_info.id,
+            hash_byte_len = artwork_meta.hash.len(),
+            "invalid stored artwork SHA-256 length",
         }
     })?;
 

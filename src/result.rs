@@ -1,5 +1,12 @@
 //! Application-level error and result types used throughout the domain layer.
 
+// Error constructors emit diagnostics at the original failure boundary.
+#[macro_use]
+mod macros;
+
+#[cfg(test)]
+mod tests;
+
 use std::result::Result;
 
 use poprako_obj_dept::rest::ObjDeptError;
@@ -20,9 +27,8 @@ pub enum ExpectedVariant {
     Perm,
 }
 
-/// A domain error that is either an expected application condition
-/// (invalid arguments, authentication failure, missing perms) or
-/// an unrecoverable system-level failure.
+/// Classifies expected client conditions, retryable conflicts, unavailable
+/// dependencies, and unrecoverable internal failures.
 #[derive(Debug)]
 pub enum BaseError {
     /// An expected application condition — the error can be communicated to the client.
@@ -35,7 +41,7 @@ pub enum BaseError {
 
     /// A transient concurrency conflict that the caller may retry.
     Retryable {
-        /// Human-readable detail describing the retryable condition.
+        /// Safe client-visible detail describing the retryable condition.
         msg: String,
     },
 
@@ -47,30 +53,9 @@ pub enum BaseError {
 
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
-        /// Description of the system failure.
+        /// Safe diagnostic for logging; HTTP responses conceal this detail.
         msg: String,
     },
-}
-
-impl BaseError {
-    /// Constructs and records an expected error at its unlogged source.
-    /// Already-logged errors must retain their variant when propagated.
-    #[must_use]
-    #[track_caller]
-    pub fn expected(variant: ExpectedVariant, msg: String) -> Self {
-        //
-        let origin = std::panic::Location::caller();
-
-        tracing::warn!(
-            err_variant = ?variant,
-            err_msg = %msg,
-            source_file = origin.file(),
-            source_line = origin.line(),
-            "expected application error",
-        );
-
-        Self::Expected { variant, msg }
-    }
 }
 
 /// Alias for [`Result`] used at module boundary layers.

@@ -16,7 +16,7 @@ use crate::part_impl::repo::rdb_impl::entity::term::TermEntryRow;
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseRest, accept};
 use crate::shared::result::diesel;
 
 // Boxed Diesel expressions used to build typed Term batch updates.
@@ -111,15 +111,12 @@ fn ensure_upsert_ids(
         return accept(());
     }
 
-    tracing::error!(
+    Err(unrecoverable_error! {
+        message: "invalid Term upsert scope or duplicate id".into();
         termbase_id,
         entries_in_scope,
         ids_unique,
-        "unrecoverable error: invalid Term upsert scope or duplicate id",
-    );
-
-    Err(BaseError::Unrecoverable {
-        msg: "invalid Term upsert scope or duplicate id".into(),
+        "invalid Term upsert scope or duplicate id",
     })
 }
 
@@ -135,15 +132,12 @@ fn ensure_upsert_affected(
         return accept(());
     }
 
-    tracing::error!(
+    Err(unrecoverable_error! {
+        message: "Term batch affected an unexpected row count".into();
         operation,
         affected,
         expected,
-        "unrecoverable error: Term batch affected an unexpected row count",
-    );
-
-    Err(BaseError::Unrecoverable {
-        msg: "Term batch affected an unexpected row count".into(),
+        "Term batch affected an unexpected row count",
     })
 }
 

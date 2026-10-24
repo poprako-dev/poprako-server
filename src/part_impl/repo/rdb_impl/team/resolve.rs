@@ -30,18 +30,13 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
         }
     };
 
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: msg;
         resource_kind = %resource_kind,
         resource_id = %resource_id,
         operation = "resolve team id",
-        "expected ownership resolution error",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg,
+        "resource ownership could not be resolved",
     }
 }
 

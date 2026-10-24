@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_user_last_active_at, f_user_nickname, t_member,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -198,19 +198,13 @@ pub async fn get_info_by_id(
 
     let Some(row) = row else {
         //
-        let msg = trl("error-member-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-member-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             member_id = %id,
             operation = "get member info",
-            "expected member error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
+            "member operation rejected",
         });
     };
 

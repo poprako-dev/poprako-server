@@ -122,40 +122,26 @@ async fn mark_read_batch(
         //
         let Some(receiver_id) = receiver_ids_by_system_mail_id.get(id) else {
             //
-            let msg = trl("error-system-mail-not-found");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-system-mail-not-found");
                 system_mail_id = %id,
                 receiver_user_id = %user_id,
                 operation = "mark system mails read",
-                "expected system mail error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+                "system mail operation rejected",
             });
         };
 
         if receiver_id != user_id {
             //
-            let msg = "error-forbidden".to_owned();
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %msg,
+            return Err(expected_error! {
+                ExpectedVariant::Perm,
+                message: "error-forbidden".to_owned();
                 system_mail_id = %id,
                 receiver_user_id = %user_id,
                 actual_receiver_user_id = %receiver_id,
                 operation = "mark system mails read",
-                "expected system mail perm error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                msg,
+                "system mail permission denied",
             });
         }
     }

@@ -27,7 +27,7 @@ use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic_archive::artwork::{
@@ -48,17 +48,10 @@ pub fn ensure_snapshot_archivable(
     //
     if comic_archive_snapshot.comic_info.archived_at.is_some() {
         //
-        let msg = trl("error-comic-archived");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
-            "expected comic archive error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-comic-archived");
+            "comic archive operation rejected",
         });
     }
 
@@ -77,25 +70,14 @@ pub fn ensure_snapshot_archivable(
         return accept(());
     }
 
-    let msg = trl("error-comic-archive-incomplete");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %msg,
-        "expected comic archive error",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg,
+    Err(expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-comic-archive-incomplete");
+        "comic archive operation rejected",
     })
 }
 
 /// Builds one compressed archive row on Tokio's blocking pool.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 pub async fn prepare_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
@@ -112,27 +94,20 @@ pub async fn prepare_entry(
     .await
     .map_err(|error| {
         //
-        tracing::error!(
-            operation = "prepare_comic_archive",
-            sdk_err = ?error,
-            "Tokio SDK blocking task error",
-        );
-
-        BaseError::Unrecoverable {
-            msg: format!(
+        unrecoverable_error! {
+            message: format!(
                 "[comic_archive_complex::prepare_entry] \
                  blocking task failed: {}",
                 error,
-            ),
+            );
+            operation = "prepare_comic_archive",
+            sdk_err = ?error,
+            "Tokio SDK blocking task error",
         }
     })?
 }
 
 // Builds one compressed archive row and source cleanup identifiers.
-#[expect(
-    clippy::uninlined_format_args,
-    reason = "Repository formatting keeps interpolation arguments explicit"
-)]
 fn build_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
@@ -147,18 +122,15 @@ fn build_entry(
 
         serde_json::to_string(&comic_payload).map_err(|error| {
             //
-            tracing::error!(
-                operation = "serialize_comic_archive",
-                sdk_err = ?error,
-                "JSON SDK serialization error",
-            );
-
-            BaseError::Unrecoverable {
-                msg: format!(
+            unrecoverable_error! {
+                message: format!(
                     "[comic_archive_complex::build_entry] failed to \
                      serialize archive payload: {}",
                     error,
-                ),
+                );
+                operation = "serialize_comic_archive",
+                sdk_err = ?error,
+                "JSON SDK serialization error",
             }
         })?
     };
@@ -308,8 +280,13 @@ fn build_assignment_payload(
 ) -> BaseRest<ArchivedAssignmentPayload<'_>> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
-        BaseError::Unrecoverable {
-            msg: "[comic_archive_complex::build_assignment_payload] assignment user was not loaded".into(),
+        //
+        unrecoverable_error! {
+            message: "[comic_archive_complex::build_assignment_payload] \
+                assignment user was not loaded".into();
+            assignment_id = %assignment_info.id,
+            user_id = %assignment_info.user_id,
+            "assignment user was not loaded",
         }
     })?;
 

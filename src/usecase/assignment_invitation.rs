@@ -175,21 +175,17 @@ where
 
                 if existing_assignment_info.is_some() {
                     //
-                    let err_msg = trl("error-assignment-already-exists");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Args,
+                        message: trl("error-assignment-already-exists");
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
                         invitee_qid = %invitee_qid,
                         roles = ?instr.roles,
-                        "expected error: invitee already has a chapter \
+                        "invitee already has a chapter \
                         assignment",
-                    );
-
-                    return Err(expected(ExpectedVariant::Args, err_msg));
+                    });
                 }
             }
 
@@ -327,24 +323,15 @@ fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_msg = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-chapter-role-not-assignable");
             chapter_id = %chapter,
             user_id = %user,
             roles = ?roles,
-            "expected error: chapter roles are not assignable",
-        );
-
-        return Err(expected(ExpectedVariant::Args, err_msg));
+            "chapter roles are not assignable",
+        });
     }
 
     accept(())
-}
-
-// Builds an expected application error with the supplied classification.
-const fn expected(variant: ExpectedVariant, msg: String) -> BaseError {
-    BaseError::Expected { variant, msg }
 }

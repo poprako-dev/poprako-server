@@ -9,7 +9,7 @@ pub mod perm {
     };
     use crate::model::read::proj::member::MemberInfo;
     use crate::model::read::proj::termbase::TermbaseInfo;
-    use crate::result::{BaseError, BaseRest, ExpectedVariant};
+    use crate::result::{BaseRest, ExpectedVariant};
 
     /// Verify team membership for a terminology-base read.
     pub const fn ensure_user_can_read_team(
@@ -44,20 +44,13 @@ pub mod perm {
 
             _ => {
                 //
-                let err_msg = trl("error-invalid-termbase-scope");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-termbase-scope");
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
-                    "expected error: invalid termbase ownership scope",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invalid termbase ownership scope",
                 });
             }
         }
@@ -77,20 +70,13 @@ pub mod perm {
 
             _ => {
                 //
-                let err_msg = trl("error-invalid-termbase-scope");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-termbase-scope");
                     termbase_id = %termbase_info.id,
                     team_id = ?termbase_info.team_id,
                     comic_id = ?termbase_info.comic_id,
-                    "expected error: invalid termbase ownership scope",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invalid termbase ownership scope",
                 });
             }
         }
@@ -140,19 +126,12 @@ pub fn build_entry<'a>(
 
         _ => {
             //
-            let err_msg = trl("error-invalid-termbase-scope");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-termbase-scope");
                 team_id = ?team_id,
                 comic_id = ?comic_id,
-                "expected error: invalid termbase ownership scope",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid termbase ownership scope",
             });
         }
     }
@@ -193,18 +172,11 @@ pub fn normalize_terms(
 
         if !seen_sources.insert(normalized_key(term_import.source)) {
             //
-            let err_msg = trl("error-term-source-duplicate");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-term-source-duplicate");
                 source = %term_import.source,
-                "expected error: duplicate imported term source",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "duplicate imported term source",
             });
         }
 
@@ -282,15 +254,12 @@ pub fn build_term_upsert_plan<'a>(
 
     if loaded_term_count != current_term_count {
         //
-        tracing::error!(
+        return Err(unrecoverable_error! {
+            message: "cached termbase term count mismatch".into();
             termbase_id,
             current_term_count,
             loaded_term_count,
-            "unrecoverable error: cached termbase term count mismatch",
-        );
-
-        return Err(BaseError::Unrecoverable {
-            msg: "cached termbase term count mismatch".into(),
+            "cached termbase term count mismatch",
         });
     }
 
@@ -399,13 +368,10 @@ pub fn build_term_append_plan<'a>(
         // Every replacement was resolved from these persisted entries by the shared planner.
         let Some(existing) = existing_terms.get(update.id.as_str()) else {
             //
-            tracing::error!(
+            return Err(unrecoverable_error! {
+                message: "append replacement has no existing term".into();
                 term_id = %update.id,
-                "unrecoverable error: append replacement has no existing term"
-            );
-
-            return Err(BaseError::Unrecoverable {
-                msg: "append replacement has no existing term".into(),
+                "append replacement has no existing term",
             });
         };
 
@@ -442,18 +408,11 @@ fn normalize_name(name: &str) -> BaseRest<&str> {
 
     if name.is_empty() {
         //
-        let err_msg = trl("error-termbase-name-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-termbase-name-required");
             termbase_name = %name,
-            "expected error: termbase name required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "termbase name required",
         });
     }
 
@@ -469,20 +428,13 @@ fn term_limit_error(
     let args =
         HashMap::from([("term_limit".into(), TERMBASE_TERM_LIMIT.into())]);
 
-    let err_msg = trl_kv("error-termbase-term-limit", &args);
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl_kv("error-termbase-term-limit", &args);
         current_term_count,
         additional_term_count,
         term_limit = TERMBASE_TERM_LIMIT,
-        "expected error: termbase term limit exceeded",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "termbase term limit exceeded",
     }
 }
 

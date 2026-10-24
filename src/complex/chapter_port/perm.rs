@@ -50,13 +50,7 @@ pub fn ensure_user_can_export_translation(
             //
             let err_msg = trl("error-chapter-port-export-perm-required");
 
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
-                operation = "export",
-                "expected error: chapter port export perm required",
-            );
-
+            // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 msg: err_msg,
@@ -83,13 +77,7 @@ pub fn ensure_user_can_import_translation(
             //
             let err_msg = trl("error-chapter-port-import-perm-required");
 
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
-                operation = "import",
-                "expected error: chapter port import perm required",
-            );
-
+            // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 msg: err_msg,

@@ -86,12 +86,19 @@ pub async fn detailed_metrics(
     }
 
     let Some(metrics_text) = render_detailed_metrics() else {
+        //
+        tracing::warn!(
+            status = 503,
+            err_variant = "Unavailable",
+            err_msg = "metrics recorder unavailable",
+            "metrics recorder unavailable",
+        );
+
         return Err(StatusCode::SERVICE_UNAVAILABLE);
     };
 
     let content_type =
-        HeaderValue::try_from("text/plain; version=0.0.4; charset=utf-8")
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        HeaderValue::from_static("text/plain; version=0.0.4; charset=utf-8");
 
     Ok(([(header::CONTENT_TYPE, content_type)], metrics_text).into_response())
 }

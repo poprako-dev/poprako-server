@@ -2,7 +2,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -51,9 +51,11 @@ pub fn check_join_role(
     //
     if roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_msg = trl("error-chapter-role-not-assignable");
-
-        return Err(BaseError::expected(ExpectedVariant::Args, err_msg));
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-chapter-role-not-assignable");
+            "administrator role cannot be assigned to a chapter",
+        });
     }
 
     if !member_info.roles.contains_mask(roles) {
@@ -104,17 +106,10 @@ const fn required_roles_for_transition(
 // Build and log one expected chapter-role permission error.
 fn reject(msg_key: &str, event: &'static str) -> BaseRest<()> {
     //
-    let err_msg = trl(msg_key);
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Perm,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Perm,
+        message: trl(msg_key);
         event,
-        "expected chapter role error",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        msg: err_msg,
+        "chapter role requirement not met",
     })
 }

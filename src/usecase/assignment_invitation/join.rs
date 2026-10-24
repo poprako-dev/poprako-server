@@ -186,20 +186,16 @@ fn ensure_invitation_matches(
     //
     if assignment_invitation_info.invitee_qid != current_user_info.qid {
         //
-        let err_msg = trl("error-no-pending-invitation");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-no-pending-invitation");
             user_id = %current_user_info.id,
             invitee_qid = %current_user_info.qid,
             invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
             invitation_code_present = true,
-            "expected error: assignment invitation does not belong to \
+            "assignment invitation does not belong to \
                 current user",
-        );
-
-        return Err(expected(ExpectedVariant::Args, err_msg));
+        });
     }
 
     validate_roles(
@@ -219,19 +215,15 @@ fn ensure_member_roles(
     //
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-chapter-role-not-assignable");
             chapter_id = %assignment_invitation_info.chapter_id,
             user_id = %current_user_id,
             team_id = %team_id,
             roles = ?assignment_invitation_info.roles,
-            "expected error: invited chapter roles are not assignable",
-        );
-
-        return Err(expected(ExpectedVariant::Perm, err_msg));
+            "invited chapter roles are not assignable",
+        });
     };
 
     if member_info
@@ -241,20 +233,16 @@ fn ensure_member_roles(
         return accept(());
     }
 
-    let err_msg = trl("error-chapter-role-not-assignable");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Perm,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Perm,
+        message: trl("error-chapter-role-not-assignable");
         chapter_id = %assignment_invitation_info.chapter_id,
         user_id = %current_user_id,
         team_id = %team_id,
         roles = ?assignment_invitation_info.roles,
         member_roles = ?member_info.roles,
-        "expected error: invited chapter roles are not assignable",
-    );
-
-    Err(expected(ExpectedVariant::Perm, err_msg))
+        "invited chapter roles are not assignable",
+    })
 }
 
 // Creates a new assignment or merges the invitation roles into an existing one.
@@ -305,28 +293,19 @@ where
     accept((assignment_info, Some(payload)))
 }
 
-// Builds an expected application error with the supplied classification.
-const fn expected(variant: ExpectedVariant, msg: String) -> BaseError {
-    BaseError::Expected { variant, msg }
-}
-
 // Validates that the roles mask is non-empty and does not contain ADMIN.
 fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_msg = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-chapter-role-not-assignable");
             chapter_id = %chapter,
             user_id = %user,
             roles = ?roles,
-            "expected error: chapter roles are not assignable",
-        );
-
-        return Err(expected(ExpectedVariant::Args, err_msg));
+            "chapter roles are not assignable",
+        });
     }
 
     accept(())

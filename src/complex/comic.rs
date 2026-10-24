@@ -73,7 +73,7 @@ pub mod perm {
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::comic::ComicInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 
@@ -84,18 +84,11 @@ pub fn ensure_comic_writable(comic_info: &ComicInfo) -> BaseRest<()> {
         return accept(());
     }
 
-    let err_msg = trl("error-comic-archived");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-comic-archived");
         comic_id = %comic_info.id,
-        "expected error: archived comic is frozen",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "archived comic is frozen",
     })
 }
 

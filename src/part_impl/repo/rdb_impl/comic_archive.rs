@@ -74,19 +74,13 @@ async fn load_archive_root(
 
     let Some(comic_row) = comic_row else {
         //
-        let msg = trl("error-comic-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-comic-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             comic_id = %source_comic_id,
             operation = "get comic archive snapshot",
-            "expected comic archive error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
+            "comic archive operation rejected",
         });
     };
 
@@ -103,20 +97,14 @@ async fn load_archive_root(
 
     let Some(workset_row) = workset_row else {
         //
-        let msg = trl("error-workset-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-workset-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             comic_id = %source_comic_id,
             workset_id = %comic_info.workset_id,
             operation = "get comic archive snapshot",
-            "expected comic archive error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
+            "comic archive operation rejected",
         });
     };
 
@@ -267,22 +255,16 @@ fn assemble_chapter_snapshots(
         //
         let Some(user_info) = users_by_id.get(&assignment_info.user_id) else {
             //
-            let msg = trl("error-user-not-found");
-
-            tracing::warn!(
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-user-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
                 comic_id = %source_comic_id,
                 chapter_id = %assignment_info.chapter_id,
                 assignment_id = %assignment_info.id,
                 user_id = %assignment_info.user_id,
                 operation = "assemble comic archive snapshot",
-                "expected comic archive error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+                "comic archive operation rejected",
             });
         };
 

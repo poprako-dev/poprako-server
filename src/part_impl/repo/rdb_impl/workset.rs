@@ -39,19 +39,12 @@ use crate::shared::result::diesel;
 /// Build the expected error for a missing workset.
 pub fn missing_workset(id: &str, operation: &str) -> BaseError {
     //
-    let msg = trl("error-workset-not-found");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-workset-not-found");
         workset_id = %id,
         operation,
-        "expected workset error",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg,
+        "workset operation rejected",
     }
 }
 
@@ -71,19 +64,13 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
 
     let Some(row) = row else {
         //
-        let msg = trl("error-workset-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-workset-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %msg,
             workset_id = %id,
             operation = "get workset info",
-            "expected workset error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg,
+            "workset operation rejected",
         });
     };
 

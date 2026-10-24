@@ -15,7 +15,7 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
 use crate::value::comic_archive::artwork::ArchivedPageArtworkPayload;
 use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
@@ -253,16 +253,11 @@ impl ComicArchiveMonth {
             let err_msg =
                 trl_kv("error-invalid-comic-archive-month-count", &args);
 
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: err_msg;
                 label_count = labels.len(),
-                "expected error: invalid comic archive month count",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid comic archive month count",
             });
         }
 
@@ -272,18 +267,11 @@ impl ComicArchiveMonth {
             //
             if !unique_labels.insert(label.as_str()) {
                 //
-                let err_msg = trl("error-duplicate-comic-archive-month");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-duplicate-comic-archive-month");
                     label = %label,
-                    "expected error: duplicate comic archive month",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "duplicate comic archive month",
                 });
             }
         }
@@ -308,40 +296,26 @@ impl ComicArchiveMonth {
         //
         let month = Month::try_from(month).map_err(|_| {
             //
-            let err_msg = trl("error-invalid-comic-archive-month");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-comic-archive-month");
                 label = %label,
                 year,
                 raw_month = month,
-                "expected error: invalid comic archive month",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "invalid comic archive month",
             }
         })?;
 
         let start_date =
             Date::from_calendar_date(year, month, 1).map_err(|_| {
                 //
-                let err_msg = trl("error-invalid-comic-archive-month");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-comic-archive-month");
                     label = %label,
                     year,
                     month = ?month,
-                    "expected error: invalid comic archive month start date",
-                );
-
-                BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invalid comic archive month start date",
                 }
             })?;
 
@@ -353,21 +327,14 @@ impl ComicArchiveMonth {
                 year,
                 Month::try_from(u8::from(month) + 1).map_err(|_| {
                     //
-                    let err_msg = trl("error-invalid-comic-archive-month");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_msg = %err_msg,
+                    expected_error! {
+                        ExpectedVariant::Args,
+                        message: trl("error-invalid-comic-archive-month");
                         label = %label,
                         year,
                         month = ?month,
                         next_month = u8::from(month) + 1,
-                        "expected error: invalid comic archive next month",
-                    );
-
-                    BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        msg: err_msg,
+                        "invalid comic archive next month",
                     }
                 })?,
             ),
@@ -376,20 +343,13 @@ impl ComicArchiveMonth {
         let end_date =
             Date::from_calendar_date(next.0, next.1, 1).map_err(|_| {
                 //
-                let err_msg = trl("error-invalid-comic-archive-month");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                expected_error! {
+                    ExpectedVariant::Args,
+                    message: trl("error-invalid-comic-archive-month");
                     label = %label,
                     next_year = next.0,
                     next_month = ?next.1,
-                    "expected error: invalid comic archive month end date",
-                );
-
-                BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "invalid comic archive month end date",
                 }
             })?;
 
@@ -407,75 +367,47 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
     //
     let Some((year, month)) = label.split_once('-') else {
         //
-        let err_msg = trl("error-invalid-comic-archive-month");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-comic-archive-month");
             label = %label,
-            "expected error: comic archive month label has no separator",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "comic archive month label has no separator",
         });
     };
 
     if year.len() != 4 || month.len() != 2 {
         //
-        let err_msg = trl("error-invalid-comic-archive-month");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-comic-archive-month");
             label = %label,
             raw_year = %year,
             raw_month = %month,
-            "expected error: comic archive month label has invalid width",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "comic archive month label has invalid width",
         });
     }
 
     let year = year.parse().map_err(|_| {
         //
-        let err_msg = trl("error-invalid-comic-archive-month");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-comic-archive-month");
             label = %label,
             raw_year = %year,
             raw_month = %month,
-            "expected error: comic archive month year is not numeric",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "comic archive month year is not numeric",
         }
     })?;
 
     let month = month.parse().map_err(|_| {
         //
-        let err_msg = trl("error-invalid-comic-archive-month");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-comic-archive-month");
             label = %label,
             year,
             raw_month = %month,
-            "expected error: comic archive month number is not numeric",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "comic archive month number is not numeric",
         }
     })?;
 

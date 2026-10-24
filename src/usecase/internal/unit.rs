@@ -13,7 +13,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 
 /// Loaded evidence that grants Unit list and search access.
 pub enum UnitListAccessInfo {
@@ -88,19 +88,12 @@ impl UnitAccessLoader {
 
         let Some(assignment_info) = assignment_info else {
             //
-            let err_msg = trl("error-unit-list-perm-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Perm,
+                message: trl("error-unit-list-perm-required");
                 chapter_id,
                 user_id,
-                "expected error: unit list permission denied",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                msg: err_msg,
+                "unit list permission denied",
             });
         };
 

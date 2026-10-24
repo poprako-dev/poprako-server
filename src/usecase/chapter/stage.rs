@@ -338,10 +338,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-chapter-workflow-role-required"),
-        ));
+            message: trl("error-chapter-workflow-role-required");
+            "chapter workflow role required",
+        });
     };
 
     let assignment_infos = match oper {

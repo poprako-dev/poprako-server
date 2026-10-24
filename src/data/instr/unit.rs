@@ -154,19 +154,12 @@ pub fn into_unit_transforms(
             ("max_count".into(), MAX_UNIT_TRANSFORM_COUNT.into()),
         ]);
 
-        let err_msg = trl_kv("error-invalid-unit-transform-count", &args);
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl_kv("error-invalid-unit-transform-count", &args);
             unit_count = units.len(),
             max_unit_count = MAX_UNIT_TRANSFORM_COUNT,
-            "expected error: Unit transform count is invalid",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "Unit transform count is invalid",
         });
     }
 
@@ -446,18 +439,11 @@ where
 
         if local_id_map.insert(local_id.clone(), unit_id).is_some() {
             //
-            let err_msg = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-unit-oper");
                 local_id = %local_id,
-                "expected error: duplicate unit edit local id",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "duplicate unit edit local id",
             });
         }
     }
@@ -473,18 +459,11 @@ where
 // Build the client-visible error for an invalid Unit transform request.
 fn invalid_unit_transform(reason: &'static str) -> BaseError {
     //
-    let err_msg = trl("error-invalid-unit-transform");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-transform");
         reason,
-        "expected error: invalid unit transform",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid unit transform",
     }
 }
 
@@ -493,18 +472,11 @@ fn validate_id(id: &str) -> BaseRest<()> {
     //
     if id.is_empty() {
         //
-        let err_msg = trl("error-invalid-unit-oper");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invalid-unit-oper");
             local_or_unit_id = %id,
-            "expected error: empty unit edit id",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "empty unit edit id",
         });
     }
 

@@ -22,7 +22,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
     f_chapter_id, f_code, f_created_at, f_id, f_pending,
     t_assignment_invitation,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 
 /// Queries assignment invitation rows selected by a list specification.
@@ -71,19 +71,13 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-invitation-not-found");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invitation-not-found");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 invitation_id = %id,
                 stage = "get_info_by_id",
-                "expected error: assignment invitation not found",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "assignment invitation not found",
             }
         })?;
 
@@ -108,20 +102,14 @@ pub async fn get_info_by_code_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let err_msg = trl("error-no-pending-invitation");
-
-            tracing::warn!(
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-no-pending-invitation");
                 error_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
                 invitation_code_length = code.len(),
                 pending = true,
                 stage = "get_info_by_code_excluded",
-                "expected error: no pending assignment invitation",
-            );
-
-            BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "no pending assignment invitation",
             }
         })?;
 
@@ -170,21 +158,15 @@ pub async fn mark_pending_as_used(
 
     if affected == 0 {
         //
-        let err_msg = trl("error-invitation-not-found");
-
-        tracing::warn!(
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-invitation-not-found");
             error_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
             invitation_id = %id,
             pending = true,
             affected,
             stage = "mark_pending_as_used",
-            "expected error: assignment invitation not found",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "assignment invitation not found",
         });
     }
 

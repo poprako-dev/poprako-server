@@ -61,10 +61,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     workset_perm_complex::ensure_user_can_create(&member_info)?;
@@ -151,10 +152,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     workset_perm_complex::ensure_user_can_list_infos(&member_info)?;
@@ -245,17 +247,10 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_msg = trl("error-team-member-required");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_msg = %err_msg,
-                    "expected error: team membership required",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    msg: err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Perm,
+                    message: trl("error-team-member-required");
+                    "team membership required",
                 });
             };
 

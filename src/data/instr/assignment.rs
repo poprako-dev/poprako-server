@@ -74,36 +74,22 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             matches!(role, RoleField::ADMIN | RoleField::BOT)
         }) {
             //
-            let msg = trl("error-chapter-role-not-assignable");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %msg,
-                "assignment filter requires a worker role"
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-chapter-role-not-assignable");
+                "assignment filter requires a worker role",
             });
         }
 
         if chapter_id.is_some() == owner_id.is_some() {
             //
-            let err_msg = trl("error-chapter-or-user-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-chapter-or-user-required");
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
-                "expected error: assignment list requires one scope identifier",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "assignment list requires one scope identifier",
             });
         }
 
@@ -120,20 +106,13 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
         let Some(owner_id) = owner_id else {
             //
-            let err_msg = trl("error-chapter-or-user-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-chapter-or-user-required");
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
-                "expected error: assignment list owner scope is missing",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "assignment list owner scope is missing",
             });
         };
 

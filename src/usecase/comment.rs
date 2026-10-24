@@ -26,7 +26,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::usecase::comment::view::comment_info_views;
 
 /// Lists comments under a team.
@@ -58,10 +58,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     comment_perm_complex::ensure_user_can_list_infos(&member_info)?;
@@ -105,10 +106,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     comment_perm_complex::ensure_user_can_create(&member_info)?;

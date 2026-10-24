@@ -17,7 +17,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
 use crate::part::repo::oper::user::UpdateUser;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 
 /// Marks the authenticated user online in one team for ten minutes.
 /// Updates user and membership activity before renewing the lease, without a transaction.
@@ -44,10 +44,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     team_perm_complex::ensure_user_can_mark_self_online(&member_info)?;
@@ -90,10 +91,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-member-required"),
-        ));
+            message: trl("error-team-member-required");
+            "team membership required",
+        });
     };
 
     team_perm_complex::ensure_user_can_list_online_user_ids(&member_info)?;

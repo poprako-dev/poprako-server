@@ -229,31 +229,26 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
         )
         .map_err(|error| {
             //
-            tracing::error!(
+            unrecoverable_error! {
+                message: "persisted chapter workflow record kind is corrupt"
+                    .into();
                 operation = "decode_chapter_workflow_record_kind",
                 record_id = %row.f_id,
                 err = ?error,
                 "persisted chapter workflow record is corrupt",
-            );
-
-            BaseError::Unrecoverable {
-                msg: "persisted chapter workflow record kind is corrupt".into(),
             }
         })?;
 
         let payload = decode_payload(kind, row.f_payload).map_err(|error| {
             //
-            tracing::error!(
+            unrecoverable_error! {
+                message: "persisted chapter workflow record payload is corrupt"
+                    .into();
                 operation = "decode_chapter_workflow_record_payload",
                 record_id = %row.f_id,
                 kind = ?kind,
                 err = ?error,
                 "persisted chapter workflow record is corrupt",
-            );
-
-            BaseError::Unrecoverable {
-                msg: "persisted chapter workflow record payload is corrupt"
-                    .into(),
             }
         })?;
 

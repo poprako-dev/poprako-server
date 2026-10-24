@@ -97,10 +97,11 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
         let router = Router::new().route(
             "/error",
             get(move || async move {
-                Err::<(), _>(HttpError::from(BaseError::expected(
+                Err::<(), _>(HttpError::from(expected_error! {
                     variant,
-                    "source diagnostic".into(),
-                )))
+                    message: "source diagnostic".into();
+                    "application request rejected",
+                }))
             }),
         );
 
@@ -113,17 +114,22 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
 
         assert_eq!(actual, status);
 
-        assert_eq!(
-            (*serde_json::from_str::<serde_json::Value>(&body)
-                .unwrap()
-                .get("code")
-                .unwrap()),
-            code
-        );
+        let response =
+            serde_json::from_str::<serde_json::Value>(&body).unwrap();
+
+        assert_eq!(response.get("code"), Some(&json!(code)));
+
+        assert_eq!(response.get("message"), Some(&json!("source diagnostic")));
 
         assert!(logs.contains("source diagnostic"), "{logs}");
 
         assert!(logs.contains("source_file="), "{logs}");
+
+        assert!(logs.contains("source_line="), "{logs}");
+
+        assert!(logs.contains("err_message="), "{logs}");
+
+        assert!(!logs.contains("err_msg="), "{logs}");
 
         assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
     }
@@ -165,8 +171,83 @@ async fn sdk_client_errors_keep_original_diagnostics_at_warning_level() {
 
         assert!(logs.contains(reason), "{logs}");
 
+        let diagnostic_field = match uri {
+            "/mismatch" => "err_msg=",
+            _ => "err_message=",
+        };
+
+        assert!(logs.contains(diagnostic_field), "{logs}");
+
         assert!(!logs.contains("private-invalid-token"), "{logs}");
 
         assert_eq!(logs.matches(" WARN ").count(), 1, "{logs}");
+    }
+}
+
+#[tokio::test]
+async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
+    for (retryable, status, code, level, response_message) in [
+        (
+            true,
+            StatusCode::CONFLICT,
+            8,
+            " WARN ",
+            "retry request".to_owned(),
+        ),
+        (
+            false,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            1,
+            " ERROR ",
+            trl("error-internal"),
+        ),
+    ] {
+        let router = Router::new().route(
+            "/failure",
+            get(move || async move {
+                if retryable {
+                    return Err::<(), _>(HttpError::from(retryable_error! {
+                        message: "retry request".into();
+                        "transaction conflicted",
+                    }));
+                }
+
+                Err::<(), _>(HttpError::from(unrecoverable_error! {
+                    message: "internal diagnostic sentinel".into();
+                    "stored state is invalid",
+                }))
+            }),
+        );
+
+        let request = Request::builder()
+            .uri("/failure")
+            .body(Body::empty())
+            .unwrap();
+
+        let (actual_status, body, logs) =
+            capture_request(router, request).await;
+
+        assert_eq!(actual_status, status);
+
+        let response =
+            serde_json::from_str::<serde_json::Value>(&body).unwrap();
+
+        assert_eq!(response.get("code"), Some(&json!(code)));
+
+        assert_eq!(response.get("message"), Some(&json!(response_message)));
+
+        assert!(!body.contains("internal diagnostic sentinel"));
+
+        assert_eq!(logs.matches(level).count(), 1, "{logs}");
+
+        assert_eq!(
+            logs.matches(" WARN ").count() + logs.matches(" ERROR ").count(),
+            1,
+            "{logs}",
+        );
+
+        assert!(logs.contains("err_message="), "{logs}");
+
+        assert!(logs.contains("source_file="), "{logs}");
     }
 }

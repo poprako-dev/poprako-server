@@ -57,20 +57,13 @@ pub fn ensure_user_can_transform(
         return accept(());
     }
 
-    let err_msg = trl("error-unit-transform-perm-required");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Perm,
-        err_msg = %err_msg,
+    Err(expected_error! {
+        ExpectedVariant::Perm,
+        message: trl("error-unit-transform-perm-required");
         perm = ?perm,
         part = ?part,
         operation = "transform",
-        "expected error: unit transform perm required",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        msg: err_msg,
+        "unit transform perm required",
     })
 }
 
@@ -99,12 +92,7 @@ pub fn ensure_user_can_list_infos(access: &UnitListAccess<'_>) -> BaseRest<()> {
             //
             let err_msg = trl("error-unit-list-perm-required");
 
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Perm,
-                err_msg = %err_msg,
-                "expected error: unit list perm required",
-            );
-
+            // The permission helper already recorded this failure.
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 msg: err_msg,
@@ -123,19 +111,12 @@ pub fn ensure_user_can_edit_fields(
     //
     if !perm.can_translate && !perm.can_proofread {
         //
-        let err_msg = trl("error-unit-edit-perm-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-unit-edit-perm-required");
             perm = ?perm,
             operation = "edit_fields",
-            "expected error: unit edit perm required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "unit edit perm required",
         });
     }
 
@@ -151,39 +132,25 @@ pub fn ensure_user_can_edit_fields(
                 //
                 if translation.is_some() && !perm.can_translate {
                     //
-                    let err_msg = trl("error-unit-edit-perm-required");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Perm,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Perm,
+                        message: trl("error-unit-edit-perm-required");
                         perm = ?perm,
                         field = "translation",
                         operation = "create",
-                        "expected error: unit translation perm required",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Perm,
-                        msg: err_msg,
+                        "unit translation perm required",
                     });
                 }
 
                 if revision.is_some() && !perm.can_proofread {
                     //
-                    let err_msg = trl("error-unit-edit-perm-required");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Perm,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Perm,
+                        message: trl("error-unit-edit-perm-required");
                         perm = ?perm,
                         field = "revision",
                         operation = "create",
-                        "expected error: unit revision perm required",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Perm,
-                        msg: err_msg,
+                        "unit revision perm required",
                     });
                 }
             }
@@ -196,39 +163,25 @@ pub fn ensure_user_can_edit_fields(
                 //
                 if !translation.is_skip() && !perm.can_translate {
                     //
-                    let err_msg = trl("error-unit-edit-perm-required");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Perm,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Perm,
+                        message: trl("error-unit-edit-perm-required");
                         perm = ?perm,
                         field = "translation",
                         operation = "save",
-                        "expected error: unit translation perm required",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Perm,
-                        msg: err_msg,
+                        "unit translation perm required",
                     });
                 }
 
                 if !revision.is_skip() && !perm.can_proofread {
                     //
-                    let err_msg = trl("error-unit-edit-perm-required");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Perm,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Perm,
+                        message: trl("error-unit-edit-perm-required");
                         perm = ?perm,
                         field = "revision",
                         operation = "save",
-                        "expected error: unit revision perm required",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Perm,
-                        msg: err_msg,
+                        "unit revision perm required",
                     });
                 }
             }

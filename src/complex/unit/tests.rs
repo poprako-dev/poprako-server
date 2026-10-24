@@ -11,7 +11,7 @@ use time::OffsetDateTime;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::model::write::unit::{UnitTextTransform, UnitTransform};
-use crate::result::ExpectedVariant;
+use crate::result::{BaseError, ExpectedVariant};
 use crate::value::unit::UnitTextPart;
 
 // Build a mocked save edit with a deterministic `next_id` value.

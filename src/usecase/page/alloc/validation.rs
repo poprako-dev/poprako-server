@@ -7,7 +7,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::{image as image_complex, page as page_complex};
 use crate::config::image::ImageConfig;
 use crate::model::write::page::PageImageSpec;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseRest, ExpectedVariant, accept};
 use crate::value::image::ImageKind;
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 
@@ -51,20 +51,13 @@ pub fn validate_page_specs(
 
         if !explicit_page_ids.insert(page_id) {
             //
-            let err_msg = trl("error-duplicate-page-id");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-duplicate-page-id");
                 chapter_id = %chapter_id,
                 user_id = %user_id,
                 page_id = %page_id,
-                "expected error: duplicate page id in allocation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "duplicate page id in allocation",
             });
         }
     }
@@ -78,18 +71,11 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
     if !(MIN_CHAPTER_PAGE_COUNT..=MAX_CHAPTER_PAGE_COUNT).contains(&page_count)
     {
         //
-        let err_msg = invalid_page_count_msg();
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: invalid_page_count_msg();
             page_count,
-            "expected error: invalid page count",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            msg: err_msg,
+            "invalid page count",
         });
     }
 

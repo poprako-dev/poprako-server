@@ -205,17 +205,12 @@ where
                 let err_msg =
                     trl_kv("error-unit-search-too-many-matches", &args);
 
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_msg = %err_msg,
+                return Err(expected_error! {
+                    ExpectedVariant::Args,
+                    message: err_msg;
                     match_count = search_ids.len(),
                     match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
-                    "expected error: too many Unit search matches",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    msg: err_msg,
+                    "too many Unit search matches",
                 });
             }
 
@@ -307,8 +302,13 @@ where
 
             if page_scope.chapter_id != chapter_scope.id {
                 //
-                return Err(BaseError::Unrecoverable {
-                    msg: "locked Page does not belong to locked Chapter".into(),
+                return Err(unrecoverable_error! {
+                    message: "locked Page does not belong to locked Chapter"
+                        .into();
+                    page_id = %page_id,
+                    page_chapter_id = %page_scope.chapter_id,
+                    locked_chapter_id = %chapter_scope.id,
+                    "locked Page does not belong to locked Chapter",
                 });
             }
 
@@ -365,13 +365,11 @@ where
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
 fn unit_list_invariant(page_id: &str, msg: &'static str) -> BaseError {
     //
-    tracing::error!(
+    unrecoverable_error! {
+        message: msg.into();
         page_id,
-        err_msg = msg,
-        "unrecoverable error: invalid persisted Page Unit state",
-    );
-
-    BaseError::Unrecoverable { msg: msg.into() }
+        "invalid persisted Page Unit state",
+    }
 }
 
 // Loads and verifies every visible Unit in linked-list order.

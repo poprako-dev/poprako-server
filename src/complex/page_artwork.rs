@@ -13,15 +13,11 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// Produces a localized composite page rejection.
 pub fn error(variant: ExpectedVariant, key: &str) -> BaseError {
     //
-    let msg = trl(key);
-
-    tracing::warn!(
-        err_variant = ?variant,
-        err_msg = %msg,
-        "composite page rejected"
-    );
-
-    BaseError::Expected { variant, msg }
+    expected_error! {
+        variant,
+        message: trl(key);
+        "composite page rejected",
+    }
 }
 
 /// Explicit IDs must be distinct identities from the locked Chapter manifest.

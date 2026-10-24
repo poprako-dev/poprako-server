@@ -130,8 +130,15 @@ fn transform_text(
     for (start, end, target) in matches {
         //
         let unchanged = original.get(cursor..start).ok_or_else(|| {
-            BaseError::Unrecoverable {
-                msg: "Unit transform text boundary is invalid".into(),
+            //
+            unrecoverable_error! {
+                message: "Unit transform text boundary is invalid".into();
+                unit_id = %unit_transform.unit_id,
+                text_byte_len = original.len(),
+                cursor,
+                start,
+                end,
+                "Unit transform text boundary is invalid",
             }
         })?;
 
@@ -142,12 +149,16 @@ fn transform_text(
         cursor = end;
     }
 
-    let unchanged =
-        original
-            .get(cursor..)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                msg: "Unit transform final text boundary is invalid".into(),
-            })?;
+    let unchanged = original.get(cursor..).ok_or_else(|| {
+        //
+        unrecoverable_error! {
+            message: "Unit transform final text boundary is invalid".into();
+            unit_id = %unit_transform.unit_id,
+            text_byte_len = original.len(),
+            cursor,
+            "Unit transform final text boundary is invalid",
+        }
+    })?;
 
     transformed.push_str(unchanged);
 
@@ -157,18 +168,11 @@ fn transform_text(
 // Build the client-visible error for an invalid Unit transform.
 fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
     //
-    let err_msg = trl("error-invalid-unit-transform");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-unit-transform");
         unit_id,
         reason,
-        "expected error: invalid unit transform",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "invalid unit transform",
     }
 }

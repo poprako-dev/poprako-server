@@ -110,19 +110,12 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-admin-required");
             team_id = %instr.team_id,
             user_id = %token.user_id,
-            "expected error: invitation creator membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "invitation creator membership missing",
         });
     };
 
@@ -152,21 +145,14 @@ where
 
                 if invitee_member_info.is_some() {
                     //
-                    let err_msg = trl("error-already-team-member");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_msg = %err_msg,
+                    return Err(expected_error! {
+                        ExpectedVariant::Args,
+                        message: trl("error-already-team-member");
                         team_id = %instr.team_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
                         invitee_qid = %invitee_qid,
-                        "expected error: invitee is already a team member",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        msg: err_msg,
+                        "invitee is already a team member",
                     });
                 }
             }
@@ -248,19 +234,12 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let err_msg = trl("error-team-member-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_msg = %err_msg,
+        return Err(expected_error! {
+            ExpectedVariant::Perm,
+            message: trl("error-team-member-required");
             team_id = %instr.team_id,
             user_id = %token.user_id,
-            "expected error: invitation list membership missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            msg: err_msg,
+            "invitation list membership missing",
         });
     };
 

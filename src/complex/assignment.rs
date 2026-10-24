@@ -11,7 +11,7 @@ pub mod perm {
     use crate::model::read::proj::assignment::AssignmentInfo;
     use crate::model::read::proj::member::MemberInfo;
     use crate::model::read::proj::user::UserInfo;
-    use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+    use crate::result::{BaseRest, ExpectedVariant, accept};
     use crate::value::role::{RoleField, RoleMask};
 
     /// Evidence that grants access to a chapter assignment list.
@@ -176,18 +176,11 @@ pub mod perm {
         event: &'static str,
     ) -> BaseRest<()> {
         //
-        let err_msg = trl(msg_key);
-
-        tracing::warn!(
-            err_variant = ?variant,
-            err_msg = %err_msg,
-            event,
-            "expected assignment permission error",
-        );
-
-        Err(BaseError::Expected {
+        Err(expected_error! {
             variant,
-            msg: err_msg,
+            message: trl(msg_key);
+            event,
+            "assignment permission denied",
         })
     }
 

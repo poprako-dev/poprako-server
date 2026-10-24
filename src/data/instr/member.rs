@@ -102,41 +102,27 @@ impl<'a> TryFrom<&'a ListMemberInfosInstr> for MemberListSpec<'a> {
 
         if owner_id.is_some() == team_id.is_some() {
             //
-            let err_msg = trl("error-team-or-user-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-team-or-user-required");
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
                 fuzzy_nickname = ?fuzzy_nickname,
-                "expected error: member list requires one scope identifier",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "member list requires one scope identifier",
             });
         }
 
         if owner_id.is_some() && role.is_some() {
             //
-            let err_msg = trl("error-team-or-user-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-team-or-user-required");
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
                 fuzzy_nickname = ?fuzzy_nickname,
-                "expected error: member list owner scope cannot filter by role",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "member list owner scope cannot filter by role",
             });
         }
 
@@ -152,21 +138,14 @@ impl<'a> TryFrom<&'a ListMemberInfosInstr> for MemberListSpec<'a> {
 
         let Some(team_id) = team_id else {
             //
-            let err_msg = trl("error-team-or-user-required");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_msg = %err_msg,
+            return Err(expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-team-or-user-required");
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
                 fuzzy_nickname = ?fuzzy_nickname,
-                "expected error: member list team scope is missing",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                msg: err_msg,
+                "member list team scope is missing",
             });
         };
 

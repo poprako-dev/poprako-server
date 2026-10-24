@@ -325,8 +325,10 @@ where
 
 // Builds an internal error for an incomplete page manifest result.
 fn page_manifest_result_missing() -> BaseError {
-    BaseError::Unrecoverable {
-        msg: "page manifest result is incomplete".into(),
+    //
+    unrecoverable_error! {
+        message: "page manifest result is incomplete".into();
+        "page manifest result is incomplete",
     }
 }
 
@@ -339,10 +341,12 @@ fn ensure_retained_obj(
     //
     let Some(obj_meta) = obj_meta else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Args,
-            format!("page {} requires a new upload", page_info.id),
-        ));
+            message: format!("page {} requires a new upload", page_info.id);
+            page_id = %page_info.id,
+            "page requires a new upload",
+        });
     };
 
     let same_hash = obj_meta.hash.as_slice() == page_spec.image_hash.as_bytes();
@@ -351,10 +355,12 @@ fn ensure_retained_obj(
         //
         (true, true) => accept(()),
 
-        _ => Err(BaseError::expected(
+        _ => Err(expected_error! {
             ExpectedVariant::Args,
-            format!("page {} requires a new upload", page_info.id),
-        )),
+            message: format!("page {} requires a new upload", page_info.id);
+            page_id = %page_info.id,
+            "page requires a new upload",
+        }),
     }
 }
 

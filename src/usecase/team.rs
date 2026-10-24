@@ -156,10 +156,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     team_perm_complex::ensure_user_can_update_info(&member_info)?;
@@ -226,10 +227,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     team_perm_complex::ensure_user_can_alloc_avatar(&member_info)?;
@@ -299,10 +301,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        return Err(BaseError::expected(
+        return Err(expected_error! {
             ExpectedVariant::Perm,
-            trl("error-team-admin-required"),
-        ));
+            message: trl("error-team-admin-required");
+            "team administrator role required",
+        });
     };
 
     team_perm_complex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
@@ -322,9 +325,10 @@ where
 
     marked.then_some(()).ok_or_else(|| {
         //
-        BaseError::expected(
+        expected_error! {
             ExpectedVariant::Args,
-            trl("error-stale-avatar-upload"),
-        )
+            message: trl("error-stale-avatar-upload");
+            "avatar upload generation is stale",
+        }
     })
 }

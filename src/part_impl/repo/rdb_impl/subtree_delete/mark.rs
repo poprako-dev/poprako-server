@@ -24,19 +24,12 @@ pub fn missing(
     resource_id: &str,
 ) -> BaseError {
     //
-    let err_msg = trl(error_key);
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_msg = %err_msg,
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl(error_key);
         resource_kind,
         resource_id,
-        "expected error: active subtree root not found",
-    );
-
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        msg: err_msg,
+        "active subtree root not found",
     }
 }
 
@@ -319,9 +312,11 @@ pub async fn mark_scope(
 
         SubtreeDeleteScope::Chapter { .. } => {
             //
-            return Err(BaseError::Unrecoverable {
-                msg: "direct chapter deletion must not create a tombstone"
-                    .into(),
+            return Err(unrecoverable_error! {
+                message: "direct chapter deletion must not create a tombstone"
+                    .into();
+                team_id = %scope.team_id(),
+                "direct chapter deletion must not create a tombstone",
             });
         }
     }
