@@ -67,6 +67,8 @@ async fn persist_chapter_issues(
     repl: &ChapterIssuesRepl,
 ) -> BaseRest<()> {
     //
+    super::issue_edit::revision::renew_review(conn, &repl.chapter_id).await?;
+
     clear(conn, &repl.chapter_id).await?;
 
     for entries in repl.entries.chunks(2000) {

@@ -6,6 +6,8 @@
 
 //! Typed persistence, business validation boundaries and lifecycle tests.
 
+mod editor;
+
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
@@ -313,6 +315,8 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     })
     .await
     .unwrap();
+
+    editor::verify(&repo, &nucl, chapter_id).await;
 
     let mut entries = vec![
         entry("review-first", chapter_id, 0),

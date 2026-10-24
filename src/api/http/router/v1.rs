@@ -3,9 +3,9 @@ use axum::routing::{delete, get, post, put};
 
 use crate::api::http::handler::{
     announcement, assignment, assignment_invitation, auth, chapter,
-    chapter_port, comic, comment, issue, member, member_invitation, page,
-    page_artwork, system_mail, team, term, termbase, termbase_port, unit, user,
-    workset,
+    chapter_port, comic, comment, issue, issue_edit, member, member_invitation,
+    page, page_artwork, system_mail, team, term, termbase, termbase_port, unit,
+    user, workset,
 };
 use crate::api::http::state::AppHarn;
 
@@ -244,6 +244,22 @@ pub fn v1_page_router() -> Router<AppHarn> {
             post(issue::import_issue),
         )
         .route("/chapters/{chapter_id}/issues", get(issue::list_infos))
+        .route(
+            "/page-artworks/{page_artwork_id}/issues",
+            get(issue_edit::get_info),
+        )
+        .route(
+            "/page-artworks/{page_artwork_id}/issues/save",
+            post(issue_edit::save_infos),
+        )
+        .route(
+            "/chapters/{chapter_id}/issues/variants",
+            get(issue_edit::list_variant_infos),
+        )
+        .route(
+            "/chapters/{chapter_id}/issues/variants/rename",
+            post(issue_edit::rename_variant),
+        )
         .route("/pages/{page_id}", get(page::get_info))
         .route("/pages/{page_id}/image/alloc", post(page::alloc_image))
         .route(

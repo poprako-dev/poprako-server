@@ -42,6 +42,10 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
+/// Bounded annotation save receipts.
+pub mod issue_save;
 /// Member repository port.
 pub mod member;
 /// Member invitation repository port.

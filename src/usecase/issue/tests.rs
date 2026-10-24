@@ -5,6 +5,8 @@
 
 //! Whole-chapter current review import and read permissions.
 
+mod editor;
+
 use super::*;
 
 use time::OffsetDateTime;

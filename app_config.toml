@@ -45,6 +45,10 @@ idle_interval_secs = 5
 retry_interval_secs = 5
 
 [cache]
+# Annotation receipt estimated-memory budget in MiB; default 16.
+issue_save_limit_mib = 16
+# Annotation receipt retention in seconds; default 2592000 (30 days).
+issue_save_ttl_secs = 2592000
 # Estimated completed Unit-save cache budget in MiB. Default: 256; must be positive.
 unit_save_limit_mib = 256
 # Retained Unit-save token budget, enforced through entry weights. Default: 500000; must be positive.

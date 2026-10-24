@@ -114,3 +114,7 @@ error-page-artwork-not-found = Composite page not found.
 error-page-artwork-target = Composite page identities must be distinct and belong to this chapter.
 error-page-artwork-write-role-required = A typesetter, redrawer, reviewer assignment or team administration is required.
 error-stale-page-artwork-upload = The composite upload generation is no longer current.
+
+error-review-changed = The page or review changed. Reload before retrying.
+error-review-category-name = Category names must be nonblank, unique, and must not change defaults.
+error-review-save-reused = This save ID was already used for different contents.

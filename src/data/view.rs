@@ -20,6 +20,8 @@ pub mod comment;
 pub mod image;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member response views.
 pub mod member;
 /// Member-invitation response views.

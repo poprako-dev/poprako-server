@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS "t_chapter" (
 
     "f_deleted_at"                TIMESTAMPTZ,
 
+    "f_review_generation" BIGINT NOT NULL DEFAULT 0,
+    "f_review_revision"   BIGINT NOT NULL DEFAULT 0,
+
     "f_created_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 

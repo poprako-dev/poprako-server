@@ -53,6 +53,8 @@ pub mod test_shared;
 
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Unit repository operations.
 pub mod unit;
 /// User repository operations.

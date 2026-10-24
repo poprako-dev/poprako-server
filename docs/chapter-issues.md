@@ -108,3 +108,53 @@ must explicitly migrate their data before these baseline migrations; application
 startup never applies migrations. The separate ChapterArtwork confirmation
 baseline in [chapter-issue-upgrade.md](chapter-issue-upgrade.md) still supports
 idempotent ZIP confirmation and typesetting workflow, independently of Issues.
+
+## Versioned reviewer editing
+
+The editor uses separate contracts without layer fields or per-annotation workflow
+flags. The existing import, export and archive contracts retain legacy metadata.
+
+- `GET /api/v1/page-artworks/{id}/issues` returns `page_artwork_id`, `review_key`,
+  `revision`, `chapter_revision`, nullable `image_version` and ordered `issues`.
+- `POST /api/v1/page-artworks/{id}/issues/save?save_id={uuid}` takes `review_key`,
+  `revision`, nullable `image_version` and the complete ordered `issues` array.
+  Each issue contains `id`, `variant`, optional `rect` and `note`. Clients assign UUIDs
+  to new annotations; existing imported identities are retained. Empty arrays clear
+  the page. Other pages and existing legacy layer metadata remain intact.
+- `GET /api/v1/chapters/{id}/issues/variants` returns `review_key`, chapter
+  `revision`, and actual `variants` usage counts across all composite pages.
+- `POST /api/v1/chapters/{id}/issues/variants/rename` accepts that summary's
+  `review_key` and `revision`, plus `from` and `to`. It atomically updates every
+  reference and returns `summary` plus fresh affected `pages`. Renaming into an
+  existing name or changing a fixed default is rejected.
+
+Revision strings are opaque optimistic concurrency tokens. A mismatched page,
+review generation or image version returns HTTP 409 (code 8). Import advances
+review generation and all page revisions; ordinary saves advance only their page
+revision and the chapter revision. Rename advances affected page revisions and
+chapter revision. Artwork changes also invalidate chapter summary revisions.
+Writes lock the chapter and verify current REVIEWER assignment and unpublished
+state, including before returning a cached retry result. Reads use Page access.
+
+Save receipts are process-local, bounded by `cache.issue_save_limit_mib` (16 MiB
+by default) with `cache.issue_save_ttl_secs` (30 days by default). A receipt binds
+its UUID to the actor, page and exact submitted payload. Successful retries return
+the current document without replaying old contents. Receipts are recorded only
+after commit. Cache eviction, process restart and other replicas fall back to
+version checks and stable identities; permanent exactly-once delivery is not
+promised.
+
+The frontend keeps fixed defaults (`居中`, `字体`, `字号`, `字重`, `修图`), chapter
+usage and personal presets distinct. Personal presets are account-scoped browser
+storage, shared across chapters on that browser. They are never a server category
+entity, and chapter usage does not implicitly add a preset. Deleting a preset
+requires no references in the current chapter, including unsaved drafts. A used
+category rename changes this chapter and any matching personal preset; it does
+not rename other chapters. Drafts are account/chapter/page-scoped IndexedDB data.
+Saving, importing and renaming do not advance workflow. Completion first saves
+all pages, then uses the existing chapter Review stage transition.
+
+Existing databases must run `scripts/migrate-review-editor.sql` explicitly before
+starting this server version. It adds the three revision columns transactionally
+and preserves annotation data; it is safe to repeat. Fresh databases receive the
+columns through the baseline migrations. Application startup does not migrate.

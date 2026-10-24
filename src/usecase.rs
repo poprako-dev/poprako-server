@@ -58,6 +58,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member management use cases.
 pub mod member;
 /// Member invitation use cases.

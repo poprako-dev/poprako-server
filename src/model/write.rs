@@ -14,6 +14,8 @@ pub mod comic_archive;
 pub mod comment;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Review contents prepared for validation and replacement.
 pub mod issue_import;
 /// Member mutation models.

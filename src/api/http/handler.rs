@@ -24,6 +24,8 @@ pub mod comment;
 pub mod health;
 /// Current chapter review issues.
 pub mod issue;
+/// Versioned review editing.
+pub mod issue_edit;
 /// Member request handlers.
 pub mod member;
 /// Member invitation request handlers.

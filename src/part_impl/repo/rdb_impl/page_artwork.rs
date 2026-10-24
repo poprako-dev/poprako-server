@@ -136,6 +136,9 @@ where
         //
         let conn = context.conn();
 
+        super::issue_edit::revision::bump_chapter(conn, oper.chapter_id)
+            .await?;
+
         let retained_ids = oper
             .entries
             .iter()
@@ -220,6 +223,16 @@ where
         oper: &UpdatePageArtworkInfo<'_>,
     ) -> BaseRest<()> {
         //
+        let chapter_id = t_page_artwork::table
+            .find(&oper.update.id)
+            .select(t_page_artwork::f_chapter_id)
+            .first::<String>(context.conn())
+            .await
+            .map_err(map_diesel)?;
+
+        super::issue_edit::revision::bump_chapter(context.conn(), &chapter_id)
+            .await?;
+
         let changed_count =
             diesel::update(t_page_artwork::table.find(&oper.update.id))
                 .set((

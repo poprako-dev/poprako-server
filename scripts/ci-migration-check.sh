@@ -83,3 +83,6 @@ diesel migration run --config-file /dev/null
 psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file tests/fixtures/chapter-admin-migration.sql
 psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file scripts/chapter-admin-upgrade/apply.sql
 psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file scripts/chapter-admin-upgrade/apply.sql
+
+# Verify annotation revisions preserve existing data and survive upgrade replay.
+psql "$DATABASE_URL" --no-psqlrc --set ON_ERROR_STOP=1 --file tests/fixtures/review-editor-upgrade.sql
