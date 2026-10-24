@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::model::artifact::translation_document::UnitTranslationDocument;
+use crate::model::shared::translation_document::UnitTranslationDocument;
 
 /// Unit object exchanged by the `PopRaKo` translation port.
 #[derive(Clone, Deserialize, Serialize)]

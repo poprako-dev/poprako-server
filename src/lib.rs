@@ -17,7 +17,7 @@ mod extra;
 mod harn;
 // Tracing-subscriber initialisation shared across binaries.
 mod log;
-// Persisted business entity model definitions backed by database tables.
+// Business entity models and their read, write, and shared forms.
 mod model;
 // Port trait definitions (repo, auth, image, prom, effect) for the application
 // core.

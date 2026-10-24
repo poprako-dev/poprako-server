@@ -16,12 +16,12 @@ use crate::complex::chapter_port::export_translation as chapter_translation_expo
 use crate::data::val::chapter_port::{
     ChapterPageRawIdentVal, ExportChapterTranslationsVal,
 };
-use crate::model::artifact::translation_document::{
+use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::unit::UnitInfo;
+use crate::model::shared::translation_document::{
     ChapterTranslationDocument, PageTranslationDocument,
     UnitTranslationDocument,
 };
-use crate::model::read::proj::page::PageInfo;
-use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;

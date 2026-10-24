@@ -4,7 +4,7 @@
 use super::*;
 
 use crate::complex::chapter_port::import_translation as chapter_import_complex;
-use crate::model::artifact::translation_import::UnitTranslationImportSource;
+use crate::model::write::translation_import::UnitTranslationImportSource;
 
 #[test]
 fn label_plus_annotations_roundtrip_body_selection_and_blank_lines() {

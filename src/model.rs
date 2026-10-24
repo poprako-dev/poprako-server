@@ -1,14 +1,13 @@
-//! Domain model types representing persisted business entities.
+//! Domain models representing business entities and their read and write forms.
 //!
-//! Types in this layer carry raw storage values — [`OffsetDateTime`] timestamps,
-//! opaque keys, and version numbers. They are converted to presentation-friendly
-//! types in the [`data`](super::data) layer before reaching external consumers.
+//! Models follow business meaning and need not map one-to-one to persisted rows.
+//! Read models describe queried state, write models describe intended changes,
+//! and shared models carry concepts used across both roles. Presentation types
+//! belong to the [`data`](super::data) layer.
 
-/// Intermediate artifacts produced while processing domain inputs.
-pub mod artifact;
-/// Repository read models.
+/// Business read models and query specifications.
 pub mod read;
-/// Value groups shared by read and write models.
+/// Business models shared by read and write flows.
 pub mod shared;
-/// Repository write models.
+/// Business write models, including imports and intended mutations.
 pub mod write;

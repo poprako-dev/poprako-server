@@ -10,11 +10,11 @@ use std::collections::{HashMap, HashSet};
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::unit as unit_complex;
-use crate::model::artifact::translation_document::ChapterTranslationDocument;
-use crate::model::artifact::translation_import::{
+use crate::model::shared::translation_document::ChapterTranslationDocument;
+use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::model::write::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
 };
-use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::page::MAX_CHAPTER_PAGE_COUNT;

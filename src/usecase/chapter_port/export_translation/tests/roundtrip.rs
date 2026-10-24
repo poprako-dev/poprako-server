@@ -4,8 +4,8 @@ use crate::complex::chapter_port::import_translation as chapter_translation_impo
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::model::artifact::translation_document::ChapterTranslationDocument;
-use crate::model::artifact::translation_import::UnitTranslationImportSource;
+use crate::model::shared::translation_document::ChapterTranslationDocument;
+use crate::model::write::translation_import::UnitTranslationImportSource;
 
 // Build an unordered native export with independent annotations.
 fn document() -> ChapterTranslationPortView {
