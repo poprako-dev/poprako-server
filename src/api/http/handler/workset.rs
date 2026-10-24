@@ -22,7 +22,7 @@ use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::workset as workset_usecase;
 
@@ -47,7 +47,7 @@ pub async fn create(
     Json(instr): Json<CreateWorksetInstr>,
 ) -> HttpResult<CreateWorksetVal> {
     //
-    Ok(workset_usecase::create::<_, RdbContext<ReptRead>, HybRepo>(
+    Ok(workset_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
@@ -84,7 +84,7 @@ pub async fn list_infos(
     };
 
     Ok(
-        workset_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
+        workset_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo>(
             (harn.repo(),),
             user_token,
             instr,
@@ -115,7 +115,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoView> {
     //
-    Ok(workset_usecase::get_info::<RdbContext<ReptRead>, HybRepo>(
+    Ok(workset_usecase::get_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         workset_id,
@@ -148,7 +148,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&workset_id, &instr.id)?;
 
-    workset_usecase::update_info::<RdbContext<ReptRead>, HybRepo>(
+    workset_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -177,7 +177,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    workset_usecase::delete::<_, RdbContext<Serial>, HybRepo>(
+    workset_usecase::delete::<_, RdbContext<Serial>, RdbRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         workset_id,

@@ -9,12 +9,12 @@ use std::sync::Arc;
 use crate::config::AppConfig;
 
 /// Shared storage for application ports composed by the entry point.
-pub struct Harn<N, R, O, P, A, D> {
+pub struct Harn<N, R, K, O, P, A, D> {
     /// Shared harness storage.
-    inner: Arc<HarnInner<N, R, O, P, A, D>>,
+    inner: Arc<HarnInner<N, R, K, O, P, A, D>>,
 }
 
-impl<N, R, O, P, A, D> Clone for Harn<N, R, O, P, A, D> {
+impl<N, R, K, O, P, A, D> Clone for Harn<N, R, K, O, P, A, D> {
     // Clones the shared harness handle.
     fn clone(&self) -> Self {
         Self {
@@ -24,13 +24,18 @@ impl<N, R, O, P, A, D> Clone for Harn<N, R, O, P, A, D> {
 }
 
 // Stores the concrete application ports.
-struct HarnInner<N, R, O, P, A, D> {
+struct HarnInner<N, R, K, O, P, A, D> {
     // Runtime application configuration.
     config: AppConfig,
+
     // Transaction coordinator selector.
     nucl: N,
     // Repository adapter bundle.
     repo: R,
+
+    // Shared process-local cache adapter.
+    cache: K,
+
     // Reliable remote-object lifecycle adapter.
     obj_dept: O,
     // Deferred-task producer.
@@ -41,17 +46,26 @@ struct HarnInner<N, R, O, P, A, D> {
     develop: D,
 }
 
-impl<N, R, O, P, A, D> Harn<N, R, O, P, A, D> {
+impl<N, R, K, O, P, A, D> Harn<N, R, K, O, P, A, D> {
     /// Builds a harness from its application ports.
     pub fn new(
         config: AppConfig,
-        (nucl, repo, obj_dept, prom, auth, develop): (N, R, O, P, A, D),
+        (nucl, repo, cache, obj_dept, prom, auth, develop): (
+            N,
+            R,
+            K,
+            O,
+            P,
+            A,
+            D,
+        ),
     ) -> Self {
         Self {
             inner: Arc::new(HarnInner {
                 config,
                 nucl,
                 repo,
+                cache,
                 obj_dept,
                 prom,
                 auth,
@@ -76,6 +90,12 @@ impl<N, R, O, P, A, D> Harn<N, R, O, P, A, D> {
     #[must_use]
     pub fn repo(&self) -> &R {
         &self.inner.repo
+    }
+
+    /// Returns the process-local cache adapter.
+    #[must_use]
+    pub fn cache(&self) -> &K {
+        &self.inner.cache
     }
 
     /// Returns the reliable remote-object lifecycle adapter.

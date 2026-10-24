@@ -14,12 +14,15 @@
 //! | [`nucl`]   | Transaction-coordinator boundary error conversion |
 //! | [`prom`]   | Deferred actions executed after transaction commit |
 //! | [`repo`]   | Persistent storage with transactional support |
+//! | [`cache`]  | Process-local leases and save coordination |
 //! | [`auth`]   | Authentication token signing |
 //!
 //! [`part_impl`]: super::part_impl
 
 /// Authentication port — token signing and verification.
 pub mod auth;
+/// Process-local lease and save coordination port.
+pub mod cache;
 /// Side-effect dispatch port.
 pub mod effect;
 /// Transaction-coordinator boundary error conversion.

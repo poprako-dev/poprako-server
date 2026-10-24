@@ -1,5 +1,7 @@
 /// Authentication port implementation (JWT signing, mock).
 pub mod auth;
+/// Process-local cache implementation.
+pub mod cache;
 /// Effect processing implementation (async dispatch, mock).
 pub mod effect;
 /// Transaction coordinator implementation (RDBMS-based).

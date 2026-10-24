@@ -7,16 +7,14 @@
 
 use super::*;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-workset-domain-";
 
@@ -29,11 +27,7 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let workset_fixture = test_shared::seed_workset(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let workset_infos = repo
         .run(&ListWorksetInfos {

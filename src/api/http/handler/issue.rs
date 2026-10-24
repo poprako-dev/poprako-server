@@ -14,7 +14,7 @@ use crate::data::val::issue::ImportChapterIssuesVal;
 use crate::data::view::issue::IssueInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::issue as issue_usecase;
 
@@ -41,7 +41,7 @@ pub async fn import_issue(
 ) -> HttpResult<ImportChapterIssuesVal> {
     //
     Ok(
-        issue_usecase::import_issue::<_, RdbContext<ReptRead>, HybRepo>(
+        issue_usecase::import_issue::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             token,
             chapter_id,
@@ -71,7 +71,7 @@ pub async fn list_infos(
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<Vec<IssueInfoView>> {
     //
-    Ok(issue_usecase::list_infos::<RdbContext<ReptRead>, HybRepo>(
+    Ok(issue_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         token,
         chapter_id,

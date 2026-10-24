@@ -7,9 +7,6 @@
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::ChapterStageRepl;
@@ -19,18 +16,19 @@ use crate::part::repo::oper::chapter::{
     UpdateChapterStage,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 
 // Verify creator inclusion, ancestor inclusion, and the pinned chapter query.
 async fn verify_chapter_inclusions(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     chapter_fixture: &ChapterFixture,
 ) {
     let chapter_list_spec = ChapterListSpec {
@@ -116,11 +114,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

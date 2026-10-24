@@ -44,14 +44,10 @@ pub mod comment;
 pub mod issue;
 /// Versioned review editing.
 pub mod issue_edit;
-/// Bounded annotation save receipts.
-pub mod issue_save;
 /// Member repository port.
 pub mod member;
 /// Member invitation repository port.
 pub mod member_invitation;
-/// Online-user repository port.
-pub mod online_user;
 /// Repository operation descriptors.
 pub mod oper;
 /// Page repository port.
@@ -70,8 +66,6 @@ pub mod term;
 pub mod termbase;
 /// Unit repository port.
 pub mod unit;
-/// Process-local Unit save coordination.
-pub mod unit_save;
 /// User repository port.
 pub mod user;
 /// Workset repository port.

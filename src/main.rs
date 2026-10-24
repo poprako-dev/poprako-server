@@ -13,9 +13,9 @@ use poprako_server::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use poprako_server::part_impl::prom::rdb_impl::writer::RdbProm;
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, EffectActor, EffectActorDesc, Harn, HybNucl,
-    HybRepo, JwtAuth, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore, RdbNucl,
-    RdbObjDeptProm, ReptRead, Sched, SchedDesc, Serial, SubtreeDeleteTask,
-    dispatch_prom,
+    JwtAuth, MemCache, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore,
+    RdbNucl, RdbObjDeptProm, RdbRepo, ReptRead, Sched, SchedDesc, Serial,
+    SubtreeDeleteTask, dispatch_prom,
 };
 
 // Report every failed supervisor after all joins have completed.
@@ -133,11 +133,12 @@ async fn main() -> anyhow::Result<()> {
         AsyncEffectDevelop::new(config.effect.capacity),
     );
 
-    let (http_addr, rept_read_nucl, serial_nucl, repo, obj_dept_prom) = (
+    let (http_addr, rept_read_nucl, serial_nucl, repo, cache, obj_dept_prom) = (
         http_addr(&config)?,
         RdbNucl::<ReptRead>::new(rdb_core.clone()),
         RdbNucl::<Serial>::new(rdb_core.clone()),
-        HybRepo::new(rdb_core.clone(), config.cache, config.repo),
+        RdbRepo::new(rdb_core.clone(), config.repo),
+        MemCache::new(config.cache),
         RdbObjDeptProm::new(rdb_core.clone()),
     );
 
@@ -203,7 +204,7 @@ async fn main() -> anyhow::Result<()> {
         prom_actor_desc,
         sched_desc,
     ) = (
-        Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop)),
+        Harn::new(config, (nucl, repo, cache, obj_dept, prom, auth, develop)),
         obj_dept_actor.run_detached(),
         effect_actor.run_detached::<RdbContext<ReptRead>>(),
         prom_actor.run_detached(),

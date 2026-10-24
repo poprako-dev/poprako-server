@@ -2,13 +2,11 @@
 
 use super::*;
 
+use crate::config::repo::RepoConfig;
+use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
 use diesel::expression::AsExpression;
 use diesel::sql_types::Text;
 use tokio::sync::oneshot;
-
-use crate::config::cache::CacheConfig;
-use crate::config::repo::RepoConfig;
-use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
 
 // Use a non-default batch size to exercise configured claims and locking.
 fn repo_config() -> RepoConfig {
@@ -31,8 +29,7 @@ async fn claim(
     shared: &RdbCore,
     level: SubtreeSweepLevel,
 ) -> Option<SubtreeDeleteSweepTarget> {
-    let repo =
-        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
+    let repo = RdbRepo::new(shared.clone(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -46,8 +43,7 @@ async fn claim_and_sweep(
     shared: &RdbCore,
     level: SubtreeSweepLevel,
 ) -> Option<SubtreeDeleteSweepTarget> {
-    let repo =
-        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
+    let repo = RdbRepo::new(shared.clone(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -156,8 +152,7 @@ async fn explicit_comic_claim_does_not_short_circuit_on_chapter(
 
     mark_workset(shared, &workset_id).await;
 
-    let repo =
-        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
+    let repo = RdbRepo::new(shared.clone(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {
@@ -223,11 +218,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
     let (release_send, release_recv) = oneshot::channel();
     let claim_core = shared.clone();
     let claim_task = tokio::spawn(async move {
-        let repo = HybRepo::new(
-            claim_core.clone(),
-            CacheConfig::default(),
-            repo_config(),
-        );
+        let repo = RdbRepo::new(claim_core.clone(), repo_config());
         let nucl = RdbNucl::<Serial>::new(claim_core);
 
         nucl.coord(async move |context| {
@@ -473,8 +464,7 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
 
     mark_workset(shared, &workset_id).await;
 
-    let repo =
-        HybRepo::new(shared.clone(), CacheConfig::default(), repo_config());
+    let repo = RdbRepo::new(shared.clone(), repo_config());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {

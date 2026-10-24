@@ -23,7 +23,7 @@ use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::unit as unit_usecase;
 use crate::usecase::unit::transform as unit_transform_usecase;
@@ -74,7 +74,7 @@ pub async fn list_infos(
     let instr = ListPageUnitInfosInstr { page_id };
 
     Ok(
-        unit_usecase::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
+        unit_usecase::list_infos::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             instr,
@@ -116,7 +116,7 @@ pub async fn search_infos(
     };
 
     Ok(
-        unit_usecase::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
+        unit_usecase::search_infos::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             instr,
@@ -157,13 +157,15 @@ pub async fn save_infos(
         save_id: query.save_id,
     };
 
-    Ok(unit_usecase::save_edits::<_, RdbContext<Serial>, HybRepo>(
-        (harn.nucl().serial(), harn.repo()),
-        user_token,
-        instr,
+    Ok(
+        unit_usecase::save_edits::<_, RdbContext<Serial>, RdbRepo, _>(
+            (harn.nucl().serial(), harn.repo(), harn.cache()),
+            user_token,
+            instr,
+        )
+        .await?
+        .accept(StatusCode::OK),
     )
-    .await?
-    .accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/units/transform` — transform Unit text.
@@ -189,7 +191,7 @@ pub async fn transform(
     Json(instr): Json<TransformChapterUnitsInstr>,
 ) -> HttpNoContent {
     //
-    unit_transform_usecase::transform::<_, RdbContext<Serial>, HybRepo>(
+    unit_transform_usecase::transform::<_, RdbContext<Serial>, RdbRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         chapter_id,

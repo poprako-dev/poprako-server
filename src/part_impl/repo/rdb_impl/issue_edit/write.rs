@@ -9,7 +9,7 @@ use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::issue_edit::{
     RenameIssueVariants, ReplacePageIssues,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
 use crate::part_impl::repo::rdb_impl::issue_edit::revision;
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
@@ -17,7 +17,7 @@ use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
-impl<L> Step<ReplacePageIssues<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ReplacePageIssues<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -72,7 +72,7 @@ where
     }
 }
 
-impl<L> Step<RenameIssueVariants<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<RenameIssueVariants<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

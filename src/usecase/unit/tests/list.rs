@@ -5,10 +5,10 @@ use crate::model::shared::unit::UnitCoord;
 
 #[tokio::test]
 async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![
             create("tail", None, Some("tail")),
@@ -32,7 +32,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
         })?;
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Delete { id: hidden_id }]),
     )
@@ -62,7 +62,7 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
 
 #[tokio::test]
 async fn list_rejects_page_count_drift() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     mock.seed_unit(unit_info("unit-1"));
 

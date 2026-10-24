@@ -20,7 +20,7 @@ use crate::part::repo::oper::assignment::{
     UpdateAssignmentRoles,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ChapterFixture;
 use crate::result::BaseError;
@@ -32,7 +32,7 @@ const PREFIX: &str = "rdb-test-assignment-domain-";
 
 // Verify the included assignment resolves every ancestor through the owning team.
 async fn verify_assignment_ancestor_inclusions(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     chapter_fixture: &ChapterFixture,
     entry: &AssignmentEntryShape<'_>,
 ) {
@@ -74,7 +74,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let config = AppConfig::default();
 
-    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
+    let repo = RdbRepo::new(shared.clone(), config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

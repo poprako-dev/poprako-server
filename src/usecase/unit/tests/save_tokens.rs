@@ -3,7 +3,6 @@
 // save_edits(save_tokens)(negative): rollback does not retain a successful token.
 use super::*;
 use crate::config::cache::CacheConfig;
-use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 use std::time::{Duration, Instant};
 
 fn batch(save_id: &str, text: &str) -> SavePageUnitEditsInstr {
@@ -17,19 +16,19 @@ fn batch(save_id: &str, text: &str) -> SavePageUnitEditsInstr {
 // save_edits(save_tokens)(positive): retries do not renew retention and expired tokens allow execution.
 #[tokio::test]
 async fn replay_does_not_extend_token_lifetime() {
-    let mut mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let config = CacheConfig {
         unit_save_ttl: Duration::from_secs(2),
         ..CacheConfig::default()
     };
 
-    mock.unit_saves = UnitSaveCache::new(config);
+    let cache = MemCache::new(config);
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
     let original = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
@@ -41,7 +40,7 @@ async fn replay_does_not_extend_token_lifetime() {
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     let replay = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
@@ -58,7 +57,7 @@ async fn replay_does_not_extend_token_lifetime() {
     .await;
 
     let repeated = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
@@ -72,12 +71,12 @@ async fn replay_does_not_extend_token_lifetime() {
 
 #[tokio::test]
 async fn retained_token_skips_duplicate_and_changed_batches() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4();
 
     let original = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id.to_string(), "saved"),
     )
@@ -93,7 +92,7 @@ async fn retained_token_skips_duplicate_and_changed_batches() {
         (save_id.simple().to_string(), "changed"),
     ] {
         let replay = save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             batch(&encoded_id, text),
         )
@@ -125,7 +124,7 @@ async fn retained_token_skips_duplicate_and_changed_batches() {
 
     assert!(
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             batch(&save_id.to_string(), "saved"),
         )
@@ -136,10 +135,10 @@ async fn retained_token_skips_duplicate_and_changed_batches() {
 
 #[tokio::test]
 async fn invalid_token_leaves_units_unchanged() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let error = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch("not-a-uuid", "saved"),
     )
@@ -156,12 +155,12 @@ async fn invalid_token_leaves_units_unchanged() {
 
     assert!(mock.snapshot().units.is_empty());
 
-    assert_eq!(mock.unit_saves.token_count(), 0);
+    assert_eq!(cache.unit_save_token_count(), 0);
 }
 
 #[tokio::test]
 async fn failed_batch_does_not_consume_save_identity() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
@@ -172,18 +171,18 @@ async fn failed_batch_does_not_consume_save_identity() {
     });
 
     assert!(
-        save_edits((&mock, &mock), token("translator-1"), invalid)
+        save_edits((&mock, &mock, &cache), token("translator-1"), invalid)
             .await
             .is_err()
     );
 
-    assert!(mock.unit_saves.token_count() == 0);
+    assert!(cache.unit_save_token_count() == 0);
 
     assert!(mock.snapshot().units.is_empty());
 
     assert!(
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             batch(&save_id, "text")
         )
@@ -195,7 +194,7 @@ async fn failed_batch_does_not_consume_save_identity() {
 // A backend commit failure after successful steps must not publish a token.
 #[tokio::test]
 async fn failed_commit_does_not_publish_token() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
@@ -203,7 +202,7 @@ async fn failed_commit_does_not_publish_token() {
 
     assert!(
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             batch(&save_id, "saved"),
         )
@@ -211,14 +210,14 @@ async fn failed_commit_does_not_publish_token() {
         .is_err()
     );
 
-    assert_eq!(mock.unit_saves.token_count(), 0);
+    assert_eq!(cache.unit_save_token_count(), 0);
 
     assert!(mock.snapshot().units.is_empty());
 
     mock.set_commit_failure(false);
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
@@ -227,15 +226,15 @@ async fn failed_commit_does_not_publish_token() {
 
     assert_eq!(mock.snapshot().units.len(), 1);
 
-    assert_eq!(mock.unit_saves.token_count(), 1);
+    assert_eq!(cache.unit_save_token_count(), 1);
 }
 
 #[tokio::test]
 async fn delete_returns_empty_mapping_and_hides_unit() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&uuid::Uuid::new_v4().to_string(), "text"),
     )
@@ -243,7 +242,7 @@ async fn delete_returns_empty_mapping_and_hides_unit() {
     .unwrap();
 
     let deleted = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Delete {
             id: mock.snapshot().units.first().unwrap().id.clone(),
@@ -259,23 +258,25 @@ async fn delete_returns_empty_mapping_and_hides_unit() {
     assert_eq!(mock.snapshot().pages.first().unwrap().total_unit_count, 0);
 }
 
-// Concurrent retries share the committed result through repository clones.
+// Concurrent retries share the committed result through independent port clones.
 #[tokio::test]
 async fn concurrent_retries_create_one_unit() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let cloned = mock.clone();
+
+    let cloned_cache = cache.clone();
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
     let (first, replay) = tokio::join!(
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             batch(&save_id, "saved"),
         ),
         save_edits(
-            (&cloned, &cloned),
+            (&cloned, &cloned, &cloned_cache),
             token("translator-1"),
             batch(&save_id, "saved"),
         ),
@@ -285,28 +286,28 @@ async fn concurrent_retries_create_one_unit() {
 
     assert_eq!(mock.snapshot().units.len(), 1);
 
-    assert_eq!(mock.unit_saves.token_count(), 1);
+    assert_eq!(cache.unit_save_token_count(), 1);
 }
 
 // Losing process-local tokens intentionally permits an old batch to run again.
 #[tokio::test]
 async fn lost_token_allows_reexecution() {
-    let mut mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
     .await
     .unwrap();
 
-    mock.unit_saves = UnitSaveCache::default();
+    let cache = MemCache::default();
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&save_id, "saved"),
     )
@@ -319,10 +320,10 @@ async fn lost_token_allows_reexecution() {
 // A structural no-op still records its token and replays without touching Units.
 #[tokio::test]
 async fn empty_patch_records_token_without_refreshing_unit_timestamp() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         batch(&uuid::Uuid::new_v4().to_string(), "saved"),
     )
@@ -358,12 +359,12 @@ async fn empty_patch_records_token_without_refreshing_unit_timestamp() {
 
         instr.save_id.clone_from(&save_id);
 
-        save_edits((&mock, &mock), token("translator-1"), instr)
+        save_edits((&mock, &mock, &cache), token("translator-1"), instr)
             .await
             .unwrap();
 
         assert_eq!(mock.snapshot().units.first().unwrap().updated_at, original);
 
-        assert_eq!(mock.unit_saves.token_count(), 2);
+        assert_eq!(cache.unit_save_token_count(), 2);
     }
 }

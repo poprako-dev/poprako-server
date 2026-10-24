@@ -26,7 +26,7 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseInfoRecord, TermbaseItem,
 };
@@ -296,7 +296,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-impl Run<GetTermbaseInfo<'_>> for HybRepo {
+impl Run<GetTermbaseInfo<'_>> for RdbRepo {
     // Use BaseError for non-transactional read failures.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -308,7 +308,7 @@ impl Run<GetTermbaseInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListTermbaseInfos<'_>> for HybRepo {
+impl Run<ListTermbaseInfos<'_>> for RdbRepo {
     // Use BaseError for non-transactional list failures.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -323,7 +323,7 @@ impl Run<ListTermbaseInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateTermbase<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateTermbase<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -344,7 +344,7 @@ where
     }
 }
 
-impl<L> Step<GetTermbaseInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetTermbaseInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<L> Step<GetTermbaseInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetTermbaseInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -386,7 +386,7 @@ where
     }
 }
 
-impl<L> Step<ListTermbaseInfosExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListTermbaseInfosExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -407,7 +407,7 @@ where
     }
 }
 
-impl<L> Step<UpdateTermbase<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateTermbase<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -428,7 +428,7 @@ where
     }
 }
 
-impl<L> Step<UpdateTermbaseTermCount<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateTermbaseTermCount<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -449,7 +449,7 @@ where
     }
 }
 
-impl<L> Step<TouchTermbase<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<TouchTermbase<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -470,7 +470,7 @@ where
     }
 }
 
-impl<L> Step<DeleteTermbase<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteTermbase<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

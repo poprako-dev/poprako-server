@@ -9,9 +9,6 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::write::member_invitation::MemberInvitationEntry;
@@ -20,11 +17,12 @@ use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::{RoleField, RoleMask};
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
 
@@ -37,11 +35,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

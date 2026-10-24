@@ -1,6 +1,6 @@
 //! Exercise versioned typed persistence against the disposable `PostgreSQL` fixture.
 
-use super::{HybRepo, RdbNucl, ReptRead, entry};
+use super::{RdbNucl, RdbRepo, ReptRead, entry};
 use crate::model::write::issue_edit::{
     IssueEditPageRepl, IssueEditVariantRename,
 };
@@ -11,7 +11,7 @@ use crate::part::repo::oper::issue_edit::{
 use poprako_orchestra::{Nucl as _, OperStep as _};
 
 pub async fn verify(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
 ) {

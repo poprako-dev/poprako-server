@@ -1,4 +1,4 @@
-//! Process-local online-user lease repository operations.
+//! Process-local online-user lease cache adapter operations.
 
 #[cfg(test)]
 // Online-user adapter tests use explicit instants without sleeping.
@@ -13,8 +13,10 @@ use dashmap::mapref::entry::Entry;
 use poprako_orchestra::Run;
 
 use crate::config::cache::CacheConfig;
-use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkUserOnline};
-use crate::part_impl::repo::HybRepo;
+use crate::part::cache::oper::online_user::{
+    ListOnlineUserIds, MarkUserOnline,
+};
+use crate::part_impl::cache::mem_impl::MemCache;
 use crate::result::{BaseError, BaseRest};
 
 /// Shared team-partitioned online-user leases.
@@ -91,14 +93,14 @@ impl OnlineUserCache {
 }
 
 impl Default for OnlineUserCache {
-    // Use the same lease policy as a repository with default configuration.
+    // Use the same lease policy as a cache adapter with default configuration.
     fn default() -> Self {
         Self::new(CacheConfig::default().online_user_ttl)
     }
 }
 
-impl Run<MarkUserOnline<'_>> for HybRepo {
-    // Keep memory adapter failures on the shared repository error channel.
+impl Run<MarkUserOnline<'_>> for MemCache {
+    // Keep memory adapter failures on the shared cache adapter error channel.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -106,8 +108,8 @@ impl Run<MarkUserOnline<'_>> for HybRepo {
     async fn run(&self, oper: &MarkUserOnline<'_>) -> BaseRest<()> {
         //
         self.online_users.mark_user_online_at(
-            oper.team_id,
-            oper.user_id,
+            oper.team_id(),
+            oper.user_id(),
             Instant::now(),
         );
 
@@ -115,8 +117,8 @@ impl Run<MarkUserOnline<'_>> for HybRepo {
     }
 }
 
-impl Run<ListOnlineUserIds<'_>> for HybRepo {
-    // Keep memory adapter failures on the shared repository error channel.
+impl Run<ListOnlineUserIds<'_>> for MemCache {
+    // Keep memory adapter failures on the shared cache adapter error channel.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -125,7 +127,7 @@ impl Run<ListOnlineUserIds<'_>> for HybRepo {
         //
         let online_user_ids = self
             .online_users
-            .list_online_user_ids_at(oper.team_id, Instant::now());
+            .list_online_user_ids_at(oper.team_id(), Instant::now());
 
         accept!(online_user_ids)
     }

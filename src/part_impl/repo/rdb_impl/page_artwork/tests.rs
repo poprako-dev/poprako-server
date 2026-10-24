@@ -13,16 +13,6 @@ use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
 use url::Url;
 
-use poprako_obj_dept::key::{KeyMap as _, ObjGen};
-use poprako_obj_dept::model::slot::{ObjDeptPoolSlot, ObjSlotSpec};
-use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
-use poprako_obj_dept::oper::{
-    DeleteObjs, GenObjSlot, GenObjSlots, ListObjMetas, MarkObjUploaded,
-};
-use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
-use poprako_obj_dept::rest::ObjDeptRest;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
 use crate::model::write::page_artwork::{PageArtworkEntry, PageArtworkPatch};
@@ -35,13 +25,21 @@ use crate::part::repo::oper::page_artwork::{
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::test_rdb::start;
 use crate::value::image::ImageExt;
 use crate::value::page_artwork::PageArtworkImageKey;
+use poprako_obj_dept::key::{KeyMap as _, ObjGen};
+use poprako_obj_dept::model::slot::{ObjDeptPoolSlot, ObjSlotSpec};
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
+use poprako_obj_dept::oper::{
+    DeleteObjs, GenObjSlot, GenObjSlots, ListObjMetas, MarkObjUploaded,
+};
+use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
+use poprako_obj_dept::rest::ObjDeptRest;
 
 #[derive(Clone)]
 struct Pool;
@@ -212,11 +210,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let chapter_id = &fixture.chapter_info.id;
 
-    let repo = HybRepo::new(
-        core.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(core.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(core.clone());
 

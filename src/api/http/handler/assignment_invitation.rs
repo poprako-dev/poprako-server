@@ -25,7 +25,7 @@ use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::assignment_invitation as assignment_invitation_usecase;
 use crate::usecase::assignment_invitation::join as assignment_invitation_join_usecase;
@@ -75,7 +75,7 @@ pub async fn create(
     Ok(assignment_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         RdbProm,
     >(
         (
@@ -128,7 +128,7 @@ pub async fn list_infos(
     Ok(
         assignment_invitation_usecase::list_infos::<
             RdbContext<ReptRead>,
-            HybRepo,
+            RdbRepo,
         >((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK),
@@ -155,7 +155,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    assignment_invitation_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    assignment_invitation_usecase::delete::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_invitation_id,
@@ -189,7 +189,7 @@ pub async fn join(
     Ok(assignment_invitation_join_usecase::join::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),

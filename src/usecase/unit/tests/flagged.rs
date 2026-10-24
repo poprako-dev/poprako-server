@@ -13,10 +13,10 @@ fn edit(payload: serde_json::Value) -> UnitEditInstr {
 #[tokio::test]
 async fn flagged_is_shared_and_does_not_start_workflow() {
     for role in [RoleField::TRANSLATOR, RoleField::PROOFREADER] {
-        let mock = save_scope(RoleMask::from(role));
+        let (mock, cache) = save_scope(RoleMask::from(role));
 
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             save_instr(vec![edit(json!({
                 "edit": "create", "local_id": "flagged", "is_bubble": true,
@@ -37,7 +37,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
             json!({"edit": "patch", "id": id}),
         ] {
             save_edits(
-                (&mock, &mock),
+                (&mock, &mock, &cache),
                 token("translator-1"),
                 save_instr(vec![edit(payload)]),
             )
@@ -48,7 +48,7 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
         }
 
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             save_instr(vec![
                 edit(json!({"edit": "patch", "id": id, "is_flagged": true})),
@@ -81,10 +81,10 @@ async fn flagged_is_shared_and_does_not_start_workflow() {
 
 #[tokio::test]
 async fn flagged_survives_text_changes_and_failed_batches() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local", None, Some("translated"))]),
     )
@@ -94,7 +94,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     let id = mock.snapshot().units.first().unwrap().id.clone();
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![edit(
             json!({"edit": "patch", "id": id, "is_flagged": true}),
@@ -118,7 +118,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
         json!({"type": "clear"}),
     ] {
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             save_instr(vec![edit(
                 json!({"edit": "patch", "id": id, "translation": translation}),
@@ -130,10 +130,10 @@ async fn flagged_survives_text_changes_and_failed_batches() {
         assert!(mock.snapshot().units.first().unwrap().is_flagged);
     }
 
-    let save_count = mock.unit_saves.token_count();
+    let save_count = cache.unit_save_token_count();
 
     let rejected = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("outsider"),
         save_instr(vec![edit(
             json!({"edit": "patch", "id": id, "is_flagged": false}),
@@ -150,7 +150,7 @@ async fn flagged_survives_text_changes_and_failed_batches() {
     ));
 
     let rejected = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![
             edit(json!({"edit": "patch", "id": id, "is_flagged": false})),
@@ -161,13 +161,13 @@ async fn flagged_survives_text_changes_and_failed_batches() {
 
     assert!(rejected.is_err());
     assert!(mock.snapshot().units.first().unwrap().is_flagged);
-    assert_eq!(mock.unit_saves.token_count(), save_count);
+    assert_eq!(cache.unit_save_token_count(), save_count);
 }
 
 // Reusing a completed token skips even a changed flag payload.
 #[tokio::test]
 async fn retained_token_does_not_reapply_changed_flag() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let save_id = uuid::Uuid::new_v4().to_string();
 
@@ -175,7 +175,7 @@ async fn retained_token_does_not_reapply_changed_flag() {
 
     instr.save_id.clone_from(&save_id);
 
-    save_edits((&mock, &mock), token("translator-1"), instr)
+    save_edits((&mock, &mock, &cache), token("translator-1"), instr)
         .await
         .unwrap();
 
@@ -186,7 +186,7 @@ async fn retained_token_does_not_reapply_changed_flag() {
 
     changed.save_id = save_id;
 
-    save_edits((&mock, &mock), token("translator-1"), changed)
+    save_edits((&mock, &mock, &cache), token("translator-1"), changed)
         .await
         .unwrap();
 

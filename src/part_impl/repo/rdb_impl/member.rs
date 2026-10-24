@@ -16,7 +16,7 @@ use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
     GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::member::step_impl::{
     create, delete, delete_user_memberships, find_info_by_user_id_and_team_id,
     get_info_by_id, list_infos, list_infos_by_team_id_excluded,
@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::member::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<FindMemberInfo<'_>> for HybRepo {
+impl Run<FindMemberInfo<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -45,7 +45,7 @@ impl Run<FindMemberInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListMemberInfos<'_>> for HybRepo {
+impl Run<ListMemberInfos<'_>> for RdbRepo {
     // Non-transactional query path for listing member infos.
     //
     // It picks the right query variant based on whether the caller provided
@@ -73,7 +73,7 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<GetMemberInfo<'_, '_>> for HybRepo {
+impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
     // Non-transactional query path for loading one member info by identity.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -85,7 +85,7 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateMember<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -106,7 +106,7 @@ where
     }
 }
 
-impl<L> Step<UpdateMember<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateMember<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -145,7 +145,7 @@ where
     }
 }
 
-impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -179,7 +179,7 @@ where
     }
 }
 
-impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -206,7 +206,7 @@ where
     }
 }
 
-impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -227,7 +227,7 @@ where
     }
 }
 
-impl<L> Step<LockTeamMemberInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockTeamMemberInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -250,7 +250,7 @@ where
     }
 }
 
-impl<L> Step<DeleteMember<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteMember<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -271,7 +271,7 @@ where
     }
 }
 
-impl<L> Step<DeleteUserMemberships<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteUserMemberships<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

@@ -23,7 +23,7 @@ use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, CreateWorkset, GetWorksetInfo, ListWorksetInfos,
     UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetInfoRecord, WorksetItem, WorksetPack,
 };
@@ -196,7 +196,7 @@ async fn update_comic_count(
     accept!(())
 }
 
-impl Run<GetWorksetInfo<'_>> for HybRepo {
+impl Run<GetWorksetInfo<'_>> for RdbRepo {
     // Use BaseError to keep run-level errors consistent.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -208,7 +208,7 @@ impl Run<GetWorksetInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListWorksetInfos<'_>> for HybRepo {
+impl Run<ListWorksetInfos<'_>> for RdbRepo {
     // Use BaseError to keep run-level errors consistent.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -223,7 +223,7 @@ impl Run<ListWorksetInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateWorkset<'_>> for HybRepo {
+impl Run<UpdateWorkset<'_>> for RdbRepo {
     // Use BaseError to keep run-level errors consistent.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -235,7 +235,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -256,7 +256,7 @@ where
     }
 }
 
-impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -277,7 +277,7 @@ where
     }
 }
 
-impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -298,7 +298,7 @@ where
     }
 }
 
-impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -319,7 +319,7 @@ where
     }
 }
 
-impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

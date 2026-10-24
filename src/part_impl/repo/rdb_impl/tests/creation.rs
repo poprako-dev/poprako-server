@@ -16,9 +16,6 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use time::OffsetDateTime;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::data::instr::chapter::CreateChapterInstr;
 use crate::data::instr::comic::CreateComicInstr;
@@ -33,7 +30,7 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::CreateMember;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::tests::creation::failure::DuplicateHistoryRepo;
@@ -44,6 +41,7 @@ use crate::usecase::{chapter as chapter_usecase, comic as comic_usecase};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
+use poprako_rdb_core::RdbCore;
 
 // Seeds a real Workset with an administrator who can explicitly translate.
 async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
@@ -63,11 +61,7 @@ async fn seed_admin_workset(shared: &RdbCore) -> (String, UserToken) {
             .union(RoleMask::from(RoleField::TRANSLATOR)),
     };
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -108,7 +102,7 @@ fn comic_instr(workset_id: &str) -> CreateComicInstr {
 
 // Verifies exact history payloads and the actor through the existing read operation.
 async fn assert_history(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     chapter_id: &str,
     actor_id: &str,
     expected: &[ChapterWorkflowRecordPayload],
@@ -145,11 +139,7 @@ async fn comic_creation_history_failure_rolls_back_workset() {
 
     let (workset_id, token) = seed_admin_workset(&shared).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -246,11 +236,7 @@ async fn chapter_creation_history_failure_restores_siblings() {
 
     let (workset_id, token) = seed_admin_workset(&shared).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

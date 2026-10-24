@@ -4,7 +4,6 @@
 )]
 
 use super::*;
-use crate::config::repo::RepoConfig;
 
 #[test]
 fn first_mark_adds_user_and_list_sorts_ids() {
@@ -101,27 +100,18 @@ fn online_users_remain_isolated_by_team() {
     );
 }
 
-// cloned_repo_shares_online_users(HybRepo::clone)(positive): independently injected handles share process-local leases.
+// cloned_cache_shares_online_users(MemCache::clone)(positive): independently injected handles share process-local leases.
 #[tokio::test]
-async fn cloned_repo_shares_online_users() {
-    let core = poprako_rdb_core::RdbCore::from_database_url(
-        "postgres://unused:unused@127.0.0.1:1/unused",
-    )
-    .unwrap();
+async fn cloned_cache_shares_online_users() {
+    let cache = MemCache::default();
 
-    let repo =
-        HybRepo::new(core, CacheConfig::default(), RepoConfig::default());
+    let worker_cache = cache.clone();
 
-    let worker_repo = repo.clone();
+    let mark = MarkUserOnline::new("team", "user");
 
-    let mark = MarkUserOnline {
-        team_id: "team",
-        user_id: "user",
-    };
+    cache.run(&mark).await.unwrap();
 
-    repo.run(&mark).await.unwrap();
+    let list = ListOnlineUserIds::new("team");
 
-    let list = ListOnlineUserIds { team_id: "team" };
-
-    assert_eq!(worker_repo.run(&list).await.unwrap(), ["user"]);
+    assert_eq!(worker_cache.run(&list).await.unwrap(), ["user"]);
 }

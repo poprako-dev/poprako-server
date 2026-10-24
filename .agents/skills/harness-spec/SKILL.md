@@ -5,7 +5,7 @@ description: Keep Harn storage and application-port wiring aligned when changing
 
 # Harness storage and composition
 
-`src/harn.rs` defines `Harn<N, R, O, P, A, D>`, which stores already-composed
+`src/harn.rs` defines `Harn<N, R, K, O, P, A, D>`, which stores already-composed
 parts in an `Arc`-backed inner value. It contains no business logic, actor
 handler, background task, or composition factory.
 
@@ -20,8 +20,9 @@ handler, background task, or composition factory.
   spawn tasks; `run_detach(self)` returns each actor's non-cloneable descriptor.
   `Harn` stores producers, while `main` owns descriptors and calls `cancel`
   followed by consuming `join`. Dropping a producer clone never cancels an actor.
-- Clone the application `HybRepo` to share both its database core and online
-  user state. Do not construct a new repository inside a consumer.
+- Clone the application `RdbRepo` to share its database core and `MemCache`
+  to share online leases, save exclusion, and receipts. Inject each port only
+  where consumed; do not construct repositories or caches inside consumers.
 - Prom and scheduler detached execution use explicitly injected `RdbNucl`
   coordinators: Orchestra's generic `Nucl::coord` does not promise a `Send`
   future. Business dispatch remains generic for mock composition.
@@ -32,9 +33,9 @@ handler, background task, or composition factory.
   report it at the owner.
 
 - Keep `HarnInner`, the constructor, and accessors aligned:
-  `config`, `nucl`, `repo`, `obj_dept`, `prom`, `auth`, `develop`.
+  `config`, `nucl`, `repo`, `cache`, `obj_dept`, `prom`, `auth`, `develop`.
 - The constructor shape is
-  `Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop))`.
+  `Harn::new(config, (nucl, repo, cache, obj_dept, prom, auth, develop))`.
 - Keep the concrete `AppHarn` alias in `src/api/http/state.rs` aligned with
   the production adapters composed in `src/main.rs`.
 - Express transaction levels, context compatibility, and repository

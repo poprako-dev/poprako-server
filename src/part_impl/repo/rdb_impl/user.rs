@@ -18,7 +18,7 @@ use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, UpdateUser,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::user::account::{
     create, delete, get_credential_by_qid, touch_last_active,
     update_password_hash,
@@ -29,7 +29,7 @@ use crate::part_impl::repo::rdb_impl::user::info::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<GetUserInfo<'_>> for HybRepo {
+impl Run<GetUserInfo<'_>> for RdbRepo {
     // Use `BaseError` for non-transactional repository reads.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -44,7 +44,7 @@ impl Run<GetUserInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<GetUserCredential<'_>> for HybRepo {
+impl Run<GetUserCredential<'_>> for RdbRepo {
     // Use `BaseError` for non-transactional credential reads.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -59,7 +59,7 @@ impl Run<GetUserCredential<'_>> for HybRepo {
     }
 }
 
-impl Run<FindUserInfo<'_>> for HybRepo {
+impl Run<FindUserInfo<'_>> for RdbRepo {
     // Use `BaseError` for non-transactional optional reads.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -74,7 +74,7 @@ impl Run<FindUserInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateUser<'_>> for HybRepo {
+impl Run<UpdateUser<'_>> for RdbRepo {
     // Use `BaseError` for non-transactional user mutations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -100,7 +100,7 @@ impl Run<UpdateUser<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateUser<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateUser<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -121,7 +121,7 @@ where
     }
 }
 
-impl<L> Step<FindUserInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<FindUserInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -142,7 +142,7 @@ where
     }
 }
 
-impl<L> Step<UpdateUser<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateUser<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -177,7 +177,7 @@ where
     }
 }
 
-impl<L> Step<GetUserInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetUserInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -198,7 +198,7 @@ where
     }
 }
 
-impl<L> Step<DeleteUser<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteUser<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

@@ -18,7 +18,7 @@ use crate::part::repo::oper::assignment_invitation::{
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
     PurgeExpiredAssignmentInvitation,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
     create, delete, delete_by_chapter_id, get_info_by_code_excluded,
     get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
@@ -26,7 +26,7 @@ use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
+impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     // Non-transactional path that lists invitation infos for a list spec.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -41,7 +41,7 @@ impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
+impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
     // Non-transactional path for loading one invitation info by id.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -55,7 +55,7 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -75,7 +75,7 @@ where
     }
 }
 
-impl<L> Step<GetAssignmentInvitationInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetAssignmentInvitationInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -95,7 +95,7 @@ where
     }
 }
 
-impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -115,7 +115,7 @@ where
     }
 }
 
-impl<L> Step<MarkAssignmentInvitationUsed<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<MarkAssignmentInvitationUsed<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -135,7 +135,7 @@ where
     }
 }
 
-impl<L> Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -156,7 +156,7 @@ where
     }
 }
 
-impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
+impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
     // Non-transactional interface for purging expired invitations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -171,7 +171,7 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<DeleteAssignmentInvitations<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteAssignmentInvitations<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

@@ -28,7 +28,7 @@ use crate::data::val::termbase_port::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::termbase_port as termbase_port_usecase;
 use crate::value::termbase::TermbaseScope;
@@ -123,7 +123,7 @@ pub async fn import_team(
 ) -> HttpResult<ImportTermbaseVal> {
     //
     let import_termbase_val =
-        termbase_port_usecase::import::<_, RdbContext<ReptRead>, HybRepo>(
+        termbase_port_usecase::import::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             TermbaseScope::Team { team_id },
@@ -169,7 +169,7 @@ pub async fn import_comic(
 ) -> HttpResult<ImportTermbaseVal> {
     //
     let import_termbase_val =
-        termbase_port_usecase::import::<_, RdbContext<ReptRead>, HybRepo>(
+        termbase_port_usecase::import::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             TermbaseScope::Comic { comic_id },
@@ -217,7 +217,7 @@ pub async fn append(
 ) -> HttpResult<AppendTermbaseVal> {
     //
     let append_termbase_val =
-        termbase_port_usecase::append::<_, RdbContext<ReptRead>, HybRepo>(
+        termbase_port_usecase::append::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             termbase_id,
@@ -236,7 +236,7 @@ async fn export_payload(
 ) -> Result<Bytes, HttpError> {
     //
     let export_termbase_val =
-        termbase_port_usecase::export::<_, RdbContext<ReptRead>, HybRepo>(
+        termbase_port_usecase::export::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             termbase_id,

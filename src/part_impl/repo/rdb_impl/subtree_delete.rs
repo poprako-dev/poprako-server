@@ -22,11 +22,11 @@ use crate::part::repo::oper::subtree_delete::{
     ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageIds,
     LockSubtreeDeleteScope, MarkSubtree, SweepSubtree,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl<L> Step<LockSubtreeDeleteScope<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockSubtreeDeleteScope<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -46,7 +46,7 @@ where
     }
 }
 
-impl<L> Step<MarkSubtree<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<MarkSubtree<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -66,7 +66,7 @@ where
     }
 }
 
-impl<L> Step<ClaimSubtreeSweep, RdbContext<L>> for HybRepo
+impl<L> Step<ClaimSubtreeSweep, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -92,7 +92,7 @@ where
     }
 }
 
-impl<L> Step<ListSubtreePageIds<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListSubtreePageIds<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -112,7 +112,7 @@ where
     }
 }
 
-impl<L> Step<DeleteSubtree<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteSubtree<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -132,7 +132,7 @@ where
     }
 }
 
-impl<L> Step<SweepSubtree<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SweepSubtree<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

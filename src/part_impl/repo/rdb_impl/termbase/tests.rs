@@ -9,9 +9,6 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::data::instr::termbase_port::{
     AppendTermbaseInstr, AppendTermbaseTermInstr,
@@ -28,17 +25,18 @@ use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::usecase::termbase_port as termbase_port_usecase;
 use crate::value::role::{RoleField, RoleMask};
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
 // Verify comic listings include team and owning-comic bases while excluding siblings.
 async fn verify_comic_termbase_scope(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     termbase_entry: &TermbaseEntry,
@@ -121,7 +119,7 @@ async fn verify_comic_termbase_scope(
 }
 
 async fn create_termbase(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl,
     entry: &TermbaseEntry,
 ) -> TermbaseInfo {
@@ -139,11 +137,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -243,7 +237,7 @@ fn append_instr(
 
 // Verify a persisted no-op preserves aggregate and entry timestamps.
 async fn verify_append_noop(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     token: UserToken,
     base_id: &str,
@@ -302,11 +296,7 @@ async fn append_roundtrip_and_concurrent_merges() {
 
     let fixture = test_shared::seed_user_and_team(&shared, "append-rdb-").await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared);
 

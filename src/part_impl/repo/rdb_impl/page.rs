@@ -30,7 +30,7 @@ use crate::part::repo::oper::page::{
     ListPageUnitDiffStats, ListPageUnitFlaggedStats, SetPageUnitCountMetrics,
     ShiftPageIndexesTemporary, UpdatePageRawIdents,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageRawIdentInfoRecord, PageRawIdentItem,
 };
@@ -126,7 +126,7 @@ async fn update_raw_idents(
     accept!(())
 }
 
-impl Run<GetPageInfo<'_>> for HybRepo {
+impl Run<GetPageInfo<'_>> for RdbRepo {
     // Use base error for page read orchestration through the query dispatcher.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -138,7 +138,7 @@ impl Run<GetPageInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<GetPageUnitScope<'_>> for HybRepo {
+impl Run<GetPageUnitScope<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -152,7 +152,7 @@ impl Run<GetPageUnitScope<'_>> for HybRepo {
     }
 }
 
-impl Run<ListPageInfos<'_>> for HybRepo {
+impl Run<ListPageInfos<'_>> for RdbRepo {
     // Keep list query failures aligned with repository-level base error handling.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -164,7 +164,7 @@ impl Run<ListPageInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<ListFirstPageInfos<'_>> for HybRepo {
+impl Run<ListFirstPageInfos<'_>> for RdbRepo {
     // Return base error for first-page batched read path.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -184,7 +184,7 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<ListPageUnitDiffStats<'_>> for HybRepo {
+impl Run<ListPageUnitDiffStats<'_>> for RdbRepo {
     // Error type for the Chapter proofread-diff Page query.
     type Error = BaseError;
 
@@ -199,7 +199,7 @@ impl Run<ListPageUnitDiffStats<'_>> for HybRepo {
     }
 }
 
-impl Run<ListPageUnitFlaggedStats<'_>> for HybRepo {
+impl Run<ListPageUnitFlaggedStats<'_>> for RdbRepo {
     // Error type for the Chapter flagged Unit Page query.
     type Error = BaseError;
 
@@ -214,7 +214,7 @@ impl Run<ListPageUnitFlaggedStats<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<GetPageInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetPageInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -235,7 +235,7 @@ where
     }
 }
 
-impl<L> Step<GetPageUnitScope<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetPageUnitScope<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -256,7 +256,7 @@ where
     }
 }
 
-impl<L> Step<ListPageInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListPageInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -277,7 +277,7 @@ where
     }
 }
 
-impl<L> Step<ListPageInfosExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListPageInfosExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -298,7 +298,7 @@ where
     }
 }
 
-impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -318,7 +318,7 @@ where
     }
 }
 
-impl<L> Step<GetPageUnitScopeExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetPageUnitScopeExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -339,7 +339,7 @@ where
     }
 }
 
-impl<L> Step<SetPageUnitCountMetrics<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SetPageUnitCountMetrics<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -359,7 +359,7 @@ where
     }
 }
 
-impl<L> Step<ShiftPageIndexesTemporary<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ShiftPageIndexesTemporary<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -380,7 +380,7 @@ where
     }
 }
 
-impl<L> Step<ApplyPageManifest<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ApplyPageManifest<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -401,7 +401,7 @@ where
     }
 }
 
-impl<L> Step<DeletePages<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeletePages<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -431,7 +431,7 @@ where
     }
 }
 
-impl Run<ListPageRawIdentInfos<'_>> for HybRepo {
+impl Run<ListPageRawIdentInfos<'_>> for RdbRepo {
     // Shared application error type.
     type Error = BaseError;
 
@@ -445,7 +445,7 @@ impl Run<ListPageRawIdentInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<UpdatePageRawIdents<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdatePageRawIdents<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

@@ -16,8 +16,8 @@ pub trait UnitSaveGuard {
 }
 
 /// Coordinates retries across the full transaction and token publication.
-pub trait UnitSaveRepo {
-    /// Adapter-owned exclusion guard borrowing this repository.
+pub trait UnitSaveCache {
+    /// Adapter-owned exclusion guard borrowing this cache adapter.
     type Guard<'a>: UnitSaveGuard
     where
         Self: 'a;

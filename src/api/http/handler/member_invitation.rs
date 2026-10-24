@@ -27,7 +27,7 @@ use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::member_invitation as member_invitation_usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -81,7 +81,7 @@ pub async fn create(
     Ok(member_invitation_usecase::create::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         RdbProm,
     >(
         (
@@ -131,7 +131,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    Ok(member_invitation_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+    Ok(member_invitation_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -165,7 +165,7 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
-    member_invitation_usecase::update_roles::<RdbContext<ReptRead>, HybRepo>(
+    member_invitation_usecase::update_roles::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -195,7 +195,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    member_invitation_usecase::delete::<RdbContext<ReptRead>, HybRepo>(
+    member_invitation_usecase::delete::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         member_invitation_id,

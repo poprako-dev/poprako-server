@@ -20,7 +20,7 @@ use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, GetTeamInfo, GetTeamInfoExcluded,
     ListTeamInfos, LockTeam, UpdateTeam,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::team::coordination::{
     increment_workset_next_index, lock_team,
 };
@@ -30,7 +30,7 @@ use crate::part_impl::repo::rdb_impl::team::info::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<CreateTeam<'_>> for HybRepo {
+impl Run<CreateTeam<'_>> for RdbRepo {
     // Map team creation orchestration failures to the shared base error type.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -45,7 +45,7 @@ impl Run<CreateTeam<'_>> for HybRepo {
     }
 }
 
-impl Run<GetTeamInfo<'_>> for HybRepo {
+impl Run<GetTeamInfo<'_>> for RdbRepo {
     // Use the common base error for team info reads.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -60,7 +60,7 @@ impl Run<GetTeamInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListTeamInfos<'_>> for HybRepo {
+impl Run<ListTeamInfos<'_>> for RdbRepo {
     // Keep list query failures on a single repository-level error channel.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -75,7 +75,7 @@ impl Run<ListTeamInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateTeam<'_>> for HybRepo {
+impl Run<UpdateTeam<'_>> for RdbRepo {
     // Keep update orchestration failures compatible with other team operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -87,7 +87,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateTeam<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateTeam<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -108,7 +108,7 @@ where
     }
 }
 
-impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -129,7 +129,7 @@ where
     }
 }
 
-impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -150,7 +150,7 @@ where
     }
 }
 
-impl<L> Step<LockTeam<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockTeam<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -171,7 +171,7 @@ where
     }
 }
 
-impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

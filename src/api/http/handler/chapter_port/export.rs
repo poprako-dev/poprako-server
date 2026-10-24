@@ -10,7 +10,7 @@ use crate::api::http::result::HttpError;
 use crate::api::http::state::AppHarn;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::chapter_port::export_translation as chapter_port_export_translation_usecase;
 use crate::value::chapter_port::ExportFormatSpec;
@@ -41,7 +41,7 @@ pub async fn export_payload(
     let val = chapter_port_export_translation_usecase::export_translation::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),

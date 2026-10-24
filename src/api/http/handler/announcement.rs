@@ -26,7 +26,7 @@ use crate::data::val::announcement::CreateAnnouncementVal;
 use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::announcement as announcement_usecase;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -74,7 +74,7 @@ pub async fn create(
 ) -> HttpResult<CreateAnnouncementVal> {
     //
     Ok(
-        announcement_usecase::create::<RdbContext<ReptRead>, HybRepo>(
+        announcement_usecase::create::<RdbContext<ReptRead>, RdbRepo>(
             harn.repo(),
             user_token,
             instr,
@@ -117,7 +117,7 @@ pub async fn list_infos(
     };
 
     Ok(
-        announcement_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        announcement_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             instr,
@@ -150,7 +150,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&announcement_id, &instr.id)?;
 
-    announcement_usecase::update_info::<RdbContext<ReptRead>, HybRepo>(
+    announcement_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -179,7 +179,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    announcement_usecase::delete::<RdbContext<ReptRead>, HybRepo>(
+    announcement_usecase::delete::<RdbContext<ReptRead>, RdbRepo>(
         harn.repo(),
         user_token,
         announcement_id,

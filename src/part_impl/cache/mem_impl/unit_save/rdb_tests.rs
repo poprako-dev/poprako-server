@@ -3,9 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// save_tokens(UnitSaveRepo)(positive): concurrent replays commit one Unit and share a memory token.
-// save_tokens(UnitSaveRepo)(negative): rollback publishes no successful token.
-use crate::config::cache::CacheConfig;
+// save_tokens(UnitSaveCache)(positive): concurrent replays commit one Unit and share a memory token.
+// save_tokens(UnitSaveCache)(negative): rollback publishes no successful token.
 use crate::config::repo::RepoConfig;
 use crate::data::instr::unit::{
     SavePageUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
@@ -13,8 +12,9 @@ use crate::data::instr::unit::{
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::repo::oper::assignment::CreateAssignment;
+use crate::part_impl::cache::mem_impl::MemCache;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::shape::write::assignment::AssignmentEntryShape;
@@ -48,17 +48,15 @@ fn batch(page_id: &str, save_id: &str) -> SavePageUnitEditsInstr {
 
 #[tokio::test]
 async fn concurrent_saves_publish_tokens_only_after_commit() {
+    let cache = MemCache::default();
+
     let database = start().await;
 
     let shared = database.core();
 
     let fixture = test_shared::seed_page(&shared, "save-token-").await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
@@ -87,16 +85,18 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     let cloned_repo = repo.clone();
 
+    let cloned_cache = cache.clone();
+
     let (first, simultaneous) = tokio::join!(
         unit_usecase::save_edits(
-            (&nucl, &repo),
+            (&nucl, &repo, &cache),
             UserToken {
                 user_id: user_id.clone()
             },
             batch(&page_id, &save_id)
         ),
         unit_usecase::save_edits(
-            (&nucl, &cloned_repo),
+            (&nucl, &cloned_repo, &cloned_cache),
             UserToken {
                 user_id: user_id.clone()
             },
@@ -109,7 +109,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
     assert_eq!(first, simultaneous.unwrap());
 
     let replay = unit_usecase::save_edits(
-        (&nucl, &repo),
+        (&nucl, &repo, &cache),
         UserToken {
             user_id: user_id.clone(),
         },
@@ -141,7 +141,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     assert!(
         unit_usecase::save_edits(
-            (&nucl, &repo),
+            (&nucl, &repo, &cache),
             UserToken {
                 user_id: user_id.clone()
             },
@@ -151,11 +151,11 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
         .is_err()
     );
 
-    assert_eq!(repo.unit_saves.token_count(), 1);
+    assert_eq!(cache.unit_save_token_count(), 1);
 
     assert!(
         unit_usecase::save_edits(
-            (&nucl, &repo),
+            (&nucl, &repo, &cache),
             UserToken { user_id },
             batch(&page_id, &rejected_id)
         )

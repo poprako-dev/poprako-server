@@ -46,9 +46,6 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::OffsetDateTime;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
@@ -60,7 +57,7 @@ use crate::part::repo::oper::subtree_delete::{
     SweepSubtree,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterItem;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicItem;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
@@ -74,6 +71,7 @@ use crate::result::BaseError;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shape::write::comic::ComicEntryShape;
 use crate::value::subtree_delete::SubtreeSweepLevel;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-subtree-";
 
@@ -216,11 +214,7 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
 }
 
 async fn mark_and_sweep_workset(shared: &RdbCore, workset_id: &str) {
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     mark_workset(shared, workset_id).await;
@@ -259,11 +253,7 @@ async fn mark_and_sweep_workset(shared: &RdbCore, workset_id: &str) {
 }
 
 async fn mark_workset(shared: &RdbCore, workset_id: &str) {
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
     let nucl = RdbNucl::<Serial>::new(shared.clone());
 
     nucl.coord(async |context| {

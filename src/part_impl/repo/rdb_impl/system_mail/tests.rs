@@ -7,17 +7,15 @@
 
 use super::*;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailsRead, SendSystemMails,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 
@@ -30,11 +28,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let system_mail_entries = [
         SystemMailEntry {

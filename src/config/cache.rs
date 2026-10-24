@@ -8,7 +8,7 @@ use serde::Deserialize;
 
 use crate::config::duration;
 
-/// Memory and lease budgets shared by clones of one repository.
+/// Memory and lease budgets shared by clones of one cache adapter.
 #[derive(Clone, Copy, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CacheConfig {

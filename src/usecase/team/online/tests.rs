@@ -8,6 +8,7 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::model::read::proj::member::MemberInfo;
+use crate::part_impl::cache::mem_impl::MemCache;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -37,6 +38,8 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
 
 #[tokio::test]
 async fn mark_self_online_adds_member_to_team_list() {
+    let cache = MemCache::default();
+
     let mock = Mock::new();
 
     let mut user_info = user("online-usecase-user-1", "qid-1", "Nick");
@@ -58,7 +61,7 @@ async fn mark_self_online_adds_member_to_team_list() {
     ));
 
     mark_self_online(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-1"),
         "online-usecase-team-1".into(),
     )
@@ -66,7 +69,7 @@ async fn mark_self_online_adds_member_to_team_list() {
     .unwrap();
 
     let online_user_ids = list_online_user_ids(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-1"),
         "online-usecase-team-1".into(),
     )
@@ -92,6 +95,8 @@ async fn mark_self_online_adds_member_to_team_list() {
 
 #[tokio::test]
 async fn mark_self_online_rejects_non_member() {
+    let cache = MemCache::default();
+
     let mock = Mock::new();
 
     let mut user_info =
@@ -105,7 +110,7 @@ async fn mark_self_online_rejects_non_member() {
     );
 
     let error = mark_self_online(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-outsider-1"),
         "online-usecase-team-2".into(),
     )
@@ -123,10 +128,12 @@ async fn mark_self_online_rejects_non_member() {
 
 #[tokio::test]
 async fn list_online_user_ids_rejects_non_member() {
+    let cache = MemCache::default();
+
     let mock = Mock::new();
 
     let error = list_online_user_ids(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-outsider-2"),
         "online-usecase-team-3".into(),
     )
@@ -139,22 +146,30 @@ async fn list_online_user_ids_rejects_non_member() {
 
 #[tokio::test]
 async fn mark_self_online_does_not_renew_when_activity_update_fails() {
+    let cache = MemCache::default();
+
     let mock = Mock::new();
 
     mock.seed_member(member("member-missing-user", "missing-user", "team-1"));
 
-    let error =
-        mark_self_online((&mock,), token("missing-user"), "team-1".into())
-            .await
-            .err()
-            .unwrap();
+    let error = mark_self_online(
+        (&mock, &cache),
+        token("missing-user"),
+        "team-1".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Args);
 
-    let online_user_ids =
-        list_online_user_ids((&mock,), token("missing-user"), "team-1".into())
-            .await
-            .unwrap();
+    let online_user_ids = list_online_user_ids(
+        (&mock, &cache),
+        token("missing-user"),
+        "team-1".into(),
+    )
+    .await
+    .unwrap();
 
     assert!(online_user_ids.is_empty());
 
@@ -166,6 +181,8 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
 
 #[tokio::test]
 async fn team_online_user_lists_remain_independent() {
+    let cache = MemCache::default();
+
     let mock = Mock::new();
 
     mock.seed_user(
@@ -191,7 +208,7 @@ async fn team_online_user_lists_remain_independent() {
     ));
 
     mark_self_online(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-4a"),
         "online-usecase-team-4a".into(),
     )
@@ -199,7 +216,7 @@ async fn team_online_user_lists_remain_independent() {
     .unwrap();
 
     mark_self_online(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-4b"),
         "online-usecase-team-4b".into(),
     )
@@ -207,7 +224,7 @@ async fn team_online_user_lists_remain_independent() {
     .unwrap();
 
     let online_user_ids = list_online_user_ids(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-4a"),
         "online-usecase-team-4a".into(),
     )
@@ -217,7 +234,7 @@ async fn team_online_user_lists_remain_independent() {
     assert_eq!(online_user_ids, ["online-usecase-user-4a"]);
 
     let online_user_ids = list_online_user_ids(
-        (&mock,),
+        (&mock, &cache),
         token("online-usecase-user-4b"),
         "online-usecase-team-4b".into(),
     )
