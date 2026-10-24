@@ -15,9 +15,6 @@ mod notes;
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
@@ -26,17 +23,18 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 use crate::result::BaseError;
 use crate::util::Patch;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
 // Verify batched page reads and selected unit fields after restoration.
 async fn verify_selected_units(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
@@ -113,7 +111,7 @@ async fn verify_selected_units(
 
 // Restore the hidden unit through a proofread save and verify restored counters.
 async fn verify_restore(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
@@ -176,7 +174,7 @@ async fn verify_restore(
 
 // Hide one unit while keeping its historical order record.
 async fn verify_tombstone(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     first_id: &str,
@@ -227,7 +225,7 @@ async fn verify_tombstone(
 
 // Apply mixed field patches and verify whitespace translations do not inflate counters.
 async fn verify_mixed_patches(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
@@ -306,7 +304,7 @@ async fn verify_mixed_patches(
 
 // Verify a stale identifier rolls back every earlier edit in the batch.
 async fn verify_stale_edit_rollback(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
@@ -410,7 +408,7 @@ async fn verify_stale_edit_rollback(
 
 // Create linked units and verify a save in the same batch contributes to the counters.
 async fn verify_create_and_save(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     (first_id, second_id): (&str, &str),
@@ -489,7 +487,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
         ..Default::default()
     };
 
-    let repo = HybRepo::new(shared.clone(), CacheConfig::default(), config);
+    let repo = RdbRepo::new(shared.clone(), config);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

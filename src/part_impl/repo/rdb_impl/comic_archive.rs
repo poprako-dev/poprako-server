@@ -38,7 +38,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRecord;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRecord;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::ChapterWorkflowRecordInfoRecord;
@@ -367,7 +367,7 @@ async fn get_snapshot_excluded(
     })
 }
 
-impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -388,7 +388,7 @@ where
     }
 }
 
-impl Run<ListComicArchivePayloads<'_>> for HybRepo {
+impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
     // Use base errors for payload-list operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -409,7 +409,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

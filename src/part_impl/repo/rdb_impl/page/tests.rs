@@ -23,7 +23,7 @@ use crate::part::repo::oper::page::{
     ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
@@ -58,7 +58,7 @@ fn assert_page_order(
 
 // Set and read all page counters before changing the manifest.
 async fn verify_page_counters(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> OffsetDateTime {
@@ -106,7 +106,7 @@ async fn verify_page_counters(
 
 // Verify a newly created page starts with empty counters and a current timestamp.
 async fn create_second_page(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> (PageManifestEntry, OffsetDateTime) {
@@ -151,7 +151,7 @@ async fn create_second_page(
 
 // Swap page positions and verify the first-page query and retained metadata.
 async fn verify_manifest_reorder(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     second_page_entry: &PageManifestEntry,
@@ -230,7 +230,7 @@ async fn verify_manifest_reorder(
 
 // Force a manifest transaction failure and verify all original metadata survives.
 async fn verify_manifest_rollback(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     second_page_entry: &PageManifestEntry,
@@ -295,7 +295,7 @@ async fn verify_manifest_rollback(
 // Verify page lookup hides the tombstoned parent chapter.
 async fn verify_tombstoned_page(
     shared: &RdbCore,
-    repo: &HybRepo,
+    repo: &RdbRepo,
     page_fixture: &PageFixture,
 ) {
     let mut conn = shared.get().await.unwrap();
@@ -330,7 +330,7 @@ async fn verify_tombstoned_page(
 
 // Verify every bounded page list rejects an overflowing stored manifest.
 async fn verify_page_count_bound(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) {
@@ -406,7 +406,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let config = AppConfig::default();
 
-    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
+    let repo = RdbRepo::new(shared.clone(), config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
@@ -462,7 +462,7 @@ pub async fn raw_ident_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let config = AppConfig::default();
 
-    let repo = HybRepo::new(shared.clone(), config.cache, config.repo);
+    let repo = RdbRepo::new(shared.clone(), config.repo);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

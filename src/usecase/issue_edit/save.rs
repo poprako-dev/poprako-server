@@ -16,13 +16,13 @@ use crate::model::shared::issue::IssueRect;
 use crate::model::shared::user::UserToken;
 use crate::model::write::issue::IssueEntry;
 use crate::model::write::issue_edit::IssueEditPageRepl;
+use crate::part::cache::issue_save::{IssueSaveCache, IssueSaveGuard as _};
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageArtworkImage;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::issue_edit::IssueEditRepo;
-use crate::part::repo::issue_save::{IssueSaveGuard as _, IssueSaveRepo};
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::issue_edit::{
     ListIssueInfosByIds, ReplacePageIssues,
@@ -36,12 +36,13 @@ use crate::usecase::issue_edit::{access, document};
 #[instrument(level = "info",
          skip(nucl,
          repo,
+         cache,
          obj_dept,
          token,
          instr),
          fields(actor_user_id = %token.user_id))]
-pub async fn save_infos<N, C, R, O>(
-    (nucl, repo, obj_dept): (&N, &R, &O),
+pub async fn save_infos<N, C, R, K, O>(
+    (nucl, repo, cache, obj_dept): (&N, &R, &K, &O),
     token: UserToken,
     page_id: String,
     save_id: Uuid,
@@ -52,19 +53,19 @@ where
     C::Level: AtLeast<ReptRead>,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     R: IssueEditRepo<C>
-        + IssueSaveRepo
         + ChapterRepo<C>
         + PageArtworkRepo<C>
         + AssignmentRepo<C>
         + ComicRepo<C>
         + Send
         + Sync,
-    for<'save> R::Guard<'save>: Send + Sync,
+    K: IssueSaveCache + Sync,
+    for<'save> K::Guard<'save>: Send + Sync,
     O: ObjDeptView<PageArtworkImage, C> + Send + Sync,
 {
     let fingerprint = request_fingerprint(&token.user_id, &page_id, &instr)?;
 
-    let guard = repo.lock_issue_save(save_id).await;
+    let guard = cache.lock_issue_save(save_id).await;
 
     let receipt = &guard;
 

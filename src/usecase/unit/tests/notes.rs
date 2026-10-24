@@ -13,9 +13,9 @@ fn edit(value: Value) -> UnitEditInstr {
 }
 
 // Save one annotation operation through the public use case.
-async fn save(mock: &Mock, value: Value) {
+async fn save((mock, cache): (&Mock, &MemCache), value: Value) {
     save_edits(
-        (mock, mock),
+        (mock, mock, cache),
         token("translator-1"),
         save_instr(vec![edit(value)]),
     )
@@ -26,10 +26,10 @@ async fn save(mock: &Mock, value: Value) {
 #[tokio::test]
 async fn notes_are_shared_and_typography_note_starts_translation() {
     for role in [RoleField::TRANSLATOR, RoleField::PROOFREADER] {
-        let mock = save_scope(RoleMask::from(role));
+        let (mock, cache) = save_scope(RoleMask::from(role));
 
         save(
-            &mock,
+            (&mock, &cache),
             json!({
                 "edit": "create",
                 "local_id": "note",
@@ -95,7 +95,7 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
             json!({"edit": "delete", "id": id}),
             json!({"edit": "patch", "id": id}),
         ] {
-            save(&mock, payload).await;
+            save((&mock, &cache), payload).await;
 
             assert_eq!(
                 mock.snapshot().units.first().unwrap().typography_note,
@@ -119,7 +119,7 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
         );
 
         save(
-            &mock,
+            (&mock, &cache),
             json!({"edit": "patch", "id": id,
                 "typography_note": {"type": "clear"},
                 "translation_note": {"type": "assign", "value": "校对已确认"}
@@ -154,10 +154,10 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
 
 #[tokio::test]
 async fn note_patches_merge_and_blank_assignments_clear() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![
             edit(json!({
@@ -188,7 +188,7 @@ async fn note_patches_merge_and_blank_assignments_clear() {
     assert!(snapshot.chapter_workflow_records.is_empty());
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![
             edit(json!({
@@ -231,7 +231,7 @@ async fn note_patches_merge_and_blank_assignments_clear() {
     );
 
     save(
-        &mock,
+        (&mock, &cache),
         json!({"edit": "patch", "id": id,
             "typography_note": {"type": "assign", "value": "\n\t\u{3000}"}
         }),
@@ -255,18 +255,18 @@ async fn note_patches_merge_and_blank_assignments_clear() {
 
 #[tokio::test]
 async fn notes_preserve_authorship_and_reject_invalid_batches() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let instr = save_instr(vec![create("unit", None, Some("正文"))]);
 
-    save_edits((&mock, &mock), token("translator-1"), instr)
+    save_edits((&mock, &mock, &cache), token("translator-1"), instr)
         .await
         .unwrap();
 
     let id = mock.snapshot().units.first().unwrap().id.clone();
 
     save(
-        &mock,
+        (&mock, &cache),
         json!({
             "edit": "patch",
             "id": id,
@@ -277,7 +277,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
 
     let before = mock.snapshot();
 
-    let save_count = mock.unit_saves.token_count();
+    let save_count = cache.unit_save_token_count();
 
     for (actor, edits) in [
         (
@@ -305,7 +305,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
         ),
     ] {
         assert!(
-            save_edits((&mock, &mock), token(actor), save_instr(edits))
+            save_edits((&mock, &mock, &cache), token(actor), save_instr(edits))
                 .await
                 .is_err()
         );
@@ -315,7 +315,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
             before.units.first().unwrap().typography_note
         );
 
-        assert_eq!(mock.unit_saves.token_count(), save_count);
+        assert_eq!(cache.unit_save_token_count(), save_count);
     }
 
     assert_eq!(
@@ -329,7 +329,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
     );
 
     save(
-        &mock,
+        (&mock, &cache),
         json!({"edit": "patch", "id": id, "translation": {"type": "clear"}}),
     )
     .await;
@@ -359,7 +359,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
     }))]);
 
     assert!(
-        save_edits((&mock, &mock), token("translator-1"), instr)
+        save_edits((&mock, &mock, &cache), token("translator-1"), instr)
             .await
             .is_err()
     );
@@ -378,7 +378,7 @@ async fn notes_preserve_authorship_and_reject_invalid_batches() {
 // save_edits(notes)(positive): replayed receipts never reapply changed annotations.
 #[tokio::test]
 async fn completed_save_token_preserves_original_note() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let mut initial = save_instr(vec![edit(json!({
         "edit": "create", "local_id": "note", "is_bubble": true,
@@ -387,9 +387,10 @@ async fn completed_save_token_preserves_original_note() {
 
     let save_id = initial.save_id.clone();
 
-    let first = save_edits((&mock, &mock), token("translator-1"), initial)
-        .await
-        .unwrap();
+    let first =
+        save_edits((&mock, &mock, &cache), token("translator-1"), initial)
+            .await
+            .unwrap();
 
     initial = save_instr(vec![edit(json!({
         "edit": "create", "local_id": "note", "is_bubble": true,
@@ -398,9 +399,10 @@ async fn completed_save_token_preserves_original_note() {
 
     initial.save_id = save_id;
 
-    let replay = save_edits((&mock, &mock), token("translator-1"), initial)
-        .await
-        .unwrap();
+    let replay =
+        save_edits((&mock, &mock, &cache), token("translator-1"), initial)
+            .await
+            .unwrap();
 
     assert_eq!(first.created_unit_ids, replay.created_unit_ids);
 

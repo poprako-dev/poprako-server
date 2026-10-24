@@ -18,7 +18,7 @@ use crate::api::http::state::AppHarn;
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::auth as auth_usecase;
 
@@ -47,7 +47,7 @@ pub async fn register(
 ) -> HttpResult<RegisterAuthVal> {
     //
     let reply =
-        auth_usecase::register::<_, RdbContext<ReptRead>, HybRepo, _, _>(
+        auth_usecase::register::<_, RdbContext<ReptRead>, RdbRepo, _, _>(
             (
                 harn.nucl().rept_read(),
                 harn.repo(),
@@ -84,7 +84,7 @@ pub async fn login(
     Json(instr): Json<LoginAuthInstr>,
 ) -> HttpResult<LoginAuthVal> {
     //
-    let reply = auth_usecase::login::<RdbContext<ReptRead>, HybRepo, _>(
+    let reply = auth_usecase::login::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.auth()),
         instr,
     )

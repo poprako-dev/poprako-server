@@ -11,11 +11,6 @@ use poprako_orchestra_extra::prom::task::Task;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
-use poprako_prom::general::delivery::ClaimedTask;
-use poprako_prom::general::dispatch_flow::DispatchFlow;
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::payload::PromPayload;
@@ -27,6 +22,9 @@ use crate::part_impl::prom::rdb_impl::repo::{
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::BaseError;
+use poprako_prom::general::delivery::ClaimedTask;
+use poprako_prom::general::dispatch_flow::DispatchFlow;
+use poprako_rdb_core::RdbCore;
 
 // Verify the writer persists committed tasks and rolls back aborted tasks before a consumer starts.
 async fn verify_writer_transactions(
@@ -480,7 +478,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
     use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
     use crate::part_impl::prom::dispatch;
     use crate::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;
-    use crate::part_impl::repo::HybRepo;
+    use crate::part_impl::repo::RdbRepo;
     use crate::part_impl::repo::mock_impl::Mock;
     use crate::{Sched, SchedConfig, SubtreeDeleteTask};
     use diesel::{ExpressionMethods as _, QueryDsl as _};
@@ -496,11 +494,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
 
     let mut conn = shared.get().await.unwrap();
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let dept = NormObjDept::new(
         shared.clone(),

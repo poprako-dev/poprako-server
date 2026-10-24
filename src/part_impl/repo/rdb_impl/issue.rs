@@ -16,7 +16,7 @@ use crate::model::read::proj::issue::IssueInfo;
 use crate::model::write::issue::ChapterIssuesRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::{IssueItem, IssueRecord};
 use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
 use crate::result::{BaseError, BaseRest};
@@ -88,7 +88,7 @@ async fn persist_chapter_issues(
     accept!(())
 }
 
-impl Run<ListIssueInfos<'_>> for HybRepo {
+impl Run<ListIssueInfos<'_>> for RdbRepo {
     // Application error returned by this operation.
     type Error = BaseError;
 
@@ -99,7 +99,7 @@ impl Run<ListIssueInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<ReplaceChapterIssues<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ReplaceChapterIssues<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

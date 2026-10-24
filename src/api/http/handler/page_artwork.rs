@@ -21,7 +21,7 @@ use crate::data::val::page_artwork::{
 use crate::data::view::page_artwork::PageArtworkInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::page_artwork as page_artwork_usecase;
 use crate::usecase::page_artwork::{
@@ -50,7 +50,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<PageArtworkInfoView>> {
     //
     Ok(
-        page_artwork_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        page_artwork_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             token,
             chapter_id,
@@ -84,7 +84,7 @@ pub async fn alloc_chapter_page_artworks(
         page_artwork_manifest_usecase::alloc_chapter_page_artworks::<
             _,
             RdbContext<ReptRead>,
-            HybRepo,
+            RdbRepo,
             _,
         >(
             (
@@ -126,7 +126,7 @@ pub async fn alloc_image(
     Ok(page_artwork_image_usecase::alloc_image::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (
@@ -169,7 +169,7 @@ pub async fn mark_image_uploaded(
     page_artwork_image_usecase::mark_image_uploaded::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),

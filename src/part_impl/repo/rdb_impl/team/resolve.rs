@@ -10,7 +10,7 @@ use poprako_util::i18n::trl;
 
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::ResolveTeamId;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
@@ -77,7 +77,7 @@ async fn resolve_team_id(
     accept!(team_id)
 }
 
-impl Run<ResolveTeamId<'_>> for HybRepo {
+impl Run<ResolveTeamId<'_>> for RdbRepo {
     // BaseError for the standalone team-resolution projection.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -92,7 +92,7 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

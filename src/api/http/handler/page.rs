@@ -26,7 +26,7 @@ use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::page as page_usecase;
 use crate::usecase::page::{
@@ -56,7 +56,7 @@ pub async fn list_infos(
     let instr = ListPageInfosInstr { chapter_id };
 
     Ok(
-        page_list_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        page_list_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             instr,
@@ -89,7 +89,7 @@ pub async fn list_unit_diff_stats(
     //
     let instr = ListPageUnitDiffStatsInstr { chapter_id };
 
-    Ok(page_list_usecase::list_unit_diff_stats::<RdbContext<ReptRead>, HybRepo>(
+    Ok(page_list_usecase::list_unit_diff_stats::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -123,7 +123,7 @@ pub async fn list_unit_flagged_stats(
 
     Ok(page_list_usecase::list_unit_flagged_stats::<
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
     >((harn.repo(),), user_token, instr)
     .await?
     .accept(StatusCode::OK))
@@ -150,7 +150,7 @@ pub async fn get_info(
 ) -> HttpResult<PageInfoView> {
     //
     Ok(
-        page_list_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+        page_list_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             page_id,
@@ -178,7 +178,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    page_delete_usecase::delete::<_, RdbContext<ReptRead>, HybRepo, _>(
+    page_delete_usecase::delete::<_, RdbContext<ReptRead>, RdbRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,
@@ -218,7 +218,7 @@ pub async fn alloc_chapter_pages(
     Ok(page_alloc_usecase::alloc_chapter_pages::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         RdbProm,
         _,
     >(
@@ -259,7 +259,7 @@ pub async fn alloc_image(
     Json(instr): Json<AllocPageImageInstr>,
 ) -> HttpResult<AllocatedPageVal> {
     //
-    Ok(page_alloc_usecase::alloc_image::<_, RdbContext<ReptRead>, HybRepo, _, _>(
+    Ok(page_alloc_usecase::alloc_image::<_, RdbContext<ReptRead>, RdbRepo, _, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
@@ -297,7 +297,7 @@ pub async fn mark_image_uploaded(
     Json(instr): Json<MarkPageImageUploadedInstr>,
 ) -> HttpNoContent {
     //
-    page_usecase::mark_image_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+    page_usecase::mark_image_uploaded::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         page_id,

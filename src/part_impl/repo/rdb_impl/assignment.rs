@@ -26,7 +26,7 @@ use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::assignment::list::list_infos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentInfoRecord, AssignmentItem, AssignmentPack,
@@ -245,7 +245,7 @@ async fn put_roles(
     record_into_info(record)
 }
 
-impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
+impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     // Keep assignment lookup orchestration errors mapped to repository base errors.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -284,7 +284,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
+impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     // Keep list-assignment orchestration failures normalized for call sites.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -299,7 +299,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
     }
 }
 
-impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
+impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     // Normalize get-assignment errors to base repository error type.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -314,7 +314,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -335,7 +335,7 @@ where
     }
 }
 
-impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -386,7 +386,7 @@ where
     }
 }
 
-impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -407,7 +407,7 @@ where
     }
 }
 
-impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -428,7 +428,7 @@ where
     }
 }
 
-impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -464,7 +464,7 @@ async fn delete_by_chapter_id(
     accept!(())
 }
 
-impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

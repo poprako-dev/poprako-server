@@ -9,9 +9,6 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::model::write::termbase::TermbaseEntry;
@@ -21,11 +18,12 @@ use crate::part::repo::oper::term::{
 };
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::result::BaseError;
 use crate::shape::write::term::{TermEntryShape, TermReplShape};
+use poprako_rdb_core::RdbCore;
 
 // Borrow an owned test term for the bulk persistence contract.
 fn entry_shape(entry: &TermEntry) -> TermEntryShape<'_> {
@@ -57,7 +55,7 @@ const PREFIX: &str = "rdb-test-term-domain-";
 // Reject duplicate identifiers within one update batch.
 // Reject sources that differ only by case and surrounding whitespace.
 async fn verify_normalized_duplicate(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     term_entry: &TermEntry,
 ) {
@@ -83,7 +81,7 @@ async fn verify_normalized_duplicate(
 }
 
 async fn verify_duplicate_updates(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     termbase_entry: &TermbaseEntry,
     bulk_updates: &[TermRepl],
@@ -117,7 +115,7 @@ async fn verify_duplicate_updates(
 }
 
 async fn verify_wrong_scope_rollback(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     termbase_entry: &TermbaseEntry,
@@ -224,7 +222,7 @@ async fn verify_wrong_scope_rollback(
 }
 
 async fn verify_bulk_upsert(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     entry: &TermbaseEntry,
@@ -317,7 +315,7 @@ async fn verify_bulk_upsert(
 }
 
 async fn verify_import_upsert(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     termbase_entry: &TermbaseEntry,
@@ -395,11 +393,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

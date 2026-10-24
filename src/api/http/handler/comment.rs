@@ -19,7 +19,7 @@ use crate::data::val::comment::CreateCommentVal;
 use crate::data::view::comment::CommentInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::comment as comment_usecase;
 use crate::value::comment::CommentInclOpt;
@@ -65,7 +65,7 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    Ok(comment_usecase::create::<RdbContext<ReptRead>, HybRepo>(
+    Ok(comment_usecase::create::<RdbContext<ReptRead>, RdbRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -105,7 +105,7 @@ pub async fn list_infos(
     };
 
     Ok(
-        comment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        comment_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             instr,

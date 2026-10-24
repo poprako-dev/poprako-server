@@ -1,4 +1,4 @@
-//! Bounded Unit save tokens shared by every clone of a repository.
+//! Bounded Unit save tokens shared by every clone of a cache adapter.
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 // PostgreSQL commit and replay regression tests.
@@ -19,8 +19,10 @@ use tokio::sync::{Mutex, MutexGuard};
 use uuid::Uuid;
 
 use crate::config::cache::CacheConfig;
-use crate::part::repo::unit_save::{UnitSaveGuard, UnitSaveRepo};
-use crate::part_impl::repo::HybRepo;
+use crate::part::cache::unit_save::{
+    UnitSaveCache as UnitSavePort, UnitSaveGuard,
+};
+use crate::part_impl::cache::mem_impl::MemCache;
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 
 // Covers UUID, Arc, allocation headers, and amortized Moka metadata.
@@ -140,8 +142,8 @@ impl Default for UnitSaveCache {
     }
 }
 
-impl UnitSaveRepo for HybRepo {
-    // Keep the cache guard borrowed from this repository handle.
+impl UnitSavePort for MemCache {
+    // Keep the cache guard borrowed from this cache adapter handle.
     type Guard<'a> = UnitSaveCacheGuard<'a>;
 
     // Share the production cache and its exclusion guard.

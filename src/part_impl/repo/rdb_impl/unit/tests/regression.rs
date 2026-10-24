@@ -11,14 +11,14 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByPageIds, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 
 use super::{PREFIX, create_edit};
 
 // Verify repeated page identifiers preserve history ordering without duplicate records.
 async fn verify_selected_history(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     missing_translation_page_id: &str,
     chunked_order_page_id: &str,
     equal_page_id: &str,
@@ -71,7 +71,7 @@ async fn verify_selected_history(
 
 // Seed visible and hidden copies of every translation and revision pairing.
 async fn seed_text_matrix(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     matrix_page_id: &str,
@@ -156,7 +156,7 @@ async fn seed_text_matrix(
 
 // Seed a proofreader append without a source translation.
 async fn seed_missing_translation(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     missing_translation_page_id: &str,
@@ -188,7 +188,7 @@ async fn seed_missing_translation(
 
 // Seed equal, empty, whitespace, missing-proofread, and hidden translations.
 async fn seed_excluded_diff_cases(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     equal_page_id: &str,
@@ -289,7 +289,7 @@ async fn seed_excluded_diff_cases(
 
 // Verify all historical identifiers retain insertion order and hidden flags.
 async fn verify_chunked_order(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     chunked_order_page_id: &str,
 ) {
@@ -337,7 +337,7 @@ async fn verify_chunked_order(
 
 // Create and tombstone six batches so history exceeds one database chunk.
 async fn seed_chunked_history(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
     chunked_order_page_id: &str,
@@ -420,7 +420,7 @@ async fn seed_chunked_history(
 
 // Create dedicated pages for equality, append-only, hidden history, and text matrix cases.
 async fn seed_diff_pages(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) -> [String; 4] {
@@ -480,7 +480,7 @@ async fn unit_diff_stats_use_testcontainer() {
 }
 
 pub(super) async fn verify_chunking_and_diff(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     page_fixture: &PageFixture,
 ) {

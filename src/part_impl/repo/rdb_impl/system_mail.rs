@@ -22,7 +22,7 @@ use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailsRead, SendSystemMail, SendSystemMails,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailInfoRecord, SystemMailItem,
 };
@@ -159,7 +159,7 @@ async fn mark_read_batch(
     accept!(())
 }
 
-impl Run<SendSystemMail<'_>> for HybRepo {
+impl Run<SendSystemMail<'_>> for RdbRepo {
     // Reuse base error type for send operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -171,7 +171,7 @@ impl Run<SendSystemMail<'_>> for HybRepo {
     }
 }
 
-impl Run<SendSystemMails<'_>> for HybRepo {
+impl Run<SendSystemMails<'_>> for RdbRepo {
     // Reuse base error type for bulk send operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -183,7 +183,7 @@ impl Run<SendSystemMails<'_>> for HybRepo {
     }
 }
 
-impl Run<ListSystemMailInfos<'_>> for HybRepo {
+impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     // Reuse base error type for listing operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -198,7 +198,7 @@ impl Run<ListSystemMailInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<MarkSystemMailsRead<'_>> for HybRepo {
+impl Run<MarkSystemMailsRead<'_>> for RdbRepo {
     // Reuse base error type for read-mark operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

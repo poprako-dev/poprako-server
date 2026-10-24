@@ -18,7 +18,7 @@ use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordItem, ChapterWorkflowRecordInfoRecord};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
 use crate::result::{BaseError, BaseRest};
@@ -70,7 +70,7 @@ async fn create(
     accept!(())
 }
 
-impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
+impl Run<ListChapterWorkflowRecordInfos<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -84,7 +84,7 @@ impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateChapterWorkflowRecords<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -105,7 +105,7 @@ where
     }
 }
 
-impl Run<CreateChapterWorkflowRecords<'_>> for HybRepo {
+impl Run<CreateChapterWorkflowRecords<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 

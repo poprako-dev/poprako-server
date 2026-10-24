@@ -11,7 +11,7 @@ pub trait IssueSaveGuard {
 }
 
 /// Shared bounded receipt cache.
-pub trait IssueSaveRepo {
+pub trait IssueSaveCache {
     /// Adapter-owned guard.
     type Guard<'a>: IssueSaveGuard
     where

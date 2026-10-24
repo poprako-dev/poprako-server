@@ -19,7 +19,7 @@ use crate::data::val::issue_edit::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::issue_edit as issue_edit_usecase;
 use crate::usecase::issue_edit::{
@@ -70,7 +70,7 @@ pub async fn get_info(
 ) -> HttpResult<IssueEditPageVal> {
     //
     Ok(
-        issue_edit_usecase::get_info::<_, RdbContext<ReptRead>, HybRepo, _>(
+        issue_edit_usecase::get_info::<_, RdbContext<ReptRead>, RdbRepo, _>(
             (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
             token,
             id,
@@ -120,7 +120,7 @@ pub async fn list_variant_infos(
         issue_edit_usecase::list_variant_infos::<
             _,
             RdbContext<ReptRead>,
-            HybRepo,
+            RdbRepo,
         >((harn.nucl().rept_read(), harn.repo()), token, id)
         .await?
         .accept(StatusCode::OK),
@@ -169,7 +169,7 @@ pub async fn rename_variant(
     Ok(issue_rename_usecase::rename_variant::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
@@ -227,8 +227,8 @@ pub async fn save_infos(
         .map_err(|_| HttpError::unprocessable("save_id must be a UUID"))?;
 
     Ok(
-        issue_save_usecase::save_infos::<_, RdbContext<ReptRead>, HybRepo, _>(
-            (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
+        issue_save_usecase::save_infos::<_, RdbContext<ReptRead>, RdbRepo, _, _>(
+            (harn.nucl().rept_read(), harn.repo(), harn.cache(), harn.obj_dept()),
             token,
             id,
             save_id,

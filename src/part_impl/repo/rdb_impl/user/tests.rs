@@ -7,15 +7,13 @@
 
 use poprako_orchestra::Run;
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::part::repo::oper::user::{
     FindUserInfo, GetUserCredential, GetUserInfo,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-user-domain-";
 
@@ -28,11 +26,7 @@ pub async fn user_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let user_info = repo
         .run(&GetUserInfo {

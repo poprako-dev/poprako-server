@@ -2,8 +2,6 @@
 // verify_notes(UnitRepo)(negative): a failed batch rolls annotations back atomically.
 
 use super::*;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::ListPageUnitDiffStats;
@@ -33,7 +31,7 @@ const SECOND_ID: &str = "rdb-test-unit-domain-notes-b";
 
 // Exercise create notes through the typed repository.
 async fn create_notes(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     fixture: &PageFixture,
 ) {
@@ -92,7 +90,7 @@ async fn create_notes(
 
 // Exercise verify patches through the typed repository.
 async fn verify_patches(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     fixture: &PageFixture,
 ) {
@@ -181,7 +179,7 @@ async fn verify_patches(
 
 // Exercise verify diff stats through the typed repository.
 async fn verify_diff_stats(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     fixture: &PageFixture,
 ) {
@@ -259,7 +257,7 @@ async fn verify_diff_stats(
 
 // Exercise verify rollback through the typed repository.
 async fn verify_rollback(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     fixture: &PageFixture,
 ) {
@@ -326,11 +324,7 @@ pub async fn verify_notes(shared: RdbCore) {
     let fixture =
         test_shared::seed_page(&shared, "rdb-test-unit-domain-notes-").await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared);
 

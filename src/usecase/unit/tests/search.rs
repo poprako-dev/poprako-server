@@ -234,7 +234,7 @@ fn search_instr_for(
 // Build the standard Unit scope with the requested number of ordered Pages.
 fn search_scope(page_count: usize) -> Mock {
     //
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     for page_index in 1..page_count {
         //

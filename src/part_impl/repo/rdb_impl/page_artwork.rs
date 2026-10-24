@@ -22,7 +22,7 @@ use crate::part::repo::oper::page_artwork::{
     GetPageArtworkInfo, ListPageArtworkInfos, ReplacePageArtworkManifest,
     UpdatePageArtworkInfo,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::page_artwork::{
     PageArtworkItem, PageArtworkRecord,
 };
@@ -49,7 +49,7 @@ async fn list_infos(
     records.into_iter().map(TryInto::try_into).collect()
 }
 
-impl Run<GetPageArtworkInfo<'_>> for HybRepo {
+impl Run<GetPageArtworkInfo<'_>> for RdbRepo {
     // Application error returned by this operation.
     type Error = BaseError;
 
@@ -81,7 +81,7 @@ impl Run<GetPageArtworkInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListPageArtworkInfos<'_>> for HybRepo {
+impl Run<ListPageArtworkInfos<'_>> for RdbRepo {
     // Application error returned by this operation.
     type Error = BaseError;
 
@@ -95,7 +95,7 @@ impl Run<ListPageArtworkInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<ListPageArtworkInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListPageArtworkInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -116,7 +116,7 @@ where
     }
 }
 
-impl<L> Step<ReplacePageArtworkManifest<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ReplacePageArtworkManifest<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -205,7 +205,7 @@ where
     }
 }
 
-impl<L> Step<UpdatePageArtworkInfo<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdatePageArtworkInfo<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

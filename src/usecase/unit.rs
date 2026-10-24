@@ -33,6 +33,7 @@ use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::shared::user::UserToken;
 use crate::model::write::unit::UnitEdit;
+use crate::part::cache::unit_save::{UnitSaveCache, UnitSaveGuard as _};
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -54,7 +55,6 @@ use crate::part::repo::oper::unit::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::unit_save::{UnitSaveGuard as _, UnitSaveRepo};
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
@@ -233,7 +233,7 @@ where
 /// Saves one authorized Unit batch unless its token already completed.
 #[instrument(
     level = "info",
-    skip(nucl, repo, token, instr),
+    skip(nucl, repo, cache, token, instr),
     fields(
         actor_user_id = %token.user_id,
         save_id = %instr.save_id,
@@ -241,8 +241,8 @@ where
         edit_count = instr.edits.len(),
     ),
 )]
-pub async fn save_edits<N, C, R>(
-    (nucl, repo): (&N, &R),
+pub async fn save_edits<N, C, R, K>(
+    (nucl, repo, cache): (&N, &R, &K),
     token: UserToken,
     instr: SavePageUnitEditsInstr,
 ) -> BaseRest<SavePageUnitEditsVal>
@@ -252,21 +252,21 @@ where
     C::Level: AtLeast<Serial>,
     R: PageRepo<C>
         + UnitRepo<C>
-        + UnitSaveRepo
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
-    for<'save> R::Guard<'save>: Send + Sync,
+    K: UnitSaveCache + Sync,
+    for<'save> K::Guard<'save>: Send + Sync,
 {
     let page_id = instr.page_id.clone();
 
     let (edits, save_id, created_unit_ids) =
         prepare_save(instr, &token.user_id)?;
 
-    let save_guard = repo.lock_save(save_id).await;
+    let save_guard = cache.lock_save(save_id).await;
 
     let retained_save = &save_guard;
 

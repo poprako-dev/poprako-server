@@ -32,7 +32,7 @@ use crate::data::val::chapter_port::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::chapter_port::{
     artwork as chapter_port_artwork_usecase,
@@ -66,7 +66,7 @@ pub async fn import_translation(
         chapter_port_import_translation_usecase::import_translation::<
             _,
             RdbContext<ReptRead>,
-            HybRepo,
+            RdbRepo,
         >(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
@@ -195,7 +195,7 @@ pub async fn alloc_artwork(
     Ok(chapter_port_artwork_usecase::alloc_artwork::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >(
         (
@@ -237,7 +237,7 @@ pub async fn mark_artwork_uploaded(
     chapter_port_artwork_usecase::mark_artwork_uploaded::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
         _,
     >(
@@ -278,7 +278,7 @@ pub async fn export_artwork(
     //
     Ok(chapter_port_artwork_usecase::export_artwork::<
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
         _,
     >((harn.repo(), harn.obj_dept()), user_token, chapter_id)
     .await?

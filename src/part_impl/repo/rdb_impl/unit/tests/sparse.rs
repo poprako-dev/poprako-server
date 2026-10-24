@@ -8,8 +8,6 @@ use diesel_async::{AsyncConnection as _, RunQueryDsl as _};
 use time::OffsetDateTime;
 
 use super::*;
-
-use crate::config::cache::CacheConfig;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 
 // Construct an empty patch that may restore a hidden Unit.
@@ -53,7 +51,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         ..Default::default()
     };
 
-    let repo = HybRepo::new(shared.clone(), CacheConfig::default(), config);
+    let repo = RdbRepo::new(shared.clone(), config);
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

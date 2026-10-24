@@ -21,7 +21,7 @@ use crate::data::instr::assignment::{
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::assignment as assignment_usecase;
 use crate::usecase::assignment::update_roles as assignment_update_roles_usecase;
@@ -55,7 +55,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<AssignmentInfoView>> {
     //
     Ok(
-        assignment_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        assignment_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             instr,
@@ -100,7 +100,7 @@ pub async fn update_roles(
     assignment_update_roles_usecase::update_roles::<
         _,
         RdbContext<ReptRead>,
-        HybRepo,
+        RdbRepo,
     >((harn.nucl().rept_read(), harn.repo()), user_token, instr)
     .await?;
 
@@ -126,7 +126,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    assignment_usecase::delete::<_, RdbContext<ReptRead>, HybRepo>(
+    assignment_usecase::delete::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_id,
@@ -157,7 +157,7 @@ pub async fn join(
 ) -> HttpResult<AssignmentInfoView> {
     //
     Ok(
-        assignment_usecase::join::<_, RdbContext<ReptRead>, HybRepo>(
+        assignment_usecase::join::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             instr,

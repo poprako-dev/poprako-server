@@ -37,6 +37,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
+use crate::part_impl::cache::mem_impl::MemCache;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::util::Patch;
@@ -46,10 +47,10 @@ use crate::value::unit::UnitTextPart;
 
 #[tokio::test]
 async fn create_uses_token_identity_and_updates_counts() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local-1", None, Some("translated"))]),
     )
@@ -76,7 +77,7 @@ async fn create_uses_token_identity_and_updates_counts() {
 
 #[tokio::test]
 async fn transform_updates_selected_text_without_cascading_targets() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let mut transform_assignment =
         assignment(RoleMask::from(RoleField::TRANSLATOR));
@@ -88,7 +89,7 @@ async fn transform_updates_selected_text_without_cascading_targets() {
     mock.seed_assignment(transform_assignment);
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local-1", None, Some("alpha beta"))]),
     )
@@ -140,10 +141,10 @@ async fn transform_updates_selected_text_without_cascading_targets() {
 
 #[tokio::test]
 async fn overlapping_transform_rolls_back_the_complete_request() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local-1", None, Some("abcd"))]),
     )
@@ -192,10 +193,10 @@ async fn overlapping_transform_rolls_back_the_complete_request() {
 
 #[tokio::test]
 async fn delete_then_patch_restores_the_tombstone() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local-1", None, Some("text"))]),
     )
@@ -205,7 +206,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     let unit_id = mock.snapshot().units.first().unwrap().id.clone();
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Delete {
             id: unit_id.clone(),
@@ -219,7 +220,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     assert_eq!(mock.snapshot().pages.first().unwrap().total_unit_count, 0);
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Patch {
             id: unit_id,
@@ -247,10 +248,10 @@ async fn delete_then_patch_restores_the_tombstone() {
 
 #[tokio::test]
 async fn translator_revision_edit_is_rejected_without_mutation() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local-1", None, Some("text"))]),
     )
@@ -260,7 +261,7 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
     let before = mock.snapshot();
 
     let error = save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Patch {
             id: before.units.first().unwrap().id.clone(),
@@ -302,10 +303,11 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
 
 #[tokio::test]
 async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
-    let proofreader = save_scope(RoleMask::from(RoleField::PROOFREADER));
+    let (proofreader, cache) =
+        save_scope(RoleMask::from(RoleField::PROOFREADER));
 
     save_edits(
-        (&proofreader, &proofreader),
+        (&proofreader, &proofreader, &cache),
         token("translator-1"),
         save_instr(vec![create_with_revision("proofreader-local", None)]),
     )
@@ -324,10 +326,10 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
     let dual_roles = RoleMask::from(RoleField::TRANSLATOR)
         .union(RoleMask::from(RoleField::PROOFREADER));
 
-    let dual = save_scope(dual_roles);
+    let (dual, cache) = save_scope(dual_roles);
 
     save_edits(
-        (&dual, &dual),
+        (&dual, &dual, &cache),
         token("translator-1"),
         save_instr(vec![create_with_revision(
             "dual-local",
@@ -349,10 +351,10 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
 
 #[tokio::test]
 async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("anchor-local", None, Some("anchor"))]),
     )
@@ -361,13 +363,13 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
 
     let anchor_id = mock.snapshot().units.first().unwrap().id.clone();
 
-    let first_mock = mock.clone();
+    let (first_mock, first_cache) = (mock.clone(), cache.clone());
 
     let first_anchor = anchor_id.clone();
 
     let first = tokio::spawn(async move {
         save_edits(
-            (&first_mock, &first_mock),
+            (&first_mock, &first_mock, &first_cache),
             token("translator-1"),
             save_instr(vec![create(
                 "first-local",
@@ -378,11 +380,11 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
         .await
     });
 
-    let second_mock = mock.clone();
+    let (second_mock, second_cache) = (mock.clone(), cache.clone());
 
     let second = tokio::spawn(async move {
         save_edits(
-            (&second_mock, &second_mock),
+            (&second_mock, &second_mock, &second_cache),
             token("translator-1"),
             save_instr(vec![create(
                 "second-local",
@@ -479,7 +481,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 // Build a mock scope with workset/chapter/page/assignment fixtures for tests.
-fn save_scope(roles: RoleMask) -> Mock {
+fn save_scope(roles: RoleMask) -> (Mock, MemCache) {
     let mock = Mock::new();
 
     mock.seed_workset(workset());
@@ -492,7 +494,7 @@ fn save_scope(roles: RoleMask) -> Mock {
 
     mock.seed_assignment(assignment(roles));
 
-    mock
+    (mock, MemCache::default())
 }
 
 // Build baseline workset fixture consumed by other local entity builders.
@@ -515,7 +517,6 @@ fn workset() -> WorksetInfo {
 // Build baseline comic fixture tied to the default workset.
 fn comic() -> ComicInfo {
     //
-    // Build a baseline comic fixture linked to the default workset.
     let current_time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -565,7 +566,6 @@ fn chapter() -> ChapterInfo {
 // Build baseline page fixture with zero-unit counters.
 fn page() -> PageInfo {
     //
-    // Build a baseline page fixture for unit-chain assembly.
     let current_time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -583,7 +583,6 @@ fn page() -> PageInfo {
 // Build baseline assignment fixture for user-role scenarios.
 fn assignment(roles: RoleMask) -> AssignmentInfo {
     //
-    // Build an assignment fixture tied to the test translator.
     let current_time = OffsetDateTime::now_utc();
 
     AssignmentInfo {

@@ -10,11 +10,10 @@ use tokio::sync::{Mutex, MutexGuard};
 use uuid::Uuid;
 
 use crate::config::cache::CacheConfig;
-use crate::part::repo::issue_save::{IssueSaveGuard, IssueSaveRepo};
-use crate::part_impl::repo::HybRepo;
-
-#[cfg(test)]
-use crate::part_impl::repo::mock_impl::Mock;
+use crate::part::cache::issue_save::{
+    IssueSaveCache as IssueSavePort, IssueSaveGuard,
+};
+use crate::part_impl::cache::mem_impl::MemCache;
 
 /// Receipt protected independently of cache eviction.
 pub struct IssueSaveCacheGuard<'a> {
@@ -95,21 +94,7 @@ impl Default for IssueSaveCache {
     }
 }
 
-impl IssueSaveRepo for HybRepo {
-    // Guard holding the receipt lock.
-    type Guard<'a> = IssueSaveCacheGuard<'a>;
-
-    // Serializes retries sharing a receipt stripe.
-    fn lock_issue_save(
-        &self,
-        save_id: Uuid,
-    ) -> impl Future<Output = Self::Guard<'_>> + Send {
-        self.issue_saves.lock(save_id)
-    }
-}
-
-#[cfg(test)]
-impl IssueSaveRepo for Mock {
+impl IssueSavePort for MemCache {
     // Guard holding the receipt lock.
     type Guard<'a> = IssueSaveCacheGuard<'a>;
 

@@ -21,7 +21,7 @@ use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::team as team_usecase;
 use crate::usecase::team::{
@@ -49,7 +49,7 @@ pub async fn create(
     Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoView> {
     //
-    Ok(team_usecase::create::<_, RdbContext<ReptRead>, HybRepo, _>(
+    Ok(team_usecase::create::<_, RdbContext<ReptRead>, RdbRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
@@ -85,7 +85,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
     Ok(
-        team_read_usecase::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        team_read_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
             instr,
@@ -115,14 +115,13 @@ pub async fn list_online_user_ids(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Vec<String>> {
     //
-    Ok(
-        team_online_usecase::list_online_user_ids::<
-            RdbContext<ReptRead>,
-            HybRepo,
-        >((harn.repo(),), user_token, team_id)
-        .await?
-        .accept(StatusCode::OK),
-    )
+    Ok(team_online_usecase::list_online_user_ids::<
+        RdbContext<ReptRead>,
+        RdbRepo,
+        _,
+    >((harn.repo(), harn.cache()), user_token, team_id)
+    .await?
+    .accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own activity and lease.
@@ -145,8 +144,8 @@ pub async fn mark_self_online(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    team_online_usecase::mark_self_online::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
+    team_online_usecase::mark_self_online::<RdbContext<ReptRead>, RdbRepo, _>(
+        (harn.repo(), harn.cache()),
         user_token,
         team_id,
     )
@@ -175,7 +174,7 @@ pub async fn get_info(
 ) -> HttpResult<TeamInfoView> {
     //
     Ok(
-        team_read_usecase::get_info::<RdbContext<ReptRead>, HybRepo, _>(
+        team_read_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             team_id,
         )
@@ -208,7 +207,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&team_id, &instr.id)?;
 
-    team_usecase::update_info::<RdbContext<ReptRead>, HybRepo>(
+    team_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -241,7 +240,7 @@ pub async fn alloc_avatar(
 ) -> HttpResult<AllocTeamAvatarVal> {
     //
     Ok(
-        team_usecase::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
+        team_usecase::alloc_avatar::<_, RdbContext<ReptRead>, RdbRepo, _>(
             (
                 harn.nucl().rept_read(),
                 harn.repo(),
@@ -278,7 +277,7 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    team_usecase::mark_avatar_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+    team_usecase::mark_avatar_uploaded::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
@@ -308,7 +307,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    team_delete_usecase::delete::<_, RdbContext<Serial>, HybRepo>(
+    team_delete_usecase::delete::<_, RdbContext<Serial>, RdbRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
         team_id,

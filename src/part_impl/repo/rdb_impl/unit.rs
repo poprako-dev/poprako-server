@@ -18,7 +18,7 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
 use crate::part_impl::repo::rdb_impl::unit::sequence::{
     list_infos_by_ids, list_infos_by_page_ids, list_infos_in_chapter_order,
@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::unit::sequence::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
+impl Run<ListUnitInfosByPageIds<'_>> for RdbRepo {
     // Error type for the Run trait impl on the page-id unit list query.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -42,7 +42,7 @@ impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<ListUnitInfosByIds<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListUnitInfosByIds<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -63,7 +63,7 @@ where
     }
 }
 
-impl<L> Step<SearchChapterUnitIds<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SearchChapterUnitIds<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -92,7 +92,7 @@ where
     }
 }
 
-impl<L> Step<ListUnitInfosInChapterOrder<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListUnitInfosInChapterOrder<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -113,7 +113,7 @@ where
     }
 }
 
-impl<L> Step<ListUnitOrders<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListUnitOrders<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -140,7 +140,7 @@ where
     }
 }
 
-impl<L> Step<ApplyUnitEdits<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ApplyUnitEdits<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

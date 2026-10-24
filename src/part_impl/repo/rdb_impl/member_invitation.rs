@@ -25,7 +25,7 @@ use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
     PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationInfoRecord, MemberInvitationItem, MemberInvitationPack,
 };
@@ -276,7 +276,7 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
+impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
     // Map list filters into shared query layer for member invitation collections.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -291,7 +291,7 @@ impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
+impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
     // Resolve invite info by id/code in non-transactional context.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -316,7 +316,7 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateMemberInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateMemberInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -337,7 +337,7 @@ where
     }
 }
 
-impl<L> Step<GetMemberInvitationInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetMemberInvitationInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -368,7 +368,7 @@ where
     }
 }
 
-impl<L> Step<UpdateMemberInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateMemberInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -401,7 +401,7 @@ where
     }
 }
 
-impl<L> Step<GetMemberInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetMemberInvitationInfoExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -422,7 +422,7 @@ where
     }
 }
 
-impl<L> Step<DeleteMemberInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteMemberInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -443,7 +443,7 @@ where
     }
 }
 
-impl<L> Step<PurgeExpiredMemberInvitation<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<PurgeExpiredMemberInvitation<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -464,7 +464,7 @@ where
     }
 }
 
-impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
+impl Run<PurgeExpiredMemberInvitation<'_>> for RdbRepo {
     // Keep non-transactional purge failures in base error type.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -479,7 +479,7 @@ impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateMemberInvitation<'_>> for HybRepo {
+impl Run<UpdateMemberInvitation<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
@@ -502,7 +502,7 @@ impl Run<UpdateMemberInvitation<'_>> for HybRepo {
     }
 }
 
-impl Run<DeleteMemberInvitation<'_>> for HybRepo {
+impl Run<DeleteMemberInvitation<'_>> for RdbRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 

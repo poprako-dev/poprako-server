@@ -34,8 +34,6 @@ pub mod issue_edit;
 pub mod member;
 /// Mock in-memory implementations for member invitation repository operations.
 pub mod member_invitation;
-/// Mock in-memory implementations for online-user repository operations.
-pub mod online_user;
 /// Mock implementations for page repository operations.
 pub mod page;
 /// Composite artwork pages.
@@ -52,8 +50,6 @@ pub mod term;
 pub mod termbase;
 /// Mock implementations for unit repository operations.
 pub mod unit;
-/// Process-local Unit save coordination shared with the production adapter.
-pub mod unit_save;
 /// Mock implementations for user repository operations.
 pub mod user;
 /// Mock implementations for workset repository operations.
@@ -94,8 +90,6 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::effect::event::Event;
 use crate::part::nucl::Serial;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
-use crate::part_impl::repo::mem_impl::online_user::OnlineUserCache;
-use crate::part_impl::repo::mem_impl::unit_save::UnitSaveCache;
 use crate::result::{BaseError, ExpectedVariant};
 
 /// In-memory state holding all mock repository records.
@@ -346,11 +340,6 @@ pub struct Mock {
     //
     /// Shared mutable mock repository state for concurrent test access.
     pub state: Arc<Mutex<MockState>>,
-    /// Successful save tokens outside transactional mock snapshots.
-    pub unit_saves: UnitSaveCache,
-    /// Bounded annotation save receipts.
-    pub issue_saves:
-        crate::part_impl::repo::mem_impl::issue_save::IssueSaveCache,
 
     // Serialize coordinated snapshots so concurrent replacements cannot lose state.
     transaction_lock: Arc<tokio::sync::Mutex<()>>,
@@ -359,9 +348,6 @@ pub struct Mock {
 
     /// Shared event buffer collecting emitted domain events during tests.
     pub events: Arc<Mutex<Vec<Event>>>,
-
-    // Team-partitioned online-user lease deadlines.
-    online_users: OnlineUserCache,
 }
 
 impl Mock {

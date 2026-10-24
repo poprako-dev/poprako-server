@@ -16,7 +16,7 @@ use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, GetComicInfo, GetComicInfoExcluded,
     ListComicInfos, TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     create, get_info_by_id, get_info_excluded, incr_chapter_next_index,
     list_infos, touch_last_active, update_chapter_count, update_info,
@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::comic::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<GetComicInfo<'_, '_>> for HybRepo {
+impl Run<GetComicInfo<'_, '_>> for RdbRepo {
     // Maps the `GetComicInfo` repository operation to non-transactional execution.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -36,7 +36,7 @@ impl Run<GetComicInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Run<ListComicInfos<'_>> for HybRepo {
+impl Run<ListComicInfos<'_>> for RdbRepo {
     // Maps the `ListComicInfos` repository operation to non-transactional execution.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -48,7 +48,7 @@ impl Run<ListComicInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateComic<'_>> for HybRepo {
+impl Run<UpdateComic<'_>> for RdbRepo {
     // Maps the `UpdateComic` repository operation to non-transactional execution.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -60,7 +60,7 @@ impl Run<UpdateComic<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<GetComicInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetComicInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -81,7 +81,7 @@ where
     }
 }
 
-impl<L> Step<ListComicInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListComicInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -102,7 +102,7 @@ where
     }
 }
 
-impl<L> Step<GetComicInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetComicInfoExcluded<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -123,7 +123,7 @@ where
     }
 }
 
-impl<L> Step<CreateComic<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateComic<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -144,7 +144,7 @@ where
     }
 }
 
-impl<L> Step<AllocComicChapterIndex<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<AllocComicChapterIndex<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -165,7 +165,7 @@ where
     }
 }
 
-impl<L> Step<UpdateComicChapterCount<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateComicChapterCount<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -186,7 +186,7 @@ where
     }
 }
 
-impl<L> Step<TouchComicLastActive<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<TouchComicLastActive<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

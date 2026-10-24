@@ -20,7 +20,7 @@ use crate::part::repo::oper::chapter::{
     SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     adjust_unit_counts, complete_raw_provide, create,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
@@ -32,7 +32,7 @@ use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel as map_diesel;
 
-impl Run<GetChapterInfo<'_, '_>> for HybRepo {
+impl Run<GetChapterInfo<'_, '_>> for RdbRepo {
     // Map failed query execution for chapter lookup into repository-level base error.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -48,7 +48,7 @@ impl Run<GetChapterInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Run<ListChapterInfos<'_>> for HybRepo {
+impl Run<ListChapterInfos<'_>> for RdbRepo {
     // Map list query failures to the common base error for callers.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -63,7 +63,7 @@ impl Run<ListChapterInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
+impl Run<FindPinnedChapterInfo<'_, '_>> for RdbRepo {
     // Keep error handling consistent with other chapter lookup orchestrations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -84,7 +84,7 @@ impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
+impl Run<ListPinnedChapterInfos<'_>> for RdbRepo {
     // Normalize all error paths for pinned-chapter batch reads.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -105,7 +105,7 @@ impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<StartChapterStage<'_>> for HybRepo {
+impl Run<StartChapterStage<'_>> for RdbRepo {
     // Ensure start-stage transition failures keep the same base error surface.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -117,7 +117,7 @@ impl Run<StartChapterStage<'_>> for HybRepo {
     }
 }
 
-impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
+impl Run<CompleteChapterRawProvide<'_>> for RdbRepo {
     // Keep completed-raw-provide orchestration errors as shared base errors.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -132,7 +132,7 @@ impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<StartChapterStage<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<StartChapterStage<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -153,7 +153,7 @@ where
     }
 }
 
-impl<L> Step<CompleteChapterRawProvide<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CompleteChapterRawProvide<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -174,7 +174,7 @@ where
     }
 }
 
-impl<L> Step<GetChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetChapterInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -195,7 +195,7 @@ where
     }
 }
 
-impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -216,7 +216,7 @@ where
     }
 }
 
-impl<L> Step<GetChapterUnitEditScopeExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetChapterUnitEditScopeExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -237,7 +237,7 @@ where
     }
 }
 
-impl<L> Step<ListChapterInfosExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListChapterInfosExcluded<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -258,7 +258,7 @@ where
     }
 }
 
-impl<L> Step<LockChapters<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockChapters<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -279,7 +279,7 @@ where
     }
 }
 
-impl<L> Step<FindPinnedChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
+impl<L> Step<FindPinnedChapterInfo<'_, '_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -302,7 +302,7 @@ where
     }
 }
 
-impl<L> Step<CreateChapter<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateChapter<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -323,7 +323,7 @@ where
     }
 }
 
-impl<L> Step<UpdateChapter<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateChapter<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -344,7 +344,7 @@ where
     }
 }
 
-impl<L> Step<UpdateChapterStage<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateChapterStage<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<L> Step<SetChapterPageCountMetrics<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SetChapterPageCountMetrics<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -386,7 +386,7 @@ where
     }
 }
 
-impl<L> Step<AdjustChapterUnitCountDelta<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<AdjustChapterUnitCountDelta<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -407,7 +407,7 @@ where
     }
 }
 
-impl<L> Step<UnpinOtherChapters<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UnpinOtherChapters<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -428,7 +428,7 @@ where
     }
 }
 
-impl<L> Step<SetChapterConfirmedArtworkVer<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SetChapterConfirmedArtworkVer<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

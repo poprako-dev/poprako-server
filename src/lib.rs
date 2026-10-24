@@ -24,7 +24,7 @@ mod log;
 mod model;
 // Borrowed domain payloads for explicitly justified copy avoidance.
 mod shape;
-// Port trait definitions (repo, auth, image, prom, effect) for the application
+// Port trait definitions (repo, cache, auth, image, prom, effect) for the application
 // core.
 mod part;
 // Shared RDB infrastructure used by port implementations.
@@ -42,7 +42,7 @@ mod util;
 // cases.
 mod value;
 
-// Concrete port implementations: repo, auth, prom, image, effect, nucl.
+// Concrete port implementations: repo, cache, auth, prom, image, effect, nucl.
 /// Concrete application port adapters.
 pub mod part_impl;
 
@@ -77,6 +77,7 @@ pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};
 pub use crate::part::prom::payload::PromPayload;
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
+pub use crate::part_impl::cache::mem_impl::MemCache;
 pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use crate::part_impl::effect::async_impl::actor::{
     EffectActor, EffectActorDesc,
@@ -85,6 +86,6 @@ pub use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
 pub use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;
 pub use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
 pub use crate::part_impl::prom::dispatch::dispatch as dispatch_prom;
-pub use crate::part_impl::repo::HybRepo;
+pub use crate::part_impl::repo::RdbRepo;
 pub use crate::result::{BaseError, BaseRest};
 pub use crate::shared::RdbContext;

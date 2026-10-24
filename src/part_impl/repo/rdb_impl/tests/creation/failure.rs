@@ -9,19 +9,19 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::{
     assignment, chapter, comic, member, team, workset,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
 /// Delegates real writes, then duplicates history to abort the transaction.
 pub struct DuplicateHistoryRepo {
-    repo: HybRepo,
+    repo: RdbRepo,
     history_written: AtomicBool,
 }
 
 impl DuplicateHistoryRepo {
     /// Wraps the real repository without changing its transaction coordinator.
-    pub const fn new(repo: HybRepo) -> Self {
+    pub const fn new(repo: RdbRepo) -> Self {
         //
         Self {
             repo,
@@ -38,7 +38,7 @@ impl DuplicateHistoryRepo {
 impl<O> Run<O> for DuplicateHistoryRepo
 where
     O: Oper + Sync,
-    HybRepo: Run<O, Error = BaseError>,
+    RdbRepo: Run<O, Error = BaseError>,
 {
     // Retains the real repository error contract.
     type Error = BaseError;

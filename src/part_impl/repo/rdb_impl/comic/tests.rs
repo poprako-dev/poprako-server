@@ -7,9 +7,6 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use poprako_rdb_core::RdbCore;
-
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::chapter::ChapterStageRepl;
@@ -22,7 +19,7 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::test_shared::ComicFixture;
 use crate::shape::write::chapter::ChapterEntryShape;
@@ -30,12 +27,13 @@ use crate::shape::write::comic::ComicEntryShape;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicInclOpt;
+use poprako_rdb_core::RdbCore;
 
 const PREFIX: &str = "rdb-test-comic-domain-";
 
 // Verify requested relation inclusions before mutating the comic.
 async fn verify_related_workset_team(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     comic_fixture: &ComicFixture,
 ) {
     let comic_list_spec = ComicListSpec {
@@ -83,7 +81,7 @@ async fn verify_related_workset_team(
 }
 
 // Verify updated title, author search, and one-based display index search.
-async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
+async fn verify_updated_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
     let comic_info_update = ComicRepl {
         id: comic_fixture.comic_info.id.clone(),
         title: "RDB Comic Updated".into(),
@@ -154,7 +152,7 @@ async fn verify_updated_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 }
 
 // Verify SQL wildcard characters are treated as literal search text.
-async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
+async fn verify_literal_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
     for fuzzy_title in ["%", "_", "\\"] {
         //
         let comic_list_spec = ComicListSpec {
@@ -215,7 +213,7 @@ async fn verify_literal_search(repo: &HybRepo, comic_fixture: &ComicFixture) {
 
 // Seed another workset to ensure stage filters do not leak across worksets.
 async fn seed_sibling_stages(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
 ) {
@@ -297,7 +295,7 @@ async fn seed_sibling_stages(
 
 // Exercise every legal single-stage phase against the pinned chapter.
 async fn verify_single_stage_filters(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     entry: &ChapterEntryShape<'_>,
@@ -366,7 +364,7 @@ async fn verify_single_stage_filters(
 
 // Verify intersected stage filters and the unrestricted stage mask.
 async fn verify_combined_stage_filters(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     comic_fixture: &ComicFixture,
     entry: &ChapterEntryShape<'_>,
@@ -451,11 +449,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     verify_related_workset_team(&repo, &comic_fixture).await;
 

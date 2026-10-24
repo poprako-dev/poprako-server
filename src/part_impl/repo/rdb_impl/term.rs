@@ -26,7 +26,7 @@ use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, ListTermInfos, LockTerm,
     UpdateTerm, UpsertTerms,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
     TermInfoRecord, TermItem,
 };
@@ -39,7 +39,7 @@ use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 use crate::value::pagination::PubListLimit;
 
-impl Run<GetTermInfo<'_>> for HybRepo {
+impl Run<GetTermInfo<'_>> for RdbRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -51,7 +51,7 @@ impl Run<GetTermInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<ListTermInfos<'_>> for HybRepo {
+impl Run<ListTermInfos<'_>> for RdbRepo {
     // Map `ListTermInfos` to repository orchestration without ambient transaction.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -86,7 +86,7 @@ impl Run<ListTermInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<CreateTerm<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -107,7 +107,7 @@ where
     }
 }
 
-impl<L> Step<ListTermInfos<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ListTermInfos<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -151,7 +151,7 @@ where
     }
 }
 
-impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockTerm<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -172,7 +172,7 @@ where
     }
 }
 
-impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -193,7 +193,7 @@ where
     }
 }
 
-impl<L> Step<UpsertTerms<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<UpsertTerms<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -221,7 +221,7 @@ where
     }
 }
 
-impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -242,7 +242,7 @@ where
     }
 }
 
-impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {

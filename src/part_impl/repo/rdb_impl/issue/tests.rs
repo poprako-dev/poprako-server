@@ -16,7 +16,6 @@ use time::OffsetDateTime;
 use poprako_rdb_core::RdbCore;
 
 use crate::complex::comic_archive as comic_archive_complex;
-use crate::config::cache::CacheConfig;
 use crate::config::repo::RepoConfig;
 use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue::{ChapterIssuesRepl, IssueEntry};
@@ -31,7 +30,7 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
 use crate::part::repo::oper::page::DeletePages;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
 use crate::part_impl::repo::rdb_impl::schema::t_issue;
 use crate::part_impl::repo::rdb_impl::test_shared;
@@ -56,7 +55,7 @@ fn entry(id: &str, chapter_id: &str, index: usize) -> IssueEntry {
 }
 
 async fn replace(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
     entries: &[IssueEntry],
@@ -155,7 +154,7 @@ async fn verify_storage_validation_boundary(
 
 // review_archive(GetComicArchiveSnapshotExcluded)(positive): ordered current issues are captured in the immutable Chapter snapshot.
 async fn verify_archive(
-    repo: &HybRepo,
+    repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
     chapter_id: &str,
 ) {
@@ -280,11 +279,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
 
     let fixture = test_shared::seed_page(&shared, "rdb-test-review-").await;
 
-    let repo = HybRepo::new(
-        shared.clone(),
-        CacheConfig::default(),
-        RepoConfig::default(),
-    );
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 

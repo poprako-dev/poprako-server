@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use super::{UnitSaveCache, entry_weight};
 use crate::config::cache::CacheConfig;
-use crate::part::repo::unit_save::UnitSaveGuard as _;
+use crate::part::cache::unit_save::UnitSaveGuard as _;
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 use std::sync::Arc;
 use uuid::Uuid;

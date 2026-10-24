@@ -22,7 +22,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
     ListAnnouncementInfos, UpdateAnnouncement,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
     AnnouncementInfoRecord, AnnouncementItem,
 };
@@ -141,7 +141,7 @@ async fn delete_announcement(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-impl Run<ListAnnouncementInfos<'_>> for HybRepo {
+impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
     // Error type for the Run trait impl on announcement list query.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -156,7 +156,7 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<CreateAnnouncement<'_>> for HybRepo {
+impl Run<CreateAnnouncement<'_>> for RdbRepo {
     // Error type for the announcement creation query.
     type Error = BaseError;
 
@@ -170,7 +170,7 @@ impl Run<CreateAnnouncement<'_>> for HybRepo {
     }
 }
 
-impl Run<GetAnnouncementInfo<'_>> for HybRepo {
+impl Run<GetAnnouncementInfo<'_>> for RdbRepo {
     // Error type for the announcement lookup query.
     type Error = BaseError;
 
@@ -184,7 +184,7 @@ impl Run<GetAnnouncementInfo<'_>> for HybRepo {
     }
 }
 
-impl Run<UpdateAnnouncement<'_>> for HybRepo {
+impl Run<UpdateAnnouncement<'_>> for RdbRepo {
     // Error type for the announcement update query.
     type Error = BaseError;
 
@@ -195,7 +195,7 @@ impl Run<UpdateAnnouncement<'_>> for HybRepo {
     }
 }
 
-impl Run<DeleteAnnouncement<'_>> for HybRepo {
+impl Run<DeleteAnnouncement<'_>> for RdbRepo {
     // Error type for the announcement deletion query.
     type Error = BaseError;
 

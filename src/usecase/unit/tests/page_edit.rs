@@ -79,11 +79,11 @@ fn assert_count_agreement(snapshot: &MockSnapshot) {
 }
 
 // Builds two Pages with one translated, approved Unit on each.
-async fn two_page_scope() -> Mock {
+async fn two_page_scope() -> (Mock, MemCache) {
     let roles = RoleMask::from(RoleField::TRANSLATOR)
         .union(RoleMask::from(RoleField::PROOFREADER));
 
-    let mock = save_scope(roles);
+    let (mock, cache) = save_scope(roles);
 
     let mut second_page = page();
 
@@ -107,18 +107,18 @@ async fn two_page_scope() -> Mock {
 
         instr.page_id = page_id.to_string();
 
-        save_edits((&mock, &mock), token("translator-1"), instr)
+        save_edits((&mock, &mock, &cache), token("translator-1"), instr)
             .await
             .unwrap();
     }
 
-    mock
+    (mock, cache)
 }
 
 // save_edits/transform(page_edit)(positive): counters agree through text, visibility, and approval changes.
 #[tokio::test]
 async fn page_and_chapter_counts_agree_after_save_and_transform() {
-    let mock = two_page_scope().await;
+    let (mock, cache) = two_page_scope().await;
 
     assert_count_agreement(&mock.snapshot());
 
@@ -177,7 +177,7 @@ async fn page_and_chapter_counts_agree_after_save_and_transform() {
         },
     ] {
         save_edits(
-            (&mock, &mock),
+            (&mock, &mock, &cache),
             token("translator-1"),
             save_instr(vec![edit]),
         )
@@ -192,12 +192,12 @@ async fn page_and_chapter_counts_agree_after_save_and_transform() {
 #[tokio::test]
 async fn later_page_transform_failure_rolls_back_prior_page_edits_and_counters()
 {
-    let mock = two_page_scope().await;
+    let (mock, cache) = two_page_scope().await;
 
     let unit_id = mock.snapshot().units.first().unwrap().id.clone();
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![UnitEditInstr::Patch {
             id: unit_id,
@@ -297,10 +297,10 @@ async fn later_page_transform_failure_rolls_back_prior_page_edits_and_counters()
 // save_edits/transform(page_edit)(positive): only sparse save completes activity and token effects without Unit writes.
 #[tokio::test]
 async fn no_op_transform_and_sparse_save_keep_distinct_completion_effects() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let (mock, cache) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     save_edits(
-        (&mock, &mock),
+        (&mock, &mock, &cache),
         token("translator-1"),
         save_instr(vec![create("local", None, Some("text"))]),
     )
@@ -350,7 +350,7 @@ async fn no_op_transform_and_sparse_save_keep_distinct_completion_effects() {
         before.chapters.first().unwrap().updated_at
     );
 
-    assert_eq!(mock.unit_saves.token_count(), 1);
+    assert_eq!(cache.unit_save_token_count(), 1);
 
     let instr = save_instr(vec![UnitEditInstr::Patch {
         id: unit_id,
@@ -366,9 +366,10 @@ async fn no_op_transform_and_sparse_save_keep_distinct_completion_effects() {
 
     let save_id = instr.save_id.clone();
 
-    let saved = save_edits((&mock, &mock), token("translator-1"), instr)
-        .await
-        .unwrap();
+    let saved =
+        save_edits((&mock, &mock, &cache), token("translator-1"), instr)
+            .await
+            .unwrap();
 
     assert!(saved.created_unit_ids.is_empty());
 
@@ -389,7 +390,7 @@ async fn no_op_transform_and_sparse_save_keep_distinct_completion_effects() {
         before.units.first().unwrap().updated_at
     );
 
-    assert_eq!(mock.unit_saves.token_count(), 2);
+    assert_eq!(cache.unit_save_token_count(), 2);
 
     let mut replay =
         save_instr(vec![create("replayed", None, Some("ignored"))]);
@@ -397,7 +398,7 @@ async fn no_op_transform_and_sparse_save_keep_distinct_completion_effects() {
     replay.save_id = save_id;
 
     assert_eq!(
-        save_edits((&mock, &mock), token("translator-1"), replay)
+        save_edits((&mock, &mock, &cache), token("translator-1"), replay)
             .await
             .unwrap(),
         saved

@@ -17,7 +17,7 @@ use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::comment::{
     CommentInfoRecord, CommentItem,
 };
@@ -75,7 +75,7 @@ async fn create(
     accept!(record.into())
 }
 
-impl Run<ListCommentInfos<'_>> for HybRepo {
+impl Run<ListCommentInfos<'_>> for RdbRepo {
     // Error type for the Run trait impl on comment list query.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -90,7 +90,7 @@ impl Run<ListCommentInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<CreateComment<'_>> for HybRepo {
+impl Run<CreateComment<'_>> for RdbRepo {
     // Error type for the comment creation query.
     type Error = BaseError;
 
