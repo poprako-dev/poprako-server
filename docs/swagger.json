@@ -5095,11 +5095,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChapterArtworkUploadSlotView",
                 "description": "Absent when the requested content is already available."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5208,11 +5208,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Upload capability, absent when this cover is already uploaded."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5316,11 +5316,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Upload capability, absent when this avatar is already uploaded."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5358,11 +5358,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Upload capability, absent when this avatar is already uploaded."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5405,11 +5405,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Upload capability; absent when the exact content is already available."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5453,11 +5453,11 @@
           "slot": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Presigned upload slot, if a new image must be uploaded."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -5506,11 +5506,11 @@
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Authoring user information, omitted when not requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5637,11 +5637,11 @@
           "chapter": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChapterInfoView",
                 "description": "Resolved chapter information, when included."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5670,11 +5670,11 @@
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved user information, when included."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5796,11 +5796,11 @@
           "comic": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ComicInfoView",
                 "description": "Included comic information; present only when requested via inclusion\noptions."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5816,11 +5816,11 @@
           "creator": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Included creator information; present only when requested via inclusion\noptions."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6452,11 +6452,11 @@
           "creator": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved creator profile, included when the `creator` expansion option is requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6492,11 +6492,11 @@
           "team": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/TeamInfoView",
                 "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6512,11 +6512,11 @@
           "workset": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/WorksetInfoView",
                 "description": "Resolved workset summary, included when the `workset` expansion option is requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6580,11 +6580,11 @@
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Author user information, present when requested via inclusion options."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6685,11 +6685,11 @@
           "preset_assignment_roles": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RoleMask",
                 "description": "Optional worker roles assigned to the creator; absent means no assignment.\nEvery requested role must exist on the creator's team membership."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6745,11 +6745,11 @@
           "preset_assignment_roles": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RoleMask",
                 "description": "Optional worker roles assigned to the creator on the first chapter.\nAbsent means no assignment. Every requested role must exist on the\ncreator's team membership."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -7118,11 +7118,11 @@
           "poprako": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChapterTranslationPortView",
                 "description": "Native `PopRaKo` document, absent when that format was not selected."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -7228,11 +7228,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ChapterArtworkUploadSlotView",
                     "description": "Absent when the requested content is already available."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7328,11 +7328,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Upload capability, absent when this cover is already uploaded."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7362,11 +7362,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Upload capability, absent when this avatar is already uploaded."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7396,11 +7396,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Upload capability, absent when this avatar is already uploaded."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7460,11 +7460,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Upload capability; absent when the exact content is already available."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7525,11 +7525,11 @@
               "slot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Presigned upload slot, if a new image must be uploaded."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -7640,11 +7640,11 @@
               "chapter": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ChapterInfoView",
                     "description": "Resolved chapter information, when included."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7673,11 +7673,11 @@
               "user": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved user information, when included."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7726,11 +7726,11 @@
               "comic": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ComicInfoView",
                     "description": "Included comic information; present only when requested via inclusion\noptions."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7746,11 +7746,11 @@
               "creator": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UserInfoView",
                     "description": "Included creator information; present only when requested via inclusion\noptions."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7879,11 +7879,11 @@
               "creator": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved creator profile, included when the `creator` expansion option is requested."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7919,11 +7919,11 @@
               "team": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/TeamInfoView",
                     "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -7939,11 +7939,11 @@
               "workset": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/WorksetInfoView",
                     "description": "Resolved workset summary, included when the `workset` expansion option is requested."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -8619,10 +8619,10 @@
                 "items": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/ChapterInfoView"
                     },
                     {
-                      "$ref": "#/components/schemas/ChapterInfoView"
+                      "type": "null"
                     }
                   ]
                 },
@@ -8765,11 +8765,11 @@
               "team": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/TeamInfoView",
                     "description": "Resolved team detail, present when the `team` include option is requested."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -8780,11 +8780,11 @@
               "user": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved user detail, present when the `user` include option is requested."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -8838,11 +8838,11 @@
                   "comic": {
                     "oneOf": [
                       {
-                        "type": "null"
-                      },
-                      {
                         "$ref": "#/components/schemas/ComicInfoView",
                         "description": "Included comic information; present only when requested via inclusion\noptions."
+                      },
+                      {
+                        "type": "null"
                       }
                     ]
                   },
@@ -8858,11 +8858,11 @@
                   "creator": {
                     "oneOf": [
                       {
-                        "type": "null"
-                      },
-                      {
                         "$ref": "#/components/schemas/UserInfoView",
                         "description": "Included creator information; present only when requested via inclusion\noptions."
+                      },
+                      {
+                        "type": "null"
                       }
                     ]
                   },
@@ -8964,11 +8964,11 @@
               "ext": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageExt",
                     "description": "File format, if one exists."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -8979,11 +8979,11 @@
               "image_hash": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/ImageHash",
                     "description": "Content hash of the page image, if one exists."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -9548,11 +9548,11 @@
                 "user": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Authoring user information, omitted when not requested."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -9597,11 +9597,11 @@
                 "chapter": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ChapterInfoView",
                       "description": "Resolved chapter information, when included."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -9630,11 +9630,11 @@
                 "user": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved user information, when included."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -9761,11 +9761,11 @@
                 "comic": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ComicInfoView",
                       "description": "Included comic information; present only when requested via inclusion\noptions."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -9781,11 +9781,11 @@
                 "creator": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Included creator information; present only when requested via inclusion\noptions."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -9948,11 +9948,11 @@
                 "user": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Author user information, present when requested via inclusion options."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10013,11 +10013,11 @@
                 "rect": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/IssueRectView",
                       "description": "Optional whole-page rectangle."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10079,11 +10079,11 @@
                 "team": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/TeamInfoView",
                       "description": "Resolved team detail, present when the `team` include option is requested."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10094,11 +10094,11 @@
                 "user": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved user detail, present when the `user` include option is requested."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10156,11 +10156,11 @@
                 "invitor": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved invitor user information, present only when requested via incl."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10226,11 +10226,11 @@
                 "ext": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ImageExt",
                       "description": "File format, if one exists."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10241,11 +10241,11 @@
                 "image_hash": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ImageHash",
                       "description": "Content hash of the page image, if one exists."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10342,11 +10342,11 @@
                 "ext": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ImageExt",
                       "description": "File format, if one exists."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -10357,11 +10357,11 @@
                 "image_hash": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ImageHash",
                       "description": "Content hash of the page image, if one exists."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -11370,11 +11370,11 @@
           "rect": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IssueEditRectInstr",
                 "description": "Null denotes a whole-page annotation."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -11539,11 +11539,11 @@
           "rect": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IssueRectView",
                 "description": "Null denotes a whole-page annotation."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -11584,11 +11584,11 @@
           "rect": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IssueRectView",
                 "description": "Optional whole-page rectangle."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -11613,11 +11613,11 @@
           "rect": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IssueRectInstr",
                 "description": "Optional normalized whole-page rectangle."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -11767,10 +11767,10 @@
             "items": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/ChapterInfoView"
                 },
                 {
-                  "$ref": "#/components/schemas/ChapterInfoView"
+                  "type": "null"
                 }
               ]
             },
@@ -11996,11 +11996,11 @@
           "team": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/TeamInfoView",
                 "description": "Resolved team detail, present when the `team` include option is requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12011,11 +12011,11 @@
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved user detail, present when the `user` include option is requested."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12060,11 +12060,11 @@
           "invitor": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved invitor user information, present only when requested via incl."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12237,11 +12237,11 @@
           "ext": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageExt",
                 "description": "File format, if one exists."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12252,11 +12252,11 @@
           "image_hash": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageHash",
                 "description": "Content hash of the page image, if one exists."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12396,11 +12396,11 @@
           "ext": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageExt",
                 "description": "File format, if one exists."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12411,11 +12411,11 @@
           "image_hash": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ImageHash",
                 "description": "Content hash of the page image, if one exists."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -13271,22 +13271,22 @@
               "revision": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UnitRevisionInstr",
                     "description": "Optional initial revision assignment."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
               "translation": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UnitTranslationInstr",
                     "description": "Optional initial translation assignment."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -13317,11 +13317,11 @@
               "coord": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/UnitCoordInstr",
                     "description": "Optional coordinate replacement."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -13352,55 +13352,55 @@
               "next_id": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/PatchInput_String",
                     "description": "Three-state linked-list successor patch."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
               "revision": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/PatchInput_UnitRevisionInstr",
                     "description": "Three-state revision patch."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
               "translation": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/PatchInput_UnitTranslationInstr",
                     "description": "Three-state translation patch."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
               "translation_note": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/PatchInput_String",
                     "description": "Three-state translator and proofreader communication patch."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
               "typography_note": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/PatchInput_String",
                     "description": "Three-state typesetting annotation patch."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
