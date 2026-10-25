@@ -100,12 +100,16 @@ is outside the 1.0.0 interface; `DELETE /api/v1/users/{user_id}` returns 405.
 # Apply pending migrations
 diesel migration run
 
-# Run Rust tests
-cargo test --workspace
+# Run all workspace tests, including PostgreSQL regressions (requires Docker)
+sh scripts/ci-test.sh
 
-# Run repository checks
-cargo check --workspace --all-targets --all-features
-sh fmt/run-check.sh
+# Run the complete basic CI entry point
+sh scripts/ci-check.sh
+
+# Run canonical Rust checks individually
+just fmt-check
+just check
+just clippy
 
 # Generate docs/swagger.json
 cargo run -p poprako-swagger > docs/swagger.json
@@ -130,7 +134,7 @@ at a database containing data that must be preserved.
 - [Security policy](SECURITY.md)
 - [Release policy](RELEASE.md)
 - [HTTP integration test inventory](tests/integration-tests/TESTCASES.md)
-- [Organization transfer checklist](docs/organization-transfer-readiness.md)
+- [1.0.0 release preparation](docs/1.0.0-release-preparation.md)
 - [Agent and project conventions](AGENTS.md)
 - [OpenAPI specification](docs/swagger.json)
 

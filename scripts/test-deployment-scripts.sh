@@ -2,6 +2,9 @@
 set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+TEST_REAL_JQ=$(command -v jq)
+export TEST_REAL_JQ
+
 uv run --no-project python "$project_root/scripts/test-production-cache.py"
 
 test_root=$(mktemp -d)
@@ -263,6 +266,10 @@ cat >"${fake_bin}/jq" <<'EOF'
 #!/usr/bin/env sh
 set -eu
 
+if [ "${1:-}" = -n ]; then
+    exec "$TEST_REAL_JQ" "$@"
+fi
+
 printf 'sha256:%s\n' \
     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 EOF
@@ -288,6 +295,12 @@ case "$remote_command" in
         while IFS= read -r ignored_input; do
             :
         done
+
+        printf 'deployed_commit=%s\n' "${TEST_DEPLOY_SHA:?}"
+        printf 'deployed_source_image=%s\n' "${TEST_SOURCE_IMAGE:?}"
+        printf 'deployed_image=poprako-server-prod:sha-%s\n' "$TEST_DEPLOY_SHA"
+        printf 'deployed_image_id=sha256:%s\n' \
+            bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
         ;;
 esac
 EOF
@@ -417,6 +430,7 @@ PATH="${fake_bin}:$PATH" \
 DATABASE_URL=postgres://poprako:password@postgres/db_poprako_server_prod \
 DEPLOY_BIND_HOST=127.0.0.1 \
 DEPLOY_DOCKER_NETWORK=poprako-prod \
+DEPLOY_EVIDENCE_FILE="${test_root}/deployment.json" \
 DEPLOY_HOST=prod.example.test \
 DEPLOY_KNOWN_HOSTS="prod.example.test ssh-ed25519 test-key" \
 DEPLOY_PORT=22 \
@@ -429,6 +443,8 @@ DEPLOY_SSH_PRIVATE_KEY=test-private-key \
 DEPLOY_USER=poprako-deploy \
 GHCR_TOKEN="$registry_token" \
 GHCR_USERNAME=test-user \
+GITHUB_RUN_ID=42 \
+GITHUB_RUN_ATTEMPT=1 \
 JWT_EXPIRATION_HOURS=72 \
 JWT_SECRET=test-jwt-secret \
 POPRAKO_SNOWFLAKE_NODE_ID=1 \
@@ -440,6 +456,8 @@ R2_REGION=auto \
 R2_SECRET_ACCESS_KEY=test-secret-key \
 RUNNER_TEMP="$test_root" \
 TEST_COMMAND_LOG="$command_log" \
+TEST_DEPLOY_SHA="$release_sha" \
+TEST_SOURCE_IMAGE="$source_image" \
 sh "$project_root/scripts/ci-deploy-production.sh" \
     >"$command_output" 2>&1
 
@@ -451,6 +469,16 @@ assert_not_contains ".tar" "$command_log"
 assert_not_contains "docker build" "$command_log"
 assert_not_contains "$registry_token" "$command_log"
 assert_not_contains "$registry_token" "$command_output"
+
+"$TEST_REAL_JQ" -e \
+    --arg sha "$release_sha" \
+    --arg image "$source_image" \
+    '.source_commit == $sha and .source_image == $image
+      and .local_image == ("poprako-server-prod:sha-" + $sha)
+      and (.image_id | test("^sha256:[0-9a-f]{64}$"))
+      and .result == "success" and .run_id == "42" and .run_attempt == "1"' \
+    "${test_root}/deployment.json" >/dev/null
+assert_not_contains "$registry_token" "${test_root}/deployment.json"
 
 if sh "$project_root/scripts/ga-remote-deploy.sh" \
     ghcr.io/poprako-dev/poprako-server@sha256:invalid \

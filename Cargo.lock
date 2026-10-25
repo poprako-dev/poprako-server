@@ -2817,7 +2817,7 @@ checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 
 [[package]]
 name = "poprako-obj-dept"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "diesel",
  "diesel-async",
@@ -2837,7 +2837,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-obj-dept-macro"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2876,7 +2876,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-prom"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "diesel",
  "diesel-async",
@@ -2894,7 +2894,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-rdb-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "deadpool",
@@ -2906,7 +2906,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-server"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2964,7 +2964,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-swagger"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "poprako-server",
@@ -2974,7 +2974,7 @@ dependencies = [
 
 [[package]]
 name = "poprako-util"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "fluent-templates",
  "time",
