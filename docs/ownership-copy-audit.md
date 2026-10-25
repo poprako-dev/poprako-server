@@ -1,7 +1,8 @@
 # Ownership and copy audit
 
 Scope: Unit sequence reconstruction, shared Chapter creation, request-scoped
-response presentation, and the Model/Shape ownership migration.
+response presentation, the Model/Shape ownership migration, and ObjDept typed
+identity conversion.
 This audit covers payload copies, including `to_owned`, `to_string`, and container
 copies, rather than only calls spelled `clone`. It does not claim that every
 persisted projection in the application shares a global owner.
@@ -122,3 +123,25 @@ string copies; Diesel batch rows may need vectors of string references. Append
 plans also retain case-folded keys for deduplication and reference vectors for
 stable ordering. These allocations implement distinct indexes/sequences and
 are not eliminated by the ownership migration.
+
+
+## ObjDept typed identities
+
+Business models keep their existing owned String IDs. At an object operation,
+validating a borrowed business ID produces an owned, object-facing identity;
+that allocation lets the typed operation and its result retain the identity
+independently of the business projection. Presentation caches consume the typed
+ID through `Into<String>` and retain its existing String buffer. Object-kind markers themselves store
+no runtime payload.
+
+Persisted IDs move through `ObjId::from_owned` into validated wrappers.
+`ObjKey::from_record` validates a clone of the structured JSON input while
+retaining the original JSON for deferred work, and generates its physical
+location. The physical path is never restored from an arbitrary stored string.
+`ObjMetaRecord::decode` moves the content hash, retaining its allocation.
+
+An allocation result and its deferred Check/Delete records have independent
+lifetimes. Projecting a typed key into a durable record copies its ID and
+construction data. Mock state likewise owns those records across lock release.
+Restoring a borrowed active record currently clones its fields through the
+shared metadata decoder, which applies the same identity and suffix checks.

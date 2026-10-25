@@ -13,6 +13,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use poprako_obj_dept::key::ObjId;
+use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
+
+use crate::value::business_id::{
+    ChapterId, ComicId, PageSourceId, TeamId, UserId,
+};
+
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageKind {
@@ -33,43 +40,47 @@ pub enum ImageKind {
 }
 
 /// Business identity required to locate one page image.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PageSourceImageKey {
     /// Owning chapter identifier encoded into the physical key.
-    pub chapter_id: String,
+    pub chapter_id: ChapterId,
 
     /// Stable page identifier used by the object table.
-    pub page_source_id: String,
+    pub page_source_id: PageSourceId,
 
     /// Validated image suffix.
     pub ext: ImageExt,
 }
 
 /// Business identity required to locate one user avatar.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserAvatarKey {
     /// Stable user identifier used by the object table.
-    pub user_id: String,
+    pub user_id: UserId,
 
     /// Validated image suffix.
     pub ext: ImageExt,
 }
 
 /// Business identity required to locate one team avatar.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TeamAvatarKey {
     /// Stable team identifier used by the object table.
-    pub team_id: String,
+    pub team_id: TeamId,
 
     /// Validated image suffix.
     pub ext: ImageExt,
 }
 
 /// Business identity required to locate one comic cover.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ComicCoverKey {
     /// Stable comic identifier used by the object table.
-    pub comic_id: String,
+    pub comic_id: ComicId,
 
     /// Validated image suffix.
     pub ext: ImageExt,
@@ -145,7 +156,18 @@ impl<'de> Deserialize<'de> for ImageHash {
 }
 
 /// Supported page image filename extensions and their media types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Serialize,
+    Deserialize,
+)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExt {
@@ -268,5 +290,19 @@ impl FromStr for ImageExt {
     // Parse image extension from a string, returning error on failure.
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         Self::parse(value).ok_or(())
+    }
+}
+
+impl ObjId for ImageExt {
+    // Validates a stored suffix against the supported image extensions.
+    fn from_text(value: &str) -> ObjDeptRest<Self> {
+        //
+        Self::parse(value)
+            .ok_or_else(|| ObjDeptError::invalid("invalid image suffix".into()))
+    }
+
+    // Borrows the canonical image suffix.
+    fn as_str(&self) -> &str {
+        self.suffix()
     }
 }

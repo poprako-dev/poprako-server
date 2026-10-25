@@ -39,8 +39,8 @@ mod view;
 use super::*;
 
 use fixture::*;
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::comic::{
@@ -71,12 +71,7 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: COMIC_ID.into(),
         ver: version,
-        image: [
-            "comic_cover/comic--00000000001/",
-            &version.to_string(),
-            ".png",
-        ]
-        .concat(),
+        domain: serde_json::json!({"comic_id": COMIC_ID, "ext": "png"}),
     };
 
     let meta = ObjMeta {

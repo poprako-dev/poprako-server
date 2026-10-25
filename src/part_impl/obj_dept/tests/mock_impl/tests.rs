@@ -5,10 +5,17 @@
 )]
 
 use super::*;
+use crate::value::business_id::{
+    ChapterId, ComicId, PageSourceId, TeamId, UserId,
+};
+
+use poprako_obj_dept::model::record::{
+    ObjKeyRecord as ObjKey, ObjMetaRecord as ObjMeta,
+};
 
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
-use poprako_obj_dept::key::{KeyMap, ObjGen};
+use poprako_obj_dept::key::{ObjGen, ObjKind};
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::model::url::ObjUrlSpec;
 use poprako_obj_dept::oper::{
@@ -24,8 +31,8 @@ use crate::value::image::{
 
 fn page_source_dom(page_source_id: &str) -> PageSourceImageKey {
     PageSourceImageKey {
-        chapter_id: "chapter--00000000001".into(),
-        page_source_id: page_source_id.into(),
+        chapter_id: ChapterId::new("chapter--00000000001").unwrap(),
+        page_source_id: PageSourceId::new(page_source_id).unwrap(),
         ext: ImageExt::Png,
     }
 }
@@ -39,7 +46,7 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 
     let user_key = UserAvatar::forward(
         &UserAvatarKey {
-            user_id: "user--00000000001".into(),
+            user_id: UserId::new("user--00000000001").unwrap(),
             ext: ImageExt::Jpg,
         },
         8,
@@ -47,7 +54,7 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 
     let team_key = TeamAvatar::forward(
         &TeamAvatarKey {
-            team_id: "team--00000000001".into(),
+            team_id: TeamId::new("team--00000000001").unwrap(),
             ext: ImageExt::Webp,
         },
         9,
@@ -55,37 +62,22 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 
     let comic_key = ComicCover::forward(
         &ComicCoverKey {
-            comic_id: "comic--00000000001".into(),
+            comic_id: ComicId::new("comic--00000000001").unwrap(),
             ext: ImageExt::Avif,
         },
         10,
     );
 
     assert_eq!(
-        page_source_key,
+        page_source_key.as_str(),
         "page_source/chapter--00000000001/page_source--00000000001/7.png"
     );
 
-    assert_eq!(user_key, "user_avatar/user--00000000001/8.jpg");
+    assert_eq!(user_key.as_str(), "user_avatar/user--00000000001/8.jpg");
 
-    assert_eq!(team_key, "team_avatar/team--00000000001/9.webp");
+    assert_eq!(team_key.as_str(), "team_avatar/team--00000000001/9.webp");
 
-    assert_eq!(comic_key, "comic_cover/comic--00000000001/10.avif");
-
-    assert_eq!(
-        PageSourceImage::forward(
-            &PageSourceImage::reverse(&page_source_key).unwrap().0,
-            7
-        ),
-        page_source_key
-    );
-
-    assert!(
-        PageSourceImage::reverse(
-            &"page_source_image/page_source--00000000001/7".into()
-        )
-        .is_err()
-    );
+    assert_eq!(comic_key.as_str(), "comic_cover/comic--00000000001/10.avif");
 }
 
 #[test]
@@ -94,7 +86,11 @@ fn origin_only_spec_omits_image_renditions() {
         key: ObjKey {
             id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
+            domain: serde_json::json!({
+                "chapter_id": "chapter--00000000001",
+                "page_source_id": "page_source--00000000001",
+                "ext": "png",
+            }),
         },
         is_avail: true,
         hash: vec![1; 32],
@@ -103,7 +99,13 @@ fn origin_only_spec_omits_image_renditions() {
 
     let obj_url_spec = ObjUrlSpec::default().with_origin();
 
-    let urls = gen_urls(Some(&meta), obj_url_spec, true).unwrap().unwrap();
+    let urls = gen_urls(
+        Some(&meta.decode::<PageSourceImage>().unwrap()),
+        obj_url_spec,
+        true,
+    )
+    .unwrap()
+    .unwrap();
 
     assert!(urls.origin_url.is_some());
 
@@ -118,7 +120,11 @@ fn selected_image_renditions_are_generated() {
         key: ObjKey {
             id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
+            domain: serde_json::json!({
+                "chapter_id": "chapter--00000000001",
+                "page_source_id": "page_source--00000000001",
+                "ext": "png",
+            }),
         },
         is_avail: true,
         hash: vec![1; 32],
@@ -127,7 +133,13 @@ fn selected_image_renditions_are_generated() {
 
     let obj_url_spec = ObjUrlSpec::default().with_optimized().with_thumbnail();
 
-    let urls = gen_urls(Some(&meta), obj_url_spec, true).unwrap().unwrap();
+    let urls = gen_urls(
+        Some(&meta.decode::<PageSourceImage>().unwrap()),
+        obj_url_spec,
+        true,
+    )
+    .unwrap()
+    .unwrap();
 
     assert!(urls.origin_url.is_none());
 
@@ -159,14 +171,19 @@ async fn mock_operation_can_disable_thumbnails() {
         key: ObjKey {
             id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
+            domain: serde_json::json!({
+                "chapter_id": "chapter--00000000001",
+                "page_source_id": "page_source--00000000001",
+                "ext": "png",
+            }),
         },
         is_avail: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
-    let metas =
-        HashMap::from([(String::from("page_source--00000000001"), meta)]);
+    let meta = meta.decode::<PageSourceImage>().unwrap();
+
+    let metas = HashMap::from([(meta.key.id().clone(), meta)]);
 
     let obj_url_spec = ObjUrlSpec::default()
         .with_origin()
@@ -201,9 +218,11 @@ async fn upload_mark_is_exact_current_and_idempotent() {
     let key = ObjKey {
         id: String::from("page_source--00000000001"),
         ver: 4,
-        image:
-            "page_source/chapter--00000000001/page_source--00000000001/4.png"
-                .into(),
+        domain: serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_source_id": "page_source--00000000001",
+            "ext": "png",
+        }),
     };
     let meta = ObjMeta {
         key: key.clone(),
@@ -226,10 +245,12 @@ async fn upload_mark_is_exact_current_and_idempotent() {
             },
         );
 
-    let generation = ObjGen {
-        id: key.id.clone(),
-        ver: key.ver,
-    };
+    let generation = ObjGen::<PageSourceImage>::new(
+        PageSourceImage::ids(std::slice::from_ref(&key.id))
+            .unwrap()
+            .remove(0),
+        key.ver,
+    );
 
     let first = MarkObjUploaded::<PageSourceImage>::new(&generation)
         .run_on(&mock)
@@ -239,18 +260,22 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         .run_on(&mock)
         .await
         .unwrap();
-    let stale_key = ObjGen {
-        id: key.id.clone(),
-        ver: 3,
-    };
+    let stale_key = ObjGen::<PageSourceImage>::new(
+        PageSourceImage::ids(std::slice::from_ref(&key.id))
+            .unwrap()
+            .remove(0),
+        3,
+    );
     let stale = MarkObjUploaded::<PageSourceImage>::new(&stale_key)
         .run_on(&mock)
         .await
         .unwrap();
-    let missing_key = ObjGen {
-        id: String::from("missing"),
-        ver: 1,
-    };
+    let missing_key = ObjGen::<PageSourceImage>::new(
+        PageSourceImage::ids(&[String::from("page_source--00000000002")])
+            .unwrap()
+            .remove(0),
+        1,
+    );
     let missing = MarkObjUploaded::<PageSourceImage>::new(&missing_key)
         .run_on(&mock)
         .await
@@ -322,9 +347,12 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
 
         let ids = vec![String::from("page_source--00000000001")];
 
-        DeleteObjs::<PageSourceImage>::new(&ids)
-            .step_on(&obj_dept, context)
-            .await?;
+        DeleteObjs::<PageSourceImage>::new(
+            &PageSourceImage::ids(&PageSourceImage::ids(&ids).unwrap())
+                .unwrap(),
+        )
+        .step_on(&obj_dept, context)
+        .await?;
 
         Ok::<(), ObjDeptError>(())
     })
@@ -378,7 +406,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
         .await
         .unwrap();
 
-    assert_eq!(first.key().ver, 1);
+    assert_eq!(first.key().ver(), 1);
 
     let first_key = first.key().clone();
 
@@ -386,7 +414,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
     assert_eq!(first_slot.key, first_key);
 
-    assert!(first_slot.url.path().ends_with(&first_key.image));
+    assert!(first_slot.url.path().ends_with(first_key.image().as_str()));
 
     mock.coord(async |context| {
         let resumed = GenObjSlot::<PageSourceImage>::new(&specs[0])
@@ -397,10 +425,12 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
         assert_eq!(resumed.into_slot().unwrap().key, first_key);
 
-        MarkObjUploaded::<PageSourceImage>::new(&ObjGen {
-            id: first_key.id.clone(),
-            ver: first_key.ver,
-        })
+        MarkObjUploaded::<PageSourceImage>::new(
+            &ObjGen::<PageSourceImage>::new(
+                first_key.id().clone(),
+                first_key.ver(),
+            ),
+        )
         .step_on(&mock, context)
         .await?;
 
@@ -439,16 +469,16 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
     assert_eq!(allocs.len(), specs.len());
 
     for (id, alloc) in allocs {
-        assert_eq!(alloc.key().id, id);
+        assert_eq!(alloc.key().id(), &id);
 
-        assert_eq!(alloc.key().ver, 1);
+        assert_eq!(alloc.key().ver(), 1);
 
         match alloc.into_slot() {
-            None => assert_eq!(id, "page_source--00000000001"),
+            None => assert_eq!(id.as_str(), "page_source--00000000001"),
             Some(slot) => {
-                assert_ne!(id, "page_source--00000000001");
+                assert_ne!(id.as_str(), "page_source--00000000001");
 
-                assert!(slot.url.path().ends_with(&slot.key.image));
+                assert!(slot.url.path().ends_with(slot.key.image().as_str()));
             }
         }
     }
@@ -488,9 +518,12 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
 
             let ids = vec![String::from("page_source--00000000001")];
 
-            ClearObjs::<PageSourceImage>::new(&ids)
-                .step_on(&obj_dept, context)
-                .await?;
+            ClearObjs::<PageSourceImage>::new(
+                &PageSourceImage::ids(&PageSourceImage::ids(&ids).unwrap())
+                    .unwrap(),
+            )
+            .step_on(&obj_dept, context)
+            .await?;
 
             GenObjSlot::<PageSourceImage>::new(&obj_spec)
                 .step_on(&obj_dept, context)
@@ -499,7 +532,7 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
         .await
         .unwrap();
 
-    assert_eq!(replacement.into_slot().unwrap().key.ver, 2);
+    assert_eq!(replacement.into_slot().unwrap().key.ver(), 2);
 }
 
 #[tokio::test]
@@ -544,30 +577,20 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
     assert!(snapshot.obj_tasks.is_empty());
 }
 
-// artwork_key_mapping(ChapterArtwork)(negative): artwork keys round-trip arbitrary safe file suffixes and reject malformed identities.
+// artwork_key_mapping(ChapterArtwork)(positive): arbitrary safe suffixes retain their exact physical representation.
 #[test]
-fn artwork_key_mapping_rejects_noncanonical_paths() {
+fn artwork_key_mapping_preserves_safe_suffixes() {
     use crate::part::obj_dept::ChapterArtwork;
-    use crate::value::artwork::ChapterArtworkKey;
+    use crate::value::artwork::{ArtworkExt, ChapterArtworkKey};
+    use ChapterId;
 
     let artwork_key = ChapterArtworkKey {
-        chapter_id: "chapter--00000000123".into(),
-        ext: "PSD".into(),
+        chapter_id: ChapterId::new("chapter--00000000123").unwrap(),
+        ext: ArtworkExt::new("PSD").unwrap(),
     };
 
-    let physical_key = ChapterArtwork::forward(&artwork_key, 3);
-
     assert_eq!(
-        ChapterArtwork::reverse(&physical_key).unwrap(),
-        (artwork_key, 3)
+        ChapterArtwork::forward(&artwork_key, 3).as_str(),
+        "chapter_artwork/chapter--00000000123/3.PSD"
     );
-
-    for invalid_key in [
-        "chapter_artwork/chapter-123-03.PSD",
-        "chapter_artwork/chapter-123-3../zip",
-        "page/chapter-123-3.zip",
-        "chapter_artwork/-3.zip",
-    ] {
-        assert!(ChapterArtwork::reverse(&invalid_key.to_owned()).is_err());
-    }
 }

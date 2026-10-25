@@ -147,7 +147,7 @@ async fn list_infos_team_member_lists_team_announcements() {
 
     seed_member(
         &mock,
-        "viewer-user",
+        "user--00000000001",
         "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
@@ -155,20 +155,20 @@ async fn list_infos_team_member_lists_team_announcements() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         time,
     ));
 
     mock.seed_announcement(announcement(
         "announcement--00000000002",
         "team--00000000002",
-        "author-user",
+        "user--00000000002",
         time,
     ));
 
     let announcement_info_vals = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
+        token("user--00000000001"),
         list_instr("team--00000000001", Vec::new()),
     )
     .await
@@ -191,23 +191,26 @@ async fn list_infos_user_include_follows_request() {
 
     seed_member(
         &mock,
-        "viewer-user",
+        "user--00000000001",
         "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    mock.seed_user(user("author-user", "Author"), credential("author-user"));
+    mock.seed_user(
+        user("user--00000000002", "Author"),
+        credential("user--00000000002"),
+    );
 
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         time,
     ));
 
     let without_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
+        token("user--00000000001"),
         list_instr("team--00000000001", Vec::new()),
     )
     .await
@@ -217,7 +220,7 @@ async fn list_infos_user_include_follows_request() {
 
     let with_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
+        token("user--00000000001"),
         list_instr("team--00000000001", vec![AnnouncementInclOpt::User]),
     )
     .await
@@ -225,7 +228,7 @@ async fn list_infos_user_include_follows_request() {
 
     assert_eq!(
         with_user.first().unwrap().user.as_ref().unwrap().id,
-        "author-user"
+        "user--00000000002"
     );
 }
 
@@ -237,7 +240,7 @@ async fn list_infos_non_member_is_rejected() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         now(),
     ));
 
@@ -398,7 +401,7 @@ async fn update_info_team_admin_replaces_announcement_content() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         now(),
     ));
 
@@ -424,7 +427,7 @@ async fn update_info_team_admin_replaces_announcement_content() {
 
     assert_eq!(
         snapshot.announcements.first().unwrap().user_id,
-        "author-user"
+        "user--00000000002"
     );
 }
 
@@ -443,7 +446,7 @@ async fn update_info_non_admin_member_is_rejected_without_mutation() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         now(),
     ));
 
@@ -502,7 +505,7 @@ async fn delete_team_admin_deletes_announcement() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         now(),
     ));
 
@@ -532,7 +535,7 @@ async fn delete_non_admin_member_is_rejected_without_mutation() {
     mock.seed_announcement(announcement(
         "announcement--00000000001",
         "team--00000000001",
-        "author-user",
+        "user--00000000002",
         now(),
     ));
 

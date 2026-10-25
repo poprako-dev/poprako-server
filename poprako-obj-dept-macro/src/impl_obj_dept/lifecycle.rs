@@ -31,7 +31,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
     let finish_allocs = finish_allocs();
 
-    let defer_lifecycle_tasks = defer_lifecycle_tasks(obj_module);
+    let defer_lifecycle_tasks = defer_lifecycle_tasks();
 
     let persist_allocs = persist_allocs(obj, obj_module);
 
@@ -70,8 +70,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::GenObjSlots<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::alloc::ObjAlloc,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::alloc::ObjAlloc<#obj>,
                 >,
             > {
                 use ::futures_util::future::try_join_all;
@@ -136,7 +136,7 @@ fn cleanup_step(
                 let mut ids = oper
                     .ids
                     .iter()
-                    .map(String::as_str)
+                    .map(::poprako_obj_dept::key::ObjId::as_str)
                     .collect::<Vec<_>>();
 
                 ids.sort_unstable();
@@ -161,7 +161,7 @@ fn cleanup_step(
                     .collect::<Vec<_>>();
 
                 self.prom()
-                    .defer_deletes(context, #obj_module::TOPIC, &delete_keys)
+                    .defer_deletes(context, &delete_keys)
                     .await?;
 
                 #obj_module::#persist(context.conn(), &ids).await?;
@@ -197,7 +197,7 @@ fn single_alloc(obj: &Ident, dept: &Ident) -> TokenStream {
                 context: &mut ::poprako_rdb_core::RdbContext<L>,
                 oper: &::poprako_obj_dept::oper::GenObjSlot<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                ::poprako_obj_dept::model::alloc::ObjAlloc,
+                ::poprako_obj_dept::model::alloc::ObjAlloc<#obj>,
             > {
                 use ::poprako_orchestra::Step as _;
 
@@ -207,7 +207,7 @@ fn single_alloc(obj: &Ident, dept: &Ident) -> TokenStream {
                     );
                 let mut allocs = self.step(context, &batch_oper).await?;
 
-                let id = <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+                let id = <#obj as ::poprako_obj_dept::key::ObjKind>::id(
                     &oper.spec.dom,
                 );
 
@@ -229,7 +229,7 @@ fn finish_allocs() -> TokenStream {
         for (_, key, _, _) in planned {
             //
             let pool_slot = pool_slots
-                .remove(key.id.as_str())
+                .remove(::poprako_obj_dept::key::ObjId::as_str(key.id()))
                 .ok_or_else(|| {
                     ::poprako_obj_dept::rest::ObjDeptError::
                         Unrecoverable {
@@ -239,7 +239,7 @@ fn finish_allocs() -> TokenStream {
                 })?;
 
             allocs.insert(
-                key.id.clone(),
+                key.id().clone(),
                 ::poprako_obj_dept::model::alloc::ObjAlloc::Upload {
                     slot: ::poprako_obj_dept::model::slot::ObjSlot {
                         key,
@@ -254,7 +254,7 @@ fn finish_allocs() -> TokenStream {
 }
 
 // Generates defer lifecycle tasks.
-fn defer_lifecycle_tasks(obj_module: &Ident) -> TokenStream {
+fn defer_lifecycle_tasks() -> TokenStream {
     //
     quote! {
         //
@@ -264,7 +264,7 @@ fn defer_lifecycle_tasks(obj_module: &Ident) -> TokenStream {
             .collect::<Vec<_>>();
 
         self.prom()
-            .defer_deletes(context, #obj_module::TOPIC, &delete_keys)
+            .defer_deletes(context, &delete_keys)
             .await?;
 
         let checks = planned
@@ -272,9 +272,8 @@ fn defer_lifecycle_tasks(obj_module: &Ident) -> TokenStream {
             .map(|(_, key, _, _)| {
                 //
                 let pool_slot = pool_slots
-                    .get(key.id.as_str())
+                    .get(::poprako_obj_dept::key::ObjId::as_str(key.id()))
                     .ok_or_else(|| {
-                        //
                         ::poprako_obj_dept::rest::ObjDeptError::
                             Unrecoverable {
                             message:
@@ -292,7 +291,7 @@ fn defer_lifecycle_tasks(obj_module: &Ident) -> TokenStream {
                 ObjDeptRest<Vec<_>>>()?;
 
         self.prom()
-            .defer_checks(context, #obj_module::TOPIC, &checks)
+            .defer_checks(context, &checks)
             .await?;
     }
 }
@@ -312,13 +311,13 @@ fn persist_allocs(obj: &Ident, obj_module: &Ident) -> TokenStream {
                     let pool_slot = self
                         .pool()
                         .gen_slot(
-                            &key.image,
+                            key.image(),
                             spec.content_type,
                             spec.byte_len,
                         )
                         .await?;
 
-                    Ok((key.id.clone(), pool_slot))
+                    Ok((key.id().clone(), pool_slot))
                 },
             );
 
@@ -332,17 +331,16 @@ fn persist_allocs(obj: &Ident, obj_module: &Ident) -> TokenStream {
                     //
                     ::poprako_obj_dept::rdb_impl::ObjRdbWrite {
                         //
-                        id: <#obj as
-                            ::poprako_obj_dept::key::KeyMap>::id(
-                            &spec.dom,
+                        id: ::poprako_obj_dept::key::ObjId::as_str(
+                            <#obj as ::poprako_obj_dept::key::ObjKind>::id(
+                                &spec.dom,
+                            ),
                         ),
-                        ver: key.ver,
-                        key: &key.image,
+                        ver: key.ver(),
+                        domain: key.domain(),
                         hash: spec.hash,
-                        ext: <#obj as
-                            ::poprako_obj_dept::key::KeyMap>::ext(
-                            &spec.dom,
-                        ),
+                        ext: ::poprako_obj_dept::key::ObjId::as_str(<#obj as
+                            ::poprako_obj_dept::key::ObjKind>::ext(&spec.dom)),
                     }
                 })
             })
@@ -364,16 +362,18 @@ fn plan_allocs(obj: &Ident) -> TokenStream {
             //
             let id =
                 <#obj as
-                    ::poprako_obj_dept::key::KeyMap>::id(&spec.dom);
+                    ::poprako_obj_dept::key::ObjKind>::id(&spec.dom);
 
-            let previous = previous_records.remove(id);
+            let previous = previous_records.remove(
+                ::poprako_obj_dept::key::ObjId::as_str(id),
+            );
 
             let current_meta = previous
                 .clone()
                 .map(|record| {
                     //
                     ::poprako_obj_dept::rdb_impl::decode_record::<#obj>(
-                        id,
+                        ::poprako_obj_dept::key::ObjId::as_str(id),
                         record,
                     )
                 })
@@ -381,7 +381,7 @@ fn plan_allocs(obj: &Ident) -> TokenStream {
                 .flatten();
 
             let ext =
-                <#obj as ::poprako_obj_dept::key::KeyMap>::ext(
+                <#obj as ::poprako_obj_dept::key::ObjKind>::ext(
                     &spec.dom,
                 );
 
@@ -389,14 +389,14 @@ fn plan_allocs(obj: &Ident) -> TokenStream {
                 .as_ref()
                 .filter(|meta| {
                     //
-                    meta.hash.as_slice() == spec.hash && meta.ext == ext
+                    meta.hash.as_slice() == spec.hash && &meta.ext == ext
                 });
 
             if let Some(meta) = matching_meta.filter(|meta|
                 meta.is_avail) {
                 //
                 allocs.insert(
-                    id.to_owned(),
+                    id.clone(),
                     ::poprako_obj_dept::model::alloc::ObjAlloc::Avail {
                         key: meta.key.clone(),
                     },
@@ -413,27 +413,20 @@ fn plan_allocs(obj: &Ident) -> TokenStream {
             }
 
             let ver = ::poprako_obj_dept::rdb_impl::next_ver(
-                id,
+                ::poprako_obj_dept::key::ObjId::as_str(id),
                 previous.as_ref(),
             )?;
 
             let previous_key =
                 ::poprako_obj_dept::rdb_impl::active_key::<#obj>(
-                    id,
+                    ::poprako_obj_dept::key::ObjId::as_str(id),
                     previous.as_ref(),
                 )?;
 
-            let image = <#obj as
-                ::poprako_obj_dept::key::KeyMap>::forward(
+            let key = ::poprako_obj_dept::key::ObjKey::<#obj>::new(
                 &spec.dom,
                 ver,
-            );
-
-            let key = ::poprako_obj_dept::key::ObjKey {
-                id: id.to_owned(),
-                ver,
-                image,
-            };
+            )?;
 
             planned.push((spec, key, previous_key, true));
         }
@@ -448,12 +441,12 @@ fn prepare_allocs(obj: &Ident, obj_module: &Ident) -> TokenStream {
         let mut specs = oper.specs.iter().collect::<Vec<_>>();
 
         specs.sort_unstable_by_key(|spec| {
-            <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom)
+            <#obj as ::poprako_obj_dept::key::ObjKind>::id(&spec.dom)
         });
 
         if specs.windows(2).any(|pair| {
-            <#obj as ::poprako_obj_dept::key::KeyMap>::id(&pair[0].dom)
-                == <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+            <#obj as ::poprako_obj_dept::key::ObjKind>::id(&pair[0].dom)
+                == <#obj as ::poprako_obj_dept::key::ObjKind>::id(
                     &pair[1].dom,
                 )
         }) {
@@ -467,7 +460,9 @@ fn prepare_allocs(obj: &Ident, obj_module: &Ident) -> TokenStream {
         let ids = specs
             .iter()
             .map(|spec| {
-                <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom)
+                ::poprako_obj_dept::key::ObjId::as_str(
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::id(&spec.dom),
+                )
             })
             .collect::<Vec<_>>();
 
@@ -522,8 +517,8 @@ fn upload_run(obj: &Ident, dept: &Ident, obj_module: &Ident) -> TokenStream {
                 // responsible for reconciling remote presence.
                 let updated = #obj_module::mark_uploaded(
                     &mut conn,
-                    &oper.key.id,
-                    oper.key.ver,
+                    ::poprako_obj_dept::key::ObjId::as_str(oper.key.id()),
+                    oper.key.ver(),
                 )
                 .await?;
 
@@ -570,8 +565,8 @@ fn upload_step(obj: &Ident, dept: &Ident, obj_module: &Ident) -> TokenStream {
                 // responsible for reconciling remote presence.
                 let updated = #obj_module::mark_uploaded(
                     context.conn(),
-                    &oper.key.id,
-                    oper.key.ver,
+                    ::poprako_obj_dept::key::ObjId::as_str(oper.key.id()),
+                    oper.key.ver(),
                 )
                 .await?;
 

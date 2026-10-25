@@ -6,14 +6,14 @@ fn seed_available_object(
     mock: &Mock,
     topic: &'static str,
     id: &str,
-    image: &str,
+    domain: serde_json::Value,
     is_avail: bool,
 ) {
     let meta = ObjMeta {
         key: ObjKey {
             id: id.into(),
             ver: 1,
-            image: image.into(),
+            domain,
         },
         is_avail,
         hash: vec![0; 32],
@@ -65,7 +65,11 @@ fn seed_fallback_page(mock: &Mock, is_avail: bool) {
         mock,
         "page_source_image",
         "page_source--00000000001",
-        "page_source/chapter--00000000001/page_source--00000000001/1.png",
+        serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_source_id": "page_source--00000000001",
+            "ext": "png",
+        }),
         is_avail,
     );
 }
@@ -79,7 +83,7 @@ async fn get_info_returns_uploaded_cover_url() {
         &mock,
         "comic_cover",
         "comic--00000000001",
-        "comic_cover/comic--00000000001/1.png",
+        serde_json::json!({"comic_id": "comic--00000000001", "ext": "png"}),
         true,
     );
 

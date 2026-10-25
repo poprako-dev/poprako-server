@@ -8,9 +8,10 @@ use std::collections::{BTreeMap, HashMap};
 use time::{Duration, OffsetDateTime};
 use url::Url;
 
-use poprako_obj_dept::key::{KeyMap, ObjKey};
+use poprako_obj_dept::key::{ObjId, ObjKey, ObjKind, ObjRegistration};
 use poprako_obj_dept::model::alloc::ObjAlloc;
 use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjMetaRecord;
 use poprako_obj_dept::model::slot::ObjSlot;
 use poprako_obj_dept::model::task::ObjTask;
 use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
@@ -20,8 +21,12 @@ use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
-pub fn gen_urls(
-    meta: Option<&ObjMeta>,
+/// Executes the typed object operation against fixture state.
+///
+/// # Errors
+/// Returns an error for invalid fixture data or an invalid operation.
+pub fn gen_urls<K: ObjKind>(
+    meta: Option<&ObjMeta<K>>,
     spec: ObjUrlSpec,
     thumbnail_enabled: bool,
 ) -> ObjDeptRest<Option<ObjUrls>> {
@@ -35,7 +40,7 @@ pub fn gen_urls(
         return Ok(None);
     }
 
-    let key = &meta.key.image;
+    let key = meta.key.image().as_str();
 
     let origin_url = spec
         .includes_origin()
@@ -68,27 +73,31 @@ fn parse_mock_url(path: &str) -> ObjDeptRest<Url> {
     })
 }
 
-pub fn gen_slot<K>(
-    objs: &mut HashMap<String, MockObjRecord>,
+/// Executes the typed object operation against fixture state.
+///
+/// # Errors
+/// Returns an error for invalid fixture data or an invalid operation.
+pub fn gen_slot<K: ObjRegistration>(
+    objs: &mut HashMap<String, MockObjRecord, impl std::hash::BuildHasher>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
-    topic: &'static str,
     oper: &GenObjSlot<'_, K>,
-) -> ObjDeptRest<ObjAlloc>
+) -> ObjDeptRest<ObjAlloc<K>>
 where
-    K: KeyMap<Img = String>,
+    K::Id: Clone,
 {
     let id = K::id(&oper.spec.dom);
 
     let matching_meta = objs
-        .get(id)
+        .get(id.as_str())
         .and_then(|record| record.meta.as_ref())
         .filter(|meta| {
-            meta.hash == oper.spec.hash && meta.ext == K::ext(&oper.spec.dom)
+            meta.hash == oper.spec.hash
+                && meta.ext == K::ext(&oper.spec.dom).as_str()
         });
 
     if let Some(meta) = matching_meta.filter(|meta| meta.is_avail) {
         return Ok(ObjAlloc::Avail {
-            key: meta.key.clone(),
+            key: ObjKey::from_record(meta.key.clone())?,
         });
     }
 
@@ -96,7 +105,7 @@ where
 
     let (key, previous) = reused_key.map_or_else(
         || {
-            let ver = objs.get(id).map_or(Ok(1), |previous| {
+            let ver = objs.get(id.as_str()).map_or(Ok(1), |previous| {
                 previous.version.checked_add(1).ok_or_else(|| {
                     ObjDeptError::Unrecoverable {
                         message: "object ver overflow".into(),
@@ -104,21 +113,17 @@ where
                 })
             })?;
 
-            let key = ObjKey {
-                id: id.to_owned(),
-                ver,
-                image: K::forward(&oper.spec.dom, ver),
-            };
+            let key = ObjKey::<K>::new(&oper.spec.dom, ver)?;
 
-            let meta = ObjMeta {
-                key: key.clone(),
+            let meta = ObjMetaRecord {
+                key: key.to_record(),
                 is_avail: false,
                 hash: oper.spec.hash.to_vec(),
-                ext: K::ext(&oper.spec.dom).to_owned(),
+                ext: K::ext(&oper.spec.dom).as_str().into(),
             };
 
             let previous = objs.insert(
-                id.to_owned(),
+                id.as_str().into(),
                 MockObjRecord {
                     version: ver,
                     meta: Some(meta),
@@ -127,21 +132,23 @@ where
 
             Ok::<_, ObjDeptError>((key, previous))
         },
-        |key| Ok((key, None)),
+        |key| ObjKey::<K>::from_record(key).map(|key| (key, None)),
     )?;
 
     if let Some(previous_key) =
         previous.and_then(|record| record.meta.map(|meta| meta.key))
     {
-        tasks.push((topic, ObjTask::Delete { key: previous_key }));
+        tasks.push((K::TOPIC, ObjTask::Delete { key: previous_key }));
     }
 
-    tasks.push((topic, ObjTask::Check { key: key.clone() }));
+    tasks.push((
+        K::TOPIC,
+        ObjTask::Check {
+            key: key.to_record(),
+        },
+    ));
 
-    let url = Url::parse(&format!("https://obj.test/write/{}", key.image))
-        .map_err(|source| ObjDeptError::Unrecoverable {
-            message: source.to_string(),
-        })?;
+    let url = parse_mock_url(&format!("write/{}", key.image().as_str()))?;
 
     Ok(ObjAlloc::Upload {
         slot: ObjSlot {
@@ -153,14 +160,17 @@ where
     })
 }
 
-pub fn gen_slots<K>(
-    objs: &mut HashMap<String, MockObjRecord>,
+/// Executes the typed object operation against fixture state.
+///
+/// # Errors
+/// Returns an error for invalid fixture data or an invalid operation.
+pub fn gen_slots<K: ObjRegistration>(
+    objs: &mut HashMap<String, MockObjRecord, impl std::hash::BuildHasher>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
-    topic: &'static str,
     oper: &GenObjSlots<'_, K>,
-) -> ObjDeptRest<HashMap<String, ObjAlloc>>
+) -> ObjDeptRest<HashMap<K::Id, ObjAlloc<K>>>
 where
-    K: KeyMap<Img = String>,
+    K::Id: Clone,
 {
     let mut ids = oper
         .specs
@@ -174,52 +184,49 @@ where
         .windows(2)
         .any(|pair| matches!(pair, [left, right] if left == right))
     {
-        return Err(ObjDeptError::Invalid {
-            message: "duplicate object slot id".into(),
-        });
+        return Err(ObjDeptError::invalid("duplicate object slot id".into()));
     }
 
     oper.specs
         .iter()
         .map(|spec| {
             let single_oper = GenObjSlot::<K>::new(spec);
-            let alloc = gen_slot(objs, tasks, topic, &single_oper)?;
 
-            Ok((K::id(&spec.dom).to_owned(), alloc))
+            let alloc = gen_slot(objs, tasks, &single_oper)?;
+
+            Ok((K::id(&spec.dom).clone(), alloc))
         })
         .collect()
 }
 
-pub fn clear_objs(
-    objs: &mut HashMap<String, MockObjRecord>,
+pub fn clear_objs<K: ObjRegistration>(
+    objs: &mut HashMap<String, MockObjRecord, impl std::hash::BuildHasher>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
-    topic: &'static str,
-    ids: &[String],
+    ids: &[K::Id],
 ) {
     for id in ids {
-        let Some(record) = objs.get_mut(id) else {
+        let Some(record) = objs.get_mut(id.as_str()) else {
             continue;
         };
 
         if let Some(meta) = record.meta.take() {
-            tasks.push((topic, ObjTask::Delete { key: meta.key }));
+            tasks.push((K::TOPIC, ObjTask::Delete { key: meta.key }));
         }
     }
 }
 
-pub fn delete_objs(
-    objs: &mut HashMap<String, MockObjRecord>,
+pub fn delete_objs<K: ObjRegistration>(
+    objs: &mut HashMap<String, MockObjRecord, impl std::hash::BuildHasher>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
-    topic: &'static str,
-    ids: &[String],
+    ids: &[K::Id],
 ) {
     for id in ids {
-        let Some(record) = objs.remove(id) else {
+        let Some(record) = objs.remove(id.as_str()) else {
             continue;
         };
 
         if let Some(meta) = record.meta {
-            tasks.push((topic, ObjTask::Delete { key: meta.key }));
+            tasks.push((K::TOPIC, ObjTask::Delete { key: meta.key }));
         }
     }
 }
@@ -242,12 +249,12 @@ macro_rules! implement_mock_obj_dept {
                 let Some(record) = state
                     .objs
                     .get_mut($topic)
-                    .and_then(|objs| objs.get_mut(&oper.key.id))
+                    .and_then(|objs| objs.get_mut(oper.key.id().as_str()))
                 else {
                     return Ok(false);
                 };
 
-                if record.version != oper.key.ver {
+                if record.version != oper.key.ver() {
                     return Ok(false);
                 }
 
@@ -281,12 +288,12 @@ macro_rules! implement_mock_obj_dept {
                 let Some(record) = state
                     .objs
                     .get_mut($topic)
-                    .and_then(|objs| objs.get_mut(&oper.key.id))
+                    .and_then(|objs| objs.get_mut(oper.key.id().as_str()))
                 else {
                     return Ok(false);
                 };
 
-                if record.version != oper.key.ver {
+                if record.version != oper.key.ver() {
                     return Ok(false);
                 }
 
@@ -312,25 +319,26 @@ macro_rules! implement_mock_obj_dept {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <$obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<$obj>,
                 >,
             > {
                 let state = self.state.lock().unwrap();
 
-                Ok(oper
-                    .ids
+                oper.ids
                     .iter()
-                    .copied()
+                    .cloned()
                     .filter_map(|id| {
                         state
                             .objs
                             .get($topic)
-                            .and_then(|objs| objs.get(id))
+                            .and_then(|objs| objs.get(id.as_str()))
                             .and_then(|record| record.meta.clone())
-                            .map(|obj_meta| (id.to_owned(), obj_meta))
+                            .map(|obj_meta| {
+                                obj_meta.decode::<$obj>().map(|meta| (id, meta))
+                            })
                     })
-                    .collect())
+                    .collect::<::poprako_obj_dept::rest::ObjDeptRest<_>>()
             }
         }
 
@@ -349,24 +357,25 @@ macro_rules! implement_mock_obj_dept {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <$obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<$obj>,
                 >,
             > {
-                Ok(oper
-                    .ids
+                oper.ids
                     .iter()
-                    .copied()
+                    .cloned()
                     .filter_map(|id| {
                         context
                             .state
                             .objs
                             .get($topic)
-                            .and_then(|objs| objs.get(id))
+                            .and_then(|objs| objs.get(id.as_str()))
                             .and_then(|record| record.meta.clone())
-                            .map(|obj_meta| (id.to_owned(), obj_meta))
+                            .map(|obj_meta| {
+                                obj_meta.decode::<$obj>().map(|meta| (id, meta))
+                            })
                     })
-                    .collect())
+                    .collect::<::poprako_obj_dept::rest::ObjDeptRest<_>>()
             }
         }
 
@@ -382,7 +391,7 @@ macro_rules! implement_mock_obj_dept {
                 oper: &::poprako_obj_dept::oper::GenObjUrls<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    ::std::string::String,
+                    <$obj as ::poprako_obj_dept::key::ObjKind>::Id,
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {
@@ -394,7 +403,7 @@ macro_rules! implement_mock_obj_dept {
 
                 for (id, obj_meta) in oper.metas {
                     let Some(url) =
-                        $crate::part_impl::obj_dept::mock_impl::gen_urls(
+                        $crate::part_impl::obj_dept::tests::mock_impl::gen_urls(
                             Some(obj_meta),
                             oper.spec,
                             thumbnail_enabled,
@@ -425,8 +434,8 @@ macro_rules! implement_mock_obj_dept {
                 oper: &::poprako_obj_dept::oper::GenObjSlots<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::alloc::ObjAlloc,
+                    <$obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::alloc::ObjAlloc<$obj>,
                 >,
             > {
                 let $crate::part_impl::repo::mock_impl::MockState {
@@ -437,8 +446,8 @@ macro_rules! implement_mock_obj_dept {
 
                 let objs = objs.entry($topic).or_default();
 
-                $crate::part_impl::obj_dept::mock_impl::gen_slots(
-                    objs, obj_tasks, $topic, oper,
+                $crate::part_impl::obj_dept::tests::mock_impl::gen_slots(
+                    objs, obj_tasks, oper,
                 )
             }
         }
@@ -457,7 +466,7 @@ macro_rules! implement_mock_obj_dept {
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
                 oper: &::poprako_obj_dept::oper::GenObjSlot<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                ::poprako_obj_dept::model::alloc::ObjAlloc,
+                ::poprako_obj_dept::model::alloc::ObjAlloc<$obj>,
             > {
                 let $crate::part_impl::repo::mock_impl::MockState {
                     objs,
@@ -467,8 +476,8 @@ macro_rules! implement_mock_obj_dept {
 
                 let objs = objs.entry($topic).or_default();
 
-                $crate::part_impl::obj_dept::mock_impl::gen_slot(
-                    objs, obj_tasks, $topic, oper,
+                $crate::part_impl::obj_dept::tests::mock_impl::gen_slot(
+                    objs, obj_tasks, oper,
                 )
             }
         }
@@ -495,8 +504,10 @@ macro_rules! implement_mock_obj_dept {
 
                 let objs = objs.entry($topic).or_default();
 
-                $crate::part_impl::obj_dept::mock_impl::clear_objs(
-                    objs, obj_tasks, $topic, oper.ids,
+                $crate::part_impl::obj_dept::tests::mock_impl::clear_objs::<
+                    $obj,
+                >(
+                    objs, obj_tasks, oper.ids,
                 );
 
                 Ok(())
@@ -533,8 +544,10 @@ macro_rules! implement_mock_obj_dept {
 
                 let objs = objs.entry($topic).or_default();
 
-                $crate::part_impl::obj_dept::mock_impl::delete_objs(
-                    objs, obj_tasks, $topic, oper.ids,
+                $crate::part_impl::obj_dept::tests::mock_impl::delete_objs::<
+                    $obj,
+                >(
+                    objs, obj_tasks, oper.ids,
                 );
 
                 Ok(())

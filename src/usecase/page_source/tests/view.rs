@@ -3,8 +3,8 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 
 use crate::data::instr::page_source::ListPageSourceInfosInstr;
 use crate::model::read::proj::page_source::PageSourceInfo;
@@ -42,15 +42,11 @@ fn page_source_image(
         key: ObjKey {
             id: id.into(),
             ver: version,
-            image: [
-                "page_source/chapter--00000000001/",
-                id,
-                "/",
-                &version.to_string(),
-                ".",
-                ext,
-            ]
-            .concat(),
+            domain: serde_json::json!({
+                "chapter_id": "chapter--00000000001",
+                "page_source_id": id,
+                "ext": ext,
+            }),
         },
         is_avail: uploaded,
         hash: vec![hash; 32],

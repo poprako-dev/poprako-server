@@ -3,6 +3,7 @@
 use poprako_orchestra::{Context, OperStep as _};
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::ListObjMetas;
 
 use crate::complex::issue_edit as issue_edit_complex;
@@ -38,7 +39,9 @@ where
 
     let ids = [page_id];
 
-    let images = ListObjMetas::<PageArtworkImage>::new(&ids)
+    let page_artwork_image_ids = PageArtworkImage::ids(&ids)?;
+
+    let images = ListObjMetas::<PageArtworkImage>::new(&page_artwork_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -54,7 +57,7 @@ where
         review_key: issue_edit_complex::review_key(chapter_id, ver),
         revision: revision.to_string(),
         chapter_revision: ver.revision.to_string(),
-        image_ver: images.get(page_id).map(|meta| meta.key.ver),
+        image_ver: images.get(page_id).map(|meta| meta.key.ver()),
         issues: issues.into_iter().map(Into::into).collect(),
     })
 }

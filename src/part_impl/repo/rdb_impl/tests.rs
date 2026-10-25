@@ -18,7 +18,7 @@ async fn repo_rdb_impls_use_testcontainer() {
 
     let shared = test_rdb.core();
 
-    crate::part_impl::obj_dept::tests::artwork_transactional_mark(
+    crate::part_impl::obj_dept::tests::rdb::artwork_transactional_mark(
         shared.clone(),
     )
     .await;
@@ -77,7 +77,7 @@ async fn repo_rdb_impls_use_testcontainer() {
     )
     .await;
 
-    crate::part_impl::obj_dept::tests::concurrent_claim_is_unique_ordered_and_fenced(
+    crate::part_impl::obj_dept::tests::rdb::concurrent_claim_is_unique_ordered_and_fenced(
         shared.clone(),
     )
     .await;

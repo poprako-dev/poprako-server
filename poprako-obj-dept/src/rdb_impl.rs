@@ -4,8 +4,9 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 
 use poprako_rdb_core::RdbError;
 
-use crate::key::{KeyMap, ObjKey};
+use crate::key::{ObjId as _, ObjKey, ObjKind};
 use crate::model::meta::ObjMeta;
+use crate::model::record::{ObjKeyRecord, ObjMetaRecord};
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Standardized latest object record decoded from a concrete Diesel table.
@@ -14,8 +15,8 @@ pub struct ObjRdbRecord {
     /// Stored generation watermark.
     pub ver: i64,
 
-    /// Complete physical key, or none for a detached record.
-    pub key: Option<String>,
+    /// Complete construction data, or none for a detached record.
+    pub domain: Option<serde_json::Value>,
     /// Current upload evidence, or none for a detached record.
     pub f_is_uploaded: Option<bool>,
     /// Current content hash, or none for a detached record.
@@ -32,8 +33,8 @@ pub struct ObjRdbWrite<'a> {
 
     /// Newly allocated generation.
     pub ver: u32,
-    /// Complete immutable physical object key.
-    pub key: &'a str,
+    /// Complete validated construction data.
+    pub domain: &'a serde_json::Value,
     /// Validated content hash.
     pub hash: &'a [u8],
     /// Validated object suffix.
@@ -48,35 +49,39 @@ pub struct ObjRdbWrite<'a> {
 pub fn decode_record<K>(
     id: &str,
     record: ObjRdbRecord,
-) -> ObjDeptRest<Option<ObjMeta>>
+) -> ObjDeptRest<Option<ObjMeta<K>>>
 where
-    K: KeyMap<Img = String>,
+    K: ObjKind,
 {
     //
+    let _ = K::Id::from_text(id).map_err(|_| ObjDeptError::Unrecoverable {
+        message: "invalid persisted object identity".into(),
+    })?;
+
     let ver =
         u32::try_from(record.ver).map_err(|_| ObjDeptError::Unrecoverable {
             message: "object ver is outside u32".into(),
         })?;
 
-    match (record.key, record.f_is_uploaded, record.hash, record.ext) {
+    match (record.domain, record.f_is_uploaded, record.hash, record.ext) {
         //
         (None, None, None, None) => Ok(None),
 
         (Some(key), Some(is_avail), Some(hash), Some(ext)) => {
             //
-            validate_key::<K>(id, ver, &ext, &key)?;
-
-            //
-            Ok(Some(ObjMeta {
-                key: ObjKey {
-                    id: id.to_owned(),
+            let meta = ObjMetaRecord {
+                key: ObjKeyRecord {
+                    id: id.into(),
                     ver,
-                    image: key,
+                    domain: key,
                 },
                 is_avail,
                 hash,
                 ext,
-            }))
+            }
+            .decode::<K>()?;
+
+            Ok(Some(meta))
         }
 
         _ => Err(ObjDeptError::Unrecoverable {
@@ -97,7 +102,7 @@ pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
         Some(record) => {
             //
             match (
-                &record.key,
+                &record.domain,
                 &record.f_is_uploaded,
                 &record.hash,
                 &record.ext,
@@ -138,45 +143,15 @@ pub fn next_ver(id: &str, record: Option<&ObjRdbRecord>) -> ObjDeptRest<u32> {
 pub fn active_key<K>(
     id: &str,
     record: Option<&ObjRdbRecord>,
-) -> ObjDeptRest<Option<ObjKey>>
+) -> ObjDeptRest<Option<ObjKey<K>>>
 where
-    K: KeyMap<Img = String>,
+    K: ObjKind,
 {
-    //
-    let Some(record) = record else {
-        return Ok(None);
-    };
-
-    match (
-        &record.key,
-        &record.f_is_uploaded,
-        &record.hash,
-        &record.ext,
-    ) {
-        //
-        (Some(key), Some(_), Some(_), Some(ext)) => {
-            //
-            let ver = u32::try_from(record.ver).map_err(|_| {
-                ObjDeptError::Unrecoverable {
-                    message: "object ver is outside u32".into(),
-                }
-            })?;
-
-            validate_key::<K>(id, ver, ext, key)?;
-
-            Ok(Some(ObjKey {
-                id: id.to_owned(),
-                ver,
-                image: key.clone(),
-            }))
-        }
-
-        (None, None, None, None) => Ok(None),
-
-        _ => Err(ObjDeptError::Unrecoverable {
-            message: ["invalid object row: ", id].concat(),
-        }),
-    }
+    record
+        .cloned()
+        .map(|record| decode_record::<K>(id, record))
+        .transpose()
+        .map(|meta| meta.flatten().map(|meta| meta.key))
 }
 
 /// Maps and traces a Diesel adapter failure.
@@ -239,33 +214,5 @@ pub fn rdb_error(source: RdbError) -> ObjDeptError {
         RdbError::PoolWaitTimeout => ObjDeptError::Unavailable {
             message: "timed out waiting for an RDB connection".into(),
         },
-    }
-}
-
-// Validates a stored physical key against its relational metadata.
-fn validate_key<K>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
-where
-    K: KeyMap<Img = String>,
-{
-    //
-    let image = key.to_owned();
-
-    let (dom, decoded_ver) =
-        K::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
-            message: ["invalid object key: ", id].concat(),
-        })?;
-
-    let is_consistent = K::id(&dom) == id
-        && K::ext(&dom) == ext
-        && decoded_ver == ver
-        && K::forward(&dom, decoded_ver) == image;
-
-    match () {
-        //
-        () if is_consistent => Ok(()),
-
-        () => Err(ObjDeptError::Unrecoverable {
-            message: ["inconsistent object key: ", id].concat(),
-        }),
     }
 }

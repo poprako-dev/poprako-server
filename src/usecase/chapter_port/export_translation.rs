@@ -10,6 +10,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::oper::ListObjMetas;
 
@@ -51,6 +52,7 @@ use crate::result::{BaseError, BaseRest};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::stage as stage_usecase;
+use crate::value::business_id::PageSourceId;
 use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::{
@@ -72,7 +74,7 @@ struct ChapterExportSnapshot<'a> {
     raw_ident_infos: &'a [PageSourceRawIdentInfo],
 
     // Metadata used to render page image extensions without another lookup.
-    obj_metas: &'a HashMap<String, ObjMeta>,
+    obj_metas: &'a HashMap<PageSourceId, ObjMeta<PageSourceImage>>,
 }
 
 /// Exports one chapter in every selected translation format.
@@ -157,10 +159,13 @@ where
         None => Vec::new(),
     };
 
-    let obj_metas = ListObjMetas::<PageSourceImage>::new(&page_source_ids)
-        .run_on(obj_dept)
-        .await
-        .map_err(BaseError::from)?;
+    let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
+    let obj_metas =
+        ListObjMetas::<PageSourceImage>::new(&page_source_image_ids)
+            .run_on(obj_dept)
+            .await
+            .map_err(BaseError::from)?;
 
     let snapshot = ChapterExportSnapshot {
         chapter_info: &chapter_info,
@@ -212,12 +217,12 @@ fn make_export_val(
             .iter()
             .filter_map(|page_source_info| {
                 //
-                raw_ident_by_page_source_id.get(&page_source_info.id).map(
-                    |raw_ident| ChapterPageSourceRawIdentVal {
+                raw_ident_by_page_source_id
+                    .get(page_source_info.id.as_str())
+                    .map(|raw_ident| ChapterPageSourceRawIdentVal {
                         page_source_id: page_source_info.id.clone(),
                         raw_ident: raw_ident.clone(),
-                    },
-                )
+                    })
             })
             .collect()
     });
@@ -239,10 +244,12 @@ fn make_export_val(
 
     for page_source_info in page_source_infos {
         //
-        if let Some(obj_meta) = obj_metas.get(&page_source_info.id) {
+        if let Some(obj_meta) = obj_metas.get(page_source_info.id.as_str()) {
             //
-            ext_by_page_source_id
-                .insert(page_source_info.id.clone(), obj_meta.ext.clone());
+            ext_by_page_source_id.insert(
+                page_source_info.id.clone(),
+                obj_meta.ext.suffix().to_owned(),
+            );
         }
     }
 
@@ -342,7 +349,7 @@ fn make_native_document(
         .map(|page_source_info| {
             //
             let unit_documents = units_by_page_source_id
-                .get(&page_source_info.id)
+                .get(page_source_info.id.as_str())
                 .map_or(&[][..], Vec::as_slice)
                 .iter()
                 .enumerate()

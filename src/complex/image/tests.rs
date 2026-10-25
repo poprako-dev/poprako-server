@@ -4,6 +4,10 @@
 )]
 
 use crate::complex::image as image_complex;
+use crate::value::artwork::ArtworkExt;
+use crate::value::business_id::{
+    ChapterId, ComicId, PageArtworkId, PageSourceId, TeamId, UserId,
+};
 
 use crate::config::image::ImageConfig;
 use crate::result::BaseError;
@@ -87,11 +91,9 @@ fn missing_byte_length_uses_the_runtime_page_source_limit_in_its_message() {
     assert!(!message.contains("20 MiB"));
 }
 
-// physical_keys(KeyMap)(positive,negative): all six mappings preserve complete IDs and reject obsolete or noncanonical representations.
+// physical_keys(ObjKind)(positive): all six one-way mappings preserve the established storage layout.
 #[test]
-fn physical_keys_round_trip_only_canonical_paths() {
-    use poprako_obj_dept::key::KeyMap as _;
-
+fn physical_keys_preserve_canonical_generation_paths() {
     use crate::part::obj_dept::{
         ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage,
         TeamAvatar, UserAvatar,
@@ -104,34 +106,35 @@ fn physical_keys_round_trip_only_canonical_paths() {
     use crate::value::page_artwork::PageArtworkImageKey;
 
     let source = PageSourceImageKey {
-        chapter_id: "chapter--00000000001".into(),
-        page_source_id: "page_source--00000000001".into(),
+        chapter_id: ChapterId::new("chapter--00000000001").unwrap(),
+        page_source_id: PageSourceId::new("page_source--00000000001").unwrap(),
         ext: ImageExt::Png,
     };
 
     let artwork = PageArtworkImageKey {
         chapter_id: source.chapter_id.clone(),
-        page_artwork_id: "page_artwork--00000000001".into(),
+        page_artwork_id: PageArtworkId::new("page_artwork--00000000001")
+            .unwrap(),
         ext: ImageExt::Png,
     };
 
     let chapter = ChapterArtworkKey {
         chapter_id: source.chapter_id.clone(),
-        ext: "zip".into(),
+        ext: ArtworkExt::new("zip").unwrap(),
     };
 
     let comic = ComicCoverKey {
-        comic_id: "comic--00000000001".into(),
+        comic_id: ComicId::new("comic--00000000001").unwrap(),
         ext: ImageExt::Png,
     };
 
     let team = TeamAvatarKey {
-        team_id: "team--00000000001".into(),
+        team_id: TeamId::new("team--00000000001").unwrap(),
         ext: ImageExt::Png,
     };
 
     let user = UserAvatarKey {
-        user_id: "user--00000000001".into(),
+        user_id: UserId::new("user--00000000001").unwrap(),
         ext: ImageExt::Png,
     };
 
@@ -155,56 +158,8 @@ fn physical_keys_round_trip_only_canonical_paths() {
     assert_key::<TeamAvatar>(&team, "team_avatar/team--00000000001/7.png");
 
     assert_key::<UserAvatar>(&user, "user_avatar/user--00000000001/7.png");
-
-    for key in [
-        "page_source/chapter_chapter-1/page-1-7.png",
-        "page_source/chapter--00000000001/page_artwork--00000000001/7.png",
-        "page_source/comic--00000000001/page_source--00000000001/7.png",
-    ] {
-        assert!(PageSourceImage::reverse(&key.into()).is_err());
-    }
-
-    assert!(
-        PageArtworkImage::reverse(
-            &"page_artwork/chapter_chapter-1/artwork-1-7.png".into()
-        )
-        .is_err()
-    );
-
-    assert!(
-        ChapterArtwork::reverse(&"chapter_artwork/chapter-1-7.zip".into())
-            .is_err()
-    );
-
-    assert!(ComicCover::reverse(&"comic_cover/comic-1-7.png".into()).is_err());
-
-    assert!(TeamAvatar::reverse(&"team_avatar/team-1-7.png".into()).is_err());
-
-    assert!(UserAvatar::reverse(&"user_avatar/user-1-7.png".into()).is_err());
 }
 
-fn assert_key<M: poprako_obj_dept::key::KeyMap<Img = String>>(
-    dom: &M::Dom,
-    expected: &str,
-) {
-    let image = M::forward(dom, 7);
-
-    assert_eq!(image, expected);
-
-    let (parsed, version) = M::reverse(&image).unwrap();
-
-    assert_eq!(M::id(&parsed), M::id(dom));
-
-    assert_eq!(version, 7);
-
-    assert_eq!(M::forward(&parsed, version), image);
-
-    for malformed in [
-        image.replace("/7.", "/007."),
-        image.replace("/7.", "/-7."),
-        format!("{image}/extra"),
-        image.to_uppercase(),
-    ] {
-        assert!(M::reverse(&malformed).is_err(), "{malformed}");
-    }
+fn assert_key<M: poprako_obj_dept::key::ObjKind>(dom: &M::Dom, expected: &str) {
+    assert_eq!(M::forward(dom, 7).as_str(), expected);
 }

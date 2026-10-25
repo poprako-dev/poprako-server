@@ -4,6 +4,7 @@ use poprako_orchestra::{Context, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{GenObjSlot, ListObjMetas};
 
@@ -14,6 +15,7 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::model::write::page_artwork::PageArtworkEntry;
 use crate::part::obj_dept::PageArtworkImage;
 use crate::result::{BaseError, BaseRest};
+use crate::value::business_id::{ChapterId, PageArtworkId};
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::page_artwork::PageArtworkImageKey;
 
@@ -38,16 +40,15 @@ where
         )?;
     }
 
-    let metas = ListObjMetas::<PageArtworkImage>::new(&[entry.id.as_str()])
+    let page_artwork_image_ids = PageArtworkImage::ids(&[entry.id.as_str()])?;
+
+    let metas = ListObjMetas::<PageArtworkImage>::new(&page_artwork_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
 
-    let avail_meta = metas.get(&entry.id).filter(|meta| {
-        //
-        meta.is_avail
-            && meta.hash == hash.as_bytes()
-            && meta.ext == ext.suffix()
+    let avail_meta = metas.get(entry.id.as_str()).filter(|meta| {
+        meta.is_avail && meta.hash == hash.as_bytes() && meta.ext == ext
     });
 
     if let Some(meta) = avail_meta {
@@ -55,7 +56,7 @@ where
         return accept!(AllocatedPageArtworkVal {
             page_artwork_id: entry.id.clone(),
             index: entry.index,
-            image_ver: meta.key.ver,
+            image_ver: meta.key.ver(),
             image_hash: hash,
             ext,
             slot: None,
@@ -73,8 +74,8 @@ where
 
     let spec = ObjSlotSpec {
         dom: PageArtworkImageKey {
-            chapter_id: entry.chapter_id.clone(),
-            page_artwork_id: entry.id.clone(),
+            chapter_id: ChapterId::new(&entry.chapter_id)?,
+            page_artwork_id: PageArtworkId::new(&entry.id)?,
             ext,
         },
         hash: hash.as_bytes(),
@@ -90,11 +91,11 @@ where
     accept!(AllocatedPageArtworkVal {
         page_artwork_id: entry.id.clone(),
         index: entry.index,
-        image_ver: alloc.key().ver,
+        image_ver: alloc.key().ver(),
         image_hash: hash,
         ext,
         slot: alloc.into_slot().map(|slot| ImageUploadSlotView {
-            image_ver: slot.key.ver,
+            image_ver: slot.key.ver(),
             put_url: slot.url.to_string(),
             headers: slot.headers,
         }),

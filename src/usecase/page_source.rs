@@ -37,6 +37,7 @@ use crate::part::repo::oper::page_source::{
 };
 use crate::part::repo::page_source::PageSourceRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::business_id::PageSourceId;
 
 /// Optimistically marks the requested current page generation as uploaded.
 #[instrument(
@@ -102,10 +103,10 @@ where
         )?;
 
         // Confirmation is optimistic; the object worker reconciles physical presence.
-        let image_key = ObjGen {
-            id,
-            ver: instr.image_ver,
-        };
+        let image_key = ObjGen::<PageSourceImage>::new(
+            PageSourceId::new(&id)?,
+            instr.image_ver,
+        );
 
         let marked = MarkObjUploaded::<PageSourceImage>::new(&image_key)
             .step_on(obj_dept, context)

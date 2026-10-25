@@ -3,6 +3,7 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::{ClearObjs, ListObjMetas};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
@@ -105,8 +106,10 @@ where
                 .map(|page_source_info| page_source_info.id.as_str())
                 .collect::<Vec<_>>();
 
+            let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
             let obj_metas =
-                ListObjMetas::<PageSourceImage>::new(&page_source_ids)
+                ListObjMetas::<PageSourceImage>::new(&page_source_image_ids)
                     .step_on(obj_dept_view, context)
                     .await
                     .map_err(BaseError::from)?;
@@ -115,7 +118,7 @@ where
                 page_source_infos.iter().all(|page_source_info| {
                     //
                     obj_metas
-                        .get(&page_source_info.id)
+                        .get(page_source_info.id.as_str())
                         .is_some_and(|obj_meta| obj_meta.is_avail)
                 });
 
@@ -386,7 +389,9 @@ where
     R: PageSourceRepo<C> + Sync,
     O: ObjDept<ChapterArtwork, C> + ObjDept<PageSourceImage, C> + Sync,
 {
-    ClearObjs::<ChapterArtwork>::new(&[chapter_id.to_owned()])
+    let chapter_artwork_ids = ChapterArtwork::ids(&[chapter_id.to_owned()])?;
+
+    ClearObjs::<ChapterArtwork>::new(&chapter_artwork_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -400,7 +405,9 @@ where
         .map(|page_source_info| page_source_info.id)
         .collect::<Vec<_>>();
 
-    ClearObjs::<PageSourceImage>::new(&page_source_ids)
+    let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
+    ClearObjs::<PageSourceImage>::new(&page_source_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;

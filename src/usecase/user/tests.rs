@@ -37,8 +37,8 @@ mod extra;
 
 use super::*;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::complex::user as user_complex;
@@ -84,8 +84,7 @@ fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
         ver: version,
-        image: ["user_avatar/", user_id, "/", &version.to_string(), ".png"]
-            .concat(),
+        domain: serde_json::json!({"user_id": user_id, "ext": "png"}),
     };
 
     let meta = ObjMeta {

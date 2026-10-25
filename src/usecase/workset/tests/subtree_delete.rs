@@ -12,7 +12,7 @@ async fn comic_sweep_claims_at_most_sixty_four_childless_rows() {
     ));
 
     for index in 0..65 {
-        let comic_id = format!("comic-{index:02}");
+        let comic_id = format!("comic--{index:0>11}");
 
         mock.seed_comic(comic(&comic_id, "workset--00000000001", index));
 

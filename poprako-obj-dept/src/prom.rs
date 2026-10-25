@@ -4,7 +4,7 @@ use std::future::Future;
 
 use time::OffsetDateTime;
 
-use crate::key::ObjKey;
+use crate::key::{ObjKey, ObjRegistration};
 use crate::model::task::ObjDeptPromTask;
 use crate::rest::ObjDeptRest;
 
@@ -40,60 +40,98 @@ pub trait ObjDeptProm {
 }
 
 /// Transaction-side durable task creation.
+///
+/// The manifest supplies the topic; producers cannot provide a different one.
+///
+/// ```compile_fail,E0061
+/// use poprako_obj_dept::key::{ObjKey, ObjRegistration};
+/// use poprako_obj_dept::prom::ObjDeptPromDefer;
+/// async fn defer<C, K: ObjRegistration, P: ObjDeptPromDefer<C>>(
+///     prom: &P, context: &mut C, key: &ObjKey<K>,
+/// ) {
+///     let _ = prom.defer_delete(context, "unrelated_topic", key).await;
+/// }
+/// ```
+///
+/// ```
+/// use poprako_obj_dept::key::{ObjKey, ObjRegistration};
+/// use poprako_obj_dept::prom::ObjDeptPromDefer;
+/// async fn defer<C, K: ObjRegistration, P: ObjDeptPromDefer<C>>(
+///     prom: &P, context: &mut C, key: &ObjKey<K>,
+/// ) {
+///     let _ = prom.defer_delete(context, key).await;
+/// }
+/// ```
 pub trait ObjDeptPromDefer<C> {
     /// Defers one Check task in the caller transaction.
-    fn defer_check<'a>(
+    fn defer_check<'a, K: ObjRegistration>(
         &'a self,
         context: &'a mut C,
-        topic: &'a str,
-        key: &'a ObjKey,
+        key: &'a ObjKey<K>,
         expires_at: OffsetDateTime,
     ) -> impl Future<Output = ObjDeptRest<()>> + Send;
 
     /// Defers one Delete task in the caller transaction.
-    fn defer_delete<'a>(
+    fn defer_delete<'a, K: ObjRegistration>(
         &'a self,
         context: &'a mut C,
-        topic: &'a str,
-        key: &'a ObjKey,
+        key: &'a ObjKey<K>,
     ) -> impl Future<Output = ObjDeptRest<()>> + Send;
 
     /// Defers Check tasks in one caller-transaction batch.
-    fn defer_checks<'a>(
+    fn defer_checks<'a, K: ObjRegistration>(
         &'a self,
         context: &'a mut C,
-        topic: &'a str,
-        checks: &'a [ObjDeptPromCheck],
+        checks: &'a [ObjDeptPromCheck<K>],
     ) -> impl Future<Output = ObjDeptRest<()>> + Send;
 
     /// Defers Delete tasks in one caller-transaction batch.
-    fn defer_deletes<'a>(
+    fn defer_deletes<'a, K: ObjRegistration>(
         &'a self,
         context: &'a mut C,
-        topic: &'a str,
-        keys: &'a [ObjKey],
+        keys: &'a [ObjKey<K>],
     ) -> impl Future<Output = ObjDeptRest<()>> + Send;
 }
 
 /// One Check task requested by a batch object lifecycle operation.
-#[derive(Clone, PartialEq, Eq)]
-pub struct ObjDeptPromCheck {
+#[derive(PartialEq, Eq)]
+pub struct ObjDeptPromCheck<K>
+where
+    K: ObjRegistration,
+{
     /// Logical object generation to verify.
-    key: ObjKey,
+    key: ObjKey<K>,
     /// Time after which absence is treated as a failed upload.
     expires_at: OffsetDateTime,
 }
 
-impl ObjDeptPromCheck {
+impl<K> Clone for ObjDeptPromCheck<K>
+where
+    K: ObjRegistration + Clone,
+    K::Id: Clone,
+{
+    // Clones the value when its owned identity supports cloning.
+    fn clone(&self) -> Self {
+        Self {
+            key: self.key.clone(),
+            expires_at: self.expires_at,
+        }
+    }
+}
+
+impl<K> ObjDeptPromCheck<K>
+where
+    K: ObjRegistration,
+{
     /// Creates one deferred check for an exact logical object generation.
     #[must_use]
-    pub const fn new(key: ObjKey, expires_at: OffsetDateTime) -> Self {
+    pub const fn new(key: ObjKey<K>, expires_at: OffsetDateTime) -> Self {
         Self { key, expires_at }
     }
 
     /// Returns the exact logical object generation to verify.
     #[must_use]
-    pub const fn key(&self) -> &ObjKey {
+    pub const fn key(&self) -> &ObjKey<K> {
         &self.key
     }
 

@@ -1,7 +1,8 @@
 //! Mock fixture construction.
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::{
+    ObjKeyRecord as ObjKey, ObjMetaRecord as ObjMeta,
+};
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -150,8 +151,11 @@ impl Mock {
             key: ObjKey {
                 id: id.to_owned(),
                 ver: 1,
-                image: ["page_source/chapter--00000000001/", id, "/1.", ext]
-                    .concat(),
+                domain: serde_json::json!({
+                    "chapter_id": "chapter--00000000001",
+                    "page_source_id": id,
+                    "ext": ext,
+                }),
             },
             is_avail: true,
             hash: vec![0; 32],

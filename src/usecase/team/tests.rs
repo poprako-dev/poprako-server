@@ -40,8 +40,8 @@ mod avatar;
 
 use super::*;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::team::{
@@ -84,12 +84,10 @@ fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "team--00000000001".into(),
         ver: version,
-        image: [
-            "team_avatar/team--00000000001/",
-            &version.to_string(),
-            ".png",
-        ]
-        .concat(),
+        domain: serde_json::json!({
+            "team_id": "team--00000000001",
+            "ext": "png",
+        }),
     };
 
     let meta = ObjMeta {

@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 
 use super::{ObjDeptActor, POLL_INTERVAL, action_from_error};
-use crate::key::ObjKey;
+use crate::model::record::ObjKeyRecord as ObjKey;
 use crate::model::task::{CHECK, ObjDeptPromTask, ObjTaskAction, obj_task_id};
 use crate::prom::ObjDeptProm;
 use crate::rest::{ObjDeptError, ObjDeptRest};
@@ -182,7 +182,7 @@ fn task() -> ObjDeptPromTask {
     let key = ObjKey {
         id: "page_source--00000000001".into(),
         ver: 1,
-        image: "page/page-1-1.png".into(),
+        domain: serde_json::json!({"id": "page-1", "ext": "png"}),
     };
 
     ObjDeptPromTask {
@@ -191,7 +191,7 @@ fn task() -> ObjDeptPromTask {
         oper: CHECK.into(),
         obj_id: key.id,
         ver: i64::from(key.ver),
-        image: key.image,
+        domain: key.domain,
         gen_no: 0,
         retried_count: 0,
         claim_token: Uuid::from_u128(1),

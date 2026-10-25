@@ -3,6 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
+use crate::part::obj_dept::PageSourceImage;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::ClearObjs;
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
@@ -12,7 +14,6 @@ use time::OffsetDateTime;
 use super::*;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::page_source::PageSourceInfo;
-use crate::part::obj_dept::PageSourceImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::result::BaseError;
@@ -296,9 +297,15 @@ async fn completed_raw_provide_ignores_missing_and_cleared_images() {
             mock.seed_page_source_image_obj("page_source--00000000001", "png");
 
             mock.coord(async |context| {
-                ClearObjs::<PageSourceImage>::new(&[
-                    "page_source--00000000001".to_string()
-                ])
+                ClearObjs::<PageSourceImage>::new(
+                    &PageSourceImage::ids(
+                        &PageSourceImage::ids(&[
+                            "page_source--00000000001".to_string()
+                        ])
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                )
                 .step_on(&mock, context)
                 .await
                 .map_err(BaseError::from)

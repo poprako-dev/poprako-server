@@ -18,6 +18,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::value::business_id::ComicId;
 
 /// Optimistically marks the requested current cover generation as uploaded.
 #[instrument(
@@ -51,10 +52,8 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let cover_key = ObjGen {
-        id,
-        ver: instr.image_ver,
-    };
+    let cover_key =
+        ObjGen::<ComicCover>::new(ComicId::new(&id)?, instr.image_ver);
 
     let marked = MarkObjUploaded::<ComicCover>::new(&cover_key)
         .run_on(obj_dept)

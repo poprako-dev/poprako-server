@@ -474,7 +474,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
 ) {
     use crate::part::nucl::ReptRead;
     use crate::part_impl::nucl::rdb_impl::RdbNucl;
-    use crate::part_impl::obj_dept::tests::ArtworkTestPool;
+    use crate::part_impl::obj_dept::tests::rdb::ArtworkTestPool;
     use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
     use crate::part_impl::prom::dispatch;
     use crate::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;

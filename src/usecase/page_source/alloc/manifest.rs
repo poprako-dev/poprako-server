@@ -8,6 +8,7 @@ use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::model::alloc::ObjAlloc;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
@@ -42,6 +43,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::page_source::PageSourceRawIdentsReplShape;
 use crate::usecase::page_source::alloc::permission::ensure_alloc_perm;
 use crate::util::next_snowflake_id;
+use crate::value::business_id::{ChapterId, PageSourceId};
 use crate::value::image::{ImageExt, ImageHash, PageSourceImageKey};
 use crate::value::page_source::PageSourceManifestCand;
 
@@ -64,7 +66,15 @@ pub async fn apply_manifest<C, R, P, O>(
     chapter_id: &str,
     page_source_specs: &[PageSourceImageSpec],
     page_source_count: usize,
-) -> BaseRest<Vec<(String, usize, ImageHash, ImageExt, ObjAlloc)>>
+) -> BaseRest<
+    Vec<(
+        String,
+        usize,
+        ImageHash,
+        ImageExt,
+        ObjAlloc<PageSourceImage>,
+    )>,
+>
 where
     C: Context + Send,
     R: ChapterRepo<C>
@@ -258,7 +268,15 @@ async fn allocate_manifest_objs<C, O>(
     ),
     page_source_infos: &[PageSourceInfo],
     page_source_count: usize,
-) -> BaseRest<Vec<(String, usize, ImageHash, ImageExt, ObjAlloc)>>
+) -> BaseRest<
+    Vec<(
+        String,
+        usize,
+        ImageHash,
+        ImageExt,
+        ObjAlloc<PageSourceImage>,
+    )>,
+>
 where
     C: Context + Send,
     O: ObjDept<PageSourceImage, C> + Send + Sync,
@@ -286,14 +304,17 @@ where
     let obj_specs = entries
         .iter()
         .zip(page_source_specs)
-        .filter_map(|(entry, page_source_spec)| {
+        .filter(|(_, page_source_spec)| page_source_spec.new_byte_len.is_some())
+        .map(|(entry, page_source_spec)| {
             //
-            let byte_len = page_source_spec.new_byte_len?;
+            let byte_len = page_source_spec
+                .new_byte_len
+                .ok_or_else(page_source_manifest_incomplete)?;
 
-            Some(ObjSlotSpec {
+            Ok(ObjSlotSpec {
                 dom: PageSourceImageKey {
-                    chapter_id: chapter_id.to_owned(),
-                    page_source_id: entry.id.clone(),
+                    chapter_id: ChapterId::new(chapter_id)?,
+                    page_source_id: PageSourceId::new(&entry.id)?,
                     ext: page_source_spec.ext,
                 },
                 hash: page_source_spec.image_hash.as_bytes(),
@@ -301,7 +322,7 @@ where
                 byte_len,
             })
         })
-        .collect::<Vec<_>>();
+        .collect::<BaseRest<Vec<_>>>()?;
 
     let mut obj_allocs = GenObjSlots::<PageSourceImage>::new(&obj_specs)
         .step_on(obj_dept, context)
@@ -320,12 +341,12 @@ where
             let obj_slot = match page_source_spec.new_byte_len {
                 //
                 Some(_) => obj_allocs
-                    .remove(&entry.id)
+                    .remove(entry.id.as_str())
                     .ok_or_else(page_source_manifest_incomplete)?,
 
                 None => ObjAlloc::Avail {
                     key: retained_obj_metas
-                        .get(&entry.id)
+                        .get(entry.id.as_str())
                         .ok_or_else(page_source_manifest_incomplete)?
                         .key
                         .clone(),
@@ -366,7 +387,9 @@ where
         page_source_count,
     } = count_scope;
 
-    DeleteObjs::<PageSourceImage>::new(deleted_page_source_ids)
+    let page_source_image_ids = PageSourceImage::ids(deleted_page_source_ids)?;
+
+    DeleteObjs::<PageSourceImage>::new(&page_source_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -431,7 +454,7 @@ async fn validate_retained_objs<C, O>(
     entries: &[PageSourceManifestEntry],
     page_source_specs: &[PageSourceImageSpec],
     page_source_infos_by_id: &HashMap<&str, &PageSourceInfo>,
-) -> BaseRest<HashMap<String, ObjMeta>>
+) -> BaseRest<HashMap<PageSourceId, ObjMeta<PageSourceImage>>>
 where
     C: Context + Send,
     O: ObjDept<PageSourceImage, C> + Send + Sync,
@@ -444,8 +467,11 @@ where
         .map(|(entry, _)| entry.id.as_str())
         .collect::<Vec<_>>();
 
+    let page_source_image_ids =
+        PageSourceImage::ids(&retained_page_source_ids)?;
+
     let retained_obj_metas =
-        ListObjMetas::<PageSourceImage>::new(&retained_page_source_ids)
+        ListObjMetas::<PageSourceImage>::new(&page_source_image_ids)
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
@@ -463,7 +489,7 @@ where
         ensure_retained_obj(
             page_source_info,
             page_source_spec,
-            retained_obj_metas.get(&entry.id),
+            retained_obj_metas.get(entry.id.as_str()),
         )?;
     }
 
@@ -495,7 +521,7 @@ fn page_source_count_metrics(
 fn ensure_retained_obj(
     page_source_info: &PageSourceInfo,
     page_source_spec: &PageSourceImageSpec,
-    obj_meta: Option<&ObjMeta>,
+    obj_meta: Option<&ObjMeta<PageSourceImage>>,
 ) -> BaseRest<()> {
     //
     let Some(obj_meta) = obj_meta.filter(|meta| meta.is_avail) else {
@@ -514,7 +540,7 @@ fn ensure_retained_obj(
     let same_hash =
         obj_meta.hash.as_slice() == page_source_spec.image_hash.as_bytes();
 
-    match (same_hash, obj_meta.ext == page_source_spec.ext.suffix()) {
+    match (same_hash, obj_meta.ext == page_source_spec.ext) {
         //
         (true, true) => accept!(()),
 

@@ -4,6 +4,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::complex::{
@@ -123,7 +124,9 @@ where
                 .map(|info| info.id)
                 .collect::<Vec<_>>();
 
-            DeleteObjs::<PageArtworkImage>::new(&removed_ids)
+            let page_artwork_image_ids = PageArtworkImage::ids(&removed_ids)?;
+
+            DeleteObjs::<PageArtworkImage>::new(&page_artwork_image_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;

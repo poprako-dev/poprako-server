@@ -54,6 +54,7 @@ use crate::usecase::page_source::alloc::manifest::apply_manifest;
 use crate::usecase::page_source::alloc::permission::ensure_alloc_perm;
 use crate::usecase::page_source::alloc::validation as page_source_alloc_validation_usecase;
 use crate::util::next_snowflake_id;
+use crate::value::business_id::{ChapterId, PageSourceId};
 use crate::value::image::{ImageExt, ImageHash, ImageKind, PageSourceImageKey};
 
 /// Allocates the authoritative page manifest and its required image uploads.
@@ -192,8 +193,8 @@ where
 
             let obj_spec = ObjSlotSpec {
                 dom: PageSourceImageKey {
-                    chapter_id: page_source_info.chapter_id.clone(),
-                    page_source_id: id.clone(),
+                    chapter_id: ChapterId::new(&page_source_info.chapter_id)?,
+                    page_source_id: PageSourceId::new(&id)?,
                     ext: instr.ext,
                 },
                 hash: instr.image_hash.as_bytes(),
@@ -269,13 +270,13 @@ struct PageSourceAlloc {
     ext: ImageExt,
 
     // Optional new upload capability.
-    obj_alloc: ObjAlloc,
+    obj_alloc: ObjAlloc<PageSourceImage>,
 }
 
 // Converts one internal allocation into a response view.
 fn alloc_val(alloc: PageSourceAlloc) -> BaseRest<AllocatedPageSourceVal> {
     //
-    let image_ver = alloc.obj_alloc.key().ver;
+    let image_ver = alloc.obj_alloc.key().ver();
 
     let slot =
         alloc
@@ -283,7 +284,7 @@ fn alloc_val(alloc: PageSourceAlloc) -> BaseRest<AllocatedPageSourceVal> {
             .into_slot()
             .map(|obj_alloc| ImageUploadSlotView {
                 put_url: obj_alloc.url.to_string(),
-                image_ver: obj_alloc.key.ver,
+                image_ver: obj_alloc.key.ver(),
                 headers: obj_alloc.headers,
             });
 

@@ -21,6 +21,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::value::business_id::ComicId;
 use crate::value::image::{ComicCoverKey, ImageKind};
 
 /// Allocates a new comic cover upload slot.
@@ -74,7 +75,7 @@ where
 
             let obj_spec = ObjSlotSpec {
                 dom: ComicCoverKey {
-                    comic_id: id.clone(),
+                    comic_id: ComicId::new(&id)?,
                     ext: instr.ext,
                 },
                 hash: instr.image_hash.as_bytes(),
@@ -91,7 +92,7 @@ where
 
     let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
-        image_ver: obj_slot.key.ver,
+        image_ver: obj_slot.key.ver(),
         headers: obj_slot.headers,
     });
 

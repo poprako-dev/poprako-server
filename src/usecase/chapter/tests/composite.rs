@@ -5,8 +5,8 @@
 
 use time::OffsetDateTime;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::task::ObjTask;
 
 use super::{Mock, RoleField, RoleMask, chapter, seed_scope, token};
@@ -15,6 +15,19 @@ use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
 use crate::part_impl::repo::mock_impl::MockObjRecord;
 use crate::usecase::chapter::delete as chapter_delete_usecase;
+
+// Builds the current-format artwork object fixture.
+fn artwork_key() -> ObjKey {
+    ObjKey {
+        id: "page_artwork--00000000001".into(),
+        ver: 1,
+        domain: serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_artwork_id": "page_artwork--00000000001",
+            "ext": "png",
+        }),
+    }
+}
 
 // delete(delete)(positive,negative): direct Chapter deletion cleans independent composite objects and issues; failed cleanup preserves all business state.
 #[tokio::test]
@@ -42,11 +55,7 @@ async fn chapter_delete_cleans_composites_without_source_page_sources_atomically
 
         let time = OffsetDateTime::now_utc();
 
-        let key = ObjKey {
-            id: "page_artwork--00000000001".into(),
-            ver: 1,
-            image: "page_artwork/chapter--00000000001/page_artwork--00000000001/1.png".into(),
-        };
+        let key = artwork_key();
 
         {
             let mut state = mock.state.lock().unwrap();

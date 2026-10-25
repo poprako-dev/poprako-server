@@ -1,7 +1,7 @@
 use super::super::mark_image_uploaded;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::page_source::MarkPageSourceImageUploadedInstr;
@@ -43,9 +43,11 @@ fn seed_scope(mock: &Mock) {
     let key = ObjKey {
         id: "page_source--00000000001".into(),
         ver: 3,
-        image:
-            "page_source/chapter--00000000001/page_source--00000000001/3.png"
-                .into(),
+        domain: serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_source_id": "page_source--00000000001",
+            "ext": "png",
+        }),
     };
 
     let meta = ObjMeta {

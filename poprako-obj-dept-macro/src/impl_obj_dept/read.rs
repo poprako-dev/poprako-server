@@ -30,17 +30,21 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
                 let mut conn = self.core().get().await.map_err(
                     ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
-                let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
+                let ids = oper.ids.iter()
+                    .map(::poprako_obj_dept::key::ObjId::as_str)
+                    .collect::<Vec<_>>();
 
-                #obj_module::decode_many::<#obj>(rows)
+                let rows = #obj_module::load_many(&mut conn, &ids).await?;
+
+                #obj_module::decode_many(rows)
             }
         }
 
@@ -62,14 +66,18 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
-                let rows = #obj_module::load_many(context.conn(), oper.ids)
+                let ids = oper.ids.iter()
+                    .map(::poprako_obj_dept::key::ObjId::as_str)
+                    .collect::<Vec<_>>();
+
+                let rows = #obj_module::load_many(context.conn(), &ids)
                     .await?;
 
-                #obj_module::decode_many::<#obj>(rows)
+                #obj_module::decode_many(rows)
             }
         }
 
@@ -97,17 +105,21 @@ fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
                 let mut conn = self.core().get().await.map_err(
                     ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
-                let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
+                let ids = oper.ids.iter()
+                    .map(::poprako_obj_dept::key::ObjId::as_str)
+                    .collect::<Vec<_>>();
 
-                #obj_module::decode_many::<#obj>(rows)
+                let rows = #obj_module::load_many(&mut conn, &ids).await?;
+
+                #obj_module::decode_many(rows)
             }
         }
 
@@ -128,14 +140,18 @@ fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::ListObjMetas<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
-                    ::poprako_obj_dept::model::meta::ObjMeta,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
+                    ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
-                let rows = #obj_module::load_many(context.conn(), oper.ids)
+                let ids = oper.ids.iter()
+                    .map(::poprako_obj_dept::key::ObjId::as_str)
+                    .collect::<Vec<_>>();
+
+                let rows = #obj_module::load_many(context.conn(), &ids)
                     .await?;
 
-                #obj_module::decode_many::<#obj>(rows)
+                #obj_module::decode_many(rows)
             }
         }
 
@@ -152,7 +168,7 @@ fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {
@@ -186,7 +202,7 @@ fn total_urls(obj: &Ident, dept: &Ident) -> TokenStream {
                 oper: &::poprako_obj_dept::oper::GenObjUrls<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::std::collections::HashMap<
-                    String,
+                    <#obj as ::poprako_obj_dept::key::ObjKind>::Id,
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {

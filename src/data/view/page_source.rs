@@ -8,6 +8,7 @@ use serde::Serialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use poprako_obj_dept::key::ObjKind;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::url::ObjUrls;
 use poprako_util::time::ToUnixMilli as _;
@@ -69,12 +70,15 @@ pub struct PageSourceInfoView {
 
 impl PageSourceInfoView {
     /// Converts a [`PageSourceInfo`] into a presentation-ready value.
-    pub fn from_model(
+    pub fn from_model<K>(
         model: PageSourceInfo,
-        obj_meta: Option<&ObjMeta>,
+        obj_meta: Option<&ObjMeta<K>>,
         raw_ident: Option<String>,
         image_urls: Option<&ObjUrls>,
-    ) -> Self {
+    ) -> Self
+    where
+        K: ObjKind<Ext = ImageExt>,
+    {
         //
         let image_hash = obj_meta.and_then(|meta| {
             //
@@ -83,14 +87,14 @@ impl PageSourceInfoView {
             Some(ImageHash::new(bytes))
         });
 
-        let ext = obj_meta.and_then(|meta| ImageExt::parse(&meta.ext));
+        let ext = obj_meta.map(|meta| meta.ext);
 
         Self {
             id: model.id,
             chapter_id: model.chapter_id,
             index: model.index,
             raw_ident,
-            image_ver: obj_meta.map(|meta| meta.key.ver),
+            image_ver: obj_meta.map(|meta| meta.key.ver()),
             image_uploaded: obj_meta.is_some_and(|meta| meta.is_avail),
             image_url: image_urls
                 .and_then(|urls| urls.origin_url.as_ref())

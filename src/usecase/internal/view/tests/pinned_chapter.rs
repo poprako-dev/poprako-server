@@ -68,11 +68,11 @@ async fn distinct_comics_keep_nested_urls_aligned() {
         //
         let mut assignment = assignment_info();
 
-        assignment.id = format!("assignment-{suffix}");
+        assignment.id = format!("assignment--{suffix:0>11}");
 
-        assignment.chapter_id = format!("chapter-{suffix}");
+        assignment.chapter_id = format!("chapter--{suffix:0>11}");
 
-        assignment.user_id = format!("user-{suffix}");
+        assignment.user_id = format!("user--{suffix:0>11}");
 
         assignment.user.as_mut().unwrap().id = assignment.user_id.clone();
 
@@ -80,9 +80,9 @@ async fn distinct_comics_keep_nested_urls_aligned() {
 
         chapter.id = assignment.chapter_id.clone();
 
-        chapter.comic_id = format!("comic-{suffix}");
+        chapter.comic_id = format!("comic--{suffix:0>11}");
 
-        chapter.creator_id = format!("creator-{suffix}");
+        chapter.creator_id = format!("user--0000000001{suffix}");
 
         chapter.creator.as_mut().unwrap().id = chapter.creator_id.clone();
 
@@ -90,7 +90,7 @@ async fn distinct_comics_keep_nested_urls_aligned() {
 
         comic.id = chapter.comic_id.clone();
 
-        comic.creator_id = format!("owner-{suffix}");
+        comic.creator_id = format!("user--0000000002{suffix}");
 
         comic.creator.as_mut().unwrap().id = comic.creator_id.clone();
 
@@ -132,7 +132,7 @@ async fn distinct_comics_keep_nested_urls_aligned() {
 
     for (position, suffix) in ["z", "a"].into_iter().enumerate() {
         //
-        let expected_cover = format!("https://obj.test/comic-{suffix}");
+        let expected_cover = format!("https://obj.test/comic--{suffix:0>11}");
 
         let chapter = list_val
             .pinned_chapters
@@ -150,7 +150,7 @@ async fn distinct_comics_keep_nested_urls_aligned() {
 
         assert_eq!(
             list_val.comics.get(position).unwrap().id,
-            format!("comic-{suffix}")
+            format!("comic--{suffix:0>11}")
         );
 
         assert_eq!(
@@ -158,14 +158,14 @@ async fn distinct_comics_keep_nested_urls_aligned() {
             Some(expected_cover.as_str())
         );
 
-        assert_eq!(chapter.id, format!("chapter-{suffix}"));
+        assert_eq!(chapter.id, format!("chapter--{suffix:0>11}"));
 
         assert_eq!(
             chapter.comic.as_ref().unwrap().cover_url.as_deref(),
             Some(expected_cover.as_str())
         );
 
-        assert_eq!(assignment.id, format!("assignment-{suffix}"));
+        assert_eq!(assignment.id, format!("assignment--{suffix:0>11}"));
 
         assert_eq!(
             assignment
@@ -180,7 +180,7 @@ async fn distinct_comics_keep_nested_urls_aligned() {
             Some(expected_cover.as_str())
         );
 
-        let expected_avatar = format!("https://obj.test/user-{suffix}");
+        let expected_avatar = format!("https://obj.test/user--{suffix:0>11}");
 
         assert_eq!(
             assignment.user.as_ref().unwrap().avatar_url.as_deref(),

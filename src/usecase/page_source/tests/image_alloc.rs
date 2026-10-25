@@ -319,7 +319,16 @@ async fn matching_pending_image_resigns_current_generation() {
     let snapshot = mock.snapshot();
 
     assert_eq!(slot.image_ver, 4);
-    assert!(slot.put_url.ends_with(&existing_key.image));
+    assert!(
+        slot.put_url.ends_with(
+            poprako_obj_dept::key::ObjKey::<
+                crate::part::obj_dept::PageSourceImage,
+            >::from_record(existing_key.clone())
+            .unwrap()
+            .image()
+            .as_str()
+        )
+    );
     assert_eq!(
         snapshot
             .objs

@@ -91,6 +91,19 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
     let modules = objs.iter().map(expand_obj);
 
+    let registrations = objs.iter().map(|obj| {
+        //
+        let marker = &obj.marker;
+
+        let topic = &obj.topic;
+
+        quote! {
+            impl ::poprako_obj_dept::key::ObjRegistration for #marker {
+                const TOPIC: &'static str = #topic;
+            }
+        }
+    });
+
     let unique_markers = objs.iter().map(|obj| &obj.marker);
 
     let unique_tables = objs.iter().map(|obj| &obj.table);
@@ -116,6 +129,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
             #(impl Table for super::#unique_tables::table {})*
         }
+
+        #(#registrations)*
 
         #(#modules)*
 
@@ -227,11 +242,14 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
 
     let module = marker_module(&obj.marker);
 
-    let rdb_entry = rdb_entry::expand(table);
+    let marker = &obj.marker;
+
+    let rdb_entry = rdb_entry::expand(table, marker);
 
     quote! {
         mod #module {
             use super::#table;
+            use super::#marker;
 
             pub const TOPIC: &str = #topic;
 

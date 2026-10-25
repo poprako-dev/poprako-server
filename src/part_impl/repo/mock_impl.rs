@@ -64,7 +64,7 @@ use std::sync::{Arc, Mutex};
 
 use time::OffsetDateTime;
 
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjMetaRecord;
 use poprako_obj_dept::model::task::ObjTask;
 use poprako_util::i18n::trl;
 
@@ -290,7 +290,7 @@ pub struct MockObjRecord {
     /// Latest allocated generation.
     pub version: u32,
     /// Active object metadata, or none after detach.
-    pub meta: Option<ObjMeta>,
+    pub meta: Option<ObjMetaRecord>,
 }
 
 /// The transactional context passed to [`Nucl::coord`] calls,

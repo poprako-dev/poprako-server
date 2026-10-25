@@ -5,8 +5,8 @@
 
 use super::*;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::task::ObjTask;
 use time::OffsetDateTime;
 
@@ -241,9 +241,11 @@ async fn update_stage_publish_enqueues_page_source_image_delete() {
     let key = ObjKey {
         id: "page_source--00000000001".into(),
         ver: 1,
-        image:
-            "page_source/chapter--00000000001/page_source--00000000001/1.png"
-                .into(),
+        domain: serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_source_id": "page_source--00000000001",
+            "ext": "png",
+        }),
     };
 
     mock.state

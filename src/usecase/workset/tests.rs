@@ -19,8 +19,8 @@ use super::*;
 
 mod subtree_delete;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::workset::{
@@ -149,7 +149,7 @@ fn seed_comic_cover(mock: &Mock, comic_id: &str) -> ObjKey {
     let key = ObjKey {
         id: comic_id.into(),
         ver: 1,
-        image: format!("comic_cover/{comic_id}/1.png"),
+        domain: serde_json::json!({"comic_id": comic_id, "ext": "png"}),
     };
 
     let meta = ObjMeta {

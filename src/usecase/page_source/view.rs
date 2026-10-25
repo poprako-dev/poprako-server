@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
@@ -15,14 +16,15 @@ use crate::part::obj_dept::PageSourceImage;
 use crate::part::repo::oper::page_source::ListPageSourceRawIdentInfos;
 use crate::part::repo::page_source::PageSourceRepo;
 use crate::result::{BaseError, BaseRest};
+use crate::value::business_id::PageSourceId;
 
 // Image metadata and URLs resolved from one object-version snapshot.
 struct PageSourceImageData {
     // Metadata by page identifier.
-    obj_metas: HashMap<String, ObjMeta>,
+    obj_metas: HashMap<PageSourceId, ObjMeta<PageSourceImage>>,
 
     // Image URLs by page identifier.
-    image_urls: HashMap<String, ObjUrls>,
+    image_urls: HashMap<PageSourceId, ObjUrls>,
 }
 
 /// Resolves one page model with its image metadata and selected image URLs.
@@ -46,9 +48,9 @@ where
     let image_data =
         load_image_data::<C, O>(obj_dept, &page_source_ids).await?;
 
-    let obj_meta = image_data.obj_metas.get(&model.id);
+    let obj_meta = image_data.obj_metas.get(model.id.as_str());
 
-    let image_urls = image_data.image_urls.get(&model.id);
+    let image_urls = image_data.image_urls.get(model.id.as_str());
 
     accept!(PageSourceInfoView::from_model(
         model,
@@ -87,9 +89,9 @@ where
             .into_iter()
             .map(|model| {
                 //
-                let obj_meta = image_data.obj_metas.get(&model.id);
+                let obj_meta = image_data.obj_metas.get(model.id.as_str());
 
-                let image_urls = image_data.image_urls.get(&model.id);
+                let image_urls = image_data.image_urls.get(model.id.as_str());
 
                 let raw_ident = raw_idents
                     .iter()
@@ -127,10 +129,13 @@ where
 
     page_source_ids.dedup();
 
-    let obj_metas = ListObjMetas::<PageSourceImage>::new(&page_source_ids)
-        .run_on(obj_dept)
-        .await
-        .map_err(BaseError::from)?;
+    let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
+    let obj_metas =
+        ListObjMetas::<PageSourceImage>::new(&page_source_image_ids)
+            .run_on(obj_dept)
+            .await
+            .map_err(BaseError::from)?;
 
     let obj_url_spec = ObjUrlSpec::default()
         .with_origin()

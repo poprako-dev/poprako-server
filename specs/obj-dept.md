@@ -7,8 +7,10 @@ objects. A business object has one stable `id` and at most one newest logical
 version. Upload checks and deletion are asynchronous, so it may temporarily
 have zero to many physical versions.
 
-`id + version` forms the logical `ObjKey`. ObjDept alone encodes the physical
-key; callers treat `ObjKey` as opaque. This slice supports only durable Check
+`ObjGen<K>` identifies one object kind, validated business ID, and version.
+`ObjKey<K>` also retains the immutable physical location generated from typed
+domain input. Key fields are private; callers use read accessors. Physical
+locations are never decoded into business identity. This slice supports only durable Check
 and Delete work. Inventory scans and other recovery systems are out of scope.
 
 The registered object kinds are `PageSourceImage`, `PageArtworkImage`,
@@ -28,7 +30,7 @@ keep their separate formats. The closed registry lives in
 | TeamAvatar | `team_avatar/{team_id}/{version}.{ext}` |
 | UserAvatar | `user_avatar/{user_id}/{version}.{ext}` |
 
-Every ID segment contains the complete prefixed ID. Reverse key parsing checks
+Every ID segment contains the complete prefixed ID. Typed construction validates
 its expected domain and exact forward reconstruction. Old path formats are
 not accepted. Historical database and OSS conversion is a separate operation.
 
@@ -72,19 +74,18 @@ objs_def! {
     PageSourceImage {
         table: t_page_source_image,
         topic: "page_source_image",
-        namespace: "page_source_image",
     },
 }
 ```
 
-`objs_def!` rejects duplicate marker, table, topic, or namespace values and
+`objs_def!` rejects duplicate marker, table, or topic values and
 generates typed helpers against each concrete Diesel table. It also emits one
-local callback manifest. `impl_obj_dept! { NormObjDept }` consumes that
+local callback manifest. `impl_obj_dept! { dept: NormObjDept, view: NormObjDeptView }` consumes that
 manifest and generates every operation implementation plus the full static
 topic dispatch. Its input never names a pool or prom implementation.
 
-Adding a new object kind requires its marker, standard Diesel table, and one
-manifest entry. `ObjDeptPool` and `ObjDeptProm` remain trait-constrained dependencies.
+Adding a new object kind requires its marker, typed domain mapping, standard
+Diesel table, and one manifest entry. `ObjDeptPool` and `ObjDeptProm` remain trait-constrained dependencies.
 There is no runtime registry, erased RDB access, boxed future, or dynamic trait
 dispatch in the object-kind path.
 
@@ -95,7 +96,7 @@ code directly references the concrete table and all required columns. A
 missing table, missing column, incompatible SQL type, or wrong nullability
 therefore fails compilation.
 
-Object tables contain `f_id`, `f_version`, nullable `f_is_uploaded`, `f_hash`,
+Object tables contain `f_id`, `f_version`, nullable `f_domain JSONB`, `f_is_uploaded`, `f_hash`,
 `f_ext`, and timestamps. `t_obj_prom_task` contains the durable task envelope,
 including `f_topic`. These tables deliberately avoid business foreign keys and
 business lifecycle checks; mutable policy stays in application code.
@@ -105,35 +106,43 @@ are forbidden in ObjDept.
 
 ## Operations and values
 
-`ObjDept<B, C>` drives:
+`ObjDept<K, C>` drives:
 
-- `ListObjMetas<B>` for newest persisted metadata;
-- `GenObjUrls<B>` for origin and optional thumbnail URLs derived from
+- `ListObjMetas<K>` for newest persisted metadata;
+- `GenObjUrls<K>` for origin and optional thumbnail URLs derived from
   supplied metadata versions;
-- `GenObjSlot<B>` for allocation and a signed write capability;
-- `GenObjSlots<B>` for batch allocation and signed write capabilities;
-- `ClearObjs<B>` for clearing current files while their owning business
+- `GenObjSlot<K>` for allocation and a signed write capability;
+- `GenObjSlots<K>` for batch allocation and signed write capabilities;
+- `ClearObjs<K>` for clearing current files while their owning business
   entities remain active;
-- `DeleteObjs<B>` for ending object lifecycles together with permanently
+- `DeleteObjs<K>` for ending object lifecycles together with permanently
   deleted business entities.
 
 Operation structures expose ordinary associated constructors and keep their
 phantom marker fields private. Callers import and invoke the real operation
 type directly so rust-analyzer navigation reaches its definition; no operation
-construction macro is used. `MarkObjUploaded<B>` supports both independent Run and transaction-scoped Step. It returns `bool`, bound as
+construction macro is used. `MarkObjUploaded<K>` supports both independent Run and transaction-scoped Step. It returns `bool`, bound as
 `marked` and handled at the immediate use-case boundary.
 
-`ObjSlotSpec` carries `id`, `hash`, `ext`, `content_type`, and `byte_len`.
-Allocation returns `ObjAlloc::Avail { key }` for identical available
-content or `ObjAlloc::Upload { slot }` for new or resumed pending content.
+`ObjKind` defines associated `Id`, `Dom`, and `Ext` types and one-way physical
+key construction. `ObjSlotSpec<K>` carries typed domain input, `hash`,
+`content_type`, and `byte_len`. Server object-facing identities use validated
+String-backed ID newtypes and the existing `BusinessIdKind` namespace registry.
+Images use `ImageExt`; chapter artwork uses `ArtworkExt`.
+Allocation returns `ObjAlloc<K>::Avail { key }` for identical available
+content or `ObjAlloc<K>::Upload { slot }` for new or resumed pending content.
 Both retain the exact selected generation; callers use `key()` without a
 metadata reload and `into_slot()` when only the upload capability is needed.
 Batch allocation returns one allocation for every requested object ID,
 including available content. Duplicate requested IDs are rejected.
-`ObjMeta` carries `key`, `is_available`, `hash`, and `ext`. Availability is an
+`ObjMeta<K>` carries typed `key`, `is_avail`, `hash`, and `ext`.
+Allocation results and upload slots retain the same marker. Metadata and URL
+batches use the associated identity as their map key. Lookup, clear, and delete
+inputs use typed IDs; upload confirmation accepts `ObjGen<K>`.
+`GenObjUrls<K>` accepts only metadata for that same object kind. Availability is an
 optimistic read decision, not proof that remote bytes were verified. Component failures
 use `ObjDeptError` and `ObjDeptRest`.
-`ObjUrls` carries `origin_url` and `thumbnail_url: Option<Url>`. The current
+`ObjUrls` carries optional origin, optimized, and thumbnail URLs. The current
 R2 pool provides a thumbnail; the optional field permits a future pool or
 object kind without that capability.
 
@@ -145,14 +154,42 @@ transaction before business mutation commits; neither performs remote I/O in
 that transaction. A future object kind that permits business-ID reuse must use
 `ClearObjs` or introduce a monotonic identity epoch.
 
+## Canonical construction data and persistence
+
+Object tables and durable tasks persist `f_domain` as JSONB containing the
+complete typed construction input. Source and finished-page images retain the
+chapter ID, page ID, and extension; other kinds retain their owner ID and
+extension. There is no persisted physical-path column.
+
+`ObjKind::Dom` supports strict serialization and deserialization. Server domain
+structures reject unknown fields, require all fields, and deserialize IDs and
+extensions through their validated types. `ObjKey::from_record` rejects a
+mismatch between the domain owner and the record ID. Metadata restoration also
+rejects a suffix column that differs from the domain suffix. Detached rows
+retain only their owner identity and version watermark.
+
+Every physical path is generated by the current one-way mapping from these
+validated values and the selected generation. Neither arbitrary stored paths
+nor previous path formats are accepted. Task IDs encode the structured domain;
+there is no old encoding fallback. Same-generation task and active-record
+locations must agree before remote I/O.
+
+Deferred cleanup retains its complete construction input even after its owner
+is deleted. This supports ordinary object replacement and deletion on a fresh
+database. Existing data requires a separately authorized offline conversion;
+the running service contains no compatibility or repair path.
+
 ## Pool and durable tasks
 
-`ObjDeptPool` directly exposes `gen_slot`, `gen_urls`, `has`, and `del`. It is
+`ObjDeptPool` directly exposes `gen_slot`, `gen_urls`, `has`, and `del` against
+opaque `ObjPath` values. It is
 payload-neutral. Callers select original, optimized, and thumbnail URLs through `ObjUrlSpec`. Artwork exports select only the original URL; the R2 adapter does not infer image renditions from the file extension.
 
 `ObjDeptProm` owns reset, global claim, completion, retry, and operator transitions.
 `ObjDeptPromDefer<C>` records single or batched Check and Delete work inside the
-caller-owned transaction. The RDB adapter is generated by `rdb_obj_dept_prom!`
+caller-owned transaction. Producers supply `ObjKey<K>`; `ObjRegistration` binds
+its topic from the manifest, so callers cannot select a topic independently.
+The RDB adapter is generated by `rdb_obj_dept_prom!`
 against `t_obj_prom_task` with ordinary typed Diesel queries. A batch uses
 one bulk upsert and one bulk identity/status read rather than one operation per
 object. A matching conflict locks the existing row through the caller transaction,
@@ -179,7 +216,8 @@ support lives under `actor::rdb_impl` and follows the `rdb_impl` feature.
 background work. `run_detach(self)` starts one supervisor and returns its
 non-cloneable `ObjDeptActorDesc`. Claim and maintenance loops run under that
 supervisor; claiming is global across topics and tasks are processed serially. Topic dispatch is a generated static match whose
-branches call their typed handlers. The actor owns whether future topic-level
+branches validate raw task fields, decode the Check/Delete discriminator, and
+restore the corresponding typed key before calling their handlers. The actor owns whether future topic-level
 parallelism is introduced; composition never creates one actor per topic.
 
 The composition root owns the descriptor separately from `NormObjDept`.

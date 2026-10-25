@@ -33,10 +33,22 @@ Use complete business IDs as path segments:
 | Team avatar | `team_avatar/{team_id}/{version}.{ext}` |
 | User avatar | `user_avatar/{user_id}/{version}.{ext}` |
 
-Keep key construction and reverse parsing together in the existing image
-complex and object-department mappings. Reverse parsing validates domains,
-extensions, generations, and exact forward reconstruction. Do not weaken
-KeyMap consistency or accept old paths. Source images use `page_source_image`.
+Construct physical locations once in the object-department adapter from
+validated business IDs, typed extensions, and the allocated generation.
+`ObjKind` has no reverse operation. `ObjKey<K>`, `ObjGen<K>`, metadata, upload
+slots, and allocation results retain their object kind; identity-bearing
+operations accept the associated typed ID. Keep their fields and constructors
+from permitting independent mutation or implicit conversion between kinds.
+
+Persist complete validated construction inputs in `f_domain JSONB` for object
+rows and deferred tasks. Generate `ObjPath` only from the current one-way
+mapping. Do not persist or accept arbitrary physical paths, legacy formats,
+format aliases, or fallback decoders. Domain deserialization must reject
+unknown or missing fields and validate every typed ID and extension. Check the
+record owner and suffix against the restored domain before returning metadata.
+Retain construction data for normal generation cleanup after owner deletion,
+revision fencing, and manifest-bound task topics. Source images use
+`page_source_image`. See repository-relative `specs/obj-dept.md`.
 
 ## Page and Issue contracts
 
@@ -62,7 +74,7 @@ same mapping and the current page after permission, review, and image guards.
 ## Validation and scope
 
 Cover all registered ID kinds, wrong namespaces and malformed suffixes,
-all six key round trips and obsolete-path rejection, explicit manifest
+all six one-way key layouts and rejection of invalid persisted construction data, explicit manifest
 identity, pending/available versions, rollback and stale confirmation, and
 Issue retry mappings. Keep schema and OpenAPI regeneration under the existing
 repository workflows. This skill does not authorize migration of historical

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_obj_dept::ObjDeptView;
-use poprako_obj_dept::key::KeyMap;
+use poprako_obj_dept::key::ObjKind;
 use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
@@ -127,7 +127,9 @@ pub async fn load_obj_urls<C, O, K>(
 ) -> BaseRest<ObjUrlBatch>
 where
     C: Context,
-    K: KeyMap,
+    K: ObjKind,
+    K::Id: Send + Sync,
+    K::Ext: Send + Sync,
     O: ObjDeptView<K, C> + Sync,
 {
     if ids.is_empty() {
@@ -144,7 +146,9 @@ where
 
     ids.dedup();
 
-    let obj_metas = ListObjMetas::new(&ids)
+    let obj_ids = K::ids(&ids)?;
+
+    let obj_metas = ListObjMetas::<K>::new(&obj_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
@@ -156,5 +160,11 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    accept!(ObjUrlBatch::from_urls(obj_urls, &uses))
+    accept!(ObjUrlBatch::from_urls(
+        obj_urls
+            .into_iter()
+            .map(|(id, urls)| (id.into(), urls))
+            .collect(),
+        &uses
+    ))
 }

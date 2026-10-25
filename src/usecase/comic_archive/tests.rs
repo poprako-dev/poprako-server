@@ -10,8 +10,8 @@
 
 use super::*;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::task::ObjTask;
 use time::OffsetDateTime;
 
@@ -208,15 +208,17 @@ fn seed_archive_objs(mock: &Mock) -> (ObjKey, ObjKey) {
     let cover_key = ObjKey {
         id: COMIC_ID.into(),
         ver: 5,
-        image: "comic_cover/comic--00000000001/5.png".into(),
+        domain: serde_json::json!({"comic_id": COMIC_ID, "ext": "png"}),
     };
 
     let page_source_key = ObjKey {
         id: SOURCE_ID.into(),
         ver: 4,
-        image:
-            "page_source/chapter--00000000001/page_source--00000000001/4.webp"
-                .into(),
+        domain: serde_json::json!({
+            "chapter_id": CHAPTER_ID,
+            "page_source_id": SOURCE_ID,
+            "ext": "webp",
+        }),
     };
 
     let mut state = mock.state.lock().unwrap();

@@ -3,6 +3,7 @@
 use poprako_orchestra::{Context, OperStep as _};
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
@@ -39,7 +40,10 @@ where
         });
     };
 
-    DeleteObjs::<ChapterArtwork>::new(std::slice::from_ref(chapter_id))
+    let chapter_artwork_ids =
+        ChapterArtwork::ids(std::slice::from_ref(chapter_id))?;
+
+    DeleteObjs::<ChapterArtwork>::new(&chapter_artwork_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -53,7 +57,9 @@ where
         .map(|info| info.id)
         .collect::<Vec<_>>();
 
-    DeleteObjs::<PageArtworkImage>::new(&page_artwork_ids)
+    let page_artwork_image_ids = PageArtworkImage::ids(&page_artwork_ids)?;
+
+    DeleteObjs::<PageArtworkImage>::new(&page_artwork_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
@@ -62,7 +68,9 @@ where
         .step_on(repo, context)
         .await?;
 
-    DeleteObjs::<PageSourceImage>::new(&page_source_ids)
+    let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
+    DeleteObjs::<PageSourceImage>::new(&page_source_image_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)

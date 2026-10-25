@@ -2,6 +2,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::complex::page_source::perm as page_source_perm_complex;
@@ -78,7 +79,9 @@ where
             .map(|page_source_info| page_source_info.id)
             .collect::<Vec<_>>();
 
-        DeleteObjs::<PageSourceImage>::new(&page_source_ids)
+        let page_source_image_ids = PageSourceImage::ids(&page_source_ids)?;
+
+        DeleteObjs::<PageSourceImage>::new(&page_source_image_ids)
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
