@@ -67,21 +67,18 @@ fn payloads_round_trip_through_rdb_storage_forms() {
     }
 }
 
-// legacy_export_payload_decodes_as_one_hot_spec(ChapterWorkflowRecordPayload)(compatibility): existing singular-format records remain readable after aggregate exports are introduced.
+// singular_export_payload_is_rejected(ChapterWorkflowRecordPayload)(negative): retired singular-format records require explicit data migration.
 #[test]
-fn legacy_export_payload_decodes_as_one_hot_spec() {
-    let payload = decode_payload(
-        ChapterWorkflowRecordKind::TranslationExported,
-        serde_json::json!({ "format": "label-plus" }),
-    )
-    .unwrap();
-
-    assert_eq!(
-        payload,
-        ChapterWorkflowRecordPayload::TranslationExported {
-            formats: ExportFormatSpec::LABEL_PLUS,
-        }
-    );
+fn singular_export_payload_is_rejected() {
+    for format in ["label-plus", "poprako"] {
+        assert!(
+            decode_payload(
+                ChapterWorkflowRecordKind::TranslationExported,
+                serde_json::json!({ "format": format }),
+            )
+            .is_err()
+        );
+    }
 }
 
 // storage_payload_rejects_kind_mismatch_and_extra_fields(ChapterWorkflowRecordPayload)(negative): persisted JSONB payloads must exactly match their separate kind.

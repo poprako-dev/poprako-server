@@ -102,16 +102,3 @@ impl<'de> Deserialize<'de> for ExportFormatSpec {
         }
     }
 }
-
-impl From<TranslationFormat> for ExportFormatSpec {
-    // Convert one translation format into its corresponding export selection.
-    fn from(format: TranslationFormat) -> Self {
-        //
-        match format {
-            //
-            TranslationFormat::LabelPlus => Self::LABEL_PLUS,
-
-            TranslationFormat::PopRaKo => Self::POPRAKO,
-        }
-    }
-}
