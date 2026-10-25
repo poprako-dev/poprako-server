@@ -55,7 +55,7 @@ async fn sparse_unit_writes_use_testcontainer() {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let page_id = fixture.page_entry.id.as_str();
+    let page_source_id = fixture.page_source_entry.id.as_str();
 
     let user_id = fixture.chapter_info.creator_id.as_str();
 
@@ -99,7 +99,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &[],
                 edits: &edits,
             },
@@ -124,18 +124,22 @@ async fn sparse_unit_writes_use_testcontainer() {
 
         queries.lock().unwrap().clear();
 
-        let orders = repo.step(context, &ListUnitOrders { page_id }).await?;
+        let orders = repo
+            .step(context, &ListUnitOrders { page_source_id })
+            .await?;
 
         // Two links require two queries with a configured batch size of one.
         assert_eq!(orders.len(), 2);
 
         assert_eq!(queries.lock().unwrap().len(), 2);
 
-        diesel::update(t_unit::table.filter(t_unit::f_page_id.eq(page_id)))
-            .set(t_unit::f_updated_at.eq(OffsetDateTime::UNIX_EPOCH))
-            .execute(context.conn())
-            .await
-            .map_err(crate::shared::result::diesel)?;
+        diesel::update(
+            t_unit::table.filter(t_unit::f_page_source_id.eq(page_source_id)),
+        )
+        .set(t_unit::f_updated_at.eq(OffsetDateTime::UNIX_EPOCH))
+        .execute(context.conn())
+        .await
+        .map_err(crate::shared::result::diesel)?;
 
         queries.lock().unwrap().clear();
 
@@ -148,7 +152,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &orders,
                 edits: &[patch("a"), tail_patch],
             },
@@ -180,7 +184,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &orders,
                 edits: &[flag_patch],
             },
@@ -228,14 +232,16 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &orders,
                 edits: &[UnitEdit::Delete { id: "a".into() }],
             },
         )
         .await?;
 
-        let orders = repo.step(context, &ListUnitOrders { page_id }).await?;
+        let orders = repo
+            .step(context, &ListUnitOrders { page_source_id })
+            .await?;
 
         let before = repo
             .step(context, &ListUnitInfosByIds { ids: &["a"] })
@@ -246,7 +252,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &orders,
                 edits: &[UnitEdit::Delete { id: "a".into() }],
             },
@@ -274,7 +280,7 @@ async fn sparse_unit_writes_use_testcontainer() {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id,
+                page_source_id,
                 orders: &orders,
                 edits: &[patch("a")],
             },

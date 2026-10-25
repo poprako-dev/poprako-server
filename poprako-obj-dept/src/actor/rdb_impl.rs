@@ -72,7 +72,7 @@ pub fn classify(
         Ordering::Equal => {
             //
             match (
-                &record.key,
+                &record.domain,
                 &record.f_is_uploaded,
                 &record.hash,
                 &record.ext,
@@ -107,37 +107,24 @@ macro_rules! handle_obj_dept_task {
         let core = $core;
         let pool = $pool;
         let task = $task;
-        let key = task.key()?;
-        let physical_key = &key.image;
-
-        let (dom, decoded_version) =
-            <$obj as ::poprako_obj_dept::key::KeyMap>::reverse(physical_key)?;
-        let task_key_is_consistent =
-            <$obj as ::poprako_obj_dept::key::KeyMap>::id(&dom) == key.id
-                && decoded_version == key.ver
-                && <$obj as ::poprako_obj_dept::key::KeyMap>::forward(
-                    &dom,
-                    decoded_version,
-                ) == *physical_key;
-
-        if !task_key_is_consistent {
-            return Ok(
-                ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                    message: "object task key is inconsistent".into(),
-                },
-            );
-        }
+        let key = ::poprako_obj_dept::key::ObjKey::<$obj>::from_record(
+            task.key()?,
+        )?;
+        let physical_key = key.image();
+        let oper = ::poprako_obj_dept::model::task::ObjTaskOper::from_text(
+            &task.oper,
+        )?;
 
         let mut conn = core
             .get()
             .await
             .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
-        let (record, initial_revision) = match task.oper.as_str() {
-            ::poprako_obj_dept::model::task::CHECK => {
+        let (record, initial_revision) = match oper {
+            ::poprako_obj_dept::model::task::ObjTaskOper::Check => {
                 let presence_state =
                     $obj_mod::load_for_presence_reconciliation(
                         &mut conn,
-                        &key.id,
+                        ::poprako_obj_dept::key::ObjId::as_str(key.id()),
                     )
                     .await?;
 
@@ -146,23 +133,30 @@ macro_rules! handle_obj_dept_task {
                     None => (None, None),
                 }
             }
-            _ => ($obj_mod::load(&mut conn, &key.id, false).await?, None),
+            _ => (
+                $obj_mod::load(
+                    &mut conn,
+                    ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                    false,
+                ).await?,
+                None,
+            ),
         };
         let state = ::poprako_obj_dept::actor::rdb_impl::classify(
-            key.ver,
+            key.ver(),
             record.as_ref(),
         )?;
 
         let active_key = ::poprako_obj_dept::rdb_impl::active_key::<$obj>(
-            &key.id,
+            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
             record.as_ref(),
         )?;
 
         if active_key
             .as_ref()
             .is_some_and(|active_key| {
-                active_key.ver == key.ver
-                    && active_key.image != key.image
+                active_key.ver() == key.ver()
+                    && active_key.image() != key.image()
             })
         {
             return Ok(
@@ -175,16 +169,16 @@ macro_rules! handle_obj_dept_task {
 
         drop(conn);
 
-        match (task.oper.as_str(), state) {
+        match (oper, state) {
             (
-                ::poprako_obj_dept::model::task::CHECK,
+                ::poprako_obj_dept::model::task::ObjTaskOper::Check,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Missing
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Stale
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Retired,
             ) => {
                 ::tokio::time::timeout(
                     ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
-                    pool.del(&physical_key),
+                    pool.del(physical_key),
                 )
                 .await
                 .map_err(|_| {
@@ -194,7 +188,7 @@ macro_rules! handle_obj_dept_task {
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
             }
-            (::poprako_obj_dept::model::task::CHECK, state)
+            (::poprako_obj_dept::model::task::ObjTaskOper::Check, state)
                 if
                     ::poprako_obj_dept::actor::rdb_impl::
                         requires_presence_reconciliation(state) =>
@@ -214,7 +208,7 @@ macro_rules! handle_obj_dept_task {
                 // would materially reduce upload throughput.
                 let exists = ::tokio::time::timeout(
                     ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
-                    pool.has(&physical_key),
+                    pool.has(physical_key),
                 )
                 .await
                 .map_err(|_| {
@@ -229,8 +223,8 @@ macro_rules! handle_obj_dept_task {
                     true => {
                         $obj_mod::mark_uploaded_if_revision(
                             &mut conn,
-                            &key.id,
-                            key.ver,
+                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                            key.ver(),
                             initial_revision,
                         )
                             .await?
@@ -238,8 +232,8 @@ macro_rules! handle_obj_dept_task {
                     false => {
                         $obj_mod::mark_unuploaded_if_revision(
                             &mut conn,
-                            &key.id,
-                            key.ver,
+                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                            key.ver(),
                             initial_revision,
                         )
                             .await?
@@ -248,11 +242,14 @@ macro_rules! handle_obj_dept_task {
 
                 let changed_state = match updated {
                     0 => {
-                        let record = $obj_mod::load(&mut conn, &key.id, false)
-                            .await?;
+                        let record = $obj_mod::load(
+                            &mut conn,
+                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                            false,
+                        ).await?;
 
                         Some(::poprako_obj_dept::actor::rdb_impl::classify(
-                            key.ver,
+                            key.ver(),
                             record.as_ref(),
                         )?)
                     }
@@ -289,7 +286,7 @@ macro_rules! handle_obj_dept_task {
                     ) => {
                         ::tokio::time::timeout(
                             ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
-                            pool.del(&physical_key),
+                            pool.del(physical_key),
                         )
                         .await
                         .map_err(|_| {
@@ -331,20 +328,20 @@ macro_rules! handle_obj_dept_task {
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
             }
             (
-                ::poprako_obj_dept::model::task::CHECK,
+                ::poprako_obj_dept::model::task::ObjTaskOper::Check,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
                 message: "check task is newer than object state".into(),
             }),
             (
-                ::poprako_obj_dept::model::task::DELETE,
+                ::poprako_obj_dept::model::task::ObjTaskOper::Delete,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Missing
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Stale
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Retired,
             ) => {
                 ::tokio::time::timeout(
                     ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
-                    pool.del(&physical_key),
+                    pool.del(physical_key),
                 )
                 .await
                 .map_err(|_| {
@@ -355,7 +352,7 @@ macro_rules! handle_obj_dept_task {
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
             }
             (
-                ::poprako_obj_dept::model::task::DELETE,
+                ::poprako_obj_dept::model::task::ObjTaskOper::Delete,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Unavailable
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Avail
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
@@ -363,7 +360,7 @@ macro_rules! handle_obj_dept_task {
                 message: "delete task targets current object".into(),
             }),
             _ => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
-                message: "unknown object task operation".into(),
+                message: "invalid object task state".into(),
             }),
         }
     }};

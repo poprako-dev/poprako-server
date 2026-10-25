@@ -9,7 +9,7 @@ pub struct ComicArchiveEntry {
     /// IDs of all chapters that were archived and should be deleted.
     pub source_chapter_ids: Vec<String>,
     /// IDs of all pages that were archived and should be deleted.
-    pub source_page_ids: Vec<String>,
+    pub source_page_source_ids: Vec<String>,
     /// Composite page identities whose images must be cleaned.
     pub source_page_artwork_ids: Vec<String>,
 }

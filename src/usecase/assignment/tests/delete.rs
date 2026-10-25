@@ -15,7 +15,7 @@ async fn delete_owner_deletes_own_assignment() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -23,7 +23,12 @@ async fn delete_owner_deletes_own_assignment() {
     delete(
         (&mock, &mock),
         token("worker-user"),
-        "assignment-chapter-1-worker-user".into(),
+        assignment(
+            "chapter--00000000001",
+            "worker-user",
+            role(RoleField::TRANSLATOR),
+        )
+        .id,
     )
     .await
     .unwrap();
@@ -41,7 +46,7 @@ async fn delete_team_admin_deletes_another_user_assignment() {
     mock.seed_member(member("admin-user", role(RoleField::ADMIN)));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -49,7 +54,12 @@ async fn delete_team_admin_deletes_another_user_assignment() {
     delete(
         (&mock, &mock),
         token("admin-user"),
-        "assignment-chapter-1-target-user".into(),
+        assignment(
+            "chapter--00000000001",
+            "target-user",
+            role(RoleField::TRANSLATOR),
+        )
+        .id,
     )
     .await
     .unwrap();
@@ -65,13 +75,13 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::PROOFREADER),
     ));
@@ -79,7 +89,12 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     let error = delete(
         (&mock, &mock),
         token("worker-user"),
-        "assignment-chapter-1-target-user".into(),
+        assignment(
+            "chapter--00000000001",
+            "target-user",
+            role(RoleField::TRANSLATOR),
+        )
+        .id,
     )
     .await
     .err()
@@ -98,7 +113,7 @@ async fn delete_rejects_published_chapter() {
     seed_published_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -106,7 +121,12 @@ async fn delete_rejects_published_chapter() {
     let error = delete(
         (&mock, &mock),
         token("worker-user"),
-        "assignment-chapter-1-worker-user".into(),
+        assignment(
+            "chapter--00000000001",
+            "worker-user",
+            role(RoleField::TRANSLATOR),
+        )
+        .id,
     )
     .await
     .err()

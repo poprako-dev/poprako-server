@@ -15,19 +15,19 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageSourceIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
 use crate::part_impl::repo::rdb_impl::unit::sequence::{
-    list_infos_by_ids, list_infos_by_page_ids, list_infos_in_chapter_order,
-    list_orders, search_chapter_ids,
+    list_infos_by_ids, list_infos_by_page_source_ids,
+    list_infos_in_chapter_order, list_orders, search_chapter_ids,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListUnitInfosByPageIds<'_>> for RdbRepo {
+impl Run<ListUnitInfosByPageSourceIds<'_>> for RdbRepo {
     // Error type for the Run trait impl on the page-id unit list query.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -36,9 +36,14 @@ impl Run<ListUnitInfosByPageIds<'_>> for RdbRepo {
     #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
-        oper: &ListUnitInfosByPageIds<'_>,
+        oper: &ListUnitInfosByPageSourceIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
-        submit_query!(self.rdb_core, list_infos_by_page_ids, oper.page_ids)
+        //
+        submit_query!(
+            self.rdb_core,
+            list_infos_by_page_source_ids,
+            oper.page_source_ids
+        )
     }
 }
 
@@ -133,7 +138,7 @@ where
         //
         list_orders(
             context.conn(),
-            oper.page_id,
+            oper.page_source_id,
             self.config.unit_order_query_batch_size,
         )
         .await
@@ -157,6 +162,13 @@ where
         context: &mut RdbContext<L>,
         oper: &ApplyUnitEdits<'_>,
     ) -> BaseRest<UnitCountMetrics> {
-        apply_edits(context.conn(), oper.page_id, oper.orders, oper.edits).await
+        //
+        apply_edits(
+            context.conn(),
+            oper.page_source_id,
+            oper.orders,
+            oper.edits,
+        )
+        .await
     }
 }

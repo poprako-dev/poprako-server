@@ -22,10 +22,10 @@ pub mod issue_import;
 pub mod member;
 /// Member invitation mutation models.
 pub mod member_invitation;
-/// Page mutation models.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page mutation models.
+pub mod page_source;
 /// System mail mutation models.
 pub mod system_mail;
 /// Team mutation models.

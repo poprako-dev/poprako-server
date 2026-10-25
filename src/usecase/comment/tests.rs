@@ -112,7 +112,7 @@ fn create_instr(team_id: &str) -> CreateCommentInstr {
 
 fn seed_member(mock: &Mock, user_id: &str, team_id: &str) {
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         user_id,
         team_id,
         RoleMask::from(RoleField::TRANSLATOR),
@@ -126,16 +126,26 @@ async fn list_infos_team_member_lists_team_comments() {
 
     let time = now();
 
-    seed_member(&mock, "viewer-user", "team-1");
+    seed_member(&mock, "user--00000000001", "team--00000000001");
 
-    mock.seed_comment(comment("comment-1", "team-1", "author-user", time));
+    mock.seed_comment(comment(
+        "comment--00000000001",
+        "team--00000000001",
+        "user--00000000002",
+        time,
+    ));
 
-    mock.seed_comment(comment("comment-2", "team-2", "author-user", time));
+    mock.seed_comment(comment(
+        "comment--00000000002",
+        "team--00000000002",
+        "user--00000000002",
+        time,
+    ));
 
     let comment_info_vals = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", Vec::new()),
+        token("user--00000000001"),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await;
 
@@ -145,7 +155,10 @@ async fn list_infos_team_member_lists_team_comments() {
 
     assert_eq!(comment_info_vals.len(), 1);
 
-    assert_eq!(comment_info_vals.first().unwrap().id, "comment-1");
+    assert_eq!(
+        comment_info_vals.first().unwrap().id,
+        "comment--00000000001"
+    );
 }
 
 #[tokio::test]
@@ -155,16 +168,24 @@ async fn list_infos_user_include_follows_request() {
 
     let time = now();
 
-    seed_member(&mock, "viewer-user", "team-1");
+    seed_member(&mock, "user--00000000001", "team--00000000001");
 
-    mock.seed_user(user("author-user", "Author"), credential("author-user"));
+    mock.seed_user(
+        user("user--00000000002", "Author"),
+        credential("user--00000000002"),
+    );
 
-    mock.seed_comment(comment("comment-1", "team-1", "author-user", time));
+    mock.seed_comment(comment(
+        "comment--00000000001",
+        "team--00000000001",
+        "user--00000000002",
+        time,
+    ));
 
     let without_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", Vec::new()),
+        token("user--00000000001"),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await;
 
@@ -174,8 +195,8 @@ async fn list_infos_user_include_follows_request() {
 
     let with_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", vec![CommentInclOpt::User]),
+        token("user--00000000001"),
+        list_instr("team--00000000001", vec![CommentInclOpt::User]),
     )
     .await;
 
@@ -185,7 +206,7 @@ async fn list_infos_user_include_follows_request() {
 
     assert_eq!(
         with_user.first().unwrap().user.as_ref().unwrap().id,
-        "author-user"
+        "user--00000000002"
     );
 }
 
@@ -194,12 +215,17 @@ async fn list_infos_non_member_is_rejected() {
     //
     let mock = Mock::new();
 
-    mock.seed_comment(comment("comment-1", "team-1", "author-user", now()));
+    mock.seed_comment(comment(
+        "comment--00000000001",
+        "team--00000000001",
+        "user--00000000002",
+        now(),
+    ));
 
     let error = list_infos(
         (&mock, &mock),
         token("outsider-user"),
-        list_instr("team-1", Vec::new()),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await
     .err()
@@ -213,12 +239,15 @@ async fn create_team_member_creates_comment() {
     //
     let mock = Mock::new();
 
-    seed_member(&mock, "viewer-user", "team-1");
+    seed_member(&mock, "user--00000000001", "team--00000000001");
 
-    let created_comment =
-        create(&mock, token("viewer-user"), create_instr("team-1"))
-            .await
-            .unwrap();
+    let created_comment = create(
+        &mock,
+        token("user--00000000001"),
+        create_instr("team--00000000001"),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -226,9 +255,15 @@ async fn create_team_member_creates_comment() {
 
     assert_eq!(snapshot.comments.first().unwrap().id, created_comment.id);
 
-    assert_eq!(snapshot.comments.first().unwrap().team_id, "team-1");
+    assert_eq!(
+        snapshot.comments.first().unwrap().team_id,
+        "team--00000000001"
+    );
 
-    assert_eq!(snapshot.comments.first().unwrap().user_id, "viewer-user");
+    assert_eq!(
+        snapshot.comments.first().unwrap().user_id,
+        "user--00000000001"
+    );
 }
 
 #[tokio::test]
@@ -236,13 +271,15 @@ async fn create_trims_unicode_whitespace_from_comment_content() {
     //
     let mock = Mock::new();
 
-    seed_member(&mock, "viewer-user", "team-1");
+    seed_member(&mock, "user--00000000001", "team--00000000001");
 
-    let mut instr = create_instr("team-1");
+    let mut instr = create_instr("team--00000000001");
 
     instr.content = "\u{2003}comment content\u{2003}".into();
 
-    create(&mock, token("viewer-user"), instr).await.unwrap();
+    create(&mock, token("user--00000000001"), instr)
+        .await
+        .unwrap();
 
     assert_eq!(
         mock.snapshot().comments.first().unwrap().content,
@@ -255,10 +292,14 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let error = create(&mock, token("outsider-user"), create_instr("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let error = create(
+        &mock,
+        token("outsider-user"),
+        create_instr("team--00000000001"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 

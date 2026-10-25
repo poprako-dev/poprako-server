@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Converts pages and units into `LabelPlus` text.
 pub fn make_label_plus(
-    pages: &[PageInfo],
-    units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
-    ext_by_page_id: &HashMap<String, String>,
-    raw_ident_by_page_id: &HashMap<String, String>,
+    pages: &[PageSourceInfo],
+    units_by_page_source_id: &HashMap<String, Vec<UnitInfo>>,
+    ext_by_page_source_id: &HashMap<String, String>,
+    raw_ident_by_page_source_id: &HashMap<String, String>,
 ) -> String {
     //
     let mut output = String::new();
@@ -26,17 +26,17 @@ pub fn make_label_plus(
 
     output.push_str("Exported by PopRaKo Web\n");
 
-    for page_info in pages {
+    for page_source_info in pages {
         //
-        let image_name = raw_ident_by_page_id
-            .get(&page_info.id)
+        let image_name = raw_ident_by_page_source_id
+            .get(&page_source_info.id)
             .cloned()
             .unwrap_or_else(|| {
                 //
                 label_plus_image_name(
-                    page_info,
-                    ext_by_page_id
-                        .get(&page_info.id)
+                    page_source_info,
+                    ext_by_page_source_id
+                        .get(&page_source_info.id)
                         .map_or("jpg", String::as_str),
                 )
             });
@@ -47,8 +47,8 @@ pub fn make_label_plus(
 
         output.push_str("]<<<<<<<<\n");
 
-        let units = units_by_page_id
-            .get(&page_info.id)
+        let units = units_by_page_source_id
+            .get(&page_source_info.id)
             .map_or(&[][..], Vec::as_slice);
 
         for (index, unit_info) in units.iter().enumerate() {
@@ -112,8 +112,11 @@ pub fn make_label_plus(
 
 // Build a LabelPlus image filename from a page's stored index and image
 // file extension (defaults to `jpg` when the image key has no extension).
-fn label_plus_image_name(page_info: &PageInfo, ext: &str) -> String {
-    format!("{:03}.{}", page_info.index, ext)
+fn label_plus_image_name(
+    page_source_info: &PageSourceInfo,
+    ext: &str,
+) -> String {
+    format!("{:03}.{}", page_source_info.index, ext)
 }
 
 // Return the proofread text if non-empty, falling back to translated text

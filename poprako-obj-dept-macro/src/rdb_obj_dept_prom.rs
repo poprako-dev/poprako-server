@@ -91,7 +91,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             use ::diesel_async::RunQueryDsl as _;
 
             use ::poprako_obj_dept::Uuid;
-            use ::poprako_obj_dept::key::ObjKey;
+            use ::poprako_obj_dept::model::record::ObjKeyRecord;
             use ::poprako_obj_dept::model::task::ObjDeptPromTask;
             use ::poprako_obj_dept::rdb_impl::{diesel_error, rdb_error};
             use ::poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
@@ -117,13 +117,13 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             const _: fn(FullRecord) = |record| {
                 //
                 let FullRecord {
-                    id, topic, oper, obj_id, ver, image, gen_no: gen_value,
+                    id, topic, oper, obj_id, ver, domain, gen_no: gen_value,
                     status, visible_at, retried_count, claim_token, error,
                     created_at, updated_at,
                 } = record;
 
                 drop((
-                    id, topic, oper, obj_id, ver, image, gen_value, status,
+                    id, topic, oper, obj_id, ver, domain, gen_value, status,
                     visible_at, retried_count, claim_token, error,
                     created_at, updated_at,
                 ));
@@ -282,8 +282,8 @@ fn task_records(table: &Path) -> TokenStream {
             obj_id: String,
             #[diesel(column_name = f_version)]
             ver: i64,
-            #[diesel(column_name = f_key)]
-            image: String,
+            #[diesel(column_name = f_domain)]
+            domain: ::serde_json::Value,
 
             #[diesel(column_name = f_generation)]
             gen_no: i64,
@@ -317,7 +317,7 @@ fn task_records(table: &Path) -> TokenStream {
                     oper: record.oper,
                     obj_id: record.obj_id,
                     ver: record.ver,
-                    image: record.image,
+                    domain: record.domain,
                     gen_no: record.gen_no,
                     retried_count: record.retried_count,
                     claim_token,
@@ -424,8 +424,8 @@ fn full_task_schema(table: &Path) -> TokenStream {
             obj_id: String,
             #[diesel(column_name = f_version)]
             ver: i64,
-            #[diesel(column_name = f_key)]
-            image: String,
+            #[diesel(column_name = f_domain)]
+            domain: ::serde_json::Value,
 
             #[diesel(column_name = f_generation)]
             gen_no: i64,

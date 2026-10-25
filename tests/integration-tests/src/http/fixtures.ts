@@ -20,18 +20,18 @@ import type {
     IdVal,
     ImageExtension,
     ListComicInfosVal,
-    ListPageUnitInfosVal,
+    ListPageSourceUnitInfosVal,
     LoginVal,
     MemberInfoView,
     MemberInvitationInfoView,
-    PageImageInput,
-    PageInfoView,
-    PageUnitDiffStatsVal,
-    PageUnitFlaggedStatsVal,
-    ReserveChapterPagesVal,
-    ReservedPageVal,
+    PageSourceImageInput,
+    PageSourceInfoView,
+    PageSourceUnitDiffStatsVal,
+    PageSourceUnitFlaggedStatsVal,
+    ReserveChapterPageSourcesVal,
+    ReservedPageSourceVal,
     ReserveImageVal,
-    SavePageUnitEditsVal,
+    SavePageSourceUnitEditsVal,
     SystemMailInfoView,
     TeamInfoView,
     UnitInfoView,
@@ -516,22 +516,22 @@ const TEST_PAGE_BYTES = new TextEncoder().encode("poprako-page-integration");
 
 const TEST_PAGE_HASH = await sha256Base64(TEST_PAGE_BYTES);
 
-export function newPageManifest(pageCount: number, ext: ImageExtension): PageImageInput[] {
+export function newPageSourceManifest(pageCount: number, ext: ImageExtension): PageSourceImageInput[] {
     return Array.from({ length: pageCount }, () => ({
-        page_id: null,
+        page_source_id: null,
         image_hash: TEST_PAGE_HASH,
         new_byte_len: TEST_PAGE_BYTES.byteLength,
         ext,
     }));
 }
 
-async function uploadReservedPages(reservedPages: ReservedPageVal[]): Promise<void> {
-    for (const reservedPage of reservedPages) {
-        if (!reservedPage.slot) continue;
+async function uploadReservedPageSources(reservedPageSources: ReservedPageSourceVal[]): Promise<void> {
+    for (const reservedPageSource of reservedPageSources) {
+        if (!reservedPageSource.slot) continue;
 
-        const response = await fetch(reservedPage.slot.put_url, {
+        const response = await fetch(reservedPageSource.slot.put_url, {
             method: "PUT",
-            headers: reservedPage.slot.headers,
+            headers: reservedPageSource.slot.headers,
             body: TEST_PAGE_BYTES,
         });
 
@@ -539,43 +539,45 @@ async function uploadReservedPages(reservedPages: ReservedPageVal[]): Promise<vo
     }
 }
 
-export async function reserveChapterPages(
+export async function reserveChapterPageSources(
     api: ApiClient,
     chapterId: string,
-    pages: PageImageInput[],
-): Promise<ReserveChapterPagesVal> {
+    pages: PageSourceImageInput[],
+): Promise<ReserveChapterPageSourcesVal> {
     const reserved = expectSuccessData(
-        await api.post<SuccessBody<ReserveChapterPagesVal>>(`/api/v1/chapters/${chapterId}/pages/alloc`, {
+        await api.post<SuccessBody<ReserveChapterPageSourcesVal>>(`/api/v1/chapters/${chapterId}/page-sources/alloc`, {
             chapter_id: chapterId,
             pages,
         }),
         200,
     );
 
-    await uploadReservedPages(reserved.pages);
+    await uploadReservedPageSources(reserved.pages);
 
     return reserved;
 }
 
-export async function listChapterPages(api: ApiClient, chapterId: string): Promise<PageInfoView[]> {
+export async function listChapterPageSources(api: ApiClient, chapterId: string): Promise<PageSourceInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<PageInfoView[]>>(`/api/v1/chapters/${chapterId}/pages?offset=0&limit=100`),
+        await api.get<SuccessBody<PageSourceInfoView[]>>(
+            `/api/v1/chapters/${chapterId}/page-sources?offset=0&limit=100`,
+        ),
         200,
     );
 }
 
-export async function reservePageImage(
+export async function reservePageSourceImage(
     api: ApiClient,
     pageId: string,
     ext: ImageExtension,
-    rawIdent?: PageImageInput["raw_ident"],
-): Promise<ReservedPageVal> {
+    rawIdent?: PageSourceImageInput["raw_ident"],
+): Promise<ReservedPageSourceVal> {
     const imageBytes = new TextEncoder().encode(`poprako-page-replacement-${pageId}-${ext}`);
 
     const imageHash = await sha256Base64(imageBytes);
 
     const reserved = expectSuccessData(
-        await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/alloc`, {
+        await api.post<SuccessBody<ReservedPageSourceVal>>(`/api/v1/page-sources/${pageId}/image/alloc`, {
             image_hash: imageHash,
             new_byte_len: imageBytes.byteLength,
             ext,
@@ -597,16 +599,16 @@ export async function reservePageImage(
     return reserved;
 }
 
-export async function markPageImageUploaded(api: ApiClient, pageId: string, imageVersion: number): Promise<void> {
+export async function markPageSourceImageUploaded(api: ApiClient, pageId: string, imageVersion: number): Promise<void> {
     expectNoContent(
-        await api.post<null>(`/api/v1/pages/${pageId}/image/mark-uploaded`, {
+        await api.post<null>(`/api/v1/page-sources/${pageId}/image/mark-uploaded`, {
             image_version: imageVersion,
         }),
     );
 }
 
-export async function deleteChapterPages(api: ApiClient, chapterId: string): Promise<void> {
-    expectNoContent(await api.delete<null>(`/api/v1/chapters/${chapterId}/pages`));
+export async function deleteChapterPageSources(api: ApiClient, chapterId: string): Promise<void> {
+    expectNoContent(await api.delete<null>(`/api/v1/chapters/${chapterId}/page-sources`));
 }
 
 // ---------- unit ----------
@@ -737,13 +739,17 @@ export function deleteUnit(unitId: string): UnitDeleteEdit {
     return { edit: "delete", id: unitId };
 }
 
-export async function savePageUnits(api: ApiClient, pageId: string, edits: UnitEdit[]): Promise<ListPageUnitInfosVal> {
+export async function savePageSourceUnits(
+    api: ApiClient,
+    pageId: string,
+    edits: UnitEdit[],
+): Promise<ListPageSourceUnitInfosVal> {
     const saveId = crypto.randomUUID();
     const maxConflictRetries = 5;
 
     for (let attempt = 0; attempt <= maxConflictRetries; attempt++) {
-        const response = await api.post<SuccessBody<SavePageUnitEditsVal> | ErrorBody>(
-            `/api/v1/pages/${pageId}/units/save?save_id=${saveId}`,
+        const response = await api.post<SuccessBody<SavePageSourceUnitEditsVal> | ErrorBody>(
+            `/api/v1/page-sources/${pageId}/units/save?save_id=${saveId}`,
             edits,
         );
 
@@ -753,33 +759,45 @@ export async function savePageUnits(api: ApiClient, pageId: string, edits: UnitE
             continue;
         }
 
-        const saved = expectSuccessData<SavePageUnitEditsVal>(response, 200);
+        const saved = expectSuccessData<SavePageSourceUnitEditsVal>(response, 200);
         assert.ok(Array.isArray(saved.created_unit_ids));
         assert.deepEqual(saved.created_unit_ids.length, edits.filter((edit) => edit.edit === "create").length);
 
-        return listPageUnits(api, pageId);
+        return listPageSourceUnits(api, pageId);
     }
 
     throw new Error(`unit save still conflicts after ${maxConflictRetries} client retries`);
 }
 
-export async function listPageUnits(api: ApiClient, pageId: string): Promise<ListPageUnitInfosVal> {
+export async function listPageSourceUnits(api: ApiClient, pageId: string): Promise<ListPageSourceUnitInfosVal> {
     return expectSuccessData(
-        await api.get<SuccessBody<ListPageUnitInfosVal>>(`/api/v1/pages/${pageId}/units?offset=0&limit=100`),
+        await api.get<SuccessBody<ListPageSourceUnitInfosVal>>(
+            `/api/v1/page-sources/${pageId}/units?offset=0&limit=100`,
+        ),
         200,
     );
 }
 
-export async function listPageUnitDiffStats(api: ApiClient, chapterId: string): Promise<PageUnitDiffStatsVal[]> {
+export async function listPageSourceUnitDiffStats(
+    api: ApiClient,
+    chapterId: string,
+): Promise<PageSourceUnitDiffStatsVal[]> {
     return expectSuccessData(
-        await api.get<SuccessBody<PageUnitDiffStatsVal[]>>(`/api/v1/chapters/${chapterId}/pages/unit-diff-stats`),
+        await api.get<SuccessBody<PageSourceUnitDiffStatsVal[]>>(
+            `/api/v1/chapters/${chapterId}/page-sources/unit-diff-stats`,
+        ),
         200,
     );
 }
 
-export async function listPageUnitFlaggedStats(api: ApiClient, chapterId: string): Promise<PageUnitFlaggedStatsVal[]> {
+export async function listPageSourceUnitFlaggedStats(
+    api: ApiClient,
+    chapterId: string,
+): Promise<PageSourceUnitFlaggedStatsVal[]> {
     return expectSuccessData(
-        await api.get<SuccessBody<PageUnitFlaggedStatsVal[]>>(`/api/v1/chapters/${chapterId}/pages/unit-flagged-stats`),
+        await api.get<SuccessBody<PageSourceUnitFlaggedStatsVal[]>>(
+            `/api/v1/chapters/${chapterId}/page-sources/unit-flagged-stats`,
+        ),
         200,
     );
 }
@@ -1003,8 +1021,8 @@ export async function listTeamAnnouncements(api: ApiClient, teamId: string): Pro
     );
 }
 
-// Paged variant for pagination assertions.
-export async function listTeamAnnouncementsPaged(
+// PageSourced variant for pagination assertions.
+export async function listTeamAnnouncementsPageSourced(
     api: ApiClient,
     teamId: string,
     offset: number,
@@ -1074,16 +1092,16 @@ export async function exportLabelPlus(api: ApiClient, chapterId: string): Promis
 }
 
 // Import translations into a chapter with an explicit page-content strategy.
-// Returns `{ imported_page_count, imported_unit_count }`.
+// Returns `{ imported_page_source_count, imported_unit_count }`.
 export async function importTranslations(
     api: ApiClient,
     chapterId: string,
     format: "poprako" | "label_plus",
     mode: "keep" | "overwrite",
     content: string,
-): Promise<{ imported_page_count: number; imported_unit_count: number }> {
+): Promise<{ imported_page_source_count: number; imported_unit_count: number }> {
     return expectSuccessData(
-        await api.post<SuccessBody<{ imported_page_count: number; imported_unit_count: number }>>(
+        await api.post<SuccessBody<{ imported_page_source_count: number; imported_unit_count: number }>>(
             `/api/v1/chapters/${chapterId}/translations/import`,
             { content, format, mode },
         ),

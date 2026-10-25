@@ -84,7 +84,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
     let mock = Mock::new();
 
     let token = UserToken {
-        user_id: "user-1".into(),
+        user_id: "user--00000000001".into(),
     };
 
     async {
@@ -100,7 +100,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
                 (&mock, &mock),
                 token.clone(),
                 instr,
-                "chapter-1".into(),
+                "chapter--00000000001".into(),
             )
             .await
             .is_err()
@@ -117,7 +117,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
         };
 
         let scope = TermbaseScope::Team {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
         };
 
         assert!(
@@ -133,7 +133,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
         );
 
         let instr = SearchChapterUnitInfosInstr {
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             part: UnitTextPart::TranslatedText,
             phrase: content.into(),
         };
@@ -147,7 +147,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
         let instr = TransformChapterUnitsInstr {
             part: UnitTextPart::TranslatedText,
             units: vec![UnitTransformInstr {
-                unit_id: "unit-1".into(),
+                unit_id: "unit--00000000001".into(),
                 transforms: vec![UnitTextTransformInstr {
                     origin: content.into(),
                     target: content.into(),
@@ -159,7 +159,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
             unit_transform_usecase::transform(
                 (&mock, &mock),
                 token,
-                "chapter-1".into(),
+                "chapter--00000000001".into(),
                 instr,
             )
             .await

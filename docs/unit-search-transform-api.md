@@ -10,15 +10,15 @@ the visible Units in a Chapter. Both query parameters are required:
   Unicode whitespace and accepts any non-empty result, including one Japanese
   character.
 
-The response is `data: UnitInfoView[]`. Results follow Page index order and the
-stored Unit order within each Page. Page indices are not added to the response.
+The response is `data: UnitInfoView[]`. Results follow PageSource index order and the
+stored Unit order within each PageSource. PageSource indices are not added to the response.
 Only the selected text field is searched. The implementation reads ordered
-Pages in concurrent batches of 20 while preserving the final stable order.
+PageSources in concurrent batches of 20 while preserving the final stable order.
 At most 100 matching Units may exist across the Chapter. Exactly 100 matches
 succeed; discovering the 101st returns `422 / Args(code 2)` with "Too many
-matches", without a partial result or reading later Page batches.
+matches", without a partial result or reading later PageSource batches.
 
-Search uses the same Chapter membership or assignment visibility as Page Unit
+Search uses the same Chapter membership or assignment visibility as PageSource Unit
 listing. It is a preview only and does not create a replacement snapshot.
 
 ## Transform
@@ -30,7 +30,7 @@ listing. It is a preview only and does not create a replacement snapshot.
   "part": "translated_text",
   "units": [
     {
-      "unit_id": "unit-id",
+      "unit_id": "unit--23021530046",
       "transforms": [
         { "origin": "old text", "target": "new text" }
       ]

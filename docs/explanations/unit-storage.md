@@ -3,51 +3,51 @@
 ## Review flags
 
 `is_flagged` is a shared review reminder saved through the ordinary Unit save
-endpoint. It does not affect progress or workflow. The chapter Page navigation
-endpoint is `GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats`.
+endpoint. It does not affect progress or workflow. The chapter PageSource navigation
+endpoint is `GET /api/v1/chapters/{chapter_id}/page-sources/unit-flagged-stats`.
 See [Unit review flags](../unit-flagged-api.md) for the contract and the standalone
 existing-database upgrade script.
 
 ## 存储模型
 
-一个 Page 的全部 Unit 通过 `f_next_id` 组成单链表。链中同时包含 visible
+一个 PageSource 的全部 Unit 通过 `f_next_id` 组成单链表。链中同时包含 visible
 Unit 与 tombstone；`f_hidden_at IS NULL` 表示 visible，否则表示已软删除。
 Tombstone 永久保留，本版本不执行回收。
 
-`t_unit.f_id` 是全局主键。普通查询只为 `f_page_id` 建索引，不维护
-`(f_page_id, f_id)`、visible 部分索引或数据库层面的唯一前驱索引。
+`t_unit.f_id` 是全局主键。普通查询只为 `f_page_source_id` 建索引，不维护
+`(f_page_source_id, f_id)`、visible 部分索引或数据库层面的唯一前驱索引。
 数据库只保留 `f_next_id -> t_unit.f_id` 的延迟外键，不安装 Unit
 function、trigger、CHECK 或唯一前驱约束。
 
 跨页、自指、分叉、环、多头、断链、重复 ID 和遍历覆盖全部由业务层在
-锁定 Page 并读取完整链后统一校验。持久化链损坏属于 `Unrecoverable`，
+锁定 PageSource 并读取完整链后统一校验。持久化链损坏属于 `Unrecoverable`，
 请求产生的非法链编辑属于 `Args`。
 
 ## 读语义
 
-`GET /api/v1/pages/{page_id}/units` 读取该 Page 的完整链，在内存中按
+`GET /api/v1/page-sources/{page_source_id}/units` 读取该 PageSource 的完整链，在内存中按
 `next_id` 重建顺序，再过滤 tombstone。返回数组顺序就是最终顺序；响应
 不暴露 `index`、`next_id` 或 `hidden_at`。
 
-Page 响应同时返回：
+PageSource 响应同时返回：
 
 - `total_unit_count`：visible Unit 数；
 - `translated_unit_count`：translation 或 revision 任一包含非空文本的
   visible Unit 数；
 - `proofread_unit_count`：`is_proofread` 为真的 visible Unit 数。
 
-`GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` 返回有校对修改或
-新增的 Page，成功响应的 `data` 直接为统计数组。每项包含 `page_id`、原始
+`GET /api/v1/chapters/{chapter_id}/page-sources/unit-diff-stats` 返回有校对修改或
+新增的 PageSource，成功响应的 `data` 直接为统计数组。每项包含 `page_source_id`、原始
 零基页序 `index`，以及基于该页全部 visible Unit 文本计算的三个计数：
 
 - `translated_unit_count`：翻译文本非空白；
 - `editted_unit_count`：翻译与校对文本均非空白，且原始文本不同；
 - `proofreader_append_unit_count`：翻译文本缺失或仅空白，校对文本非空白。
 
-此处 translated 只统计翻译文本，与普通 Page 进度计数的口径不同。
+此处 translated 只统计翻译文本，与普通 PageSource 进度计数的口径不同。
 校对新增不计入 translated 或 editted，`is_proofread` 不影响统计。
 非空判断采用 Unicode whitespace trim，文本比较保留大小写和空白差异。
-仅保留 editted 或 append 大于零的页面，按原始 `index`、`page_id` 排序；
+仅保留 editted 或 append 大于零的页面，按原始 `index`、`page_source_id` 排序；
 没有匹配页面时返回空数组。原 `editted-diffs` 路径已由此接口替换。
 
 导出、LabelPlus 与 Comic archive 使用同一有序 visible 列表。外部格式
@@ -56,15 +56,15 @@ Page 响应同时返回：
 Chapter 级文本搜索由
 `GET /api/v1/chapters/{chapter_id}/units/search` 提供。请求必须选择
 `translated_text` 或 `proofread_text`，并提供 Unicode whitespace trim 后
-非空的大小写敏感字面量，单个日文字符也合法。实现以 20 Page 为一批并发
-读取，最终仍按 Page 与 Unit 链顺序稳定返回，且不向响应增加 Page index。
+非空的大小写敏感字面量，单个日文字符也合法。实现以 20 PageSource 为一批并发
+读取，最终仍按 PageSource 与 Unit 链顺序稳定返回，且不向响应增加 PageSource index。
 整个 Chapter 最多允许 100 个匹配 Unit；恰好 100 个正常返回，发现第 101
 个时以 `Args(code 2)` 和“过多匹配项”拒绝请求，不截断或返回部分结果，也
-不再读取后续 Page 批次。
+不再读取后续 PageSource 批次。
 
 ## 写语义
 
-`POST /api/v1/pages/{page_id}/units/save` 的请求体就是 edit 数组，每批
+`POST /api/v1/page-sources/{page_source_id}/units/save` 的请求体就是 edit 数组，每批
 接受 1–100 个 edit。成功返回 `204 No Content`；客户端随后重新 list。
 
 Edit 使用 `edit` 标签：
@@ -104,15 +104,15 @@ translator 只能修改 translation，proofreader 只能修改 revision；任一
 
 ## 事务与并发
 
-保存事务按 Chapter、Page、完整 Unit 链的顺序加锁。Page 锁将同页写入
+保存事务按 Chapter、PageSource、完整 Unit 链的顺序加锁。PageSource 锁将同页写入
 串行化，因此后提交事务读取前一事务的最终链并继续合并：
 
 - 后提交的 Patch 可以恢复先提交 Delete 产生的 tombstone；
 - 同锚点插入按事务提交顺序进入链；
-- 不同 Page 仍可并行写入。
+- 不同 PageSource 仍可并行写入。
 
 仓储只写入新节点、字段变化、hide/unhide 以及发生变化的 `next_id`。
-Apply 后在同一事务内重新计算 counters，更新 Page 与 Chapter，并触碰
+Apply 后在同一事务内重新计算 counters，更新 PageSource 与 Chapter，并触碰
 Comic；事务提交后再触发 translation/proofread stage。
 
 ## 旧库现场切换
@@ -122,10 +122,10 @@ Comic；事务提交后再触发 translation/proofread stage。
 1. 停止旧服务写入并完成数据库备份；
 2. 在单事务内锁定 `t_unit`；
 3. 添加 `f_next_id`、`f_hidden_at`，使用
-   `LEAD(f_id) OVER (PARTITION BY f_page_id ORDER BY f_index, f_id)`
+   `LEAD(f_id) OVER (PARTITION BY f_page_source_id ORDER BY f_index, f_id)`
    回填链；
 4. 校验节点数、同页引用、唯一前驱、单头单尾、无环和完整覆盖；
-5. 添加 `f_next_id` 外键，保留 `f_page_id` 索引并删除 `f_index`；
+5. 添加 `f_next_id` 外键，保留 `f_page_source_id` 索引并删除 `f_index`；
 6. 提交后启动 v2，执行 list → save → list 冒烟验证。
 
 现场脚本位于 `scripts/migrate-unit-v2-storage.sql`。提交前任一校验失败会

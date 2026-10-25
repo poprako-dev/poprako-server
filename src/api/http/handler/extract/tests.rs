@@ -126,9 +126,9 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
         .method("POST")
         .uri("/units/save")
         .header("content-type", "application/json")
-        .header("x-request-id", "unit-save-rejection")
+        .header("x-request-id", "unit--71356523707")
         .body(Body::from(
-            r#"[{"edit":"patch","id":"unit-1","translation":{"translated_text":"private-translation"}}]"#,
+            r#"[{"edit":"patch","id":"unit--00000000001","translation":{"translated_text":"private-translation"}}]"#,
         ))
         .unwrap();
 
@@ -146,7 +146,7 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
 
     assert!(!logs.contains("missing field"), "{logs}");
 
-    assert!(logs.contains("unit-save-rejection"), "{logs}");
+    assert!(logs.contains("unit--71356523707"), "{logs}");
 
     assert!(!logs.contains("private-translation"), "{logs}");
 }

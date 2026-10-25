@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::key::ObjKey;
+use crate::model::record::ObjKeyRecord;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Persisted Check operation discriminator.
@@ -14,10 +14,12 @@ pub const DELETE: &str = "obj_prom_oper:delete";
 pub fn obj_task_id(
     topic: &str,
     oper: &str,
-    key: &ObjKey,
+    key: &ObjKeyRecord,
     gen_no: i64,
 ) -> String {
     //
+    let domain = key.domain.to_string();
+
     format!(
         "{}:{}:{}:{}:{}:{}:{}:{}:{}",
         topic.len(),
@@ -26,8 +28,8 @@ pub fn obj_task_id(
         key.id.len(),
         key.id,
         key.ver,
-        key.image.len(),
-        key.image,
+        domain.len(),
+        domain,
         gen_no,
     )
 }
@@ -71,7 +73,7 @@ pub struct ObjDeptPromTask {
     /// Persisted object version.
     pub ver: i64,
     /// Persisted complete physical object key.
-    pub image: String,
+    pub domain: ::serde_json::Value,
 
     /// Obligation generation.
     pub gen_no: i64,
@@ -87,7 +89,7 @@ impl ObjDeptPromTask {
     /// # Errors
     ///
     /// Returns a message when the stored version is invalid.
-    pub fn key(&self) -> ObjDeptRest<ObjKey> {
+    pub fn key(&self) -> ObjDeptRest<ObjKeyRecord> {
         //
         let Ok(ver) = u32::try_from(self.ver) else {
             //
@@ -96,10 +98,10 @@ impl ObjDeptPromTask {
             ));
         };
 
-        Ok(ObjKey {
+        Ok(ObjKeyRecord {
             id: self.obj_id.clone(),
             ver,
-            image: self.image.clone(),
+            domain: self.domain.clone(),
         })
     }
 }
@@ -128,12 +130,41 @@ pub enum ObjTask {
     /// Checks remote visibility for one object version.
     Check {
         /// Object version to check.
-        key: ObjKey,
+        key: ObjKeyRecord,
     },
 
     /// Deletes one physical object version.
     Delete {
         /// Object version to delete.
-        key: ObjKey,
+        key: ObjKeyRecord,
     },
+}
+
+/// Validated durable object operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ObjTaskOper {
+    /// Reconciles one exact generation with physical storage.
+    Check,
+    /// Removes one retired physical generation.
+    Delete,
+}
+
+impl ObjTaskOper {
+    /// Decodes the stored operation discriminator at dispatch.
+    ///
+    /// # Errors
+    /// Returns an error for an unknown operation discriminator.
+    pub fn from_text(value: &str) -> ObjDeptRest<Self> {
+        //
+        match value {
+            //
+            CHECK => Ok(Self::Check),
+
+            DELETE => Ok(Self::Delete),
+
+            _ => Err(ObjDeptError::invalid(
+                "unknown object task operation".into(),
+            )),
+        }
+    }
 }

@@ -34,10 +34,10 @@ pub mod issue;
 pub mod member;
 /// Member invitation Diesel entity types.
 pub mod member_invitation;
-/// Page Diesel entity types.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page Diesel entity types.
+pub mod page_source;
 /// System mail Diesel entity types.
 pub mod system_mail;
 /// Team Diesel entity types.

@@ -17,16 +17,16 @@ async fn create_only_assigns_explicit_worker_presets() {
 
         seed_scope(
             &mock,
-            "user-1",
+            "user--00000000001",
             RoleMask::from(RoleField::ADMIN)
                 .union(RoleMask::from(RoleField::TRANSLATOR)),
         );
 
         let created = create(
             (&mock, &mock),
-            token("user-1"),
+            token("user--00000000001"),
             CreateChapterInstr {
-                comic_id: "comic-1".into(),
+                comic_id: "comic--00000000001".into(),
                 subtitle: None,
                 preset_assignment_roles: preset,
             },
@@ -46,7 +46,10 @@ async fn create_only_assigns_explicit_worker_presets() {
                 created.id
             );
 
-            assert_eq!(snapshot.assignments.first().unwrap().user_id, "user-1");
+            assert_eq!(
+                snapshot.assignments.first().unwrap().user_id,
+                "user--00000000001"
+            );
         }
 
         assert_eq!(snapshot.chapter_workflow_records.len(), 1);
@@ -58,7 +61,7 @@ async fn create_only_assigns_explicit_worker_presets() {
                 .unwrap()
                 .actor_user_id
                 .as_deref(),
-            Some("user-1")
+            Some("user--00000000001")
         );
 
         assert!(snapshot.chapter_workflow_records.iter().any(|record| {
@@ -76,24 +79,33 @@ async fn create_only_assigns_explicit_worker_presets() {
 async fn team_admin_manages_without_assignment() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
 
     update_info(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterInfoInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             subtitle: Some("\u{2003}updated\u{00a0}".into()),
         },
     )
     .await
     .unwrap();
 
-    mark_pinned((&mock, &mock), token("user-1"), "chapter-1".into())
-        .await
-        .unwrap();
+    mark_pinned(
+        (&mock, &mock),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -125,16 +137,16 @@ async fn team_admin_manages_without_assignment() {
     mock.state.lock().unwrap().members.clear();
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let error = update_info(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterInfoInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             subtitle: Some("forbidden".into()),
         },
     )
@@ -155,21 +167,33 @@ async fn team_admin_manages_without_assignment() {
 async fn cross_team_admin_cannot_manage_chapter() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+    seed_scope(
+        &mock,
+        "user--00000000001",
+        RoleMask::from(RoleField::TRANSLATOR),
+    );
 
     mock.seed_member(member(
-        "user-2",
-        "team-2",
+        "user--00000000002",
+        "team--00000000002",
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
 
-    let error =
-        mark_pinned((&mock, &mock), token("user-2"), "chapter-1".into())
-            .await
-            .err()
-            .unwrap();
+    let error = mark_pinned(
+        (&mock, &mock),
+        token("user--00000000002"),
+        "chapter--00000000001".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -181,13 +205,13 @@ async fn cross_team_admin_cannot_manage_chapter() {
 async fn create_rejects_admin_preset() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
     let error = create(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateChapterInstr {
-            comic_id: "comic-1".into(),
+            comic_id: "comic--00000000001".into(),
             subtitle: None,
             preset_assignment_roles: Some(RoleMask::from(RoleField::ADMIN)),
         },

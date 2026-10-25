@@ -16,10 +16,12 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr,
+    ListPageSourceUnitInfosInstr, SavePageSourceUnitEditsInstr,
     SearchChapterUnitInfosInstr, TransformChapterUnitsInstr, UnitEditInstr,
 };
-use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
+use crate::data::val::unit::{
+    ListPageSourceUnitInfosVal, SavePageSourceUnitEditsVal,
+};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
@@ -51,27 +53,27 @@ pub struct UnitSearchQuery {
     pub phrase: String,
 }
 
-/// `GET /api/v1/pages/{page_id}/units` — list units under a page.
+/// `GET /api/v1/page-sources/{page_source_id}/units` — list units under a page.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
-    path = "/api/v1/pages/{page_id}/units",
+    path = "/api/v1/page-sources/{page_source_id}/units",
     tag = "units",
-    params(("page_id" = String, Path, description = "Page ID")),
+    params(("page_source_id" = String, Path, description = "PageSource ID")),
     responses(
         (status = 200, description = "Units \
-        listed", body = HttpBody<ListPageUnitInfosVal>),
+        listed", body = HttpBody<ListPageSourceUnitInfosVal>),
         (status = 403, description = "No perm to list units in this page"),
-        (status = 404, description = "Page not found"),
+        (status = 404, description = "PageSource not found"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
-    Path(page_id): Path<String>,
+    Path(page_source_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ListPageUnitInfosVal> {
+) -> HttpResult<ListPageSourceUnitInfosVal> {
     //
-    let instr = ListPageUnitInfosInstr { page_id };
+    let instr = ListPageSourceUnitInfosInstr { page_source_id };
 
     Ok(
         unit_usecase::list_infos::<_, RdbContext<ReptRead>, RdbRepo>(
@@ -126,16 +128,19 @@ pub async fn search_infos(
     )
 }
 
-/// `POST /api/v1/pages/{page_id}/units/save` — save Unit edits.
+/// `POST /api/v1/page-sources/{page_source_id}/units/save` — save Unit edits.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/pages/{page_id}/units/save",
+    path = "/api/v1/page-sources/{page_source_id}/units/save",
     tag = "units",
-    params(("page_id" = String, Path, description = "Page ID"), UnitSaveQuery),
+    params(
+        ("page_source_id" = String, Path, description = "PageSource ID"),
+        UnitSaveQuery,
+    ),
     request_body = Vec<UnitEditInstr>,
     responses(
         (status = 200, description = "Unit \
-        edits saved", body = HttpBody<SavePageUnitEditsVal>),
+        edits saved", body = HttpBody<SavePageSourceUnitEditsVal>),
         (status = 409, description = "Serializable conflict; retry the \
         complete request"),
         (status = 403, description = "No perm to save units in this page"),
@@ -145,14 +150,14 @@ pub async fn search_infos(
 #[instrument(level = "info", skip_all)]
 pub async fn save_infos(
     State(harn): State<AppHarn>,
-    Path(page_id): Path<String>,
+    Path(page_source_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<UnitSaveQuery>,
     Json(edits): Json<Vec<UnitEditInstr>>,
-) -> HttpResult<SavePageUnitEditsVal> {
+) -> HttpResult<SavePageSourceUnitEditsVal> {
     //
-    let instr = SavePageUnitEditsInstr {
-        page_id,
+    let instr = SavePageSourceUnitEditsInstr {
+        page_source_id,
         edits,
         save_id: query.save_id,
     };

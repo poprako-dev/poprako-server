@@ -20,9 +20,9 @@ pub enum UnitTranslationImportSource {
 }
 
 /// One parsed import page.
-pub struct PageTranslationImport {
+pub struct PageSourceTranslationImport {
     /// Zero-based page index in the imported document.
-    pub page_index: usize,
+    pub page_source_index: usize,
 
     /// Translated units belonging to this imported page.
     pub units: Vec<UnitTranslationImport>,

@@ -7,7 +7,7 @@
 
 // Generate typed Unit insert records for each page in the requested subtree scale.
 fn subtree_unit_items(
-    pages: &[PageEntry],
+    pages: &[PageSourceEntry],
     prefix: &str,
     scale: Scale,
 ) -> Vec<UnitItem> {
@@ -17,7 +17,7 @@ fn subtree_unit_items(
         .flat_map(|page| {
             (0..scale.units_per_page).map(move |unit_index| UnitItem {
                 f_id: format!("{}unit-{}-{:04}", prefix, page.id, &unit_index),
-                f_page_id: page.id.clone(),
+                f_page_source_id: page.id.clone(),
                 f_next_id: None,
                 f_hidden_at: None,
                 f_is_bubble: true,
@@ -49,7 +49,7 @@ use time::OffsetDateTime;
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page_source::PageSourceEntry;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::Serial;
 use crate::part::repo::oper::subtree_delete::{
@@ -61,10 +61,11 @@ use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterItem;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicItem;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
-use crate::part_impl::repo::rdb_impl::entity::page::PageItem;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceItem;
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetItem;
 use crate::part_impl::repo::rdb_impl::schema::{
-    t_chapter, t_comic, t_comic_archive, t_page, t_team, t_unit, t_workset,
+    t_chapter, t_comic, t_comic_archive, t_page_source, t_team, t_unit,
+    t_workset,
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
@@ -84,7 +85,7 @@ const PREFIX: &str = "rdb-test-subtree-";
 struct UnitItem {
     f_id: String,
 
-    f_page_id: String,
+    f_page_source_id: String,
     f_next_id: Option<String>,
     f_hidden_at: Option<OffsetDateTime>,
 
@@ -108,7 +109,7 @@ struct UnitItem {
 struct Scale {
     comics: usize,
     chapters_per_comic: usize,
-    pages_per_chapter: usize,
+    page_sources_per_chapter: usize,
     units_per_page: usize,
 }
 
@@ -152,10 +153,15 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
     let pages = chapters
         .iter()
         .flat_map(|chapter| {
-            (0..scale.pages_per_chapter).map(move |page_index| PageEntry {
-                id: format!("{}page-{}-{:04}", prefix, chapter.id, &page_index),
-                chapter_id: chapter.id.clone(),
-                index: page_index,
+            (0..scale.page_sources_per_chapter).map(move |page_source_index| {
+                PageSourceEntry {
+                    id: format!(
+                        "{}page-{}-{:04}",
+                        prefix, chapter.id, &page_source_index
+                    ),
+                    chapter_id: chapter.id.clone(),
+                    index: page_source_index,
+                }
             })
         })
         .collect::<Vec<_>>();
@@ -172,9 +178,9 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
         .map(ChapterItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
-    let page_items = pages
+    let page_source_items = pages
         .iter()
-        .map(PageItem::try_from)
+        .map(PageSourceItem::try_from)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
 
@@ -194,8 +200,8 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
             .unwrap();
     }
 
-    for items in page_items.chunks(2_000) {
-        diesel::insert_into(t_page::table)
+    for items in page_source_items.chunks(2_000) {
+        diesel::insert_into(t_page_source::table)
             .values(items)
             .execute(&mut conn)
             .await

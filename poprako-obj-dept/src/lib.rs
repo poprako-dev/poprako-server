@@ -22,13 +22,13 @@ mod tests;
 
 use poprako_orchestra::drive;
 
-use crate::key::KeyMap;
+use crate::key::ObjKind;
 use crate::oper::{
     ClearObjs, DeleteObjs, GenObjSlot, GenObjSlots, GenObjUrls, ListObjMetas,
     MarkObjUploaded,
 };
 use crate::rest::ObjDeptError;
-/// UUID execution credentials shared with generated adapters.
+
 pub use uuid::Uuid;
 
 #[cfg(feature = "rdb_impl")]
@@ -52,7 +52,7 @@ extern crate self as poprako_obj_dept;
 )]
 pub trait ObjDeptView<K, C>
 where
-    K: KeyMap,
+    K: ObjKind,
 {
 }
 
@@ -76,6 +76,6 @@ where
 )]
 pub trait ObjDept<K, C>
 where
-    K: KeyMap,
+    K: ObjKind,
 {
 }

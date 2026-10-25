@@ -89,7 +89,8 @@ pub struct ArchivedChapterPayload<'a> {
     /// Subtitle or volume label displayed for this chapter.
     pub subtitle: &'a str,
     /// Total number of pages in this chapter at archiving time.
-    pub page_count: usize,
+    #[serde(rename = "page_count")]
+    pub page_source_count: usize,
     /// Total number of translation units across all pages.
     pub total_unit_count: usize,
     /// Number of units that have been translated.
@@ -109,7 +110,7 @@ pub struct ArchivedChapterPayload<'a> {
     /// Immutable workflow records without language-specific rendered text.
     pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload<'a>>,
     /// Archived payloads for all pages in this chapter.
-    pub pages: Vec<ArchivedPagePayload<'a>>,
+    pub pages: Vec<ArchivedPageSourcePayload<'a>>,
 
     /// Ordered composite pages and their review issues.
     pub page_artworks: Vec<ArchivedPageArtworkPayload<'a>>,
@@ -168,9 +169,10 @@ pub struct ArchivedUserPayload<'a> {
 
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedPagePayload<'a> {
+pub struct ArchivedPageSourcePayload<'a> {
     /// Original database identifier of the page before archiving.
-    pub source_page_id: &'a str,
+    #[serde(rename = "source_page_id")]
+    pub source_page_source_id: &'a str,
     /// Display ordering index of the page within its chapter.
     pub index: usize,
     /// Total number of translation units on this page.

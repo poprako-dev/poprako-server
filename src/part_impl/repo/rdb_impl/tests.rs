@@ -18,7 +18,7 @@ async fn repo_rdb_impls_use_testcontainer() {
 
     let shared = test_rdb.core();
 
-    crate::part_impl::obj_dept::tests::artwork_transactional_mark(
+    crate::part_impl::obj_dept::tests::rdb::artwork_transactional_mark(
         shared.clone(),
     )
     .await;
@@ -77,14 +77,18 @@ async fn repo_rdb_impls_use_testcontainer() {
     )
     .await;
 
-    crate::part_impl::obj_dept::tests::concurrent_claim_is_unique_ordered_and_fenced(
+    crate::part_impl::obj_dept::tests::rdb::concurrent_claim_is_unique_ordered_and_fenced(
         shared.clone(),
     )
     .await;
 
-    page::tests::page_roundtrip_uses_testcontainer(shared.clone()).await;
+    page_source::tests::page_source_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
 
-    page::tests::raw_ident_roundtrip_uses_testcontainer(shared.clone()).await;
+    page_source::tests::raw_ident_roundtrip_uses_testcontainer(shared.clone())
+        .await;
 
     system_mail::tests::system_mail_roundtrip_uses_testcontainer(
         shared.clone(),

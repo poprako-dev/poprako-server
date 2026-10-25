@@ -8,18 +8,20 @@ use crate::complex::comic::perm as comic_perm_complex;
 use crate::data::instr::comic::ListComicInfosInstr;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::model::shared::user::UserToken;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part::repo::oper::comic::ListComicInfos;
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::page::PinnedChapterSnapshot;
+use crate::usecase::internal::page_source::PinnedChapterSnapshot;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::internal::view::{ComicListData, comic_list_val};
 use crate::value::assignment::AssignmentInclOpt;
@@ -45,10 +47,10 @@ where
         + MemberRepo<C>
         + ChapterRepo<C>
         + AssignmentRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,

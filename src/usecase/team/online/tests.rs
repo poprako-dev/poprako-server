@@ -150,12 +150,16 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
 
     let mock = Mock::new();
 
-    mock.seed_member(member("member-missing-user", "missing-user", "team-1"));
+    mock.seed_member(member(
+        "member--14000836120",
+        "missing-user",
+        "team--00000000001",
+    ));
 
     let error = mark_self_online(
         (&mock, &cache),
         token("missing-user"),
-        "team-1".into(),
+        "team--00000000001".into(),
     )
     .await
     .err()
@@ -166,7 +170,7 @@ async fn mark_self_online_does_not_renew_when_activity_update_fails() {
     let online_user_ids = list_online_user_ids(
         (&mock, &cache),
         token("missing-user"),
-        "team-1".into(),
+        "team--00000000001".into(),
     )
     .await
     .unwrap();

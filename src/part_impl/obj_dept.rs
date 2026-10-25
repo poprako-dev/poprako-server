@@ -5,101 +5,108 @@ mod page_artwork;
 // Chapter artwork storage-key mapping.
 mod artwork;
 
-#[cfg(test)]
-mod mock_impl;
-
 /// R2 object-storage implementation.
 pub mod r2_impl;
 
-#[cfg(all(test, feature = "rdb"))]
+/// Object-department regression tests and test adapters.
+#[cfg(test)]
 pub mod tests;
 
-use poprako_obj_dept::key::KeyMap;
+use poprako_obj_dept::key::{ObjKind, ObjPath};
 use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView};
 use poprako_obj_dept::prom::ObjDeptProm;
-use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 use poprako_obj_dept::{impl_obj_dept, objs_def, rdb_obj_dept_prom};
 use poprako_rdb_core::RdbCore;
 
 #[cfg(test)]
 use crate::implement_mock_obj_dept;
 
-use crate::complex::image as image_complex;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage, TeamAvatar,
     UserAvatar,
 };
 use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter_artwork, t_comic_cover, t_obj_prom_task, t_page_artwork_image,
-    t_page_image, t_team_avatar, t_user_avatar,
+    t_page_source_image, t_team_avatar, t_user_avatar,
 };
+use crate::value::business_id::{ComicId, PageSourceId, TeamId, UserId};
 use crate::value::image::{
-    ComicCoverKey, PageImageKey, TeamAvatarKey, UserAvatarKey,
+    ComicCoverKey, ImageExt, PageSourceImageKey, TeamAvatarKey, UserAvatarKey,
 };
 
-// Implements image-key mapping with kind-specific builders and parsers.
-macro_rules! impl_image_key_map {
-    ($marker:ty, $dom:ty, $id:ident, $kind:literal, $forward:path,
-        $reverse:path) => {
-        impl KeyMap for $marker {
+// Binds each validated domain value to its one-way storage layout.
+macro_rules! impl_image_kind {
+    ($marker:ty, $dom:ty, $identity:ty, $id:ident, $prefix:literal) => {
+        impl ObjKind for $marker {
+            // Validated identity of the object owner.
+            type Id = $identity;
+            // Validated file extension.
+            type Ext = ImageExt;
+            // Validated inputs to physical key construction.
             type Dom = $dom;
-            type Img = String;
 
-            fn id(value: &Self::Dom) -> &str {
+            // Returns the validated owner identity.
+            fn id(value: &Self::Dom) -> &Self::Id {
                 &value.$id
             }
 
-            fn ext(value: &Self::Dom) -> &str {
-                value.ext.suffix()
+            // Returns the validated file extension.
+            fn ext(value: &Self::Dom) -> &Self::Ext {
+                &value.ext
             }
 
-            fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
-                $forward(value, ver)
-            }
-
-            fn reverse(value: &Self::Img) -> ObjDeptRest<(Self::Dom, u32)> {
-                $reverse(value).ok_or_else(|| invalid_key($kind))
+            // Constructs the physical location for one allocated generation.
+            fn forward(value: &Self::Dom, ver: u32) -> ObjPath {
+                //
+                ObjPath::new(format!(
+                    "{}/{}/{}.{}",
+                    $prefix,
+                    value.$id.as_str(),
+                    ver,
+                    value.ext.suffix()
+                ))
             }
         }
     };
 }
 
-impl_image_key_map!(
-    PageImage,
-    PageImageKey,
-    page_id,
-    "page image",
-    image_complex::page_key,
-    image_complex::parse_page_key
-);
+impl_image_kind!(UserAvatar, UserAvatarKey, UserId, user_id, "user_avatar");
 
-impl_image_key_map!(
-    UserAvatar,
-    UserAvatarKey,
-    user_id,
-    "user avatar",
-    image_complex::user_avatar_key,
-    image_complex::parse_user_avatar_key
-);
+impl_image_kind!(TeamAvatar, TeamAvatarKey, TeamId, team_id, "team_avatar");
 
-impl_image_key_map!(
-    TeamAvatar,
-    TeamAvatarKey,
-    team_id,
-    "team avatar",
-    image_complex::team_avatar_key,
-    image_complex::parse_team_avatar_key
-);
+impl_image_kind!(ComicCover, ComicCoverKey, ComicId, comic_id, "comic_cover");
 
-impl_image_key_map!(
-    ComicCover,
-    ComicCoverKey,
-    comic_id,
-    "comic cover",
-    image_complex::comic_cover_key,
-    image_complex::parse_comic_cover_key
-);
+impl ObjKind for PageSourceImage {
+    // Validated identity of the object owner.
+    type Id = PageSourceId;
+    // Validated file extension.
+    type Ext = ImageExt;
+    // Validated inputs to physical key construction.
+    type Dom = PageSourceImageKey;
+
+    // Returns the validated owner identity.
+    fn id(value: &Self::Dom) -> &Self::Id {
+        &value.page_source_id
+    }
+
+    // Returns the validated file extension.
+    fn ext(value: &Self::Dom) -> &Self::Ext {
+        &value.ext
+    }
+
+    // Constructs the physical location for one allocated generation.
+    fn forward(value: &Self::Dom, ver: u32) -> ObjPath {
+        //
+        ObjPath::new(format!(
+            "page_source/{}/{}/{}.{}",
+            value.chapter_id.as_str(),
+            value.page_source_id.as_str(),
+            ver,
+            value.ext.suffix()
+        ))
+    }
+}
 
 rdb_obj_dept_prom! {
     RdbObjDeptProm {
@@ -116,9 +123,9 @@ objs_def! {
         table: t_page_artwork_image,
         topic: "page_artwork_image",
     },
-    PageImage {
-        table: t_page_image,
-        topic: "page_image",
+    PageSourceImage {
+        table: t_page_source_image,
+        topic: "page_source_image",
     },
     UserAvatar {
         table: t_user_avatar,
@@ -239,8 +246,3 @@ macro_rules! implement_mock_obj_dept_from_manifest {
 
 #[cfg(test)]
 for_each_obj!(implement_mock_obj_dept_from_manifest);
-
-// Builds a stable invalid-key error at the concrete mapping boundary.
-fn invalid_key(kind: &str) -> ObjDeptError {
-    ObjDeptError::invalid(["invalid ", kind, " physical key"].concat())
-}

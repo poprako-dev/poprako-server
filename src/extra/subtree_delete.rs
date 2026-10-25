@@ -14,7 +14,7 @@ use crate::config::sched::SchedTaskConfig;
 use crate::config::subtree_delete::SubtreeDeleteConfig;
 use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage, TeamAvatar,
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
@@ -73,7 +73,7 @@ where
         + 'static,
     O: ObjDept<PageArtworkImage, RdbContext>
         + ObjDept<ChapterArtwork, RdbContext>
-        + ObjDept<PageImage, RdbContext>
+        + ObjDept<PageSourceImage, RdbContext>
         + ObjDept<ComicCover, RdbContext>
         + ObjDept<TeamAvatar, RdbContext>
         + Clone
@@ -113,7 +113,7 @@ where
     R: SubtreeRepo<RdbContext> + PageArtworkRepo<RdbContext> + Send + Sync,
     O: ObjDept<PageArtworkImage, RdbContext>
         + ObjDept<ChapterArtwork, RdbContext>
-        + ObjDept<PageImage, RdbContext>
+        + ObjDept<PageSourceImage, RdbContext>
         + ObjDept<ComicCover, RdbContext>
         + ObjDept<TeamAvatar, RdbContext>
         + Send

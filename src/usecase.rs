@@ -64,10 +64,10 @@ pub mod issue_edit;
 pub mod member;
 /// Member invitation use cases.
 pub mod member_invitation;
-/// Page management use cases.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page management use cases.
+pub mod page_source;
 /// Background relational garbage-collection orchestration.
 pub mod subtree_delete;
 /// System mail use cases.

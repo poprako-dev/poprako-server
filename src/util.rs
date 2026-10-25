@@ -15,6 +15,12 @@ use std::sync::OnceLock;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::util::patch_input::PatchInput;
+use crate::value::business_id::BusinessIdKind;
+
+/// Generates a canonical identity in the requested business namespace.
+pub fn next_business_id(kind: BusinessIdKind) -> String {
+    format!("{}--{}", kind.prefix(), next_snowflake_id())
+}
 
 /// Generate a unique time-ordered identifier in base62 format.
 ///

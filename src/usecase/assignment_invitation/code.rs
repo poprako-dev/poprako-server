@@ -1,10 +1,11 @@
 //! Assignment invitation identifier and code generation helpers.
 
-use crate::util::next_snowflake_id;
+use crate::util::{next_business_id, next_snowflake_id};
+use crate::value::business_id::BusinessIdKind;
 
 /// Generates a snowflake identifier for a new assignment invitation.
 pub fn gen_assignment_invitation_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::AssignmentInvitation)
 }
 
 /// Generates a six-character invitation code derived from a snowflake ID.

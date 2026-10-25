@@ -2,6 +2,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 use poprako_util::i18n::trl;
 
@@ -104,7 +105,9 @@ where
             .step_on(repo, context)
             .await?;
 
-        DeleteObjs::<UserAvatar>::new(std::slice::from_ref(&id))
+        let user_avatar_ids = UserAvatar::ids(std::slice::from_ref(&id))?;
+
+        DeleteObjs::<UserAvatar>::new(&user_avatar_ids)
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;

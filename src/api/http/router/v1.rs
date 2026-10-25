@@ -4,8 +4,8 @@ use axum::routing::{delete, get, post, put};
 use crate::api::http::handler::{
     announcement, assignment, assignment_invitation, auth, chapter,
     chapter_port, comic, comment, issue, issue_edit, member, member_invitation,
-    page, page_artwork, system_mail, team, term, termbase, termbase_port, unit,
-    user, workset,
+    page_artwork, page_source, system_mail, team, term, termbase,
+    termbase_port, unit, user, workset,
 };
 use crate::api::http::state::AppHarn;
 
@@ -204,24 +204,24 @@ pub fn v1_chapter_router() -> Router<AppHarn> {
 }
 
 /// Builds page routes.
-pub fn v1_page_router() -> Router<AppHarn> {
+pub fn v1_page_source_router() -> Router<AppHarn> {
     //
     Router::new()
         .route(
-            "/chapters/{chapter_id}/pages/unit-flagged-stats",
-            get(page::list_unit_flagged_stats),
+            "/chapters/{chapter_id}/page-sources/unit-flagged-stats",
+            get(page_source::list_unit_flagged_stats),
         )
         .route(
-            "/chapters/{chapter_id}/pages/unit-diff-stats",
-            get(page::list_unit_diff_stats),
+            "/chapters/{chapter_id}/page-sources/unit-diff-stats",
+            get(page_source::list_unit_diff_stats),
         )
         .route(
-            "/chapters/{chapter_id}/pages",
-            get(page::list_infos).delete(page::delete),
+            "/chapters/{chapter_id}/page-sources",
+            get(page_source::list_infos).delete(page_source::delete),
         )
         .route(
-            "/chapters/{chapter_id}/pages/alloc",
-            post(page::alloc_chapter_pages),
+            "/chapters/{chapter_id}/page-sources/alloc",
+            post(page_source::alloc_chapter_page_sources),
         )
         .route(
             "/chapters/{chapter_id}/page-artworks",
@@ -260,11 +260,14 @@ pub fn v1_page_router() -> Router<AppHarn> {
             "/chapters/{chapter_id}/issues/variants/rename",
             post(issue_edit::rename_variant),
         )
-        .route("/pages/{page_id}", get(page::get_info))
-        .route("/pages/{page_id}/image/alloc", post(page::alloc_image))
+        .route("/page-sources/{page_source_id}", get(page_source::get_info))
         .route(
-            "/pages/{page_id}/image/mark-uploaded",
-            post(page::mark_image_uploaded),
+            "/page-sources/{page_source_id}/image/alloc",
+            post(page_source::alloc_image),
+        )
+        .route(
+            "/page-sources/{page_source_id}/image/mark-uploaded",
+            post(page_source::mark_image_uploaded),
         )
 }
 
@@ -280,8 +283,14 @@ pub fn v1_unit_router() -> Router<AppHarn> {
             "/chapters/{chapter_id}/units/transform",
             post(unit::transform),
         )
-        .route("/pages/{page_id}/units", get(unit::list_infos))
-        .route("/pages/{page_id}/units/save", post(unit::save_infos))
+        .route(
+            "/page-sources/{page_source_id}/units",
+            get(unit::list_infos),
+        )
+        .route(
+            "/page-sources/{page_source_id}/units/save",
+            post(unit::save_infos),
+        )
 }
 
 /// Builds assignment routes.

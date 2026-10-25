@@ -3,7 +3,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageSourceIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::result::BaseError;
@@ -12,7 +12,7 @@ use crate::result::BaseError;
 #[drive(
     context = C,
     error = BaseError,
-    run(for<'a> ListUnitInfosByPageIds<'a>),
+    run(for<'a> ListUnitInfosByPageSourceIds<'a>),
     step(
         for<'a> ListUnitInfosByIds<'a>,
         for<'a> ListUnitInfosInChapterOrder<'a>,

@@ -127,6 +127,7 @@ to the task; follow their links when the referenced area is affected.
 | --- | --- |
 | Rust source creation, modification, moves, or review | `general-conventions` |
 | Backend behavior changes across layers | `implement-fullchain-spec` |
+| Business IDs, source/artwork identity, object keys, and Issue creation receipts | `identity-and-object-key-spec` |
 | Migration SQL creation, modification, review, or Diesel rollback/reset | `migration-sql-conventions` |
 | Use cases, repository contracts, or delivery boundaries | `usecase-boundaries` |
 | Owned Models, borrowed Shapes, normalization and repository payload ownership | `model-shape-boundaries` |

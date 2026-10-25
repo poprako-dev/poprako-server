@@ -210,7 +210,6 @@ impl Step<ReplacePageIssues<'_>, MockContext> for Mock {
                 page_artwork_id: entry.page_artwork_id.clone(),
                 index: entry.index,
                 variant: entry.trimmed_variant().to_owned(),
-                layer_name: entry.layer_name.clone(),
                 rect: entry.rect,
                 note: entry.note.clone(),
             }));

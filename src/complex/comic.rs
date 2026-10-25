@@ -74,7 +74,8 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::comic::ComicInfo;
 use crate::result::{BaseRest, ExpectedVariant};
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::index::stored_index_to_user_index;
 
 /// Rejects ordinary mutations after a comic has been archived.
@@ -94,7 +95,7 @@ pub fn ensure_comic_writable(comic_info: &ComicInfo) -> BaseRest<()> {
 
 /// Generate a unique, time-ordered comic identifier backed by a snowflake value.
 pub fn gen_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::Comic)
 }
 
 /// Compose a display title from raw fields for search materialization.

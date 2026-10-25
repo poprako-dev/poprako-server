@@ -2,7 +2,7 @@
 
 use crate::complex::chapter_port::import_translation as chapter_translation_import_complex;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
-use crate::data::view::page_port::PageTranslationPortView;
+use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
 use crate::model::shared::translation_document::ChapterTranslationDocument;
 use crate::model::write::translation_import::UnitTranslationImportSource;
@@ -16,14 +16,14 @@ fn document() -> ChapterTranslationPortView {
         comic_id: "source-comic".into(),
         comic_title: "source title".into(),
         pages: vec![
-            PageTranslationPortView {
-                page_id: "source-page-1".into(),
-                page_index: 1,
+            PageSourceTranslationPortView {
+                page_source_id: "source-page-1".into(),
+                page_source_index: 1,
                 units: vec![UnitTranslationPortView {
                     unit_id: "source-unit-1".into(),
                     unit_index: 1,
-                    page_id: "source-page-1".into(),
-                    page_index: 1,
+                    page_source_id: "source-page-1".into(),
+                    page_source_index: 1,
                     x_coord: 0.4,
                     y_coord: 0.5,
                     is_bubble: false,
@@ -37,15 +37,15 @@ fn document() -> ChapterTranslationPortView {
                     proofreader_id: None,
                 }],
             },
-            PageTranslationPortView {
-                page_id: "source-page-0".into(),
-                page_index: 0,
+            PageSourceTranslationPortView {
+                page_source_id: "source-page-0".into(),
+                page_source_index: 0,
                 units: vec![
                     UnitTranslationPortView {
                         unit_id: "source-unit-1".into(),
                         unit_index: 1,
-                        page_id: "source-page-0".into(),
-                        page_index: 0,
+                        page_source_id: "source-page-0".into(),
+                        page_source_index: 0,
                         x_coord: 0.2,
                         y_coord: 0.3,
                         is_bubble: true,
@@ -61,8 +61,8 @@ fn document() -> ChapterTranslationPortView {
                     UnitTranslationPortView {
                         unit_id: "source-unit-2".into(),
                         unit_index: 0,
-                        page_id: "source-page-0".into(),
-                        page_index: 0,
+                        page_source_id: "source-page-0".into(),
+                        page_source_index: 0,
                         x_coord: 0.1,
                         y_coord: 0.2,
                         is_bubble: true,
@@ -101,10 +101,10 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
     let pages =
         chapter_translation_import_complex::parse_poprako(&content).unwrap();
 
-    assert_eq!(pages.first().unwrap().page_index, 0);
+    assert_eq!(pages.first().unwrap().page_source_index, 0);
     assert_eq!(pages.first().unwrap().units.first().unwrap().index, 0);
     assert_eq!(pages.first().unwrap().units.get(1).unwrap().index, 1);
-    assert_eq!(pages.get(1).unwrap().page_index, 1);
+    assert_eq!(pages.get(1).unwrap().page_source_index, 1);
 
     assert_eq!(
         pages

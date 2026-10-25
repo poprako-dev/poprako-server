@@ -9,9 +9,9 @@ import {
     getTeam,
     getWorkset,
     listChapterAssignments,
-    listChapterPages,
+    listChapterPageSources,
     listComicChapters,
-    listPageUnits,
+    listPageSourceUnits,
     listSystemMails,
     listTeamWorksets,
     listWorksetComics,
@@ -21,7 +21,7 @@ import type {
     ChapterInfoView,
     ComicInfoView,
     MemberInfoView,
-    PageInfoView,
+    PageSourceInfoView,
     SystemMailInfoView,
     UnitInfoView,
     WorksetInfoView,
@@ -140,12 +140,12 @@ export async function assertComicInvariant(api: ApiClient, comicId: string): Pro
 export async function assertChapterInvariant(api: ApiClient, chapterId: string): Promise<void> {
     const chapter = await getChapter(api, chapterId);
 
-    const pages = await listChapterPages(api, chapterId);
+    const pages = await listChapterPageSources(api, chapterId);
 
     assert.deepEqual(
-        chapter.page_count,
+        chapter.page_source_count,
         pages.length,
-        `page_count ${chapter.page_count} != active pages ${pages.length}`,
+        `page_source_count ${chapter.page_source_count} != active pages ${pages.length}`,
     );
 
     const pageIds = new Set<string>();
@@ -211,10 +211,10 @@ export async function assertChapterInvariant(api: ApiClient, chapterId: string):
     }
 }
 
-// ---------- J5. Page/unit invariant ----------
+// ---------- J5. PageSource/unit invariant ----------
 
-export async function assertPageUnitInvariant(api: ApiClient, pageId: string): Promise<void> {
-    const units = await listPageUnits(api, pageId);
+export async function assertPageSourceUnitInvariant(api: ApiClient, pageId: string): Promise<void> {
+    const units = await listPageSourceUnits(api, pageId);
 
     const unitIds = new Set<string>();
 
@@ -225,7 +225,7 @@ export async function assertPageUnitInvariant(api: ApiClient, pageId: string): P
         assert.ok(!unitIds.has(unit.id), `duplicate unit id ${unit.id}`);
         unitIds.add(unit.id);
 
-        assert.deepEqual(unit.page_id, pageId);
+        assert.deepEqual(unit.page_source_id, pageId);
 
         if (
             (unit.translated_text != null && unit.translated_text.trim() !== "") ||
@@ -263,23 +263,27 @@ export async function assertPageUnitInvariant(api: ApiClient, pageId: string): P
 
 // Cross-check list-units against the poprako export for the parent chapter.
 // Use this when you know the chapter id and want strict unit_index assertions.
-export async function assertPageExportInvariant(api: ApiClient, chapterId: string, pageId: string): Promise<void> {
-    const units = await listPageUnits(api, pageId);
+export async function assertPageSourceExportInvariant(
+    api: ApiClient,
+    chapterId: string,
+    pageId: string,
+): Promise<void> {
+    const units = await listPageSourceUnits(api, pageId);
 
     const exportVal = await exportPoprako(api, chapterId);
 
-    const exportPage = exportVal.pages.find((page) => page.page_id === pageId);
+    const exportPageSource = exportVal.pages.find((page) => page.page_id === pageId);
 
-    assert.ok(exportPage, `export missing page ${pageId}`);
+    assert.ok(exportPageSource, `export missing page ${pageId}`);
 
     // unit ids must match exactly between list and export
     const listIds = new Set(units.unit_infos.map((unit: UnitInfoView) => unit.id));
-    const exportIds = new Set(exportPage.units.map((unit) => unit.unit_id));
+    const exportIds = new Set(exportPageSource.units.map((unit) => unit.unit_id));
 
     assert.deepEqual([...listIds].sort(), [...exportIds].sort(), "export unit ids differ from list unit ids");
 
     // unit_index must be contiguous 0..n-1
-    const sortedExportUnits = [...exportPage.units].sort((a, b) => a.unit_index - b.unit_index);
+    const sortedExportUnits = [...exportPageSource.units].sort((a, b) => a.unit_index - b.unit_index);
 
     sortedExportUnits.forEach((unit, i) => {
         assert.deepEqual(unit.unit_index, i, `export unit_index gap at ${i}: got ${unit.unit_index}`);
@@ -384,11 +388,11 @@ export function assertMemberListWellFormed(members: MemberInfoView[]): void {
 }
 
 // Convenience: verify page counters are mutually consistent with the chapter.
-export async function assertChapterPageCountMetricsConsistent(api: ApiClient, chapterId: string): Promise<void> {
+export async function assertChapterPageSourceCountMetricsConsistent(api: ApiClient, chapterId: string): Promise<void> {
     const chapter = await getChapter(api, chapterId);
-    const pages: PageInfoView[] = await listChapterPages(api, chapterId);
+    const pages: PageSourceInfoView[] = await listChapterPageSources(api, chapterId);
 
-    assert.deepEqual(chapter.page_count, pages.length);
+    assert.deepEqual(chapter.page_source_count, pages.length);
 
     const sumTotal = pages.reduce((acc, page) => acc + page.total_unit_count, 0);
     const sumTranslated = pages.reduce((acc, page) => acc + page.translated_unit_count, 0);

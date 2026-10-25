@@ -19,8 +19,8 @@ use super::*;
 
 mod subtree_delete;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::workset::{
@@ -111,7 +111,7 @@ fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
         author: "author".into(),
         description: None,
         chapter_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -133,12 +133,12 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         is_pinned: false,
         index: 0,
         subtitle: "chapter".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,
@@ -149,7 +149,7 @@ fn seed_comic_cover(mock: &Mock, comic_id: &str) -> ObjKey {
     let key = ObjKey {
         id: comic_id.into(),
         ver: 1,
-        image: format!("comic_cover/{comic_id}-1.png"),
+        domain: serde_json::json!({"comic_id": comic_id, "ext": "png"}),
     };
 
     let meta = ObjMeta {
@@ -181,17 +181,17 @@ async fn create_allocates_index_and_persists() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    let mut instr = create_instr("team-1");
+    let mut instr = create_instr("team--00000000001");
 
     instr.name = "\u{2003}new\u{00a0}".into();
 
     instr.description = Some("\u{2003}desc\u{00a0}".into());
 
-    let created = create((&mock, &mock), token("user-1"), instr)
+    let created = create((&mock, &mock), token("user--00000000001"), instr)
         .await
         .unwrap();
 
@@ -216,13 +216,16 @@ async fn create_rolls_back_missing_team() {
     //
     let mock = Mock::new();
 
-    mock.seed_member(admin_member("user-1", "missing"));
+    mock.seed_member(admin_member("user--00000000001", "missing"));
 
-    let error =
-        create((&mock, &mock), token("user-1"), create_instr("missing"))
-            .await
-            .err()
-            .unwrap();
+    let error = create(
+        (&mock, &mock),
+        token("user--00000000001"),
+        create_instr("missing"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -236,15 +239,19 @@ async fn get_info_returns_existing_workset() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1", 2));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001", 2));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    let found = get_info((&mock,), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
+    let found = get_info(
+        (&mock,),
+        token("user--00000000001"),
+        "workset--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
-    assert_eq!(found.id, "workset-1");
+    assert_eq!(found.id, "workset--00000000001");
 
     assert_eq!(found.index, 2);
 }
@@ -254,10 +261,11 @@ async fn get_info_propagates_missing_workset() {
     //
     let mock = Mock::new();
 
-    let error = get_info((&mock,), token("user-1"), "missing".into())
-        .await
-        .err()
-        .unwrap();
+    let error =
+        get_info((&mock,), token("user--00000000001"), "missing".into())
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Args);
 }
@@ -267,19 +275,19 @@ async fn list_infos_filters_and_sorts_by_index() {
     //
     let mock = Mock::new();
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    mock.seed_workset(workset("workset-2", "team-1", 2));
+    mock.seed_workset(workset("workset--00000000002", "team--00000000001", 2));
 
-    mock.seed_workset(workset("workset-1", "team-1", 1));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001", 1));
 
-    mock.seed_workset(workset("workset-other", "team-2", 0));
+    mock.seed_workset(workset("workset--85117610840", "team--00000000002", 0));
 
     let list = list_infos(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         ListWorksetInfosInstr {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
@@ -289,9 +297,9 @@ async fn list_infos_filters_and_sorts_by_index() {
 
     assert_eq!(list.len(), 2);
 
-    assert_eq!(list.first().unwrap().id, "workset-1");
+    assert_eq!(list.first().unwrap().id, "workset--00000000001");
 
-    assert_eq!(list.get(1).unwrap().id, "workset-2");
+    assert_eq!(list.get(1).unwrap().id, "workset--00000000002");
 }
 
 #[tokio::test]
@@ -299,11 +307,11 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
     //
     let mock = Mock::new();
 
-    mock.seed_member(admin_member("user-1", "missing"));
+    mock.seed_member(admin_member("user--00000000001", "missing"));
 
     let list = list_infos(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         ListWorksetInfosInstr {
             team_id: "missing".into(),
             offset: 0,
@@ -321,15 +329,20 @@ async fn update_info_updates_workset() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        2,
+    ));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
     update_info(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateWorksetInfoInstr {
-            id: "workset-1".into(),
+            id: "workset--00000000001".into(),
             name: "\u{2003}updated\u{00a0}".into(),
             description: Some("\u{2003}updated-desc\u{00a0}".into()),
         },
@@ -354,7 +367,7 @@ async fn update_info_propagates_missing_workset() {
 
     let error = update_info(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateWorksetInfoInstr {
             id: "missing".into(),
             name: "updated".into(),
@@ -372,27 +385,44 @@ async fn update_info_propagates_missing_workset() {
 async fn delete_marks_workset_hierarchy_without_eager_object_deletes() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
-    mock.seed_member(admin_member("user-1", "team-1"));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-    mock.seed_comic(comic("comic-2", "workset-1", 1));
-    mock.seed_chapter(chapter("chapter-1", "comic-1"));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        2,
+    ));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
+    mock.seed_comic(comic("comic--00000000002", "workset--00000000001", 1));
+    mock.seed_chapter(chapter("chapter--00000000001", "comic--00000000001"));
 
-    seed_comic_cover(&mock, "comic-1");
-    seed_comic_cover(&mock, "comic-2");
+    seed_comic_cover(&mock, "comic--00000000001");
+    seed_comic_cover(&mock, "comic--00000000002");
 
-    delete((&mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
+    delete(
+        (&mock, &mock),
+        token("user--00000000001"),
+        "workset--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.worksets.len(), 1);
     assert_eq!(snapshot.comics.len(), 2);
-    assert!(snapshot.deleted_workset_ids.contains("workset-1"));
-    assert!(snapshot.deleted_comic_ids.contains("comic-1"));
-    assert!(snapshot.deleted_comic_ids.contains("comic-2"));
-    assert!(snapshot.deleted_chapter_ids.contains("chapter-1"));
+    assert!(
+        snapshot
+            .deleted_workset_ids
+            .contains("workset--00000000001")
+    );
+    assert!(snapshot.deleted_comic_ids.contains("comic--00000000001"));
+    assert!(snapshot.deleted_comic_ids.contains("comic--00000000002"));
+    assert!(
+        snapshot
+            .deleted_chapter_ids
+            .contains("chapter--00000000001")
+    );
     assert_eq!(snapshot.objs.get("comic_cover").unwrap().len(), 2);
     assert!(snapshot.obj_tasks.is_empty());
 }
@@ -401,26 +431,39 @@ async fn delete_marks_workset_hierarchy_without_eager_object_deletes() {
 async fn delete_marks_large_workset_without_eager_object_work() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 513));
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        513,
+    ));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
     for comic_index in 0..=512 {
         let comic_id = format!("comic-{comic_index}");
 
-        mock.seed_comic(comic(&comic_id, "workset-1", comic_index));
+        mock.seed_comic(comic(&comic_id, "workset--00000000001", comic_index));
 
         seed_comic_cover(&mock, &comic_id);
     }
 
-    delete((&mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
+    delete(
+        (&mock, &mock),
+        token("user--00000000001"),
+        "workset--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.worksets.len(), 1);
     assert_eq!(snapshot.comics.len(), 513);
-    assert!(snapshot.deleted_workset_ids.contains("workset-1"));
+    assert!(
+        snapshot
+            .deleted_workset_ids
+            .contains("workset--00000000001")
+    );
     assert_eq!(snapshot.deleted_comic_ids.len(), 513);
     assert_eq!(snapshot.objs.get("comic_cover").unwrap().len(), 513);
     assert!(snapshot.obj_tasks.is_empty());
@@ -430,17 +473,26 @@ async fn delete_marks_large_workset_without_eager_object_work() {
 async fn background_sweep_deletes_comics_before_workset() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
-    mock.seed_member(admin_member("user-1", "team-1"));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-    mock.seed_comic(comic("comic-2", "workset-1", 1));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        2,
+    ));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
+    mock.seed_comic(comic("comic--00000000002", "workset--00000000001", 1));
 
-    seed_comic_cover(&mock, "comic-1");
-    seed_comic_cover(&mock, "comic-2");
+    seed_comic_cover(&mock, "comic--00000000001");
+    seed_comic_cover(&mock, "comic--00000000002");
 
-    delete((&mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
+    delete(
+        (&mock, &mock),
+        token("user--00000000001"),
+        "workset--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     assert!(
         sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic)
@@ -476,16 +528,17 @@ async fn background_sweep_deletes_comics_before_workset() {
 async fn delete_rolls_back_missing_workset() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1", 0));
-    mock.seed_member(admin_member("user-1", "team-1"));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001", 0));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
 
-    let cover_key = seed_comic_cover(&mock, "comic-1");
+    let cover_key = seed_comic_cover(&mock, "comic--00000000001");
 
-    let error = delete((&mock, &mock), token("user-1"), "missing".into())
-        .await
-        .err()
-        .unwrap();
+    let error =
+        delete((&mock, &mock), token("user--00000000001"), "missing".into())
+            .await
+            .err()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -497,7 +550,7 @@ async fn delete_rolls_back_missing_workset() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get("comic--00000000001")
             .unwrap()
             .meta
             .as_ref()

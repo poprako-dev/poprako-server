@@ -19,7 +19,7 @@ use crate::model::read::proj::subtree_delete::{
 };
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::subtree_delete::{
-    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageIds,
+    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageSourceIds,
     LockSubtreeDeleteScope, MarkSubtree, SweepSubtree,
 };
 use crate::part_impl::repo::RdbRepo;
@@ -92,7 +92,7 @@ where
     }
 }
 
-impl<L> Step<ListSubtreePageIds<'_>, RdbContext<L>> for RdbRepo
+impl<L> Step<ListSubtreePageSourceIds<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -106,9 +106,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &ListSubtreePageIds<'_>,
+        oper: &ListSubtreePageSourceIds<'_>,
     ) -> BaseRest<Vec<String>> {
-        sweep::list_page_ids(context.conn(), oper.chapter_id).await
+        sweep::list_page_source_ids(context.conn(), oper.chapter_id).await
     }
 }
 

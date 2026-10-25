@@ -24,17 +24,17 @@
 import assert from "node:assert/strict";
 
 import {
-    assertChapterPageCountMetricsConsistent,
-    assertPageExportInvariant,
-    assertPageUnitInvariant,
+    assertChapterPageSourceCountMetricsConsistent,
+    assertPageSourceExportInvariant,
+    assertPageSourceUnitInvariant,
 } from "../http/invariants.ts";
 import {
     deleteUnit,
     exportPoprako,
     getChapter,
-    listPageUnits,
+    listPageSourceUnits,
     newBubbleUnit,
-    savePageUnits,
+    savePageSourceUnits,
     updateUnit,
 } from "../http/fixtures.ts";
 import { PHASE, stagePhase } from "../state/stages.ts";
@@ -65,23 +65,23 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     // ---------- setup p1: clear to 0 units, then create 12 bubbles ----------
 
-    const p1Before = await listPageUnits(ctx.sadmin, p1Id);
+    const p1Before = await listPageSourceUnits(ctx.sadmin, p1Id);
 
     if (p1Before.total_unit_count > 0) {
-        await savePageUnits(
+        await savePageSourceUnits(
             ctx.sadmin,
             p1Id,
             p1Before.unit_infos.map((u) => deleteUnit(u.id)),
         );
     }
 
-    const p1Cleared = await listPageUnits(ctx.sadmin, p1Id);
+    const p1Cleared = await listPageSourceUnits(ctx.sadmin, p1Id);
 
     assert.deepEqual(p1Cleared.total_unit_count, 0, "p1 must start at 0 units");
 
     // raw_01/02 cannot save units (RAW_PROVIDER only). Use trans_01 to create
     // the 12 bubbles (trans_01 is a translator).
-    const create12 = await savePageUnits(
+    const create12 = await savePageSourceUnits(
         trans01.api,
         p1Id,
         Array.from({ length: 12 }, (_, i) => newBubbleUnit(`p1_u${i}`, 0.05 * i, 0.05 * i)),
@@ -89,7 +89,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     assert.deepEqual(create12.total_unit_count, 12);
 
-    const p1List = await listPageUnits(ctx.sadmin, p1Id);
+    const p1List = await listPageSourceUnits(ctx.sadmin, p1Id);
     const p1UnitIds = p1List.unit_infos.map((unit) => unit.id);
 
     assert.deepEqual(p1UnitIds.length, 12);
@@ -110,9 +110,9 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         );
 
     const [f6A, f6B, f6C] = await Promise.all([
-        savePageUnits(trans01.api, p1Id, buildF6Edits(f6Trans01, "A")),
-        savePageUnits(trans02.api, p1Id, buildF6Edits(f6Trans02, "B")),
-        savePageUnits(trans03.api, p1Id, buildF6Edits(f6Trans03, "C")),
+        savePageSourceUnits(trans01.api, p1Id, buildF6Edits(f6Trans01, "A")),
+        savePageSourceUnits(trans02.api, p1Id, buildF6Edits(f6Trans02, "B")),
+        savePageSourceUnits(trans03.api, p1Id, buildF6Edits(f6Trans03, "C")),
     ]);
 
     // All three saves eventually returned a fresh list; the fixture handles
@@ -125,7 +125,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     void f6B;
     void f6C;
 
-    const p1AfterF6 = await listPageUnits(ctx.sadmin, p1Id);
+    const p1AfterF6 = await listPageSourceUnits(ctx.sadmin, p1Id);
 
     assert.deepEqual(p1AfterF6.total_unit_count, 12, "no units lost");
     assert.deepEqual(p1AfterF6.translated_unit_count, 12, "all 12 translated");
@@ -157,8 +157,8 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         .sort((a, b) => a.unit_index - b.unit_index)
         .forEach((u, i) => assert.deepEqual(u.unit_index, i, `F6 export unit_index ${i}`));
 
-    await assertPageUnitInvariant(ctx.sadmin, p1Id);
-    await assertPageExportInvariant(ctx.sadmin, mainChapterId, p1Id);
+    await assertPageSourceUnitInvariant(ctx.sadmin, p1Id);
+    await assertPageSourceExportInvariant(ctx.sadmin, mainChapterId, p1Id);
 
     // ---------- F7. same-unit concurrent write (last-write-wins) ----------
 
@@ -167,14 +167,14 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     const f7OldUpdatedAt = f7Before.updated_at;
 
     const f7Results = await Promise.allSettled([
-        savePageUnits(trans01.api, p1Id, [
+        savePageSourceUnits(trans01.api, p1Id, [
             updateUnit(f7Target, {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: "A version",
             }),
         ]),
-        savePageUnits(trans02.api, p1Id, [
+        savePageSourceUnits(trans02.api, p1Id, [
             updateUnit(f7Target, {
                 is_bubble: true,
                 is_proofread: false,
@@ -192,7 +192,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         }
     }
 
-    const p1AfterF7 = await listPageUnits(ctx.sadmin, p1Id);
+    const p1AfterF7 = await listPageSourceUnits(ctx.sadmin, p1Id);
 
     const f7Final = p1AfterF7.unit_infos.find((u) => u.id === f7Target)!;
 
@@ -210,7 +210,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     const f8AnchorOldIndex = p1AfterF7.unit_infos.findIndex((u) => u.id === f8Anchor);
 
     const f8Results = await Promise.allSettled([
-        savePageUnits(trans01.api, p1Id, [
+        savePageSourceUnits(trans01.api, p1Id, [
             {
                 edit: "create",
                 local_id: "A_before_anchor",
@@ -222,7 +222,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
                 },
             },
         ]),
-        savePageUnits(trans02.api, p1Id, [
+        savePageSourceUnits(trans02.api, p1Id, [
             {
                 edit: "create",
                 local_id: "B_before_anchor",
@@ -246,7 +246,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     const f8SuccessCount = f8Results.length;
 
-    const p1AfterF8 = await listPageUnits(ctx.sadmin, p1Id);
+    const p1AfterF8 = await listPageSourceUnits(ctx.sadmin, p1Id);
     const priorIds = new Set(p1AfterF7.unit_infos.map((unit) => unit.id));
     const f8NewIds = p1AfterF8.unit_infos.filter((unit) => !priorIds.has(unit.id)).map((unit) => unit.id);
 
@@ -287,7 +287,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     void raw01;
     void raw02;
 
-    await assertPageExportInvariant(ctx.sadmin, mainChapterId, p1Id);
+    await assertPageSourceExportInvariant(ctx.sadmin, mainChapterId, p1Id);
 
     // ---------- F9. delete + update same unit in parallel ----------
 
@@ -299,14 +299,14 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     const f9CountBefore = p1AfterF8.total_unit_count;
 
     const f9Results = await Promise.allSettled([
-        savePageUnits(trans01.api, p1Id, [
+        savePageSourceUnits(trans01.api, p1Id, [
             updateUnit(f9Target, {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: "X-updated",
             }),
         ]),
-        savePageUnits(trans01.api, p1Id, [deleteUnit(f9Target)]),
+        savePageSourceUnits(trans01.api, p1Id, [deleteUnit(f9Target)]),
     ]);
 
     for (const r of f9Results) {
@@ -321,7 +321,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         }
     }
 
-    const p1AfterF9 = await listPageUnits(ctx.sadmin, p1Id);
+    const p1AfterF9 = await listPageSourceUnits(ctx.sadmin, p1Id);
 
     const f9Final = p1AfterF9.unit_infos.find((u) => u.id === f9Target);
 
@@ -344,11 +344,11 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     assert.ok(p1AfterF9.total_unit_count >= f9CountBefore - 1, "F9 count must not drop by more than 1");
 
     // translated count consistent with remaining non-empty translated_text
-    await assertPageUnitInvariant(ctx.sadmin, p1Id);
+    await assertPageSourceUnitInvariant(ctx.sadmin, p1Id);
 
     // ---------- final ----------
 
-    await assertChapterPageCountMetricsConsistent(ctx.sadmin, mainChapterId);
+    await assertChapterPageSourceCountMetricsConsistent(ctx.sadmin, mainChapterId);
 
     const mainFinal = await getChapter(ctx.sadmin, mainChapterId);
 

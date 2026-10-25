@@ -12,13 +12,13 @@ async fn create_rejects_preset_role_missing_from_membership() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
     let error = create(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateChapterInstr {
-            comic_id: "comic-1".into(),
+            comic_id: "comic--00000000001".into(),
             subtitle: None,
             preset_assignment_roles: Some(RoleMask::from(
                 RoleField::TRANSLATOR,
@@ -43,11 +43,25 @@ async fn create_completes_chapter_obligations() {
         for subtitle in [None, Some("Next chapter".to_owned())] {
             let mock = Mock::new();
 
-            seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+            seed_scope(
+                &mock,
+                "user--00000000001",
+                RoleMask::from(RoleField::ADMIN),
+            );
 
-            mock.seed_chapter(chapter("chapter-1", "comic-1", 0, previous_pin));
+            mock.seed_chapter(chapter(
+                "chapter--00000000001",
+                "comic--00000000001",
+                0,
+                previous_pin,
+            ));
 
-            mock.seed_chapter(chapter("chapter-2", "comic-1", 1, false));
+            mock.seed_chapter(chapter(
+                "chapter--00000000002",
+                "comic--00000000001",
+                1,
+                false,
+            ));
 
             mock.state
                 .lock()
@@ -59,9 +73,9 @@ async fn create_completes_chapter_obligations() {
 
             let created = create(
                 (&mock, &mock),
-                token("user-1"),
+                token("user--00000000001"),
                 CreateChapterInstr {
-                    comic_id: "comic-1".into(),
+                    comic_id: "comic--00000000001".into(),
                     subtitle: subtitle.clone(),
                     preset_assignment_roles: None,
                 },
@@ -79,9 +93,9 @@ async fn create_completes_chapter_obligations() {
                 .find(|chapter_info| chapter_info.id == created.id)
                 .unwrap();
 
-            assert_eq!(chapter_info.comic_id, "comic-1");
+            assert_eq!(chapter_info.comic_id, "comic--00000000001");
 
-            assert_eq!(chapter_info.creator_id, "user-1");
+            assert_eq!(chapter_info.creator_id, "user--00000000001");
 
             assert_eq!(chapter_info.index, 2);
 
@@ -116,7 +130,10 @@ async fn create_completes_chapter_obligations() {
             );
 
             for record in &snapshot.chapter_workflow_records {
-                assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
+                assert_eq!(
+                    record.actor_user_id.as_deref(),
+                    Some("user--00000000001")
+                );
 
                 if record.chapter_id == created.id {
                     assert!(matches!(
@@ -127,7 +144,7 @@ async fn create_completes_chapter_obligations() {
                     continue;
                 }
 
-                assert_eq!(record.chapter_id, "chapter-1");
+                assert_eq!(record.chapter_id, "chapter--00000000001");
 
                 assert!(matches!(
                     record.payload,
@@ -143,13 +160,17 @@ async fn create_completes_chapter_obligations() {
 async fn create_rejects_non_admin() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+    seed_scope(
+        &mock,
+        "user--00000000001",
+        RoleMask::from(RoleField::TRANSLATOR),
+    );
 
     let error = create(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateChapterInstr {
-            comic_id: "comic-1".into(),
+            comic_id: "comic--00000000001".into(),
             subtitle: None,
             preset_assignment_roles: None,
         },

@@ -41,21 +41,22 @@ pub fn get_chapter_by_id(
     accept!(chapter_info)
 }
 
-/// Resolves the minimal Unit edit scope through its owning Page.
+/// Resolves the minimal Unit edit scope through its owning source page.
 /// # Errors
 /// Returns the expected not-found error for a missing page or chapter.
-pub fn get_unit_edit_scope_by_page_id(
+pub fn get_unit_edit_scope_by_page_source_id(
     state: &MockState,
-    page_id: &str,
+    page_source_id: &str,
 ) -> BaseRest<ChapterUnitEditScope> {
     //
-    let page_info = state
+    let page_source_info = state
         .pages
         .iter()
-        .find(|page_info| page_info.id == page_id)
+        .find(|page_source_info| page_source_info.id == page_source_id)
         .ok_or_else(|| expected("error-page-not-found"))?;
 
-    let chapter_info = get_chapter_by_id(state, &page_info.chapter_id, &[])?;
+    let chapter_info =
+        get_chapter_by_id(state, &page_source_info.chapter_id, &[])?;
 
     accept!(ChapterUnitEditScope {
         id: chapter_info.id,
@@ -114,7 +115,7 @@ pub fn create_chapter(
         is_pinned: entry.is_pinned,
         index: entry.index,
         subtitle: entry.trimmed_subtitle().to_string(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

@@ -12,7 +12,7 @@ use super::UserInfoView;
 )]
 fn user_info_view_omits_absent_avatar_urls() {
     let user_info_view = UserInfoView {
-        id: "user-1".into(),
+        id: "user--00000000001".into(),
         nickname: "User".into(),
         qid: "qid-1".into(),
         avatar_url: None,

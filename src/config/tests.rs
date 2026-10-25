@@ -24,7 +24,9 @@ fn assert_defaults(config: &AppConfig) {
 
     assert_eq!(config.image.comic_cover_limit_mib, 2);
 
-    assert_eq!(config.image.page_image_limit_mib, 25);
+    assert_eq!(config.image.page_source_image_limit_mib, 25);
+
+    assert_eq!(config.image.page_artwork_image_limit_mib, 25);
 
     assert_eq!(config.artwork.chapter_artwork_limit_mib, 512);
 
@@ -65,7 +67,7 @@ fn empty_and_partial_sections_use_complete_defaults() {
     for document in [
         "",
         "[http]\n[http.rate_limit]\n[image]\n[artwork]\n[effect]\n[sched]\n[subtree_delete]\n[cache]\n[repo]\n[invitation]",
-        "[http]\nport = 8888\n[image]\npage_image_limit_mib = 25",
+        "[http]\nport = 8888\n[image]\npage_source_image_limit_mib = 25",
     ] {
         assert_defaults(&AppConfig::parse(document).unwrap());
     }
@@ -81,7 +83,7 @@ fn partial_overrides_reach_runtime_policy() {
         [http.rate_limit]
         burst = 7
         [image]
-        page_image_limit_mib = 30
+        page_source_image_limit_mib = 30
         [cache]
         unit_save_limit_mib = 2
         unit_save_token_budget = 32
@@ -112,7 +114,7 @@ fn partial_overrides_reach_runtime_policy() {
 
     assert_eq!(config.http.rate_limit.requests_per_second.get(), 20);
 
-    assert_eq!(config.image.page_image_limit_mib, 30);
+    assert_eq!(config.image.page_source_image_limit_mib, 30);
 
     assert_eq!(config.image.user_avatar_limit_mib, 1);
 
@@ -174,7 +176,7 @@ fn invalid_runtime_settings_are_rejected() {
         "[http.rate_limit]\nburst = 0",
         "[http.rate_limit]\nrequests_per_second = 1000000001",
         "[effect]\nqueue_capacity = 0",
-        "[image]\npage_image_limit_mib = 0",
+        "[image]\npage_source_image_limit_mib = 0",
         "[effect]\nqueue_capacity = 9223372036854775807",
         "[subtree_delete]\nconcurrency = 0",
         "[subtree_delete]\ntimeout_secs = 0",
@@ -215,7 +217,7 @@ fn upload_unit_keys_preserve_overrides() {
         user_avatar_limit_mib = 3
         team_avatar_limit_mib = 4
         comic_cover_limit_mib = 5
-        page_image_limit_mib = 6
+        page_source_image_limit_mib = 6
         [artwork]
         chapter_artwork_limit_mib = 128
     ",
@@ -228,7 +230,7 @@ fn upload_unit_keys_preserve_overrides() {
 
     assert_eq!(config.image.comic_cover_limit_mib, 5);
 
-    assert_eq!(config.image.page_image_limit_mib, 6);
+    assert_eq!(config.image.page_source_image_limit_mib, 6);
 
     assert_eq!(config.artwork.chapter_artwork_limit_mib, 128);
 }
@@ -240,7 +242,9 @@ fn obsolete_and_unknown_configuration_keys_are_rejected() {
         "[image]\nuser_avatar_limit = 1",
         "[image]\nteam_avatar_limit = 1",
         "[image]\ncomic_cover_limit = 2",
-        "[image]\npage_image_limit = 25",
+        "[image]\npage_source_image_limit = 25",
+        "[image]\npage_image_limit_mib = 25",
+        "[image]\npage_artwork_image_limit_mib = 0",
         "[artwork]\nchapter_artwork_limit = 512",
         "[cache]\nonline_user_ttl = 600",
         "[repo]\nunknown = 1",
@@ -307,11 +311,11 @@ fn checked_in_configs_preserve_environment_specific_values() {
 
     assert_eq!(local.http.host, "127.0.0.1");
 
-    assert_eq!(local.image.page_image_limit_mib, 30);
+    assert_eq!(local.image.page_source_image_limit_mib, 30);
 
     assert_eq!(deployment.http.host, "0.0.0.0");
 
-    assert_eq!(deployment.image.page_image_limit_mib, 25);
+    assert_eq!(deployment.image.page_source_image_limit_mib, 25);
 }
 
 #[test]
@@ -327,7 +331,7 @@ fn parses_toml_http_settings() {
             user_avatar_limit_mib = 1
             team_avatar_limit_mib = 1
             comic_cover_limit_mib = 2
-            page_image_limit_mib = 25
+            page_source_image_limit_mib = 25
         "#,
     )
     .unwrap();
@@ -342,7 +346,9 @@ fn parses_toml_http_settings() {
 
     assert_eq!(config.image.comic_cover_limit_mib, 2);
 
-    assert_eq!(config.image.page_image_limit_mib, 25);
+    assert_eq!(config.image.page_source_image_limit_mib, 25);
+
+    assert_eq!(config.image.page_artwork_image_limit_mib, 25);
 
     assert_eq!(config.artwork.chapter_artwork_limit_mib, 512);
 }
@@ -377,7 +383,7 @@ fn rejects_zero_image_mib_limits() {
             user_avatar_limit_mib = 0
             team_avatar_limit_mib = 1
             comic_cover_limit_mib = 1
-            page_image_limit_mib = 1
+            page_source_image_limit_mib = 1
         "#,
         r#"
             [http]
@@ -388,7 +394,7 @@ fn rejects_zero_image_mib_limits() {
             user_avatar_limit_mib = 1
             team_avatar_limit_mib = 0
             comic_cover_limit_mib = 1
-            page_image_limit_mib = 1
+            page_source_image_limit_mib = 1
         "#,
         r#"
             [http]
@@ -399,7 +405,7 @@ fn rejects_zero_image_mib_limits() {
             user_avatar_limit_mib = 1
             team_avatar_limit_mib = 1
             comic_cover_limit_mib = 0
-            page_image_limit_mib = 1
+            page_source_image_limit_mib = 1
         "#,
         r#"
             [http]
@@ -410,7 +416,7 @@ fn rejects_zero_image_mib_limits() {
             user_avatar_limit_mib = 1
             team_avatar_limit_mib = 1
             comic_cover_limit_mib = 1
-            page_image_limit_mib = 0
+            page_source_image_limit_mib = 0
         "#,
     ];
 
@@ -431,7 +437,7 @@ fn artwork_config_validates_custom_limits() {
         user_avatar_limit_mib = 1
         team_avatar_limit_mib = 1
         comic_cover_limit_mib = 2
-        page_image_limit_mib = 25
+        page_source_image_limit_mib = 25
     "#;
 
     let custom = AppConfig::parse(&format!(

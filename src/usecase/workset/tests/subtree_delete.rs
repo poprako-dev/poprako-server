@@ -4,12 +4,17 @@ use super::*;
 async fn comic_sweep_claims_at_most_sixty_four_childless_rows() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 65));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        65,
+    ));
 
     for index in 0..65 {
-        let comic_id = format!("comic-{index:02}");
+        let comic_id = format!("comic--{index:0>11}");
 
-        mock.seed_comic(comic(&comic_id, "workset-1", index));
+        mock.seed_comic(comic(&comic_id, "workset--00000000001", index));
 
         seed_comic_cover(&mock, &comic_id);
 
@@ -45,15 +50,20 @@ async fn comic_sweep_claims_at_most_sixty_four_childless_rows() {
 async fn comic_sweep_skips_parent_with_physical_chapter() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 1));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-    mock.seed_chapter(chapter("chapter-1", "comic-1"));
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        1,
+    ));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
+    mock.seed_chapter(chapter("chapter--00000000001", "comic--00000000001"));
 
     mock.state
         .lock()
         .unwrap()
         .deleted_comic_ids
-        .insert("comic-1".into());
+        .insert("comic--00000000001".into());
 
     assert!(
         !sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic)
@@ -68,15 +78,20 @@ async fn comic_sweep_skips_parent_with_physical_chapter() {
 async fn comic_sweep_rolls_back_the_whole_claim_on_object_failure() {
     let mock = Mock::new().with_obj_delete_failure();
 
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 1));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-    seed_comic_cover(&mock, "comic-1");
+    mock.seed_workset(workset_with_comic_count(
+        "workset--00000000001",
+        "team--00000000001",
+        0,
+        1,
+    ));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
+    seed_comic_cover(&mock, "comic--00000000001");
 
     mock.state
         .lock()
         .unwrap()
         .deleted_comic_ids
-        .insert("comic-1".into());
+        .insert("comic--00000000001".into());
 
     assert!(
         sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic)
@@ -87,14 +102,14 @@ async fn comic_sweep_rolls_back_the_whole_claim_on_object_failure() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics.len(), 1);
-    assert!(snapshot.deleted_comic_ids.contains("comic-1"));
+    assert!(snapshot.deleted_comic_ids.contains("comic--00000000001"));
     assert!(snapshot.obj_tasks.is_empty());
     assert!(
         snapshot
             .objs
             .get("comic_cover")
             .unwrap()
-            .contains_key("comic-1")
+            .contains_key("comic--00000000001")
     );
 }
 
@@ -105,7 +120,7 @@ async fn workset_sweep_claims_at_most_sixty_four_rows() {
     for index in 0..65 {
         let workset_id = format!("workset-{index:02}");
 
-        mock.seed_workset(workset(&workset_id, "team-1", index));
+        mock.seed_workset(workset(&workset_id, "team--00000000001", index));
 
         mock.state
             .lock()
@@ -135,20 +150,24 @@ async fn workset_sweep_claims_at_most_sixty_four_rows() {
 async fn chapter_and_team_sweeps_claim_one_row() {
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team 1", "Desc"));
-    mock.seed_team(team("team-2", "Team 2", "Desc"));
-    mock.seed_workset(workset("workset-1", "team-1", 0));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-    mock.seed_chapter(chapter("chapter-1", "comic-1"));
-    mock.seed_chapter(chapter("chapter-2", "comic-1"));
+    mock.seed_team(team("team--00000000001", "Team 1", "Desc"));
+    mock.seed_team(team("team--00000000002", "Team 2", "Desc"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001", 0));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
+    mock.seed_chapter(chapter("chapter--00000000001", "comic--00000000001"));
+    mock.seed_chapter(chapter("chapter--00000000002", "comic--00000000001"));
 
     {
         let mut state = mock.state.lock().unwrap();
 
-        state.deleted_chapter_ids.insert("chapter-1".into());
-        state.deleted_chapter_ids.insert("chapter-2".into());
-        state.deleted_team_ids.insert("team-1".into());
-        state.deleted_team_ids.insert("team-2".into());
+        state
+            .deleted_chapter_ids
+            .insert("chapter--00000000001".into());
+        state
+            .deleted_chapter_ids
+            .insert("chapter--00000000002".into());
+        state.deleted_team_ids.insert("team--00000000001".into());
+        state.deleted_team_ids.insert("team--00000000002".into());
     }
 
     assert!(

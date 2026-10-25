@@ -26,8 +26,8 @@ import {
     createWorkset,
     getWorkset,
     listWorksetComics,
-    newPageManifest,
-    reserveChapterPages,
+    newPageSourceManifest,
+    reserveChapterPageSources,
     reserveComicCover,
 } from "../http/fixtures.ts";
 import type { RunCtx } from "../state/runCtx.ts";
@@ -67,8 +67,8 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     await grantChapterWorkerRoles(chapter2.id, ctx.ids.defaultUserId);
 
     // Reserve one page in each chapter.
-    await reserveChapterPages(ctx.sadmin, comic.chapter_id, newPageManifest(1, "png"));
-    await reserveChapterPages(ctx.sadmin, chapter2.id, newPageManifest(1, "png"));
+    await reserveChapterPageSources(ctx.sadmin, comic.chapter_id, newPageSourceManifest(1, "png"));
+    await reserveChapterPageSources(ctx.sadmin, chapter2.id, newPageSourceManifest(1, "png"));
 
     await reserveComicCover(ctx.sadmin, comic.id, "png");
 
@@ -84,16 +84,16 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
     const workset_before_archive = await getWorkset(ctx.sadmin, workset.id);
     const active_object_versions: ActiveObjectVersions = await withDatabaseClient(async (client) => {
-        const [cover_result, page_result] = await Promise.all([
+        const [cover_result, page_source_result] = await Promise.all([
             client.query<ActiveObjectVersion>(
                 `SELECT "f_id" AS f_obj_id, "f_version" FROM "t_comic_cover" WHERE "f_id" = $1`,
                 [comic.id],
             ),
             client.query<ActiveObjectVersion>(
                 `
-                      SELECT page_image."f_id" AS f_obj_id, page_image."f_version"
-                      FROM "t_page_image" page_image
-                      JOIN "t_page" page ON page."f_id" = page_image."f_id"
+                      SELECT page_source_image."f_id" AS f_obj_id, page_source_image."f_version"
+                      FROM "t_page_source_image" page_source_image
+                      JOIN "t_page_source" page ON page."f_id" = page_source_image."f_id"
                       WHERE page."f_chapter_id" = ANY($1)
                       ORDER BY page."f_chapter_id", page."f_index"
                     `,
@@ -103,7 +103,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
         return {
             cover: cover_result.rows[0]!,
-            pages: page_result.rows,
+            pages: page_source_result.rows,
         };
     });
 
@@ -156,11 +156,15 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
         [],
     );
     expectError(
-        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comic.chapter_id}/pages?offset=0&limit=20`),
+        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comic.chapter_id}/page-sources?offset=0&limit=20`),
         422,
         2,
     );
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${chapter2.id}/pages?offset=0&limit=20`), 422, 2);
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${chapter2.id}/page-sources?offset=0&limit=20`),
+        422,
+        2,
+    );
 
     // ---------- repeated archive on the same comic fails ----------
 
@@ -210,7 +214,9 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     assert.ok(hasDeleteTask("comic_cover", active_object_versions.cover));
 
     assert.ok(
-        active_object_versions.pages.every((page_image) => hasDeleteTask("page_image", page_image)),
+        active_object_versions.pages.every((page_source_image) =>
+            hasDeleteTask("page_source_image", page_source_image),
+        ),
         "all reserved page images must have delete tasks",
     );
 }

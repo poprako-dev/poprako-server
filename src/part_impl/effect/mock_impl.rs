@@ -31,8 +31,8 @@ async fn develop_collects_events() {
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
-            team_id: "team-1".into(),
-            invitor_id: "user-1".into(),
+            team_id: "team--00000000001".into(),
+            invitor_id: "user--00000000001".into(),
             invitee_qid: "qid-2".into(),
         },
     }

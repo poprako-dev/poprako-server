@@ -13,13 +13,14 @@ fn round_trips_current_contract() {
         (
             PromPayload::Chapter {
                 payload: ChapterPayload::TryAdvanceRawProvideStage {
-                    chapter_id: "chapter-1".into(),
-                    actor_user_id: "user-1".into(),
+                    chapter_id: "chapter--00000000001".into(),
+                    actor_user_id: "user--00000000001".into(),
                 },
             },
             serde_json::json!({
                 "Chapter": { "payload": { "TryAdvanceRawProvideStage": {
-                    "chapter_id": "chapter-1", "actor_user_id": "user-1"
+                    "chapter_id": "chapter--00000000001",
+                    "actor_user_id": "user--00000000001"
                 } } }
             }),
         ),
@@ -71,7 +72,7 @@ fn rejects_obsolete_or_incomplete_payloads() {
     //
     let invalid = [
         serde_json::json!({
-            "AdvanceRawProvide": { "chapter_id": "chapter-1" }
+            "AdvanceRawProvide": { "chapter_id": "chapter--00000000001" }
         }),
         serde_json::json!({
             "PurgeExpiredInvitation": {
@@ -81,8 +82,8 @@ fn rejects_obsolete_or_incomplete_payloads() {
         serde_json::json!({
             "Chapter": {
                 "payload": {
-                    "chapter_id": "chapter-1",
-                    "actor_user_id": "user-1"
+                    "chapter_id": "chapter--00000000001",
+                    "actor_user_id": "user--00000000001"
                 }
             }
         }),
@@ -90,7 +91,7 @@ fn rejects_obsolete_or_incomplete_payloads() {
             "Chapter": {
                 "payload": {
                     "TryAdvanceRawProvideStage": {
-                        "chapter_id": "chapter-1"
+                        "chapter_id": "chapter--00000000001"
                     }
                 }
             }

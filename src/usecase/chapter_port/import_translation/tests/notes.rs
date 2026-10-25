@@ -14,24 +14,24 @@ async fn annotation_only_import_starts_translation_for_either_editor() {
         mock.state.lock().unwrap().assignments.clear();
 
         mock.seed_assignment(assignment(
-            "chapter-1",
-            "user-1",
+            "chapter--00000000001",
+            "user--00000000001",
             RoleMask::from(role),
         ));
 
-        mock.seed_page(page("page-1", 0, 0, 0));
+        mock.seed_page(page("page_source--00000000001", 0, 0, 0));
 
         let content = "1,0\n-\n框内\n框外\n-\nnotes\n>>>>>>>>[000.jpg]<<<<<<<<\n----------------[1]----------------[0.1,0.2,1]\n###小字###\n";
 
         import_translation(
             (&mock, &mock),
-            token("user-1"),
+            token("user--00000000001"),
             ImportChapterTranslationInstr {
                 format: TranslationFormat::LabelPlus.into(),
                 mode: ChapterTranslationImportMode::Overwrite.into(),
                 content: content.into(),
             },
-            "chapter-1".into(),
+            "chapter--00000000001".into(),
         )
         .await
         .unwrap();

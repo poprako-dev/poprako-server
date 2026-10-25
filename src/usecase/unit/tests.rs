@@ -18,8 +18,8 @@ mod save_tokens;
 mod flagged;
 // Unit annotations, completion, and shared editing contracts.
 mod notes;
-// Shared Page edit counters, rollback, and completion contracts.
-mod page_edit;
+// Shared PageSource edit counters, rollback, and completion contracts.
+mod page_source_edit;
 
 use super::transform::transform;
 use super::*;
@@ -27,14 +27,15 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr, TransformChapterUnitsInstr,
-    UnitCoordInstr, UnitEditInstr, UnitRevisionInstr, UnitTextTransformInstr,
-    UnitTransformInstr, UnitTranslationInstr,
+    ListPageSourceUnitInfosInstr, SavePageSourceUnitEditsInstr,
+    TransformChapterUnitsInstr, UnitCoordInstr, UnitEditInstr,
+    UnitRevisionInstr, UnitTextTransformInstr, UnitTransformInstr,
+    UnitTranslationInstr,
 };
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::cache::mem_impl::MemCache;
@@ -82,7 +83,7 @@ async fn transform_updates_selected_text_without_cascading_targets() {
     let mut transform_assignment =
         assignment(RoleMask::from(RoleField::TRANSLATOR));
 
-    transform_assignment.id = "assignment-2".to_string();
+    transform_assignment.id = "assignment--00000000002".to_string();
 
     transform_assignment.user_id = "translator-2".to_string();
 
@@ -101,7 +102,7 @@ async fn transform_updates_selected_text_without_cascading_targets() {
     transform(
         (&mock, &mock),
         token("translator-2"),
-        "chapter-1".to_string(),
+        "chapter--00000000001".to_string(),
         TransformChapterUnitsInstr {
             part: UnitTextPart::TranslatedText,
             units: vec![UnitTransformInstr {
@@ -156,7 +157,7 @@ async fn overlapping_transform_rolls_back_the_complete_request() {
     let error = transform(
         (&mock, &mock),
         token("translator-1"),
-        "chapter-1".to_string(),
+        "chapter--00000000001".to_string(),
         TransformChapterUnitsInstr {
             part: UnitTextPart::TranslatedText,
             units: vec![UnitTransformInstr {
@@ -402,8 +403,8 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     let listed = list_infos(
         (&mock, &mock),
         token("translator-1"),
-        ListPageUnitInfosInstr {
-            page_id: "page-1".to_string(),
+        ListPageSourceUnitInfosInstr {
+            page_source_id: "page_source--00000000001".to_string(),
         },
     )
     .await
@@ -418,10 +419,10 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
 }
 
 // Build save request instr for a fixed page id.
-fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageUnitEditsInstr {
-    SavePageUnitEditsInstr {
+fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageSourceUnitEditsInstr {
+    SavePageSourceUnitEditsInstr {
         save_id: uuid::Uuid::new_v4().to_string(),
-        page_id: "page-1".to_string(),
+        page_source_id: "page_source--00000000001".to_string(),
         edits,
     }
 }
@@ -503,8 +504,8 @@ fn workset() -> WorksetInfo {
     let current_time = OffsetDateTime::now_utc();
 
     WorksetInfo {
-        id: "workset-1".to_string(),
-        team_id: "team-1".to_string(),
+        id: "workset--00000000001".to_string(),
+        team_id: "team--00000000001".to_string(),
         index: 0,
         name: "workset".to_string(),
         description: None,
@@ -520,8 +521,8 @@ fn comic() -> ComicInfo {
     let current_time = OffsetDateTime::now_utc();
 
     ComicInfo {
-        id: "comic-1".to_string(),
-        workset_id: "workset-1".to_string(),
+        id: "comic--00000000001".to_string(),
+        workset_id: "workset--00000000001".to_string(),
         index: 0,
         title: "comic".to_string(),
         author: "author".to_string(),
@@ -545,13 +546,13 @@ fn chapter() -> ChapterInfo {
 
     ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".to_string(),
-        comic_id: "comic-1".to_string(),
+        id: "chapter--00000000001".to_string(),
+        comic_id: "comic--00000000001".to_string(),
         comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "chapter".to_string(),
-        page_count: 1,
+        page_source_count: 1,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -564,13 +565,13 @@ fn chapter() -> ChapterInfo {
 }
 
 // Build baseline page fixture with zero-unit counters.
-fn page() -> PageInfo {
+fn page() -> PageSourceInfo {
     //
     let current_time = OffsetDateTime::now_utc();
 
-    PageInfo {
-        id: "page-1".to_string(),
-        chapter_id: "chapter-1".to_string(),
+    PageSourceInfo {
+        id: "page_source--00000000001".to_string(),
+        chapter_id: "chapter--00000000001".to_string(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -586,8 +587,8 @@ fn assignment(roles: RoleMask) -> AssignmentInfo {
     let current_time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
-        id: "assignment-1".to_string(),
-        chapter_id: "chapter-1".to_string(),
+        id: "assignment--00000000001".to_string(),
+        chapter_id: "chapter--00000000001".to_string(),
         user_id: "translator-1".to_string(),
         user: None,
         chapter: None,

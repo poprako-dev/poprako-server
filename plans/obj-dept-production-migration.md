@@ -1,5 +1,10 @@
 # ObjDept Production Migration Plan
 
+> Historical snapshot of the August 2026 cutover. Its object paths and domain
+> names are not the current contract. See [the active spec](../specs/obj-dept.md)
+> and [the identity skill](../.agents/skills/identity-and-object-key-spec/SKILL.md).
+> This document does not authorize the separate source/artwork data conversion.
+
 ## Purpose
 
 This plan prepares the `feat/obj-dept` changes for a safe production cutover.

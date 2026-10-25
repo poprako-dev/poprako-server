@@ -17,7 +17,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
             oper: &'static str,
 
-            key: ObjKey,
+            key: ObjKeyRecord,
 
             visible_at: ::time::OffsetDateTime,
         }
@@ -27,7 +27,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
             pub fn new(
                 topic: &str,
                 oper: &'static str,
-                key: ObjKey,
+                key: ObjKeyRecord,
                 visible_at: ::time::OffsetDateTime,
             ) -> Self {
                 //
@@ -66,7 +66,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     oper: task.oper,
                     obj_id: &task.key.id,
                     ver: i64::from(task.key.ver),
-                    image: &task.key.image,
+                    domain: &task.key.domain,
                     gen_no: ORDINARY_GENERATION,
                     status: PENDING,
                     visible_at: task.visible_at,
@@ -99,6 +99,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
 /// Generates the public transaction-side adapter implementation.
 pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
     //
+    let defer_check = single_check(module);
+
+    //
     quote! {
         impl<L> ::poprako_obj_dept::prom::ObjDeptPromDefer<
             ::poprako_rdb_core::RdbContext<L>,
@@ -106,40 +109,36 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
         where
             L: ::poprako_orchestra::Level + Send,
         {
-            async fn defer_check<'a>(
+            #defer_check
+
+            fn defer_delete<
+                'a,
+                K: ::poprako_obj_dept::key::ObjRegistration,
+            >(
                 &'a self,
                 context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                key: &'a ::poprako_obj_dept::key::ObjKey,
-                expires_at: ::time::OffsetDateTime,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
-                //
-                let check = ::poprako_obj_dept::prom::ObjDeptPromCheck::new(
-                    key.clone(),
-                    expires_at,
-                );
-
-                self.defer_checks(context, topic, &[check]).await
+                key: &'a ::poprako_obj_dept::key::ObjKey<K>,
+            ) -> impl ::std::future::Future<
+                Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
+            > + Send
+            {
+                self.defer_deletes(context, ::std::slice::from_ref(key))
             }
 
-            async fn defer_delete<'a>(
+            fn defer_checks<
+                'a,
+                K: ::poprako_obj_dept::key::ObjRegistration,
+            >(
                 &'a self,
                 context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                key: &'a ::poprako_obj_dept::key::ObjKey,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
-                //
-                self.defer_deletes(context, topic, ::std::slice::from_ref(key))
-                    .await
-            }
+                checks: &'a [::poprako_obj_dept::prom::ObjDeptPromCheck<K>],
+            ) -> impl ::std::future::Future<
+                Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
+            > + Send
+            {
+                let topic = K::TOPIC;
 
-            async fn defer_checks<'a>(
-                &'a self,
-                context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                checks: &'a [::poprako_obj_dept::prom::ObjDeptPromCheck],
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
-                let mut tasks = checks
+                let tasks = checks
                     .iter()
                     .map(|check| {
                         let visible_at = check
@@ -157,25 +156,40 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                         Ok(#module::PreparedTask::new(
                             topic,
                             ::poprako_obj_dept::model::task::CHECK,
-                            check.key().clone(),
+                            check.key().to_record(),
                             visible_at,
                         ))
                     })
                     .collect::<::poprako_obj_dept::rest::
-                        ObjDeptRest<Vec<_>>>()?;
+                        ObjDeptRest<Vec<_>>>();
 
-                tasks.sort_unstable_by(|left, right| left.id.cmp(&right.id));
-                tasks.dedup_by(|left, right| left.id == right.id);
+                async move {
+                    //
+                    let mut tasks = tasks?;
 
-                #module::defer_tasks(context.conn(), topic, &tasks).await
+                    tasks.sort_unstable_by(|left, right| {
+                        left.id.cmp(&right.id)
+                    });
+
+                    tasks.dedup_by(|left, right| left.id == right.id);
+
+                    #module::defer_tasks(context.conn(), topic, &tasks).await
+                }
             }
 
-            async fn defer_deletes<'a>(
+            fn defer_deletes<
+                'a,
+                K: ::poprako_obj_dept::key::ObjRegistration,
+            >(
                 &'a self,
                 context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                keys: &'a [::poprako_obj_dept::key::ObjKey],
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
+                keys: &'a [::poprako_obj_dept::key::ObjKey<K>],
+            ) -> impl ::std::future::Future<
+                Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
+            > + Send
+            {
+                let topic = K::TOPIC;
+
                 let now = ::time::OffsetDateTime::now_utc();
                 let mut tasks = keys
                     .iter()
@@ -183,7 +197,7 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                         #module::PreparedTask::new(
                             topic,
                             ::poprako_obj_dept::model::task::DELETE,
-                            key.clone(),
+                            key.to_record(),
                             now,
                         )
                     })
@@ -192,7 +206,9 @@ pub fn expand_impl(name: &Ident, module: &Ident) -> TokenStream {
                 tasks.sort_unstable_by(|left, right| left.id.cmp(&right.id));
                 tasks.dedup_by(|left, right| left.id == right.id);
 
-                #module::defer_tasks(context.conn(), topic, &tasks).await
+                async move {
+                    #module::defer_tasks(context.conn(), topic, &tasks).await
+                }
             }
         }
     }
@@ -219,8 +235,8 @@ fn task_records(table: &Path) -> TokenStream {
             obj_id: String,
             #[diesel(column_name = f_version)]
             ver: i64,
-            #[diesel(column_name = f_key)]
-            image: String,
+            #[diesel(column_name = f_domain)]
+            domain: ::serde_json::Value,
 
             #[diesel(column_name = f_generation)]
             gen_no: i64,
@@ -243,8 +259,8 @@ fn task_records(table: &Path) -> TokenStream {
             obj_id: &'a str,
             #[diesel(column_name = f_version)]
             ver: i64,
-            #[diesel(column_name = f_key)]
-            image: &'a str,
+            #[diesel(column_name = f_domain)]
+            domain: &'a ::serde_json::Value,
 
             #[diesel(column_name = f_generation)]
             gen_no: i64,
@@ -271,7 +287,7 @@ fn validate_identities() -> TokenStream {
                     oper,
                     obj_id,
                     ver,
-                    image,
+                    domain,
                     gen_no: gen_value,
                     status,
                 } = record;
@@ -283,7 +299,7 @@ fn validate_identities() -> TokenStream {
                         oper,
                         obj_id,
                         ver,
-                        image,
+                        domain,
                         gen_value,
                         status,
                     ),
@@ -313,7 +329,7 @@ fn validate_identities() -> TokenStream {
                 record_oper,
                 record_obj_id,
                 record_ver,
-                record_image,
+                record_domain,
                 record_gen,
                 record_status,
             ) = record;
@@ -322,7 +338,7 @@ fn validate_identities() -> TokenStream {
                 && record_oper == task.oper
                 && record_obj_id == &task.key.id
                 && *record_ver == i64::from(task.key.ver)
-                && record_image == &task.key.image
+                && record_domain == &task.key.domain
                 && *record_gen == ORDINARY_GENERATION;
 
             if !is_same_identity {
@@ -352,5 +368,52 @@ fn validate_identities() -> TokenStream {
                 }
             }
         }
+    }
+}
+
+// Generates the single Check without cloning a typed key.
+fn single_check(module: &Ident) -> TokenStream {
+    //
+    quote! {
+            fn defer_check<
+                'a,
+                K: ::poprako_obj_dept::key::ObjRegistration,
+            >(
+                &'a self,
+                context: &'a mut ::poprako_rdb_core::RdbContext<L>,
+                key: &'a ::poprako_obj_dept::key::ObjKey<K>,
+                expires_at: ::time::OffsetDateTime,
+            ) -> impl ::std::future::Future<
+                Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
+            > + Send
+            {
+                //
+                let topic = K::TOPIC;
+
+                let key = key.to_record();
+
+                async move {
+                    //
+                    let visible_at = expires_at
+                        .checked_add(::time::Duration::minutes(1))
+                        .ok_or_else(|| {
+                            ::poprako_obj_dept::rest::ObjDeptError::
+                                Unrecoverable {
+                                message: "object check visibility overflow"
+                                    .into(),
+                            }
+                        })?;
+
+                    let task = #module::PreparedTask::new(
+                        topic,
+                        ::poprako_obj_dept::model::task::CHECK,
+                        key,
+                        visible_at,
+                    );
+
+                    #module::defer_tasks(context.conn(), topic, &[task]).await
+                }
+            }
+
     }
 }

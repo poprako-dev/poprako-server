@@ -58,10 +58,10 @@ pub struct ClaimSubtreeSweep {
     pub level: SubtreeSweepLevel,
 }
 
-/// Lists Page identifiers owned by one chapter.
+/// Lists source page identifiers owned by one chapter.
 #[derive(Oper)]
 #[oper(output = Vec<String>)]
-pub struct ListSubtreePageIds<'a> {
+pub struct ListSubtreePageSourceIds<'a> {
     /// Chapter identifier.
     pub chapter_id: &'a str,
 }

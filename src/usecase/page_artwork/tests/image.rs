@@ -34,8 +34,8 @@ async fn composite_list_exposes_only_raw_and_thumbnail_images() {
     let page_artwork_info_views =
         page_artwork_usecase::list_infos::<MockContext, _, _>(
             (&mock, &mock),
-            token("user-1"),
-            "chapter-1".into(),
+            token("user--00000000001"),
+            "chapter--00000000001".into(),
         )
         .await
         .unwrap();
@@ -97,7 +97,7 @@ async fn single_image_allocation_preserves_sibling_metadata() {
 
     page_artwork_image_usecase::alloc_image(
         (&mock, &mock, &mock, &config()),
-        token("user-1"),
+        token("user--00000000001"),
         page_artwork_id.clone(),
         alloc_page_artwork_image_instr,
     )
@@ -127,5 +127,5 @@ async fn single_image_allocation_preserves_sibling_metadata() {
 
     assert_eq!(updated.index, 0);
 
-    assert_eq!(updated.chapter_id, "chapter-1");
+    assert_eq!(updated.chapter_id, "chapter--00000000001");
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-/// Page-content strategy selected for one chapter translation import.
+/// source page-content strategy selected for one chapter translation import.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChapterTranslationImportMode {
     /// Preserve pages that already contain visible Units.
@@ -99,19 +99,6 @@ impl<'de> Deserialize<'de> for ExportFormatSpec {
             (false, false) => {
                 Err(D::Error::custom("at least one export format is required"))
             }
-        }
-    }
-}
-
-impl From<TranslationFormat> for ExportFormatSpec {
-    // Convert one translation format into its corresponding export selection.
-    fn from(format: TranslationFormat) -> Self {
-        //
-        match format {
-            //
-            TranslationFormat::LabelPlus => Self::LABEL_PLUS,
-
-            TranslationFormat::PopRaKo => Self::POPRAKO,
         }
     }
 }

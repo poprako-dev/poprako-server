@@ -5,12 +5,14 @@
 
 use super::*;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::task::ObjTask;
 use time::OffsetDateTime;
 
-use crate::model::read::proj::page::{PageInfo, PageRawIdentInfo};
+use crate::model::read::proj::page_source::{
+    PageSourceInfo, PageSourceRawIdentInfo,
+};
 use crate::part_impl::repo::mock_impl::MockObjRecord;
 use crate::value::chapter::stage::{StageOper, StagePhase};
 use crate::value::chapter_workflow_record::{
@@ -22,15 +24,20 @@ async fn update_stage_admin_advances_any_stage() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
 
     update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Publish.into(),
             oper: StageOper::Advance.into(),
         },
@@ -48,7 +55,10 @@ async fn update_stage_admin_advances_any_stage() {
 
     let workflow_record = snapshot.chapter_workflow_records.first().unwrap();
 
-    assert_eq!(workflow_record.actor_user_id.as_deref(), Some("user-1"));
+    assert_eq!(
+        workflow_record.actor_user_id.as_deref(),
+        Some("user--00000000001")
+    );
 
     assert!(matches!(
         &workflow_record.payload,
@@ -65,15 +75,20 @@ async fn update_stage_admin_advances_any_stage() {
 async fn update_stage_noop_does_not_create_workflow_record() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
 
     update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Translate.into(),
             oper: StageOper::Revert.into(),
         },
@@ -101,21 +116,30 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::REVIEWER));
+    seed_scope(
+        &mock,
+        "user--00000000001",
+        RoleMask::from(RoleField::REVIEWER),
+    );
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        "chapter--00000000001",
+        "user--00000000001",
         RoleMask::from(RoleField::REVIEWER),
     ));
 
     let error = update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Translate.into(),
             oper: StageOper::Advance.into(),
         },
@@ -132,9 +156,14 @@ async fn update_stage_rejects_invalid_transition() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
+    seed_scope(
+        &mock,
+        "user--00000000001",
+        RoleMask::from(RoleField::PUBLISHER),
+    );
 
-    let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
+    let mut chapter_info =
+        chapter("chapter--00000000001", "comic--00000000001", 1, false);
 
     chapter_info.stages = chapter_info
         .stages
@@ -144,16 +173,16 @@ async fn update_stage_rejects_invalid_transition() {
     mock.seed_chapter(chapter_info);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        "chapter--00000000001",
+        "user--00000000001",
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
     let error = update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Publish.into(),
             oper: StageOper::Advance.into(),
         },
@@ -166,22 +195,31 @@ async fn update_stage_rejects_invalid_transition() {
 }
 
 #[tokio::test]
-async fn update_stage_publish_enqueues_page_image_delete() {
+async fn update_stage_publish_enqueues_page_source_image_delete() {
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    seed_scope(
+        &mock,
+        "user--00000000001",
+        RoleMask::from(RoleField::PUBLISHER),
+    );
+    mock.seed_chapter(chapter(
+        "chapter--00000000001",
+        "comic--00000000001",
+        1,
+        false,
+    ));
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        "chapter--00000000001",
+        "user--00000000001",
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
     let created_at = OffsetDateTime::now_utc();
 
-    mock.seed_page(PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    mock.seed_page(PageSourceInfo {
+        id: "page_source--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -190,10 +228,10 @@ async fn update_stage_publish_enqueues_page_image_delete() {
         updated_at: created_at,
     });
 
-    mock.state.lock().unwrap().page_raw_idents.insert(
-        "page-1".into(),
-        PageRawIdentInfo {
-            page_id: "page-1".into(),
+    mock.state.lock().unwrap().page_source_raw_idents.insert(
+        "page_source--00000000001".into(),
+        PageSourceRawIdentInfo {
+            page_source_id: "page_source--00000000001".into(),
             raw_ident: "source.png".into(),
             created_at,
             updated_at: created_at,
@@ -201,19 +239,23 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     );
 
     let key = ObjKey {
-        id: "page-1".into(),
+        id: "page_source--00000000001".into(),
         ver: 1,
-        image: "page/chapter_chapter-1/page-1-1.png".into(),
+        domain: serde_json::json!({
+            "chapter_id": "chapter--00000000001",
+            "page_source_id": "page_source--00000000001",
+            "ext": "png",
+        }),
     };
 
     mock.state
         .lock()
         .unwrap()
         .objs
-        .entry("page_image")
+        .entry("page_source_image")
         .or_default()
         .insert(
-            "page-1".into(),
+            "page_source--00000000001".into(),
             MockObjRecord {
                 version: 1,
                 meta: Some(ObjMeta {
@@ -227,9 +269,9 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Publish.into(),
             oper: StageOper::Advance.into(),
         },
@@ -239,20 +281,18 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     let snapshot = mock.snapshot();
 
-    assert!(
-        snapshot
-            .objs
-            .get("page_image")
-            .unwrap()
-            .get("page-1")
-            .unwrap()
-            .meta
-            .is_none()
-    );
-    assert!(snapshot.page_raw_idents.is_empty());
+    let source_objs = snapshot.objs.get("page_source_image").unwrap();
+
+    let source = source_objs.get("page_source--00000000001").unwrap();
+
+    assert!(source.meta.is_none());
+    assert!(snapshot.page_source_raw_idents.is_empty());
     assert_eq!(snapshot.pages.len(), 1);
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "page-1")
+        matches!(
+            task,
+            ObjTask::Delete { key } if key.id == "page_source--00000000001"
+        )
     }));
 
     let events = mock.drain_events();
@@ -273,9 +313,10 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
-    let mut chapter_info = chapter("chapter-1", "comic-1", 0, false);
+    let mut chapter_info =
+        chapter("chapter--00000000001", "comic--00000000001", 0, false);
 
     chapter_info.stages = chapter_info
         .stages
@@ -286,9 +327,9 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
 
     let info_result = update_info(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterInfoInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             subtitle: Some("changed".into()),
         },
     )
@@ -298,9 +339,9 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
 
     let stage_result = update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Translate.into(),
             oper: StageOper::Advance.into(),
         },

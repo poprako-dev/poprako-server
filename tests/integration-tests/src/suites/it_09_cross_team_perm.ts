@@ -133,7 +133,9 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
                 expectError(await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}`), 403, 4);
 
                 expectError(
-                    await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}/pages?offset=0&limit=20`),
+                    await outsiderApi.get<ErrorBody>(
+                        `/api/v1/chapters/${ctx.main.chapterId}/page-sources?offset=0&limit=20`,
+                    ),
                     403,
                     4,
                 );

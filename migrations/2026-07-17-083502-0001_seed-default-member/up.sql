@@ -15,11 +15,11 @@ INSERT INTO "t_member" (
     "f_assigned_admin_at",
     "f_assigned_bot_at"
 ) VALUES (
-    'member-11111111111',
+    'member--11111111111',
 
-    'user-11111111111',
+    'user--11111111111',
     'SuperAdmin-OvO',
-    'team-11111111111',
+    'team--11111111111',
 
     NOW(),
     NOW(),

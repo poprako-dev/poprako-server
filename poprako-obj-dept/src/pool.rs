@@ -5,6 +5,7 @@ use std::future::Future;
 
 use futures_util::future::try_join_all;
 
+use crate::key::{ObjKind, ObjPath};
 use crate::model::meta::ObjMeta;
 use crate::model::slot::ObjDeptPoolSlot;
 use crate::model::url::{ObjUrlSpec, ObjUrls};
@@ -15,12 +16,15 @@ pub trait ObjDeptPoolView {
     /// Generates public or signed read URLs for one physical key and profile.
     fn gen_urls(
         &self,
-        key: &str,
+        key: &ObjPath,
         spec: ObjUrlSpec,
     ) -> impl Future<Output = ObjDeptRest<ObjUrls>> + Send;
 
     /// Checks whether one physical key exists.
-    fn has(&self, key: &str) -> impl Future<Output = ObjDeptRest<bool>> + Send;
+    fn has(
+        &self,
+        key: &ObjPath,
+    ) -> impl Future<Output = ObjDeptRest<bool>> + Send;
 }
 
 /// Complete storage-neutral physical object operations.
@@ -28,13 +32,16 @@ pub trait ObjDeptPool: ObjDeptPoolView {
     /// Generates a write capability for one physical key.
     fn gen_slot(
         &self,
-        key: &str,
+        key: &ObjPath,
         content_type: &str,
         byte_len: u64,
     ) -> impl Future<Output = ObjDeptRest<ObjDeptPoolSlot>> + Send;
 
     /// Deletes one physical key idempotently.
-    fn del(&self, key: &str) -> impl Future<Output = ObjDeptRest<()>> + Send;
+    fn del(
+        &self,
+        key: &ObjPath,
+    ) -> impl Future<Output = ObjDeptRest<()>> + Send;
 }
 
 /// Rejects an object URL specification that selects no rendition.
@@ -53,13 +60,16 @@ pub fn ensure_url_spec(spec: ObjUrlSpec) -> ObjDeptRest<()> {
 
 /// Resolves uploaded metadata through a bounded number of pool futures.
 #[doc(hidden)]
-pub async fn gen_urls_bounded<P, S>(
+pub async fn gen_urls_bounded<P, S, K>(
     pool: &P,
     spec: ObjUrlSpec,
-    metas: &HashMap<String, ObjMeta, S>,
-) -> ObjDeptRest<HashMap<String, ObjUrls>>
+    metas: &HashMap<K::Id, ObjMeta<K>, S>,
+) -> ObjDeptRest<HashMap<K::Id, ObjUrls>>
 where
     P: ObjDeptPoolView + Sync,
+    K: ObjKind,
+    K::Id: Clone + Send + Sync,
+    K::Ext: Sync,
     S: std::hash::BuildHasher + Sync,
 {
     // Maximum pool requests resolved concurrently in one batch.
@@ -72,7 +82,7 @@ where
         .filter(|(_, meta)| meta.is_avail)
         .collect::<Vec<_>>();
 
-    uploaded.sort_unstable_by_key(|(id, _)| id.as_str());
+    uploaded.sort_unstable_by_key(|(id, _)| *id);
 
     let mut urls = Vec::with_capacity(uploaded.len());
 
@@ -80,7 +90,7 @@ where
         //
         let futures = chunk.iter().map(|(id, meta)| async move {
             //
-            let obj_urls = pool.gen_urls(&meta.key.image, spec).await?;
+            let obj_urls = pool.gen_urls(meta.key.image(), spec).await?;
 
             Ok(((*id).clone(), obj_urls))
         });

@@ -5,7 +5,8 @@ mod tests;
 
 use time::OffsetDateTime;
 
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// One immutable chapter workflow record to persist within a transaction.
@@ -35,7 +36,7 @@ impl<'a> ChapterWorkflowRecordEntryShape<'a> {
         payload: ChapterWorkflowRecordPayload,
     ) -> Self {
         Self {
-            id: next_snowflake_id(),
+            id: next_business_id(BusinessIdKind::ChapterWorkflowRecord),
             chapter_id,
             actor_user_id,
             payload,

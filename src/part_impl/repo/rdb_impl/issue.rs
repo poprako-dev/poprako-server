@@ -41,7 +41,7 @@ async fn clear(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-// Read ordered issues without exposing mutation operations per Page or issue.
+// Read ordered issues without exposing mutation operations per PageSource or issue.
 #[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,

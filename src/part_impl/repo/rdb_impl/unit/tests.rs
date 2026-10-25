@@ -20,12 +20,13 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageSourceIds,
+    ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
+use crate::part_impl::repo::rdb_impl::test_shared::PageSourceFixture;
 use crate::result::BaseError;
 use crate::util::Patch;
 use poprako_rdb_core::RdbCore;
@@ -36,18 +37,18 @@ const PREFIX: &str = "rdb-test-unit-domain-";
 async fn verify_selected_units(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let missing_page_id = [PREFIX, "missing-page"].concat();
-    let page_ids = [
-        page_fixture.page_entry.id.as_str(),
-        missing_page_id.as_str(),
+    let missing_page_source_id = [PREFIX, "missing-page"].concat();
+    let page_source_ids = [
+        page_source_fixture.page_source_entry.id.as_str(),
+        missing_page_source_id.as_str(),
     ];
 
     let batch_unit_infos = repo
-        .run(&ListUnitInfosByPageIds {
-            page_ids: &page_ids,
+        .run(&ListUnitInfosByPageSourceIds {
+            page_source_ids: &page_source_ids,
         })
         .await
         .unwrap();
@@ -113,10 +114,10 @@ async fn verify_selected_units(
 async fn verify_restore(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let creator_id = page_fixture.chapter_info.creator_id.clone();
+    let creator_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let restore_edits = [UnitEdit::Save {
         id: first_id.to_owned(),
@@ -155,7 +156,7 @@ async fn verify_restore(
             .step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                     orders: &restore_orders,
                     edits: &restore_edits,
                 },
@@ -176,7 +177,7 @@ async fn verify_restore(
 async fn verify_tombstone(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     first_id: &str,
     create_orders: &[UnitOrder],
 ) {
@@ -190,7 +191,7 @@ async fn verify_tombstone(
             .step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                     orders: create_orders,
                     edits: &delete_edits,
                 },
@@ -203,7 +204,7 @@ async fn verify_tombstone(
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                 },
             )
             .await?;
@@ -227,7 +228,7 @@ async fn verify_tombstone(
 async fn verify_mixed_patches(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     (first_id, second_id): (&str, &str),
 ) {
     let mixed_patch_edits = [
@@ -258,7 +259,7 @@ async fn verify_mixed_patches(
             translation: Patch::Assign {
                 value: UnitTranslation {
                     translated_text: "\u{3000}".to_string(),
-                    last_translator_id: page_fixture
+                    last_translator_id: page_source_fixture
                         .chapter_info
                         .creator_id
                         .clone(),
@@ -274,7 +275,7 @@ async fn verify_mixed_patches(
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                 },
             )
             .await?;
@@ -283,7 +284,7 @@ async fn verify_mixed_patches(
             .step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                     orders: &orders,
                     edits: &mixed_patch_edits,
                 },
@@ -306,10 +307,10 @@ async fn verify_mixed_patches(
 async fn verify_stale_edit_rollback(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     (first_id, second_id): (&str, &str),
 ) {
-    let creator_id = page_fixture.chapter_info.creator_id.clone();
+    let creator_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let missing_id = [PREFIX, "missing"].concat();
 
@@ -366,7 +367,7 @@ async fn verify_stale_edit_rollback(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                     orders: &stale_orders,
                     edits: &rollback_edits,
                 },
@@ -410,10 +411,10 @@ async fn verify_stale_edit_rollback(
 async fn verify_create_and_save(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     (first_id, second_id): (&str, &str),
 ) -> [UnitOrder; 2] {
-    let creator_id = page_fixture.chapter_info.creator_id.clone();
+    let creator_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let create_edits = [
         create_edit(first_id, &creator_id, "translated"),
@@ -457,7 +458,7 @@ async fn verify_create_and_save(
             .step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &page_fixture.page_entry.id,
+                    page_source_id: &page_source_fixture.page_source_entry.id,
                     orders: &[],
                     edits: &create_edits,
                 },
@@ -480,7 +481,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
 
-    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+    let page_source_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
     let config = crate::config::repo::RepoConfig {
         unit_order_query_batch_size: std::num::NonZeroU32::new(2).unwrap(),
@@ -498,7 +499,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     let create_orders = verify_create_and_save(
         &repo,
         &nucl,
-        &page_fixture,
+        &page_source_fixture,
         (&first_id, &second_id),
     )
     .await;
@@ -506,23 +507,41 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     verify_stale_edit_rollback(
         &repo,
         &nucl,
-        &page_fixture,
+        &page_source_fixture,
         (&first_id, &second_id),
     )
     .await;
 
-    verify_mixed_patches(&repo, &nucl, &page_fixture, (&first_id, &second_id))
+    verify_mixed_patches(
+        &repo,
+        &nucl,
+        &page_source_fixture,
+        (&first_id, &second_id),
+    )
+    .await;
+
+    verify_tombstone(
+        &repo,
+        &nucl,
+        &page_source_fixture,
+        &first_id,
+        &create_orders,
+    )
+    .await;
+
+    verify_restore(&repo, &nucl, &page_source_fixture, (&first_id, &second_id))
         .await;
 
-    verify_tombstone(&repo, &nucl, &page_fixture, &first_id, &create_orders)
+    verify_selected_units(
+        &repo,
+        &nucl,
+        &page_source_fixture,
+        (&first_id, &second_id),
+    )
+    .await;
+
+    regression::verify_chunking_and_diff(&repo, &nucl, &page_source_fixture)
         .await;
-
-    verify_restore(&repo, &nucl, &page_fixture, (&first_id, &second_id)).await;
-
-    verify_selected_units(&repo, &nucl, &page_fixture, (&first_id, &second_id))
-        .await;
-
-    regression::verify_chunking_and_diff(&repo, &nucl, &page_fixture).await;
 
     flagged::verify_flags(shared.clone()).await;
 

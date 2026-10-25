@@ -29,11 +29,11 @@ use crate::util::patch_input::PatchInput;
 
 use crate::value::unit::{MAX_UNIT_TRANSFORM_COUNT, UnitTextPart};
 
-/// Input parameters for listing visible Units under one Page.
+/// Input parameters for listing visible Units under one source page.
 #[derive(Debug, Deserialize)]
-pub struct ListPageUnitInfosInstr {
-    /// Page whose visible Units are listed.
-    pub page_id: String,
+pub struct ListPageSourceUnitInfosInstr {
+    /// source page whose visible Units are listed.
+    pub page_source_id: String,
 }
 
 /// Input parameters for searching visible Units under one Chapter.
@@ -49,12 +49,12 @@ pub struct SearchChapterUnitInfosInstr {
 
 /// Input parameters for saving a batch of Unit edits.
 #[derive(Deserialize)]
-pub struct SavePageUnitEditsInstr {
+pub struct SavePageSourceUnitEditsInstr {
     /// Client-generated identity of this immutable save batch.
     pub save_id: String,
 
-    /// Page whose Units are being edited.
-    pub page_id: String,
+    /// source page whose Units are being edited.
+    pub page_source_id: String,
 
     /// Ordered batch of Unit edits.
     pub edits: Vec<UnitEditInstr>,
@@ -276,7 +276,7 @@ pub enum UnitEditInstr {
     },
 }
 
-/// Page-relative Unit coordinates.
+/// source page-relative Unit coordinates.
 #[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]

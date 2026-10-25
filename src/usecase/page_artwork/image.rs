@@ -33,6 +33,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
+use crate::value::business_id::PageArtworkId;
 
 /// Replaces one composite image without changing its identity or review issues.
 #[instrument(
@@ -198,10 +199,10 @@ where
             ));
         }
 
-        let obj_gen = ObjGen {
-            id,
-            ver: instr.image_ver,
-        };
+        let obj_gen = ObjGen::<PageArtworkImage>::new(
+            PageArtworkId::new(&id)?,
+            instr.image_ver,
+        );
 
         let marked = MarkObjUploaded::<PageArtworkImage>::new(&obj_gen)
             .step_on(obj_dept, context)

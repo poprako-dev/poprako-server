@@ -1,11 +1,11 @@
 # Unit Save API
 
-`POST /api/v1/pages/{page_id}/units/save` applies one ordered batch of Unit
+`POST /api/v1/page-sources/{page_source_id}/units/save` applies one ordered batch of Unit
 edits. Every request requires a `save_id` UUID query parameter. A successful save
 returns `200 OK` with `data.created_unit_ids`, containing the `local_id` and `unit_id`
 pairs for newly created Units (an empty array for batches without creates).
 The client applies this mapping to pending local edits, then calls
-`GET /api/v1/pages/{page_id}/units` to obtain the latest identities, visible
+`GET /api/v1/page-sources/{page_source_id}/units` to obtain the latest identities, visible
 sequence, and counters.
 
 The save runs in a Serializable transaction. A concurrent write can return
@@ -23,7 +23,7 @@ fields are rejected.
     {
       "edit": "create",
       "local_id": "local-1",
-      "next_id": "unit-b",
+      "next_id": "unit--35727087946",
       "is_bubble": true,
       "coord": {
         "x_coord": 12.5,
@@ -35,7 +35,7 @@ fields are rejected.
     },
     {
       "edit": "patch",
-      "id": "unit-a",
+      "id": "unit--34844962250",
       "next_id": { "type": "clear" },
       "revision": {
         "type": "assign",
@@ -47,7 +47,7 @@ fields are rejected.
     },
     {
       "edit": "delete",
-      "id": "unit-c"
+      "id": "unit--92070664930"
     }
 ]
 ```

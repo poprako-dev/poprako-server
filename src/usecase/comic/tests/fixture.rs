@@ -22,7 +22,7 @@ pub fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
         author: "author".into(),
         description: None,
         chapter_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -40,12 +40,12 @@ pub fn comics_with_opposed_activity(
         ComicInfo {
             last_active_at: baseline - Duration::hours(1),
             updated_at: baseline + Duration::hours(1),
-            ..comic("comic-2", "workset-1", 2)
+            ..comic("comic--00000000002", "workset--00000000001", 2)
         },
         ComicInfo {
             last_active_at: baseline,
             updated_at: baseline - Duration::hours(1),
-            ..comic("comic-1", "workset-1", 1)
+            ..comic("comic--00000000001", "workset--00000000001", 1)
         },
     ]
 }
@@ -62,12 +62,12 @@ pub fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
         is_pinned: true,
         index: 0,
         subtitle: "chapter".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: stage_mask,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,

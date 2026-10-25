@@ -32,7 +32,7 @@ fn member(user_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles: RoleMask::from(RoleField::TRANSLATOR),
@@ -44,13 +44,13 @@ fn termbase(term_count: usize) -> TermbaseInfo {
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {
-        id: "termbase-1".into(),
-        team_id: Some("team-1".into()),
+        id: "termbase--00000000001".into(),
+        team_id: Some("team--00000000001".into()),
         comic_id: None,
         name: "Glossary".into(),
         description: Some("Old description".into()),
         term_count,
-        creator_id: "user-original".into(),
+        creator_id: "user--54497427868".into(),
         created_at: time,
         updated_at: time,
     }
@@ -62,11 +62,11 @@ fn term(id: &str, source: &str, targets: &[&str]) -> TermInfo {
 
     TermInfo {
         id: id.into(),
-        termbase_id: "termbase-1".into(),
+        termbase_id: "termbase--00000000001".into(),
         source: source.into(),
         targets: targets.iter().map(|target| (*target).into()).collect(),
         comment: Some("Old comment".into()),
-        creator_id: "user-original".into(),
+        creator_id: "user--54497427868".into(),
         created_at: time,
         updated_at: time,
     }
@@ -74,7 +74,7 @@ fn term(id: &str, source: &str, targets: &[&str]) -> TermInfo {
 
 fn token() -> UserToken {
     UserToken {
-        user_id: "user-1".into(),
+        user_id: "user--00000000001".into(),
     }
 }
 
@@ -99,9 +99,9 @@ fn import_term(source: &str, targets: &[&str]) -> ImportTermInstr {
 
 fn seed_scope(mock: &Mock) {
     //
-    mock.seed_team(team("team-1", "Team", "Description"));
+    mock.seed_team(team("team--00000000001", "Team", "Description"));
 
-    mock.seed_member(member("user-1"));
+    mock.seed_member(member("user--00000000001"));
 }
 
 #[tokio::test]
@@ -120,7 +120,7 @@ async fn import_creates_team_termbase_and_terms() {
         (&mock, &mock),
         token(),
         TermbaseScope::Team {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
         },
         false,
         instr,
@@ -152,7 +152,7 @@ async fn import_force_merge_updates_metadata_and_merges_targets() {
 
     mock.seed_termbase(termbase(1));
 
-    mock.seed_term(term("term-1", "Source", &["Old"]));
+    mock.seed_term(term("term--00000000001", "Source", &["Old"]));
 
     let instr = import_instr(
         " glossary ",
@@ -166,7 +166,7 @@ async fn import_force_merge_updates_metadata_and_merges_targets() {
         (&mock, &mock),
         token(),
         TermbaseScope::Team {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
         },
         true,
         instr,
@@ -192,7 +192,7 @@ async fn import_force_merge_updates_metadata_and_merges_targets() {
     let merged_term = snapshot
         .terms
         .iter()
-        .find(|term_info| term_info.id == "term-1")
+        .find(|term_info| term_info.id == "term--00000000001")
         .unwrap();
 
     assert_eq!(merged_term.source, "source");
@@ -201,7 +201,7 @@ async fn import_force_merge_updates_metadata_and_merges_targets() {
 
     assert_eq!(merged_term.comment.as_deref(), Some("New comment"));
 
-    assert_eq!(merged_term.creator_id, "user-original");
+    assert_eq!(merged_term.creator_id, "user--54497427868");
 }
 
 #[tokio::test]
@@ -217,7 +217,7 @@ async fn import_rejects_same_name_without_force_atomically() {
         (&mock, &mock),
         token(),
         TermbaseScope::Team {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
         },
         false,
         import_instr("GLOSSARY", vec![import_term("Added", &["Target"])]),
@@ -257,7 +257,7 @@ async fn import_rejects_duplicate_normalized_sources() {
         (&mock, &mock),
         token(),
         TermbaseScope::Team {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
         },
         false,
         instr,
@@ -279,11 +279,11 @@ async fn export_orders_portable_terms_without_metadata() {
 
     mock.seed_termbase(termbase(2));
 
-    mock.seed_term(term("term-2", "Beta", &["B"]));
+    mock.seed_term(term("term--00000000002", "Beta", &["B"]));
 
-    mock.seed_term(term("term-1", "Alpha", &["A"]));
+    mock.seed_term(term("term--00000000001", "Alpha", &["A"]));
 
-    let val = export((&mock, &mock), token(), "termbase-1".into())
+    let val = export((&mock, &mock), token(), "termbase--00000000001".into())
         .await
         .unwrap();
 
@@ -319,9 +319,11 @@ async fn append_preserves_identity_and_metadata_and_counts_real_changes() {
 
     let original_base = termbase(2);
 
-    let original_term = term("term-1", "Source", &["Preferred", "Second"]);
+    let original_term =
+        term("term--00000000001", "Source", &["Preferred", "Second"]);
 
-    let unchanged_term = term("term-2", "Stable", &["Stable target"]);
+    let unchanged_term =
+        term("term--00000000002", "Stable", &["Stable target"]);
 
     mock.seed_termbase(original_base.clone());
 
@@ -396,7 +398,7 @@ async fn append_empty_and_identical_batches_preserve_timestamps() {
 
     let original_base = termbase(1);
 
-    let original_term = term("term-1", "Source", &["Preferred"]);
+    let original_term = term("term--00000000001", "Source", &["Preferred"]);
 
     mock.seed_termbase(original_base.clone());
 
@@ -501,7 +503,7 @@ async fn append_requires_existing_base_and_write_membership_even_when_empty() {
         let error = append(
             (&mock, &mock),
             token,
-            "termbase-1".into(),
+            "termbase--00000000001".into(),
             AppendTermbaseInstr { terms: vec![] },
         )
         .await
@@ -536,9 +538,14 @@ async fn append_capacity_failure_keeps_existing_content() {
         ],
     };
 
-    let error = append((&mock, &mock), token(), "termbase-1".into(), instr)
-        .await
-        .unwrap_err();
+    let error = append(
+        (&mock, &mock),
+        token(),
+        "termbase--00000000001".into(),
+        instr,
+    )
+    .await
+    .unwrap_err();
 
     assert_expected_variant(&error, ExpectedVariant::Args);
 

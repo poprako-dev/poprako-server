@@ -19,6 +19,7 @@ use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
 
+use poprako_obj_dept::key::ObjPath;
 use poprako_obj_dept::model::slot::ObjDeptPoolSlot;
 use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::pool::{ObjDeptPool, ObjDeptPoolView, ensure_url_spec};
@@ -112,15 +113,21 @@ impl ObjDeptPoolView for R2ObjDeptPool {
     // Generates the original and Cloudflare-resized object URLs.
     async fn gen_urls(
         &self,
-        key: &str,
+        key: &ObjPath,
         spec: ObjUrlSpec,
     ) -> ObjDeptRest<ObjUrls> {
+        //
+        let key = key.as_str();
+
         build_obj_urls(&self.domain, key, spec)
     }
 
     #[instrument(level = "info", skip_all)]
     // Checks whether one object exists in R2.
-    async fn has(&self, key: &str) -> ObjDeptRest<bool> {
+    async fn has(&self, key: &ObjPath) -> ObjDeptRest<bool> {
+        //
+        let key = key.as_str();
+
         //
         match self
             .client
@@ -159,10 +166,13 @@ impl ObjDeptPool for R2ObjDeptPool {
     // Generates one signed upload capability.
     async fn gen_slot(
         &self,
-        key: &str,
+        key: &ObjPath,
         content_type: &str,
         byte_len: u64,
     ) -> ObjDeptRest<ObjDeptPoolSlot> {
+        //
+        let key = key.as_str();
+
         //
         // Internal implementation detail.
         let signed_at = SystemTime::now();
@@ -242,7 +252,10 @@ impl ObjDeptPool for R2ObjDeptPool {
 
     #[instrument(level = "info", skip_all)]
     // Deletes one object idempotently.
-    async fn del(&self, key: &str) -> ObjDeptRest<()> {
+    async fn del(&self, key: &ObjPath) -> ObjDeptRest<()> {
+        //
+        let key = key.as_str();
+
         //
         self.client
             .delete_object()

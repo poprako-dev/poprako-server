@@ -16,7 +16,7 @@ use super::*;
 fn term_info(id: &str, source: &str, targets: &[&str]) -> TermInfo {
     TermInfo {
         id: id.into(),
-        termbase_id: "termbase-1".into(),
+        termbase_id: "termbase--00000000001".into(),
         source: source.into(),
         targets: targets.iter().map(|target| (*target).into()).collect(),
         comment: None,
@@ -40,9 +40,13 @@ fn term_import<'a>(source: &'a str, targets: &[&'a str]) -> TermImport {
 fn upsert_matches_unicode_sources_and_preserves_target_order() {
     //
     let existing = [
-        term_info("term-1", "\u{2003}ÄPFEL\u{00a0}", &["ÄLT", "Second"]),
-        term_info("term-2", "ΟΣ", &["Greek"]),
-        term_info("term-3", "İ", &["Turkish"]),
+        term_info(
+            "term--00000000001",
+            "\u{2003}ÄPFEL\u{00a0}",
+            &["ÄLT", "Second"],
+        ),
+        term_info("term--00000000002", "ΟΣ", &["Greek"]),
+        term_info("term--00000000003", "İ", &["Turkish"]),
     ];
 
     let imported = vec![
@@ -53,7 +57,7 @@ fn upsert_matches_unicode_sources_and_preserves_target_order() {
     ];
 
     let plan = build_term_upsert_plan(
-        "termbase-1",
+        "termbase--00000000001",
         "creator-1",
         existing.len(),
         &existing,
@@ -67,13 +71,17 @@ fn upsert_matches_unicode_sources_and_preserves_target_order() {
 
     assert_eq!(entry.source, "Added");
 
+    assert!(
+        crate::value::business_id::BusinessIdKind::Term.is_valid_id(&entry.id)
+    );
+
     assert_eq!(entry.creator_id, "creator-1");
 
     assert_eq!(plan.updates.len(), 3);
 
     let update = plan.updates.first().unwrap();
 
-    assert_eq!(update.id, "term-1");
+    assert_eq!(update.id, "term--00000000001");
 
     assert_eq!(update.source, "äpfel");
 
@@ -103,9 +111,9 @@ fn upsert_matches_unicode_sources_and_preserves_target_order() {
         imported.get(1).unwrap().source.as_ptr()
     );
 
-    assert_eq!(plan.updates.get(1).unwrap().id, "term-2");
+    assert_eq!(plan.updates.get(1).unwrap().id, "term--00000000002");
 
-    assert_eq!(plan.updates.get(2).unwrap().id, "term-3");
+    assert_eq!(plan.updates.get(2).unwrap().id, "term--00000000003");
 }
 
 #[test]
@@ -119,7 +127,7 @@ fn upsert_preserves_first_existing_match_for_duplicate_keys() {
     let incoming = vec![term_import("SOURCE", &["New"])];
 
     let plan = build_term_upsert_plan(
-        "termbase-1",
+        "termbase--00000000001",
         "creator-1",
         existing.len(),
         &existing,
@@ -160,7 +168,7 @@ fn upsert_matches_a_full_termbase_in_import_order() {
     let incoming = vec![term_import("Added", &["New"])];
 
     let plan = build_term_upsert_plan(
-        "termbase-1",
+        "termbase--00000000001",
         "creator-1",
         existing.len(),
         &existing,
@@ -182,7 +190,7 @@ fn upsert_matches_a_full_termbase_in_import_order() {
     }
 
     let error = build_term_upsert_plan(
-        "termbase-1",
+        "termbase--00000000001",
         "creator-1",
         existing.len(),
         &existing,
@@ -203,15 +211,27 @@ fn upsert_matches_a_full_termbase_in_import_order() {
 #[test]
 fn empty_import_preserves_count_validation() {
     //
-    let plan =
-        build_term_upsert_plan("termbase-1", "creator-1", 0, &[], &[]).unwrap();
+    let plan = build_term_upsert_plan(
+        "termbase--00000000001",
+        "creator-1",
+        0,
+        &[],
+        &[],
+    )
+    .unwrap();
 
     assert!(plan.entries.is_empty());
 
     assert!(plan.updates.is_empty());
 
     assert!(matches!(
-        build_term_upsert_plan("termbase-1", "creator-1", 1, &[], &[]),
+        build_term_upsert_plan(
+            "termbase--00000000001",
+            "creator-1",
+            1,
+            &[],
+            &[]
+        ),
         Err(BaseError::Unrecoverable { .. }),
     ));
 }
@@ -258,7 +278,7 @@ fn append_plan_preserves_unicode_spelling_and_accepts_full_base_updates() {
     let incoming = vec![term_import("äpfel-0", &["ält", "New"])];
 
     let plan = build_term_append_plan(
-        "termbase-1",
+        "termbase--00000000001",
         "creator",
         existing.len(),
         &existing,

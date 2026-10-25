@@ -9,7 +9,7 @@ use crate::model::write::page_artwork::{PageArtworkEntry, PageArtworkPatch};
 #[derive(Oper)]
 #[oper(output = PageArtworkInfo)]
 pub struct GetPageArtworkInfo<'a> {
-    /// Page identity.
+    /// Finished page identity.
     pub id: &'a str,
 }
 

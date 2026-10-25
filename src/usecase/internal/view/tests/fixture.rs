@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
+use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::url::ObjUrls;
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 use poprako_obj_dept::rest::ObjDeptError;
@@ -13,12 +13,14 @@ use url::Url;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
-use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::part::repo::oper::page_source::ListFirstPageSourceInfos;
 use crate::result::BaseError;
 use crate::value::chapter::mask::StageMask;
 use crate::value::role::RoleMask;
@@ -98,7 +100,10 @@ impl TestObjDept {
 
 // Implements the existing object-view capabilities for each object marker.
 macro_rules! impl_obj_dept_view {
-    ($marker:ty, $list_operation:literal, $url_operation:literal) => {
+    (
+        $marker:ty, $id_field:literal, $parent:expr,
+        $list_operation:literal, $url_operation:literal
+    ) => {
         impl<'a> Run<ListObjMetas<'a, $marker>> for TestObjDept {
             type Error = ObjDeptError;
 
@@ -106,10 +111,16 @@ macro_rules! impl_obj_dept_view {
             async fn run(
                 &self,
                 oper: &ListObjMetas<'a, $marker>,
-            ) -> Result<HashMap<String, ObjMeta>, Self::Error> {
+            ) -> Result<
+                HashMap<
+                    <$marker as poprako_obj_dept::key::ObjKind>::Id,
+                    poprako_obj_dept::model::meta::ObjMeta<$marker>,
+                >,
+                Self::Error,
+            > {
                 self.record(
                     $list_operation,
-                    oper.ids.iter().map(|id| (*id).to_owned()).collect(),
+                    oper.ids.iter().map(|id| id.as_str().to_owned()).collect(),
                 );
 
                 if self.fails($list_operation) {
@@ -121,21 +132,35 @@ macro_rules! impl_obj_dept_view {
                 Ok(oper
                     .ids
                     .iter()
-                    .copied()
-                    .filter(|id| !self.is_omitted($list_operation, id))
+                    .cloned()
+                    .filter(|id| !self.is_omitted($list_operation, id.as_str()))
                     .map(|id| {
+                        let mut domain = serde_json::json!({
+                            $id_field: id.as_str(),
+                            "ext": "png",
+                        });
+
+                        if $parent {
+                            domain.as_object_mut().unwrap().insert(
+                                "chapter_id".into(),
+                                "chapter--00000000001".into(),
+                            );
+                        }
+
                         (
-                            id.to_owned(),
+                            id.clone(),
                             ObjMeta {
                                 key: ObjKey {
-                                    id: id.to_owned(),
+                                    id: id.as_str().into(),
                                     ver: 1,
-                                    image: format!("test/{}-1.png", id),
+                                    domain,
                                 },
                                 is_avail: true,
                                 hash: vec![1; 32],
                                 ext: "png".into(),
-                            },
+                            }
+                            .decode::<$marker>()
+                            .unwrap(),
                         )
                     })
                     .collect())
@@ -149,12 +174,21 @@ macro_rules! impl_obj_dept_view {
             async fn run(
                 &self,
                 oper: &GenObjUrls<'a, $marker>,
-            ) -> Result<HashMap<String, ObjUrls>, Self::Error> {
+            ) -> Result<
+                HashMap<
+                    <$marker as poprako_obj_dept::key::ObjKind>::Id,
+                    ObjUrls,
+                >,
+                Self::Error,
+            > {
                 let mut ids = oper.metas.keys().cloned().collect::<Vec<_>>();
 
                 ids.sort_unstable();
 
-                self.record($url_operation, ids);
+                self.record(
+                    $url_operation,
+                    ids.iter().map(|id| id.as_str().to_owned()).collect(),
+                );
 
                 if self.fails($url_operation) {
                     return Err(ObjDeptError::Unrecoverable {
@@ -166,12 +200,15 @@ macro_rules! impl_obj_dept_view {
                     .metas
                     .keys()
                     .map(|id| {
-                        let origin_url =
-                            Url::parse(&format!("https://obj.test/{id}"))
-                                .unwrap();
+                        let origin_url = Url::parse(&format!(
+                            "https://obj.test/{}",
+                            id.as_str()
+                        ))
+                        .unwrap();
 
                         let thumbnail_url = Url::parse(&format!(
-                            "https://obj.test/thumbnail/{id}"
+                            "https://obj.test/thumbnail/{}",
+                            id.as_str()
                         ))
                         .unwrap();
 
@@ -197,23 +234,47 @@ macro_rules! impl_obj_dept_view {
                 &self,
                 _context: &mut TestContext,
                 oper: &ListObjMetas<'a, $marker>,
-            ) -> Result<HashMap<String, ObjMeta>, Self::Error> {
+            ) -> Result<
+                HashMap<
+                    <$marker as poprako_obj_dept::key::ObjKind>::Id,
+                    poprako_obj_dept::model::meta::ObjMeta<$marker>,
+                >,
+                Self::Error,
+            > {
                 Run::run(self, oper).await
             }
         }
     };
 }
 
-impl_obj_dept_view!(ComicCover, "cover-list", "cover-urls");
-impl_obj_dept_view!(PageImage, "page-list", "page-urls");
-impl_obj_dept_view!(TeamAvatar, "team-list", "team-urls");
-impl_obj_dept_view!(UserAvatar, "user-list", "user-urls");
+impl_obj_dept_view!(ComicCover, "comic_id", false, "cover-list", "cover-urls");
+impl_obj_dept_view!(
+    PageSourceImage,
+    "page_source_id",
+    true,
+    "page_source--97596193489",
+    "page_source--81938274669"
+);
+impl_obj_dept_view!(
+    TeamAvatar,
+    "team_id",
+    false,
+    "team--97596193489",
+    "team--81938274669"
+);
+impl_obj_dept_view!(
+    UserAvatar,
+    "user_id",
+    false,
+    "user--97596193489",
+    "user--81938274669"
+);
 
 /// Records cover fallback queries over explicitly supplied pinned chapters.
 pub struct TestRepo {
     pinned_chapters: Vec<ChapterInfo>,
     pinned_chapter_calls: Mutex<Vec<Vec<String>>>,
-    first_page_calls: Mutex<Vec<Vec<String>>>,
+    first_page_source_calls: Mutex<Vec<Vec<String>>>,
 }
 
 impl Default for TestRepo {
@@ -229,13 +290,13 @@ impl TestRepo {
         Self {
             pinned_chapters,
             pinned_chapter_calls: Mutex::default(),
-            first_page_calls: Mutex::default(),
+            first_page_source_calls: Mutex::default(),
         }
     }
 
     /// Returns the chapter batches queried for first pages.
-    pub fn first_page_calls(&self) -> Vec<Vec<String>> {
-        self.first_page_calls.lock().unwrap().clone()
+    pub fn first_page_source_calls(&self) -> Vec<Vec<String>> {
+        self.first_page_source_calls.lock().unwrap().clone()
     }
 
     /// Returns the comic batches queried for pinned chapters.
@@ -269,26 +330,29 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for TestRepo {
     }
 }
 
-impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
+impl<'a> Run<ListFirstPageSourceInfos<'a>> for TestRepo {
     type Error = BaseError;
 
     // Returns the matching domain models and records the fallback query.
     async fn run(
         &self,
-        oper: &ListFirstPageInfos<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
-        self.first_page_calls
+        oper: &ListFirstPageSourceInfos<'a>,
+    ) -> Result<Vec<PageSourceInfo>, Self::Error> {
+        self.first_page_source_calls
             .lock()
             .unwrap()
             .push(oper.chapter_ids.iter().map(|id| (*id).to_owned()).collect());
 
-        let page_info = fallback_page_info();
+        let page_source_info = fallback_page_source_info();
 
-        if !oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
+        if !oper
+            .chapter_ids
+            .contains(&page_source_info.chapter_id.as_str())
+        {
             return accept!(Vec::new());
         }
 
-        accept!(vec![page_info])
+        accept!(vec![page_source_info])
     }
 }
 
@@ -297,7 +361,7 @@ pub fn assignment_info() -> AssignmentInfo {
     let created_at = OffsetDateTime::now_utc();
 
     let user_info = UserInfo {
-        id: "user-1".into(),
+        id: "user--00000000001".into(),
         qid: "qid-1".into(),
         nickname: "User".into(),
         is_sadmin: false,
@@ -307,7 +371,7 @@ pub fn assignment_info() -> AssignmentInfo {
     };
 
     let team_info = TeamInfo {
-        id: "team-1".into(),
+        id: "team--00000000001".into(),
         name: "Team".into(),
         description: String::new(),
         created_at,
@@ -315,8 +379,8 @@ pub fn assignment_info() -> AssignmentInfo {
     };
 
     let comic_info = ComicInfo {
-        id: "comic-1".into(),
-        workset_id: "workset-1".into(),
+        id: "comic--00000000001".into(),
+        workset_id: "workset--00000000001".into(),
         index: 0,
         title: "Comic".into(),
         author: "Author".into(),
@@ -334,13 +398,13 @@ pub fn assignment_info() -> AssignmentInfo {
 
     let chapter_info = ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".into(),
+        id: "chapter--00000000001".into(),
         comic_id: comic_info.id.clone(),
         comic: Some(comic_info),
         is_pinned: true,
         index: 0,
         subtitle: "Chapter".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -352,7 +416,7 @@ pub fn assignment_info() -> AssignmentInfo {
     };
 
     AssignmentInfo {
-        id: "assignment-1".into(),
+        id: "assignment--00000000001".into(),
         chapter_id: chapter_info.id.clone(),
         user_id: user_info.id.clone(),
         user: Some(user_info),
@@ -377,12 +441,12 @@ fn fallback_chapter_info() -> ChapterInfo {
 }
 
 // Builds the first page for the default pinned chapter.
-fn fallback_page_info() -> PageInfo {
+fn fallback_page_source_info() -> PageSourceInfo {
     let created_at = OffsetDateTime::now_utc();
 
-    PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    PageSourceInfo {
+        id: "page_source--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,

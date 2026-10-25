@@ -23,22 +23,22 @@ Runtime query plans must still be verified against representative data with
 chain. Creates use at most one typed batch insert; Saves, Deletes, and changed
 persisted successors use at most one typed Diesel `CASE` update. The number of
 write statements therefore no longer grows with the edit count or the number
-of changed successors. Every update remains scoped by both Page and Unit ID,
+of changed successors. Every update remains scoped by both PageSource and Unit ID,
 and an unexpected affected-row count rejects the complete transaction.
 
 The complete `(id, next_id, hidden_at)` graph is keyset-chunked at 512 consumed
 rows, using a 513th sentinel to avoid an extra empty query at exact chunk
 boundaries. This bounds each result set; total read and memory cost remains
 `O(history)` because business semantics require every restorable tombstone and
-anchor. Chapter and Page locks serialize every production Unit mutation, so
+anchor. Chapter and PageSource locks serialize every production Unit mutation, so
 the graph read no longer locks all historical tombstones; concrete writes lock
 only changed rows.
 
 Post-write counters are one typed aggregate row. The translated predicate uses
-the explicit Unicode whitespace set shared with Page diff semantics, so the
+the explicit Unicode whitespace set shared with PageSource diff semantics, so the
 business text rule is pushed down without raw SQL or semantic weakening.
-Public Page Unit listing uses a short repeatable-read snapshot: the same
-snapshot supplies Page counters, chunked links, and full fields for only the
+Public PageSource Unit listing uses a short repeatable-read snapshot: the same
+snapshot supplies PageSource counters, chunked links, and full fields for only the
 at-most-100 visible Unit IDs. A corrupt chain, a 101st visible Unit, a hydrate
 mismatch, or a counter mismatch is an unrecoverable invariant failure rather
 than a truncated response.
@@ -51,10 +51,10 @@ Evidence:
 - [`src/usecase/unit.rs`](../src/usecase/unit.rs)
 
 No Unit index is changed without representative
-`EXPLAIN (ANALYZE, BUFFERS)` evidence. The existing Page-only index remains
+`EXPLAIN (ANALYZE, BUFFERS)` evidence. The existing PageSource-only index remains
 until the history keyset query demonstrates an explicit sort or substantial
-cross-Page filtering; that evidence would justify replacing it with
-`(f_page_id, f_id)`. A visible partial index remains a separate measurement.
+cross-PageSource filtering; that evidence would justify replacing it with
+`(f_page_source_id, f_id)`. A visible partial index remains a separate measurement.
 
 ### P0 pinned: Chapter and Comic lock order is globally inconsistent
 
@@ -69,7 +69,7 @@ into the Unit transaction prefix would serialize every Chapter save belonging
 to that Comic and is not an acceptable local optimization without a broader
 business and contention review.
 
-### Resolved: Chapter Unit search no longer fans out by Page
+### Resolved: Chapter Unit search no longer fans out by PageSource
 
 Search now uses a bounded, typed three-stage read instead of introducing a
 search-specific god object:
@@ -79,13 +79,13 @@ search-specific god object:
 2. For 1--100 matches, the existing `UnitInfo` projection is loaded for those
    IDs. This deliberately reuses the established domain projection rather than
    creating another wide `SearchInfo` type.
-3. Only the matching Pages' `(page_id, id, next_id)` links are loaded. The
-   existing chain validator derives Unit rank, and results are sorted by Page
+3. Only the matching PageSources' `(page_source_id, id, next_id)` links are loaded. The
+   existing chain validator derives Unit rank, and results are sorted by PageSource
    index and chain order.
 
 The overflow path executes one Unit query; a successful non-empty search
-executes three, independent of Chapter Page count. The former 20-query
-concurrency fan-out and worst-case 201 Unit/Page queries are gone. All three
+executes three, independent of Chapter PageSource count. The former 20-query
+concurrency fan-out and worst-case 201 Unit/PageSource queries are gone. All three
 reads share a short repeatable-read transaction; phrase validation and
 authorization remain outside it. NUL remains an authorized empty result
 because PostgreSQL text cannot contain or bind it.
@@ -95,7 +95,7 @@ business requirement, so representative `EXPLAIN (ANALYZE, BUFFERS)` evidence
 is still required before considering a partial visible-Unit index.
 
 Verified behavior includes both text fields, literal `%`, `_`, and backslash,
-case sensitivity, Unicode trimming, hidden chain nodes, stable Page/Unit order,
+case sensitivity, Unicode trimming, hidden chain nodes, stable PageSource/Unit order,
 NUL, and the exact 100/101 boundary.
 
 Evidence:
@@ -110,7 +110,7 @@ Evidence:
 Team, Workset, and Comic deletion now atomically marks the selected hierarchy
 with one timestamp. Marked Team, Workset, Comic, and Chapter rows are excluded
 from normal reads and guarded mutations immediately. Direct Chapter deletion
-remains synchronous because Chapter is the cleanup unit and its Page count is
+remains synchronous because Chapter is the cleanup unit and its PageSource count is
 frozen while deletion is in progress.
 
 Two scheduler workers repeatedly attempt explicit levels with `FOR UPDATE SKIP
@@ -139,8 +139,8 @@ retry lifecycles. This caller-independent boundary is codified in
 
 Tombstone follow-up guards cover adjacent lifecycle paths: user deletion
 batch-removes memberships even when their teams are already hidden; archive
-snapshot and commit both require an active Comic; and normal Page identity
-reads reject Pages whose Chapter is tombstoned, preventing late upload
+snapshot and commit both require an active Comic; and normal PageSource identity
+reads reject PageSources whose Chapter is tombstoned, preventing late upload
 confirmation.
 
 Evidence:
@@ -155,14 +155,14 @@ Evidence:
 
 ### P0 plan: Bound ordinary lists without truncating complete aggregates
 
-The fifteen ordinary public lists, Page/Unit editor reads, and archive export
+The fifteen ordinary public lists, PageSource/Unit editor reads, and archive export
 have different business contracts and must not share one pagination rule.
 
 | Read class | Public contract | Database bound |
 | --- | --- | --- |
 | Ordinary lists | Require `1 <= limit <= 200`; use an opaque cursor for complete traversal | Fetch at most `limit + 1`, then hydrate includes only for the returned IDs |
-| Chapter Pages | Always return the complete ordered manifest | Domain maximum 200 Pages; read at most 201 to detect persisted invariant violations |
-| Page Units | Always return the complete visible edit sequence and counters | Domain maximum 100 visible Units; do not load full tombstone rows |
+| Chapter PageSources | Always return the complete ordered manifest | Domain maximum 200 PageSources; read at most 201 to detect persisted invariant violations |
+| PageSource Units | Always return the complete visible edit sequence and counters | Domain maximum 100 visible Units; do not load full tombstone rows |
 | Comic archives | Always export every selected retained payload | Stream one ordered database chunk at a time; never truncate by count or bytes |
 
 The ordinary-list limit is a business rule. Represent it as
@@ -192,17 +192,17 @@ offset compatibility path after cursor pagination is available. The rollout is:
    `offset + limit <= 200`; then remove offset in a later API revision. Cursor
    pages remain able to traverse an arbitrarily long static result set.
 
-Page and Unit endpoints remain intentionally unpaginated. Consolidate the two
-existing Chapter Page limits into one Page-domain constant, separate from the
-ordinary-list limit even though both equal 200. Page list and edited-diff
-queries must return all Pages in index order and treat a 201st row as corrupt
+PageSource and Unit endpoints remain intentionally unpaginated. Consolidate the two
+existing Chapter PageSource limits into one PageSource-domain constant, separate from the
+ordinary-list limit even though both equal 200. PageSource list and edited-diff
+queries must return all PageSources in index order and treat a 201st row as corrupt
 persisted state, never as a partial response.
 
-Page hardening is implemented: allocation and both import formats share the
-Page-domain maximum; manifest, locked-manifest, and edited-diff reads use a
+PageSource hardening is implemented: allocation and both import formats share the
+PageSource-domain maximum; manifest, locked-manifest, and edited-diff reads use a
 typed 201-row sentinel with `(index, id)` ordering. Edited-diff selects only
-`(id, has_diff)` until the Page-count invariant is proven, then filters the
-response without loading full Page rows.
+`(id, has_diff)` until the PageSource-count invariant is proven, then filters the
+response without loading full PageSource rows.
 
 Unit listing is hardened without changing its complete-response contract.
 Hidden nodes remain in the structural graph because restoring one at its
@@ -233,19 +233,19 @@ Implementation order:
 2. Convert all fifteen ordinary list specs and typed Diesel queries; add the ID
    tie-breakers and only add matching indexes after representative
    `EXPLAIN (ANALYZE, BUFFERS)` evidence.
-3. Complete: harden the Page and Unit reads without adding pagination to their
+3. Complete: harden the PageSource and Unit reads without adding pagination to their
    public endpoints.
 4. Replace archive materialization and range filtering with typed interval
    filtering plus the bounded export artifact path.
 5. Update OpenAPI and the HTTP integration suite. Cover `0/1/200/201`, legacy
    window overflow, cursor/filter mismatch, duplicate-free static traversal,
-   the exact Page/Unit aggregate limits, non-contiguous archive months, and
+   the exact PageSource/Unit aggregate limits, non-contiguous archive months, and
    bounded-memory multi-chunk export.
 
 Evidence:
 
 - [`src/data/instr/comic.rs`](../src/data/instr/comic.rs#L94)
-- [`src/usecase/page/alloc/validation.rs`](../src/usecase/page/alloc/validation.rs#L13)
+- [`src/usecase/page_source/alloc/validation.rs`](../src/usecase/page_source/alloc/validation.rs#L13)
 - [`src/value/unit.rs`](../src/value/unit.rs#L7)
 - [`src/part_impl/repo/rdb_impl/unit/sequence.rs`](../src/part_impl/repo/rdb_impl/unit/sequence.rs#L323)
 - [`src/part_impl/repo/rdb_impl/comic_archive/payload.rs`](../src/part_impl/repo/rdb_impl/comic_archive/payload.rs#L44)
@@ -325,7 +325,7 @@ administrator must remain transactionally safe.
 
 ## Secondary improvements
 
-- Add purpose-specific model projections for cascade IDs, Page object IDs,
+- Add purpose-specific model projections for cascade IDs, PageSource object IDs,
   import-target lookup, and latest-Chapter selection. Repository operations
   must continue to return models or projections, not request/response `View` or
   `Val` DTOs.
@@ -347,7 +347,7 @@ administrator must remain transactionally safe.
 - Comic archive preparation serializes a potentially large JSON payload while
   descendant rows remain locked. Moving it outside the transaction without a
   version check or two-phase protocol would break snapshot consistency.
-- Chapter translation export correctly loads all Pages and Units in batches.
+- Chapter translation export correctly loads all PageSources and Units in batches.
   If the exported document must represent one database version, those reads
   should use a short repeatable-read snapshot rather than independent pooled
   connections.
@@ -363,9 +363,9 @@ administrator must remain transactionally safe.
 - Include hydration batches foreign-key IDs with `eq_any` rather than issuing
   one query per result:
   [`src/part_impl/repo/rdb_impl/incl/macros.rs`](../src/part_impl/repo/rdb_impl/incl/macros.rs#L20).
-- Chapter translation export fetches all Units for all Page IDs in one query:
+- Chapter translation export fetches all Units for all PageSource IDs in one query:
   [`src/usecase/chapter_port/export_translation.rs`](../src/usecase/chapter_port/export_translation.rs#L96).
-- Edited-diff Page detection uses a correlated `EXISTS` predicate:
+- Edited-diff PageSource detection uses a correlated `EXISTS` predicate:
   [`src/part_impl/repo/rdb_impl/page/step_impl.rs`](../src/part_impl/repo/rdb_impl/page/step_impl.rs#L141).
 - System-mail read marking validates a projected batch and updates the batch in
   one statement:

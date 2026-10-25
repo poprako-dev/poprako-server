@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS "t_obj_prom_task" (
 
     "f_obj_id"        TEXT        NOT NULL,
     "f_version"       BIGINT      NOT NULL,
-    "f_key"           TEXT        NOT NULL,
+    "f_domain"        JSONB        NOT NULL,
     "f_generation"    BIGINT      NOT NULL,
 
     "f_status"        TEXT        NOT NULL,

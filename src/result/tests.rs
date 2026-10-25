@@ -128,7 +128,7 @@ fn expected_errors_record_classification_fields_and_call_site() {
             let error = expected_error! {
                 variant,
                 message: "localized detail".into();
-                user_id = %"user-1",
+                user_id = %"user--00000000001",
                 candidates = ?["candidate-1"],
                 count = 7_u64,
                 "business rule rejected",
@@ -163,7 +163,7 @@ fn expected_errors_record_classification_fields_and_call_site() {
             ("error_message", "localized detail".into()),
             ("source_file", file!().into()),
             ("source_line", source_line.to_string()),
-            ("user_id", "user-1".into()),
+            ("user_id", "user--00000000001".into()),
             ("candidates", "[\"candidate-1\"]".into()),
             ("count", "7".into()),
             ("message", "business rule rejected".into()),
@@ -300,9 +300,9 @@ fn propagation_does_not_record_another_event() {
 #[test]
 fn permission_message_remapping_preserves_one_source_event() {
     let assignment_info = AssignmentInfo {
-        id: "assignment-1".into(),
-        chapter_id: "chapter-1".into(),
-        user_id: "user-1".into(),
+        id: "assignment--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
+        user_id: "user--00000000001".into(),
         user: None,
         chapter: None,
         roles: RoleField::RAW_PROVIDER.into(),

@@ -22,10 +22,10 @@ pub mod issue_edit;
 pub mod member;
 /// Member invitation read projection.
 pub mod member_invitation;
-/// Page read projection.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page read projection.
+pub mod page_source;
 /// Hierarchical deletion scope projections.
 pub mod subtree_delete;
 /// System mail read projection.

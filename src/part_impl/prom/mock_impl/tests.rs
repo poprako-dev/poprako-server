@@ -3,6 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
+use crate::part::obj_dept::PageSourceImage;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::ClearObjs;
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
@@ -11,8 +13,7 @@ use time::OffsetDateTime;
 
 use super::*;
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::page::PageInfo;
-use crate::part::obj_dept::PageImage;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::result::BaseError;
@@ -138,7 +139,7 @@ async fn defer_records_non_object_payload() {
 }
 
 #[tokio::test]
-async fn chapter_task_waits_for_every_page_image() {
+async fn chapter_task_waits_for_every_page_source_image() {
     //
     let mock = Mock::new();
 
@@ -150,26 +151,26 @@ async fn chapter_task_waits_for_every_page_image() {
 
     mock.seed_chapter(ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".into(),
-        comic_id: "comic-1".into(),
+        id: "chapter--00000000001".into(),
+        comic_id: "comic--00000000001".into(),
         comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "chapter".into(),
-        page_count: 1,
+        page_source_count: 1,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,
     });
 
-    mock.seed_page(PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    mock.seed_page(PageSourceInfo {
+        id: "page_source--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -186,8 +187,8 @@ async fn chapter_task_waits_for_every_page_image() {
 
         let payload = PromPayload::Chapter {
             payload: ChapterPayload::TryAdvanceRawProvideStage {
-                chapter_id: "chapter-1".into(),
-                actor_user_id: "user-1".into(),
+                chapter_id: "chapter--00000000001".into(),
+                actor_user_id: "user--00000000001".into(),
             },
         };
 
@@ -206,7 +207,7 @@ async fn chapter_task_waits_for_every_page_image() {
 
     let outcome = try_advance_raw_provide(
         (&mock, &mock, &mock, &mock),
-        "chapter-1",
+        "chapter--00000000001",
         None,
     )
     .await
@@ -224,12 +225,12 @@ async fn chapter_task_waits_for_every_page_image() {
             .has_phase(Stage::RawProvide, StagePhase::Pending)
     }));
 
-    mock.seed_page_image_obj("page-1", "png");
+    mock.seed_page_source_image_obj("page_source--00000000001", "png");
 
     let outcome = try_advance_raw_provide(
         (&mock, &mock, &mock, &mock),
-        "chapter-1",
-        Some("user-1".into()),
+        "chapter--00000000001",
+        Some("user--00000000001".into()),
     )
     .await
     .unwrap();
@@ -264,26 +265,26 @@ async fn completed_raw_provide_ignores_missing_and_cleared_images() {
 
         mock.seed_chapter(ChapterInfo {
             confirmed_artwork_ver: None,
-            id: "chapter-1".into(),
-            comic_id: "comic-1".into(),
+            id: "chapter--00000000001".into(),
+            comic_id: "comic--00000000001".into(),
             comic: None,
             is_pinned: true,
             index: 0,
             subtitle: "chapter".into(),
-            page_count: 1,
+            page_source_count: 1,
             total_unit_count: 0,
             translated_unit_count: 0,
             proofread_unit_count: 0,
             stages,
-            creator_id: "user-1".into(),
+            creator_id: "user--00000000001".into(),
             creator: None,
             created_at: time,
             updated_at: time,
         });
 
-        mock.seed_page(PageInfo {
-            id: "page-1".into(),
-            chapter_id: "chapter-1".into(),
+        mock.seed_page(PageSourceInfo {
+            id: "page_source--00000000001".into(),
+            chapter_id: "chapter--00000000001".into(),
             index: 0,
             total_unit_count: 0,
             translated_unit_count: 0,
@@ -293,13 +294,21 @@ async fn completed_raw_provide_ignores_missing_and_cleared_images() {
         });
 
         if had_image {
-            mock.seed_page_image_obj("page-1", "png");
+            mock.seed_page_source_image_obj("page_source--00000000001", "png");
 
             mock.coord(async |context| {
-                ClearObjs::<PageImage>::new(&["page-1".to_string()])
-                    .step_on(&mock, context)
-                    .await
-                    .map_err(BaseError::from)
+                ClearObjs::<PageSourceImage>::new(
+                    &PageSourceImage::ids(
+                        &PageSourceImage::ids(&[
+                            "page_source--00000000001".to_string()
+                        ])
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                )
+                .step_on(&mock, context)
+                .await
+                .map_err(BaseError::from)
             })
             .await
             .unwrap();
@@ -307,7 +316,7 @@ async fn completed_raw_provide_ignores_missing_and_cleared_images() {
 
         let outcome = try_advance_raw_provide(
             (&mock, &mock, &mock, &mock),
-            "chapter-1",
+            "chapter--00000000001",
             None,
         )
         .await
@@ -328,18 +337,18 @@ async fn empty_raw_provide_does_not_wait_or_complete_the_stage() {
 
     mock.seed_chapter(ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-empty".into(),
-        comic_id: "comic-1".into(),
+        id: "chapter--64301589100".into(),
+        comic_id: "comic--00000000001".into(),
         comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "chapter".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,
@@ -347,7 +356,7 @@ async fn empty_raw_provide_does_not_wait_or_complete_the_stage() {
 
     let outcome = try_advance_raw_provide(
         (&mock, &mock, &mock, &mock),
-        "chapter-empty",
+        "chapter--64301589100",
         None,
     )
     .await

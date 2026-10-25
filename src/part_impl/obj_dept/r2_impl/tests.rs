@@ -11,13 +11,13 @@ fn gen_download_url_uses_custom_domain() {
     //
     let url = build_public_url(
         "https://images.example.test/root/",
-        "avatars/user-1.png",
+        "avatars/user--00000000001.png",
     )
     .unwrap();
 
     assert_eq!(
         url.as_str(),
-        "https://images.example.test/root/avatars/user-1.png"
+        "https://images.example.test/root/avatars/user--00000000001.png"
     );
 }
 
@@ -30,14 +30,17 @@ fn gen_urls_includes_selected_cloudflare_image_transforms() {
 
     let urls = build_obj_urls(
         "https://images.example.test",
-        "page_image/page-1/1.png",
+        "page_source_image/page_source--00000000001/1.png",
         obj_url_spec,
     )
     .unwrap();
 
     assert_eq!(
         urls.origin_url.as_ref().map(Url::as_str),
-        Some("https://images.example.test/page_image/page-1/1.png"),
+        Some(
+            "https://images.example.test/page_source_image/\
+                page_source--00000000001/1.png"
+        ),
     );
 
     assert_eq!(
@@ -45,7 +48,8 @@ fn gen_urls_includes_selected_cloudflare_image_transforms() {
         Some(
             "https://images.example.test/cdn-cgi/image/width=1080,\
                 fit=scale-down,quality=80,\
-                format=auto,metadata=none/page_image/page-1/1.png",
+                format=auto,metadata=none/page_source_image/\
+                    page_source--00000000001/1.png",
         ),
     );
 
@@ -53,7 +57,8 @@ fn gen_urls_includes_selected_cloudflare_image_transforms() {
         urls.thumbnail_url.as_ref().map(Url::as_str),
         Some(
             "https://images.example.test/cdn-cgi/image/width=300,fit=scale-down\
-                ,quality=80,format=auto,metadata=none/page_image/page-1/1.png",
+                ,quality=80,format=auto,metadata=none/\
+                    page_source_image/page_source--00000000001/1.png",
         ),
     );
 }

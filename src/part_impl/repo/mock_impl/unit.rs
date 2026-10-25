@@ -18,14 +18,14 @@ use crate::util::Patch;
 // List units for one page in deterministic next-id order.
 fn list_infos<'a>(
     state: &'a MockState,
-    page_id: &str,
+    page_source_id: &str,
 ) -> BaseRest<Vec<&'a UnitInfo>> {
     //
     // Load all units and enforce chain ordering before returning.
     let mut unit_infos = state
         .units
         .iter()
-        .filter(|unit_info| unit_info.page_id == page_id)
+        .filter(|unit_info| unit_info.page_source_id == page_source_id)
         .collect::<Vec<_>>();
 
     unit_sequence_complex::order_units(
@@ -40,20 +40,22 @@ fn list_infos<'a>(
 // Resolve a single mutable unit by page and id for edit application.
 fn find_unit_mut<'a>(
     state: &'a mut MockState,
-    page_id: &str,
+    page_source_id: &str,
     id: &str,
 ) -> BaseRest<&'a mut UnitInfo> {
     //
     state
         .units
         .iter_mut()
-        .find(|unit_info| unit_info.page_id == page_id && unit_info.id == id)
+        .find(|unit_info| {
+            unit_info.page_source_id == page_source_id && unit_info.id == id
+        })
         .ok_or_else(|| expected("error-invalid-unit-oper"))
 }
 
 // Build a unit payload for create edits.
 fn unit_from_edit(
-    page_id: &str,
+    page_source_id: &str,
     edit: &UnitEdit,
     next_id: Option<&str>,
 ) -> BaseRest<UnitInfo> {
@@ -97,7 +99,7 @@ fn unit_from_edit(
 
     accept!(UnitInfo {
         id: id.clone(),
-        page_id: page_id.to_string(),
+        page_source_id: page_source_id.to_string(),
         next_id: next_id.map(str::to_string),
         is_bubble: *is_bubble,
         is_flagged: *is_flagged,
@@ -242,15 +244,17 @@ fn count_infos(unit_infos: &[&UnitInfo]) -> UnitCountMetrics {
 }
 
 // List units for multiple pages while preserving page and linked-list order.
-fn list_infos_by_page_ids(
+fn list_infos_by_page_source_ids(
     state: &MockState,
-    page_ids: &[&str],
+    page_source_ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let mut unit_infos = Vec::new();
 
-    for page_id in page_ids {
-        unit_infos.extend(list_infos(state, page_id)?.into_iter().cloned());
+    for page_source_id in page_source_ids {
+        //
+        unit_infos
+            .extend(list_infos(state, page_source_id)?.into_iter().cloned());
     }
 
     accept!(unit_infos)
@@ -268,9 +272,12 @@ fn list_infos_by_ids(state: &MockState, ids: &[&str]) -> Vec<UnitInfo> {
 }
 
 // List lightweight order objects for one page, kept aligned with unit sequence.
-fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
+fn list_orders(
+    state: &MockState,
+    page_source_id: &str,
+) -> BaseRest<Vec<UnitOrder>> {
     //
-    let unit_infos = list_infos(state, page_id)?;
+    let unit_infos = list_infos(state, page_source_id)?;
 
     accept!(
         unit_infos
@@ -287,7 +294,7 @@ fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
 // Apply all create/save/delete edits for one page and return unit counters.
 fn apply_edits(
     state: &mut MockState,
-    page_id: &str,
+    page_source_id: &str,
     orders: &[UnitOrder],
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
@@ -295,7 +302,7 @@ fn apply_edits(
     let write_plan = unit_save_complex::plan_writes(orders, edits)?;
 
     for id in &write_plan.skipped_ids {
-        find_unit_mut(state, page_id, id)?;
+        find_unit_mut(state, page_source_id, id)?;
     }
 
     for edit in &write_plan.creates {
@@ -304,7 +311,8 @@ fn apply_edits(
             return Err(expected("error-invalid-unit-oper"));
         };
 
-        let unit_info = unit_from_edit(page_id, edit, next_id.as_deref())?;
+        let unit_info =
+            unit_from_edit(page_source_id, edit, next_id.as_deref())?;
 
         if state.units.iter().any(|unit_info| unit_info.id == *id) {
             return Err(expected("error-unit-duplicate"));
@@ -315,7 +323,7 @@ fn apply_edits(
 
     for (id, change) in &write_plan.changes {
         //
-        let unit_info = find_unit_mut(state, page_id, id)?;
+        let unit_info = find_unit_mut(state, page_source_id, id)?;
 
         if let Some(edit) = change.edit {
             write_edit(unit_info, edit);
@@ -339,7 +347,7 @@ fn apply_edits(
         unit_info.updated_at = now();
     }
 
-    let unit_infos = list_infos(state, page_id)?;
+    let unit_infos = list_infos(state, page_source_id)?;
 
     accept!(count_infos(&unit_infos))
 }

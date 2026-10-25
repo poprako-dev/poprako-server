@@ -12,21 +12,23 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::page::{PageEntry, PageManifestEntry};
+use crate::model::write::page_source::{
+    PageSourceEntry, PageSourceManifestEntry,
+};
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::CreateChapter;
 use crate::part::repo::oper::comic::CreateComic;
-use crate::part::repo::oper::page::ApplyPageManifest;
+use crate::part::repo::oper::page_source::ApplyPageSourceManifest;
 use crate::part::repo::oper::team::CreateTeam;
 use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::test_shared::form::{
-    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
+    chapter_entry, comic_entry, page_source_entry, team_entry, user_entry,
     workset_entry,
 };
 use crate::result::BaseError;
@@ -71,11 +73,11 @@ pub struct ChapterFixture {
     pub chapter_info: ChapterInfo,
 }
 
-pub struct PageFixture {
+pub struct PageSourceFixture {
     //
     pub team_entry: TeamEntry,
     pub chapter_info: ChapterInfo,
-    pub page_entry: PageEntry,
+    pub page_source_entry: PageSourceEntry,
 }
 
 /// # Panics
@@ -274,7 +276,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
-pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
+pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageSourceFixture {
     //
     let chapter_fixture = seed_chapter(shared, prefix).await;
 
@@ -282,20 +284,21 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let page_entry = page_entry(prefix, &chapter_fixture.chapter_info);
+    let page_source_entry =
+        page_source_entry(prefix, &chapter_fixture.chapter_info);
 
-    let page_manifest_entry = PageManifestEntry {
-        id: page_entry.id.clone(),
-        chapter_id: page_entry.chapter_id.clone(),
-        index: page_entry.index,
+    let page_source_manifest_entry = PageSourceManifestEntry {
+        id: page_source_entry.id.clone(),
+        chapter_id: page_source_entry.chapter_id.clone(),
+        index: page_source_entry.index,
     };
 
     nucl.coord(async |context| {
         //
         repo.step(
             context,
-            &ApplyPageManifest {
-                entries: std::slice::from_ref(&page_manifest_entry),
+            &ApplyPageSourceManifest {
+                entries: std::slice::from_ref(&page_source_manifest_entry),
             },
         )
         .await?;
@@ -306,9 +309,9 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     .ok()
     .unwrap();
 
-    PageFixture {
+    PageSourceFixture {
         team_entry: chapter_fixture.team_entry,
         chapter_info: chapter_fixture.chapter_info,
-        page_entry,
+        page_source_entry,
     }
 }

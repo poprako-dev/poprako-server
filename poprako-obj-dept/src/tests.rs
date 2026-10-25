@@ -1,3 +1,5 @@
+mod test_support;
+
 use uuid::Uuid;
 
 use poprako_orchestra::{Context, Level, Oper, Run, Step};
@@ -10,7 +12,6 @@ use crate::actor::rdb_impl::{
     ObjKeyState, classify, presence_cas_conflict_requires_retry,
     requires_presence_reconciliation,
 };
-use crate::key::KeyMap;
 use crate::model::alloc::ObjAlloc;
 use crate::model::meta::ObjMeta;
 use crate::model::task::{CHECK, ObjDeptPromTask, obj_task_id, validate_task};
@@ -22,62 +23,7 @@ use crate::oper::{
 use crate::rest::ObjDeptError;
 use crate::{ObjDept, ObjDeptView};
 
-struct PageImage;
-
-struct PageImageKey {
-    id: String,
-    ext: String,
-}
-
-impl KeyMap for PageImage {
-    type Dom = PageImageKey;
-    type Img = String;
-
-    fn id(value: &Self::Dom) -> &str {
-        &value.id
-    }
-
-    fn ext(value: &Self::Dom) -> &str {
-        &value.ext
-    }
-
-    fn forward(value: &Self::Dom, version: u32) -> Self::Img {
-        format!("page/{}-{version}.{}", value.id, value.ext)
-    }
-
-    fn reverse(
-        value: &Self::Img,
-    ) -> crate::rest::ObjDeptRest<(Self::Dom, u32)> {
-        let filename = value.strip_prefix("page/").ok_or_else(|| {
-            ObjDeptError::Invalid {
-                message: "invalid test key".into(),
-            }
-        })?;
-
-        let stem = filename.strip_suffix(".png").ok_or_else(|| {
-            ObjDeptError::Invalid {
-                message: "invalid test key".into(),
-            }
-        })?;
-
-        let (id, version) =
-            stem.rsplit_once('-').ok_or_else(|| ObjDeptError::Invalid {
-                message: "invalid test key".into(),
-            })?;
-
-        let version = version.parse().map_err(|_| ObjDeptError::Invalid {
-            message: "invalid test key".into(),
-        })?;
-
-        Ok((
-            PageImageKey {
-                id: id.into(),
-                ext: "png".into(),
-            },
-            version,
-        ))
-    }
-}
+use self::test_support::{PageSourceImage, Text};
 
 struct TestLevel;
 
@@ -91,74 +37,80 @@ impl Context for TestContext {
 
 struct TestDept;
 
-impl<'a> Run<ListObjMetas<'a, PageImage>> for TestDept {
+impl<'a> Run<ListObjMetas<'a, PageSourceImage>> for TestDept {
     type Error = ObjDeptError;
 
     async fn run(
         &self,
-        _oper: &ListObjMetas<'a, PageImage>,
-    ) -> Result<std::collections::HashMap<String, ObjMeta>, Self::Error> {
+        _oper: &ListObjMetas<'a, PageSourceImage>,
+    ) -> Result<
+        std::collections::HashMap<Text, ObjMeta<PageSourceImage>>,
+        Self::Error,
+    > {
         Ok(std::collections::HashMap::default())
     }
 }
 
-impl<'a> Run<GenObjUrls<'a, PageImage>> for TestDept {
+impl<'a> Run<GenObjUrls<'a, PageSourceImage>> for TestDept {
     type Error = ObjDeptError;
 
     async fn run(
         &self,
-        _oper: &GenObjUrls<'a, PageImage>,
-    ) -> Result<std::collections::HashMap<String, ObjUrls>, Self::Error> {
+        _oper: &GenObjUrls<'a, PageSourceImage>,
+    ) -> Result<std::collections::HashMap<Text, ObjUrls>, Self::Error> {
         Ok(std::collections::HashMap::default())
     }
 }
 
-impl<'a> Run<MarkObjUploaded<'a, PageImage>> for TestDept {
+impl<'a> Run<MarkObjUploaded<'a, PageSourceImage>> for TestDept {
     type Error = ObjDeptError;
 
     async fn run(
         &self,
-        _oper: &MarkObjUploaded<'a, PageImage>,
+        _oper: &MarkObjUploaded<'a, PageSourceImage>,
     ) -> Result<bool, Self::Error> {
         Ok(true)
     }
 }
 
-impl<'a> Step<MarkObjUploaded<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<MarkObjUploaded<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &MarkObjUploaded<'a, PageImage>,
+        _oper: &MarkObjUploaded<'a, PageSourceImage>,
     ) -> Result<bool, Self::Error> {
         Ok(true)
     }
 }
 
-impl<'a> Step<ListObjMetas<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<ListObjMetas<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &ListObjMetas<'a, PageImage>,
-    ) -> Result<std::collections::HashMap<String, ObjMeta>, Self::Error> {
+        _oper: &ListObjMetas<'a, PageSourceImage>,
+    ) -> Result<
+        std::collections::HashMap<Text, ObjMeta<PageSourceImage>>,
+        Self::Error,
+    > {
         Ok(std::collections::HashMap::default())
     }
 }
 
-impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<GenObjSlot<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &GenObjSlot<'a, PageImage>,
-    ) -> Result<ObjAlloc, Self::Error> {
+        _oper: &GenObjSlot<'a, PageSourceImage>,
+    ) -> Result<ObjAlloc<PageSourceImage>, Self::Error> {
         //
         Err(ObjDeptError::Unrecoverable {
             message: "compile-only slot".into(),
@@ -166,40 +118,43 @@ impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
     }
 }
 
-impl<'a> Step<GenObjSlots<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<GenObjSlots<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &GenObjSlots<'a, PageImage>,
-    ) -> Result<std::collections::HashMap<String, ObjAlloc>, Self::Error> {
+        _oper: &GenObjSlots<'a, PageSourceImage>,
+    ) -> Result<
+        std::collections::HashMap<Text, ObjAlloc<PageSourceImage>>,
+        Self::Error,
+    > {
         Ok(std::collections::HashMap::default())
     }
 }
 
-impl<'a> Step<ClearObjs<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<ClearObjs<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &ClearObjs<'a, PageImage>,
+        _oper: &ClearObjs<'a, PageSourceImage>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
 }
 
-impl<'a> Step<DeleteObjs<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<DeleteObjs<'a, PageSourceImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &DeleteObjs<'a, PageImage>,
+        _oper: &DeleteObjs<'a, PageSourceImage>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -214,14 +169,14 @@ where
 
 fn require_obj_dept<D>()
 where
-    D: ObjDept<PageImage, TestContext>,
+    D: ObjDept<PageSourceImage, TestContext>,
 {
     //
 }
 
 fn require_obj_dept_view<D>()
 where
-    D: ObjDeptView<PageImage, TestContext>,
+    D: ObjDeptView<PageSourceImage, TestContext>,
 {
     //
 }
@@ -230,27 +185,30 @@ where
 fn operations_keep_marker_in_their_type_identity() {
     //
     require_oper_output::<
-        ListObjMetas<'static, PageImage>,
-        std::collections::HashMap<String, ObjMeta>,
+        ListObjMetas<'static, PageSourceImage>,
+        std::collections::HashMap<Text, ObjMeta<PageSourceImage>>,
     >();
 
     require_oper_output::<
-        GenObjUrls<'static, PageImage>,
-        std::collections::HashMap<String, ObjUrls>,
+        GenObjUrls<'static, PageSourceImage>,
+        std::collections::HashMap<Text, ObjUrls>,
     >();
-
-    require_oper_output::<GenObjSlot<'static, PageImage>, ObjAlloc>();
-
-    require_oper_output::<MarkObjUploaded<'static, PageImage>, bool>();
 
     require_oper_output::<
-        GenObjSlots<'static, PageImage>,
-        std::collections::HashMap<String, ObjAlloc>,
+        GenObjSlot<'static, PageSourceImage>,
+        ObjAlloc<PageSourceImage>,
     >();
 
-    require_oper_output::<ClearObjs<'static, PageImage>, ()>();
+    require_oper_output::<MarkObjUploaded<'static, PageSourceImage>, bool>();
 
-    require_oper_output::<DeleteObjs<'static, PageImage>, ()>();
+    require_oper_output::<
+        GenObjSlots<'static, PageSourceImage>,
+        std::collections::HashMap<Text, ObjAlloc<PageSourceImage>>,
+    >();
+
+    require_oper_output::<ClearObjs<'static, PageSourceImage>, ()>();
+
+    require_oper_output::<DeleteObjs<'static, PageSourceImage>, ()>();
 }
 
 #[test]
@@ -266,11 +224,14 @@ fn obj_dept_view_aggregates_only_read_capabilities() {
 #[test]
 fn cleanup_operations_retain_their_input_ids() {
     //
-    let ids = vec!["page-1".to_owned(), "page-2".to_owned()];
+    let ids = vec![
+        Text::from("page_source--00000000001"),
+        Text::from("page_source--00000000002"),
+    ];
 
-    let clear = ClearObjs::<PageImage>::new(&ids);
+    let clear = ClearObjs::<PageSourceImage>::new(&ids);
 
-    let delete = DeleteObjs::<PageImage>::new(&ids);
+    let delete = DeleteObjs::<PageSourceImage>::new(&ids);
 
     assert_eq!(clear.ids, ids);
 
@@ -278,19 +239,19 @@ fn cleanup_operations_retain_their_input_ids() {
 }
 
 fn task() -> ObjDeptPromTask {
-    let key = crate::key::ObjKey {
-        id: "page-1".into(),
+    let key = crate::model::record::ObjKeyRecord {
+        id: "page_source--00000000001".into(),
         ver: 7,
-        image: "page/page-1-7.png".into(),
+        domain: serde_json::json!({"id": "page-1", "ext": "png"}),
     };
 
     ObjDeptPromTask {
-        id: obj_task_id("page_image", CHECK, &key, 2),
-        topic: "page_image".into(),
+        id: obj_task_id("page_source_image", CHECK, &key, 2),
+        topic: "page_source_image".into(),
         oper: CHECK.into(),
         obj_id: key.id,
         ver: i64::from(key.ver),
-        image: key.image,
+        domain: key.domain,
         gen_no: 2,
         retried_count: 1,
         claim_token: Uuid::from_u128(11),
@@ -365,7 +326,7 @@ fn upload_evidence_classification_preserves_active_metadata()
 -> crate::rest::ObjDeptRest<()> {
     let unavailable = crate::rdb_impl::ObjRdbRecord {
         ver: 4,
-        key: Some("page/page-1-4.png".into()),
+        domain: Some(serde_json::json!({"id": "page-1", "ext": "png"})),
         f_is_uploaded: Some(false),
         hash: Some(vec![7; 32]),
         ext: Some(String::from("png")),

@@ -14,7 +14,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::value::chapter::mask::StageMask;
 
-/// Minimal locked Chapter scope needed while editing Page Units.
+/// Minimal locked Chapter scope needed while editing source page Units.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ChapterUnitEditScope {
     /// Permanent Chapter identifier.
@@ -59,7 +59,7 @@ pub struct ChapterInfo {
     pub subtitle: String,
 
     /// Denormalised total count of units in this chapter.
-    pub page_count: usize,
+    pub page_source_count: usize,
     /// Denormalised number of units submitted for translation.
     pub total_unit_count: usize,
     /// Denormalised number of units with a completed translation.

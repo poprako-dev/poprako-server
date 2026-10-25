@@ -1,6 +1,6 @@
 //! Geometry shared by review issue projections and replacements.
 
-/// A rectangle in normalized whole-page coordinates, independent of layers.
+/// A rectangle in normalized whole-page coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct IssueRect {
     /// Horizontal position of the top-left corner.

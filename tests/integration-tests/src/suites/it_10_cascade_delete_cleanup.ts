@@ -3,13 +3,13 @@
 // Preconditions:
 //   - it_00..it_09 have run.
 //   - `ctx.auxChapters.get("cascade")` exists: 归档池 workset with comicA
-//     (2 chapters, each 2 pages) and comicB (1 chapter, 2 pages). Pages
+//     (2 chapters, each 2 pages) and comicB (1 chapter, 2 pages). PageSources
 //     reserved by it_03. `cascadeExtraIds` (from it_02) holds the other
 //     comic/chapter ids.
 //   - `ctx.secondTeam` exists with outsider.
 //
 // Postconditions:
-//   - The cascade subtree (归档池 + comicA + comicB + all chapters/pages) is
+//   - The cascade subtree (归档池 + comicA + comicB + all chapters/page-sources) is
 //     fully deleted.
 //   - The second team + outsider membership deleted.
 //   - `ctx.auxChapters.delete("cascade")`, `ctx.secondTeam = null`.
@@ -23,7 +23,7 @@
 //     failure returns 409/code 8 without server-side retry.
 //   - Member and user deletion cannot remove a team's last admin.
 //   - Team delete: team admin (the surviving second-team admin). Team delete
-//     cascades through worksets/comics/chapters/pages/units/members.
+//     cascades through worksets/comics/chapters/page-sources/units/members.
 //   - Deleting a chapter decreases comic.chapter_count by 1.
 //     The chapter's pages/units become inaccessible (422/2).
 //   - Deleting a comic decreases workset.comic_count by 1.
@@ -43,9 +43,9 @@ import {
     getComic,
     getTeam,
     getWorkset,
-    listChapterPages,
+    listChapterPageSources,
     listMyMembers,
-    listPageUnits,
+    listPageSourceUnits,
     listTeamMembers,
     listTeamWorksets,
     listWorksetComics,
@@ -107,7 +107,11 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     // comicB's page units -> 422/2 (page gone with chapter)
     // (pages were reserved on comicBCh1 by it_03; pick the first page id we
     // don't have stored, so just assert a chapter-pages list -> 422/2)
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}/pages?offset=0&limit=20`), 422, 2);
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}/page-sources?offset=0&limit=20`),
+        422,
+        2,
+    );
 
     // ---------- C9.3 delete the workset (归档池) ----------
 
@@ -128,7 +132,11 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}`), 422, 2);
 
     // a page under comicACh1 -> list pages 422/2
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}/pages?offset=0&limit=20`), 422, 2);
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh1}/page-sources?offset=0&limit=20`),
+        422,
+        2,
+    );
 
     // ---------- C9.4 delete the second team (created by it_09) ----------
 
@@ -262,12 +270,12 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
         assert.ok(serialComics.length >= 1, "连载池 still has its comics");
 
         if (ctx.main) {
-            const mainPages = await listChapterPages(ctx.sadmin, ctx.main.chapterId);
+            const mainPageSources = await listChapterPageSources(ctx.sadmin, ctx.main.chapterId);
 
-            assert.ok(mainPages.length > 0, "main chapter still has its pages");
+            assert.ok(mainPageSources.length > 0, "main chapter still has its pages");
 
-            if (mainPages[0]) {
-                const mainUnits = await listPageUnits(ctx.sadmin, mainPages[0].id);
+            if (mainPageSources[0]) {
+                const mainUnits = await listPageSourceUnits(ctx.sadmin, mainPageSources[0].id);
 
                 assert.ok(mainUnits.total_unit_count >= 0, "main page units still queryable");
             }

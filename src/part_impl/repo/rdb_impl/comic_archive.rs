@@ -4,7 +4,7 @@
 mod commit;
 // Permanent archive payload query.
 mod payload;
-// Ordered Page and Unit snapshot loading and assembly.
+// Ordered PageSource and Unit snapshot loading and assembly.
 mod pages;
 // Independent composite page snapshots.
 mod artwork;
@@ -33,7 +33,7 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchiveSnapshot};
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
@@ -223,9 +223,9 @@ struct ArchiveChapterDescendants {
     // Assignment users indexed by ID.
     users_by_id: HashMap<String, UserInfo>,
 
-    // Ordered Pages included in the archive.
-    page_infos: Vec<PageInfo>,
-    // Units belonging to the selected Pages.
+    // Ordered PageSources included in the archive.
+    page_source_infos: Vec<PageSourceInfo>,
+    // Units belonging to the selected PageSources.
     unit_infos: Vec<UnitInfo>,
     // Current review details belonging to the selected Chapters.
     page_artwork_snapshots:
@@ -243,7 +243,7 @@ fn assemble_chapter_snapshots(
         workflow_record_infos,
         assignment_infos,
         users_by_id,
-        page_infos,
+        page_source_infos,
         unit_infos,
         mut page_artwork_snapshots,
     } = coord_fields;
@@ -286,21 +286,25 @@ fn assemble_chapter_snapshots(
             .push(workflow_record_info);
     }
 
-    let mut page_snapshots_by_chapter =
-        pages::assemble_page_snapshots(page_infos, unit_infos)?;
+    let mut page_source_snapshots_by_chapter =
+        pages::assemble_page_source_snapshots(page_source_infos, unit_infos)?;
 
     let chapter_snapshots = chapter_infos
         .into_iter()
         .map(|chapter_info| {
             //
-            let (assignment_infos, workflow_record_infos, page_snapshots) = (
+            let (
+                assignment_infos,
+                workflow_record_infos,
+                page_source_snapshots,
+            ) = (
                 assignment_infos_by_chapter
                     .remove(&chapter_info.id)
                     .unwrap_or_default(),
                 workflow_record_infos_by_chapter
                     .remove(&chapter_info.id)
                     .unwrap_or_default(),
-                page_snapshots_by_chapter
+                page_source_snapshots_by_chapter
                     .remove(&chapter_info.id)
                     .unwrap_or_default(),
             );
@@ -312,7 +316,7 @@ fn assemble_chapter_snapshots(
                 chapter_info,
                 assignment_infos,
                 workflow_record_infos,
-                page_snapshots,
+                page_source_snapshots,
             }
         })
         .collect();
@@ -341,8 +345,8 @@ async fn get_snapshot_excluded(
     let (workflow_record_infos, assignment_infos, user_infos) =
         load_archive_chapter_relations(conn, &source_chapter_ids).await?;
 
-    let (page_infos, unit_infos) =
-        pages::load_archive_pages(conn, &source_chapter_ids).await?;
+    let (page_source_infos, unit_infos) =
+        pages::load_archive_page_sources(conn, &source_chapter_ids).await?;
 
     let page_artwork_snapshots =
         artwork::load_archive_page_artworks(conn, &source_chapter_ids).await?;
@@ -354,7 +358,7 @@ async fn get_snapshot_excluded(
             workflow_record_infos,
             assignment_infos,
             users_by_id: user_infos,
-            page_infos,
+            page_source_infos,
             unit_infos,
             page_artwork_snapshots,
         },

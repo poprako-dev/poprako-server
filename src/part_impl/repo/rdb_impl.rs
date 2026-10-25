@@ -30,10 +30,10 @@ pub mod incl;
 pub mod member;
 /// Member invitation repository operations.
 pub mod member_invitation;
-/// Page repository operations.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page repository operations.
+pub mod page_source;
 /// Diesel-generated schema.
 pub mod schema;
 /// Hierarchical subtree deletion operations.

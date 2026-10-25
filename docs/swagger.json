@@ -1212,12 +1212,12 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages": {
+    "/api/v1/chapters/{chapter_id}/page-sources": {
       "get": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.",
+        "summary": "`GET /api/v1/chapters/{chapter_id}/page-sources` — list pages in a chapter.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -1232,11 +1232,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Pages listed",
+            "description": "PageSources listed",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceInfoView"
                 }
               }
             }
@@ -1248,9 +1248,9 @@
       },
       "delete": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.",
+        "summary": "`DELETE /api/v1/chapters/{chapter_id}/page-sources` — delete all pages in a chapter.",
         "operationId": "delete",
         "parameters": [
           {
@@ -1273,13 +1273,13 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages/alloc": {
+    "/api/v1/chapters/{chapter_id}/page-sources/alloc": {
       "post": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`POST /api/v1/chapters/{chapter_id}/pages/alloc` — allocate all page images.",
-        "operationId": "alloc_chapter_pages",
+        "summary": "`POST /api/v1/chapters/{chapter_id}/page-sources/alloc` — allocate all page images.",
+        "operationId": "alloc_chapter_page_sources",
         "parameters": [
           {
             "name": "chapter_id",
@@ -1295,7 +1295,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocChapterPagesInstr"
+                "$ref": "#/components/schemas/AllocChapterPageSourcesInstr"
               }
             }
           },
@@ -1303,11 +1303,11 @@
         },
         "responses": {
           "200": {
-            "description": "Page upload slots allocated",
+            "description": "PageSource upload slots allocated",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocChapterPagesVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageSourcesVal"
                 }
               }
             }
@@ -1321,12 +1321,12 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages/unit-diff-stats": {
+    "/api/v1/chapters/{chapter_id}/page-sources/unit-diff-stats": {
       "get": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` — list Unit text statistics for Pages with revision differences.",
+        "summary": "`GET /api/v1/chapters/{chapter_id}/page-sources/unit-diff-stats` — list Unit text statistics for source pages with revision differences.",
         "operationId": "list_unit_diff_stats",
         "parameters": [
           {
@@ -1341,17 +1341,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Visible Unit text counts for Pages with edits or revision-only additions, in original Page order",
+            "description": "Visible Unit text counts for PageSources with edits or revision-only additions, in original PageSource order",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageUnitDiffStatsVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitDiffStatsVal"
                 }
               }
             }
           },
           "403": {
-            "description": "No perm to list Pages in this Chapter"
+            "description": "No perm to list PageSources in this Chapter"
           },
           "422": {
             "description": "Chapter not found"
@@ -1359,12 +1359,12 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages/unit-flagged-stats": {
+    "/api/v1/chapters/{chapter_id}/page-sources/unit-flagged-stats": {
       "get": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats` — list Pages containing visible flagged Units.",
+        "summary": "`GET /api/v1/chapters/{chapter_id}/page-sources/unit-flagged-stats` — list source pages containing visible flagged Units.",
         "operationId": "list_unit_flagged_stats",
         "parameters": [
           {
@@ -1379,17 +1379,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Visible flagged Unit counts for Pages, in original Page order",
+            "description": "Visible flagged Unit counts for PageSources, in original PageSource order",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageUnitFlaggedStatsVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitFlaggedStatsVal"
                 }
               }
             }
           },
           "403": {
-            "description": "No perm to list Pages in this Chapter"
+            "description": "No perm to list PageSources in this Chapter"
           },
           "422": {
             "description": "Chapter not found"
@@ -2909,7 +2909,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_IssueEditPageVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageIssuesVal"
                 }
               }
             }
@@ -2926,18 +2926,18 @@
         }
       }
     },
-    "/api/v1/pages/{page_id}": {
+    "/api/v1/page-sources/{page_source_id}": {
       "get": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`GET /api/v1/pages/{page_id}` — fetch one page.",
+        "summary": "`GET /api/v1/page-sources/{page_source_id}` — fetch one page.",
         "operationId": "get_info",
         "parameters": [
           {
-            "name": "page_id",
+            "name": "page_source_id",
             "in": "path",
-            "description": "Page ID",
+            "description": "PageSource ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -2946,11 +2946,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Page info retrieved",
+            "description": "PageSource info retrieved",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_PageInfoView"
+                  "$ref": "#/components/schemas/HttpBody_PageSourceInfoView"
                 }
               }
             }
@@ -2959,23 +2959,23 @@
             "description": "No perm to view this page"
           },
           "404": {
-            "description": "Page not found"
+            "description": "PageSource not found"
           }
         }
       }
     },
-    "/api/v1/pages/{page_id}/image/alloc": {
+    "/api/v1/page-sources/{page_source_id}/image/alloc": {
       "post": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`POST /api/v1/pages/{page_id}/image/alloc` — allocate a replacement page image.",
+        "summary": "`POST /api/v1/page-sources/{page_source_id}/image/alloc` — allocate a replacement page image.",
         "operationId": "alloc_image",
         "parameters": [
           {
-            "name": "page_id",
+            "name": "page_source_id",
             "in": "path",
-            "description": "Page ID",
+            "description": "PageSource ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -2986,7 +2986,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocPageImageInstr"
+                "$ref": "#/components/schemas/AllocPageSourceImageInstr"
               }
             }
           },
@@ -2994,11 +2994,11 @@
         },
         "responses": {
           "200": {
-            "description": "Page image upload URL allocated",
+            "description": "PageSource image upload URL allocated",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocatedPageVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocatedPageSourceVal"
                 }
               }
             }
@@ -3007,23 +3007,23 @@
             "description": "No perm to modify this page's image"
           },
           "422": {
-            "description": "Page not found, conflicting image metadata, or published chapter"
+            "description": "PageSource not found, conflicting image metadata, or published chapter"
           }
         }
       }
     },
-    "/api/v1/pages/{page_id}/image/mark-uploaded": {
+    "/api/v1/page-sources/{page_source_id}/image/mark-uploaded": {
       "post": {
         "tags": [
-          "pages"
+          "page-sources"
         ],
-        "summary": "`POST /api/v1/pages/{page_id}/image/mark-uploaded` — confirm a page image upload.",
+        "summary": "`POST /api/v1/page-sources/{page_source_id}/image/mark-uploaded` — confirm a page image upload.",
         "operationId": "mark_image_uploaded",
         "parameters": [
           {
-            "name": "page_id",
+            "name": "page_source_id",
             "in": "path",
-            "description": "Page ID",
+            "description": "PageSource ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -3034,7 +3034,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkPageImageUploadedInstr"
+                "$ref": "#/components/schemas/MarkPageSourceImageUploadedInstr"
               }
             }
           },
@@ -3042,29 +3042,29 @@
         },
         "responses": {
           "204": {
-            "description": "Page image upload confirmed"
+            "description": "PageSource image upload confirmed"
           },
           "403": {
             "description": "No perm to modify this page's image"
           },
           "422": {
-            "description": "Page, image identity, storage object, or published chapter is invalid"
+            "description": "PageSource, image identity, storage object, or published chapter is invalid"
           }
         }
       }
     },
-    "/api/v1/pages/{page_id}/units": {
+    "/api/v1/page-sources/{page_source_id}/units": {
       "get": {
         "tags": [
           "units"
         ],
-        "summary": "`GET /api/v1/pages/{page_id}/units` — list units under a page.",
+        "summary": "`GET /api/v1/page-sources/{page_source_id}/units` — list units under a page.",
         "operationId": "list_infos",
         "parameters": [
           {
-            "name": "page_id",
+            "name": "page_source_id",
             "in": "path",
-            "description": "Page ID",
+            "description": "PageSource ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -3077,7 +3077,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosVal"
+                  "$ref": "#/components/schemas/HttpBody_ListPageSourceUnitInfosVal"
                 }
               }
             }
@@ -3086,23 +3086,23 @@
             "description": "No perm to list units in this page"
           },
           "404": {
-            "description": "Page not found"
+            "description": "PageSource not found"
           }
         }
       }
     },
-    "/api/v1/pages/{page_id}/units/save": {
+    "/api/v1/page-sources/{page_source_id}/units/save": {
       "post": {
         "tags": [
           "units"
         ],
-        "summary": "`POST /api/v1/pages/{page_id}/units/save` — save Unit edits.",
+        "summary": "`POST /api/v1/page-sources/{page_source_id}/units/save` — save Unit edits.",
         "operationId": "save_infos",
         "parameters": [
           {
-            "name": "page_id",
+            "name": "page_source_id",
             "in": "path",
-            "description": "Page ID",
+            "description": "PageSource ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -3137,7 +3137,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageUnitEditsVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageSourceUnitEditsVal"
                 }
               }
             }
@@ -5119,7 +5119,8 @@
             },
             "description": "Final page sequence; omitted old pages are deleted."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AllocChapterPageArtworksVal": {
         "type": "object",
@@ -5137,7 +5138,7 @@
           }
         }
       },
-      "AllocChapterPagesInstr": {
+      "AllocChapterPageSourcesInstr": {
         "type": "object",
         "description": "Input parameters for reserving all page images of a chapter.",
         "required": [
@@ -5152,13 +5153,14 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageImageInstr"
+              "$ref": "#/components/schemas/PageSourceImageInstr"
             },
-            "description": "Page images to allocate for the chapter."
+            "description": "source page images to allocate for the chapter."
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "AllocChapterPagesVal": {
+      "AllocChapterPageSourcesVal": {
         "type": "object",
         "description": "Return value from successful chapter page allocations.",
         "required": [
@@ -5168,7 +5170,7 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AllocatedPageVal"
+              "$ref": "#/components/schemas/AllocatedPageSourceVal"
             },
             "description": "Allocated pages with upload targets."
           }
@@ -5246,9 +5248,10 @@
             ],
             "description": "Original PSD filename or relative path."
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "AllocPageImageInstr": {
+      "AllocPageSourceImageInstr": {
         "type": "object",
         "description": "Input parameters for reserving one page image.",
         "required": [
@@ -5278,7 +5281,8 @@
             ],
             "description": "Complete original filename. Omission or null replaces it with no name."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AllocTeamAvatarInstr": {
         "type": "object",
@@ -5411,14 +5415,15 @@
           }
         }
       },
-      "AllocatedPageVal": {
+      "AllocatedPageSourceVal": {
         "type": "object",
         "description": "One allocated page upload target.",
         "required": [
-          "page_id",
+          "page_source_id",
           "index",
           "image_hash",
-          "ext"
+          "ext",
+          "image_version"
         ],
         "properties": {
           "ext": {
@@ -5429,13 +5434,19 @@
             "$ref": "#/components/schemas/ImageHash",
             "description": "Content hash of the page image."
           },
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Current allocated or reused image generation.",
+            "minimum": 0
+          },
           "index": {
             "type": "integer",
             "format": "int32",
             "description": "Ordinal position within the chapter.",
             "minimum": 0
           },
-          "page_id": {
+          "page_source_id": {
             "type": "string",
             "description": "Allocated page identifier."
           },
@@ -5772,7 +5783,7 @@
           "is_pinned",
           "index",
           "subtitle",
-          "page_count",
+          "page_source_count",
           "total_unit_count",
           "translated_unit_count",
           "proofread_unit_count",
@@ -5830,7 +5841,7 @@
             "type": "boolean",
             "description": "Whether the chapter is pinned to the top of its comic's chapter list."
           },
-          "page_count": {
+          "page_source_count": {
             "type": "integer",
             "description": "Total number of image pages in the chapter.",
             "minimum": 0
@@ -5865,17 +5876,17 @@
           }
         }
       },
-      "ChapterPageRawIdentVal": {
+      "ChapterPageSourceRawIdentVal": {
         "type": "object",
-        "description": "One exported Page's original filename mapping.",
+        "description": "One exported source page's original filename mapping.",
         "required": [
-          "page_id",
+          "page_source_id",
           "raw_ident"
         ],
         "properties": {
-          "page_id": {
+          "page_source_id": {
             "type": "string",
-            "description": "Stable Page identifier."
+            "description": "Stable source page identifier."
           },
           "raw_ident": {
             "type": "string",
@@ -5913,7 +5924,7 @@
       },
       "ChapterTranslationImportModeInstr": {
         "type": "string",
-        "description": "Page-content strategy selected by a chapter translation import request.",
+        "description": "source page-content strategy selected by a chapter translation import request.",
         "enum": [
           "keep",
           "overwrite"
@@ -5957,9 +5968,9 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageTranslationPortView"
+              "$ref": "#/components/schemas/PageSourceTranslationPortView"
             },
-            "description": "Pages and their translation units."
+            "description": "source pages and their translation units."
           }
         }
       },
@@ -6164,7 +6175,7 @@
                 "description": "Translation content was imported into a chapter.",
                 "required": [
                   "format",
-                  "imported_page_count",
+                  "imported_page_source_count",
                   "imported_unit_count"
                 ],
                 "properties": {
@@ -6172,7 +6183,7 @@
                     "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
                     "description": "Imported content format."
                   },
-                  "imported_page_count": {
+                  "imported_page_source_count": {
                     "type": "integer",
                     "description": "Number of pages whose visible Unit content changed.",
                     "minimum": 0
@@ -7027,6 +7038,24 @@
           }
         }
       },
+      "CreatedIssueIdVal": {
+        "type": "object",
+        "description": "One new annotation's client-to-server identity mapping.",
+        "required": [
+          "local_id",
+          "issue_id"
+        ],
+        "properties": {
+          "issue_id": {
+            "type": "string",
+            "description": "Persistent identity allocated by the server."
+          },
+          "local_id": {
+            "type": "string",
+            "description": "Temporary identity submitted by the client."
+          }
+        }
+      },
       "CreatedUnitIdVal": {
         "type": "object",
         "description": "One explicit identity pair returned for a newly created Unit.",
@@ -7103,9 +7132,9 @@
               "null"
             ],
             "items": {
-              "$ref": "#/components/schemas/ChapterPageRawIdentVal"
+              "$ref": "#/components/schemas/ChapterPageSourceRawIdentVal"
             },
-            "description": "Page-to-original-filename mappings, absent unless requested."
+            "description": "source page-to-original-filename mappings, absent unless requested."
           }
         }
       },
@@ -7244,7 +7273,7 @@
           }
         }
       },
-      "HttpBody_AllocChapterPagesVal": {
+      "HttpBody_AllocChapterPageSourcesVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7269,7 +7298,7 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/AllocatedPageVal"
+                  "$ref": "#/components/schemas/AllocatedPageSourceVal"
                 },
                 "description": "Allocated pages with upload targets."
               }
@@ -7443,7 +7472,7 @@
           }
         }
       },
-      "HttpBody_AllocatedPageVal": {
+      "HttpBody_AllocatedPageSourceVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7462,10 +7491,11 @@
             "type": "object",
             "description": "One allocated page upload target.",
             "required": [
-              "page_id",
+              "page_source_id",
               "index",
               "image_hash",
-              "ext"
+              "ext",
+              "image_version"
             ],
             "properties": {
               "ext": {
@@ -7476,13 +7506,19 @@
                 "$ref": "#/components/schemas/ImageHash",
                 "description": "Content hash of the page image."
               },
+              "image_version": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Current allocated or reused image generation.",
+                "minimum": 0
+              },
               "index": {
                 "type": "integer",
                 "format": "int32",
                 "description": "Ordinal position within the chapter.",
                 "minimum": 0
               },
-              "page_id": {
+              "page_source_id": {
                 "type": "string",
                 "description": "Allocated page identifier."
               },
@@ -7677,7 +7713,7 @@
               "is_pinned",
               "index",
               "subtitle",
-              "page_count",
+              "page_source_count",
               "total_unit_count",
               "translated_unit_count",
               "proofread_unit_count",
@@ -7735,7 +7771,7 @@
                 "type": "boolean",
                 "description": "Whether the chapter is pinned to the top of its comic's chapter list."
               },
-              "page_count": {
+              "page_source_count": {
                 "type": "integer",
                 "description": "Total number of image pages in the chapter.",
                 "minimum": 0
@@ -8367,11 +8403,11 @@
             "type": "object",
             "description": "Summary returned after importing chapter translations.",
             "required": [
-              "imported_page_count",
+              "imported_page_source_count",
               "imported_unit_count"
             ],
             "properties": {
-              "imported_page_count": {
+              "imported_page_source_count": {
                 "type": "integer",
                 "description": "Number of pages whose visible Unit content changed.",
                 "minimum": 0
@@ -8476,7 +8512,7 @@
                 "items": {
                   "$ref": "#/components/schemas/IssueEditView"
                 },
-                "description": "Ordered annotations, excluding legacy layer metadata."
+                "description": "Ordered annotations."
               },
               "page_artwork_id": {
                 "type": "string",
@@ -8596,7 +8632,7 @@
           }
         }
       },
-      "HttpBody_ListPageUnitInfosVal": {
+      "HttpBody_ListPageSourceUnitInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8613,7 +8649,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Return value for listing visible Units under one Page.",
+            "description": "Return value for listing visible Units under one source page.",
             "required": [
               "unit_infos",
               "total_unit_count",
@@ -8789,7 +8825,7 @@
                   "is_pinned",
                   "index",
                   "subtitle",
-                  "page_count",
+                  "page_source_count",
                   "total_unit_count",
                   "translated_unit_count",
                   "proofread_unit_count",
@@ -8847,7 +8883,7 @@
                     "type": "boolean",
                     "description": "Whether the chapter is pinned to the top of its comic's chapter list."
                   },
-                  "page_count": {
+                  "page_source_count": {
                     "type": "integer",
                     "description": "Total number of image pages in the chapter.",
                     "minimum": 0
@@ -8886,7 +8922,7 @@
           }
         }
       },
-      "HttpBody_PageInfoView": {
+      "HttpBody_PageSourceInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8908,6 +8944,7 @@
               "id",
               "chapter_id",
               "index",
+              "image_uploaded",
               "total_unit_count",
               "translated_unit_count",
               "proofread_unit_count",
@@ -8964,12 +9001,25 @@
                 ],
                 "description": "Presigned download URL for the thumbnail image, if available."
               },
+              "image_uploaded": {
+                "type": "boolean",
+                "description": "Whether the current generation is available to readers."
+              },
               "image_url": {
                 "type": [
                   "string",
                   "null"
                 ],
                 "description": "Presigned download URL for the full image, if uploaded."
+              },
+              "image_version": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int32",
+                "description": "Current allocated image generation.",
+                "minimum": 0
               },
               "index": {
                 "type": "integer",
@@ -8980,6 +9030,13 @@
                 "type": "integer",
                 "description": "Number of proofread units on this page.",
                 "minimum": 0
+              },
+              "raw_ident": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Complete original source filename, when supplied."
               },
               "total_unit_count": {
                 "type": "integer",
@@ -9073,7 +9130,45 @@
           }
         }
       },
-      "HttpBody_SavePageUnitEditsVal": {
+      "HttpBody_SavePageIssuesVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Committed annotation document and identities assigned by the save batch.",
+            "required": [
+              "page",
+              "created_issue_ids"
+            ],
+            "properties": {
+              "created_issue_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreatedIssueIdVal"
+                },
+                "description": "Stable mappings retained for retries of this batch."
+              },
+              "page": {
+                "$ref": "#/components/schemas/IssueEditPageVal",
+                "description": "Latest document under the same review and image context."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_SavePageSourceUnitEditsVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9653,7 +9748,7 @@
                 "is_pinned",
                 "index",
                 "subtitle",
-                "page_count",
+                "page_source_count",
                 "total_unit_count",
                 "translated_unit_count",
                 "proofread_unit_count",
@@ -9711,7 +9806,7 @@
                   "type": "boolean",
                   "description": "Whether the chapter is pinned to the top of its comic's chapter list."
                 },
-                "page_count": {
+                "page_source_count": {
                   "type": "integer",
                   "description": "Total number of image pages in the chapter.",
                   "minimum": 0
@@ -9906,13 +10001,6 @@
                   "type": "integer",
                   "description": "Zero-based position within the review page.",
                   "minimum": 0
-                },
-                "layer_name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Optional human-readable layer name, preserved verbatim."
                 },
                 "note": {
                   "type": "string",
@@ -10210,7 +10298,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageInfoView": {
+      "HttpBody_Vec_PageSourceInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10234,6 +10322,7 @@
                 "id",
                 "chapter_id",
                 "index",
+                "image_uploaded",
                 "total_unit_count",
                 "translated_unit_count",
                 "proofread_unit_count",
@@ -10290,12 +10379,25 @@
                   ],
                   "description": "Presigned download URL for the thumbnail image, if available."
                 },
+                "image_uploaded": {
+                  "type": "boolean",
+                  "description": "Whether the current generation is available to readers."
+                },
                 "image_url": {
                   "type": [
                     "string",
                     "null"
                   ],
                   "description": "Presigned download URL for the full image, if uploaded."
+                },
+                "image_version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Current allocated image generation.",
+                  "minimum": 0
                 },
                 "index": {
                   "type": "integer",
@@ -10306,6 +10408,13 @@
                   "type": "integer",
                   "description": "Number of proofread units on this page.",
                   "minimum": 0
+                },
+                "raw_ident": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Complete original source filename, when supplied."
                 },
                 "total_unit_count": {
                   "type": "integer",
@@ -10327,7 +10436,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageUnitDiffStatsVal": {
+      "HttpBody_Vec_PageSourceUnitDiffStatsVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10346,9 +10455,9 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Visible Unit text statistics for a Page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
+              "description": "Visible Unit text statistics for a source page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
               "required": [
-                "page_id",
+                "page_source_id",
                 "index",
                 "translated_unit_count",
                 "editted_unit_count",
@@ -10365,9 +10474,9 @@
                   "description": "Original zero-based Chapter position, preserved after filtering.",
                   "minimum": 0
                 },
-                "page_id": {
+                "page_source_id": {
                   "type": "string",
-                  "description": "Permanent Page identifier."
+                  "description": "Permanent source page identifier."
                 },
                 "proofreader_append_unit_count": {
                   "type": "integer",
@@ -10384,7 +10493,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageUnitFlaggedStatsVal": {
+      "HttpBody_Vec_PageSourceUnitFlaggedStatsVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10403,9 +10512,9 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Visible flagged Unit statistics for one matching Page.",
+              "description": "Visible flagged Unit statistics for one matching source page.",
               "required": [
-                "page_id",
+                "page_source_id",
                 "index",
                 "flagged_unit_count"
               ],
@@ -10420,9 +10529,9 @@
                   "description": "Original zero-based Chapter position, preserved after filtering.",
                   "minimum": 0
                 },
-                "page_id": {
+                "page_source_id": {
                   "type": "string",
-                  "description": "Permanent Page identifier."
+                  "description": "Permanent source page identifier."
                 }
               }
             }
@@ -10754,7 +10863,7 @@
               "description": "Presentation-ready visible Unit information.",
               "required": [
                 "id",
-                "page_id",
+                "page_source_id",
                 "is_bubble",
                 "is_flagged",
                 "is_proofread",
@@ -10799,9 +10908,9 @@
                   ],
                   "description": "ID of the translator who last assigned translation content."
                 },
-                "page_id": {
+                "page_source_id": {
                   "type": "string",
-                  "description": "Owning Page ID."
+                  "description": "Owning source page ID."
                 },
                 "proofread_text": {
                   "type": [
@@ -11122,7 +11231,7 @@
           },
           "mode": {
             "$ref": "#/components/schemas/ChapterTranslationImportModeInstr",
-            "description": "Page-content strategy used while applying the imported source."
+            "description": "source page-content strategy used while applying the imported source."
           }
         }
       },
@@ -11130,11 +11239,11 @@
         "type": "object",
         "description": "Summary returned after importing chapter translations.",
         "required": [
-          "imported_page_count",
+          "imported_page_source_count",
           "imported_unit_count"
         ],
         "properties": {
-          "imported_page_count": {
+          "imported_page_source_count": {
             "type": "integer",
             "description": "Number of pages whose visible Unit content changed.",
             "minimum": 0
@@ -11236,14 +11345,23 @@
         "type": "object",
         "description": "Final contents of one stable annotation.",
         "required": [
-          "id",
           "variant",
           "note"
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "description": "Stable client UUID or existing imported identity."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Existing server-assigned identity; exclusive with `local_id`."
+          },
+          "local_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Temporary identity for a new annotation; exclusive with id."
           },
           "note": {
             "type": "string",
@@ -11296,7 +11414,7 @@
             "items": {
               "$ref": "#/components/schemas/IssueEditView"
             },
-            "description": "Ordered annotations, excluding legacy layer metadata."
+            "description": "Ordered annotations."
           },
           "page_artwork_id": {
             "type": "string",
@@ -11455,13 +11573,6 @@
             "description": "Zero-based position within the review page.",
             "minimum": 0
           },
-          "layer_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional human-readable layer name, preserved verbatim."
-          },
           "note": {
             "type": "string",
             "description": "Original note text."
@@ -11495,13 +11606,6 @@
           "note"
         ],
         "properties": {
-          "layer_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional human-readable, nonblank layer name, preserved verbatim."
-          },
           "note": {
             "type": "string",
             "description": "Original text, preserved verbatim including empty strings and newlines."
@@ -11513,7 +11617,7 @@
               },
               {
                 "$ref": "#/components/schemas/IssueRectInstr",
-                "description": "Optional normalized whole-page rectangle, independent of layer selection."
+                "description": "Optional normalized whole-page rectangle."
               }
             ]
           },
@@ -11674,9 +11778,9 @@
           }
         }
       },
-      "ListPageUnitInfosVal": {
+      "ListPageSourceUnitInfosVal": {
         "type": "object",
-        "description": "Return value for listing visible Units under one Page.",
+        "description": "Return value for listing visible Units under one source page.",
         "required": [
           "unit_infos",
           "total_unit_count",
@@ -11787,9 +11891,10 @@
             "description": "Allocated image version.",
             "minimum": 0
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "MarkPageImageUploadedInstr": {
+      "MarkPageSourceImageUploadedInstr": {
         "type": "object",
         "description": "Input parameters for confirming a page image upload completed.",
         "required": [
@@ -11802,7 +11907,8 @@
             "description": "Image version from the allocation, used as an idempotency guard.",
             "minimum": 0
           }
-        }
+        },
+        "additionalProperties": false
       },
       "MarkSystemMailReadInstr": {
         "type": "object",
@@ -12104,7 +12210,8 @@
             ],
             "description": "Original PSD filename or relative path, for presentation only."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PageArtworkInfoView": {
         "type": "object",
@@ -12199,7 +12306,28 @@
           }
         }
       },
-      "PageImageInstr": {
+      "PageIssuesInstr": {
+        "type": "object",
+        "description": "Issues for one explicit composite page in the imported review file.",
+        "required": [
+          "page_artwork_id",
+          "issues"
+        ],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueInstr"
+            },
+            "description": "Array order determines the zero-based issue index."
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Stable composite page ID within the target Chapter."
+          }
+        }
+      },
+      "PageSourceImageInstr": {
         "type": "object",
         "description": "One page image in a complete chapter manifest.",
         "required": [
@@ -12224,7 +12352,7 @@
             "description": "Size used to constrain a newly requested upload slot.\n\nExisting manifest entries may omit this when no upload slot is needed.",
             "minimum": 0
           },
-          "page_id": {
+          "page_source_id": {
             "type": [
               "string",
               "null"
@@ -12238,15 +12366,17 @@
             ],
             "description": "Complete original filename. Omission or null replaces it with no name."
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "PageInfoView": {
+      "PageSourceInfoView": {
         "type": "object",
         "description": "Presentation-ready page information.",
         "required": [
           "id",
           "chapter_id",
           "index",
+          "image_uploaded",
           "total_unit_count",
           "translated_unit_count",
           "proofread_unit_count",
@@ -12303,12 +12433,25 @@
             ],
             "description": "Presigned download URL for the thumbnail image, if available."
           },
+          "image_uploaded": {
+            "type": "boolean",
+            "description": "Whether the current generation is available to readers."
+          },
           "image_url": {
             "type": [
               "string",
               "null"
             ],
             "description": "Presigned download URL for the full image, if uploaded."
+          },
+          "image_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Current allocated image generation.",
+            "minimum": 0
           },
           "index": {
             "type": "integer",
@@ -12319,6 +12462,13 @@
             "type": "integer",
             "description": "Number of proofread units on this page.",
             "minimum": 0
+          },
+          "raw_ident": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Complete original source filename, when supplied."
           },
           "total_unit_count": {
             "type": "integer",
@@ -12337,30 +12487,9 @@
           }
         }
       },
-      "PageIssuesInstr": {
+      "PageSourceTranslationPortView": {
         "type": "object",
-        "description": "Issues for one explicit composite page in the imported review file.",
-        "required": [
-          "page_artwork_id",
-          "issues"
-        ],
-        "properties": {
-          "issues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IssueInstr"
-            },
-            "description": "Array order determines the zero-based issue index."
-          },
-          "page_artwork_id": {
-            "type": "string",
-            "description": "Stable composite page ID within the target Chapter."
-          }
-        }
-      },
-      "PageTranslationPortView": {
-        "type": "object",
-        "description": "Page object exchanged by the `PopRaKo` translation port.",
+        "description": "source page object exchanged by the `PopRaKo` translation port.",
         "required": [
           "page_id",
           "page_index",
@@ -12369,7 +12498,7 @@
         "properties": {
           "page_id": {
             "type": "string",
-            "description": "Page identifier from the exporting chapter."
+            "description": "source page identifier from the exporting chapter."
           },
           "page_index": {
             "type": "integer",
@@ -12385,11 +12514,11 @@
           }
         }
       },
-      "PageUnitDiffStatsVal": {
+      "PageSourceUnitDiffStatsVal": {
         "type": "object",
-        "description": "Visible Unit text statistics for a Page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
+        "description": "Visible Unit text statistics for a source page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
         "required": [
-          "page_id",
+          "page_source_id",
           "index",
           "translated_unit_count",
           "editted_unit_count",
@@ -12406,9 +12535,9 @@
             "description": "Original zero-based Chapter position, preserved after filtering.",
             "minimum": 0
           },
-          "page_id": {
+          "page_source_id": {
             "type": "string",
-            "description": "Permanent Page identifier."
+            "description": "Permanent source page identifier."
           },
           "proofreader_append_unit_count": {
             "type": "integer",
@@ -12422,11 +12551,11 @@
           }
         }
       },
-      "PageUnitFlaggedStatsVal": {
+      "PageSourceUnitFlaggedStatsVal": {
         "type": "object",
-        "description": "Visible flagged Unit statistics for one matching Page.",
+        "description": "Visible flagged Unit statistics for one matching source page.",
         "required": [
-          "page_id",
+          "page_source_id",
           "index",
           "flagged_unit_count"
         ],
@@ -12441,9 +12570,9 @@
             "description": "Original zero-based Chapter position, preserved after filtering.",
             "minimum": 0
           },
-          "page_id": {
+          "page_source_id": {
             "type": "string",
-            "description": "Permanent Page identifier."
+            "description": "Permanent source page identifier."
           }
         }
       },
@@ -12784,7 +12913,28 @@
         },
         "additionalProperties": false
       },
-      "SavePageUnitEditsVal": {
+      "SavePageIssuesVal": {
+        "type": "object",
+        "description": "Committed annotation document and identities assigned by the save batch.",
+        "required": [
+          "page",
+          "created_issue_ids"
+        ],
+        "properties": {
+          "created_issue_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatedIssueIdVal"
+            },
+            "description": "Stable mappings retained for retries of this batch."
+          },
+          "page": {
+            "$ref": "#/components/schemas/IssueEditPageVal",
+            "description": "Latest document under the same review and image context."
+          }
+        }
+      },
+      "SavePageSourceUnitEditsVal": {
         "type": "object",
         "description": "Result of every successful Unit save, including replayed saves.",
         "required": [
@@ -13058,7 +13208,7 @@
       },
       "UnitCoordInstr": {
         "type": "object",
-        "description": "Page-relative Unit coordinates.",
+        "description": "source page-relative Unit coordinates.",
         "required": [
           "x_coord",
           "y_coord"
@@ -13284,7 +13434,7 @@
         "description": "Presentation-ready visible Unit information.",
         "required": [
           "id",
-          "page_id",
+          "page_source_id",
           "is_bubble",
           "is_flagged",
           "is_proofread",
@@ -13329,9 +13479,9 @@
             ],
             "description": "ID of the translator who last assigned translation content."
           },
-          "page_id": {
+          "page_source_id": {
             "type": "string",
-            "description": "Owning Page ID."
+            "description": "Owning source page ID."
           },
           "proofread_text": {
             "type": [
@@ -14020,12 +14170,12 @@
       "description": "Composite artwork review endpoints"
     },
     {
-      "name": "pages",
-      "description": "Page management endpoints"
+      "name": "page-sources",
+      "description": "Source page management endpoints"
     },
     {
       "name": "units",
-      "description": "Page unit endpoints"
+      "description": "Source page unit endpoints"
     },
     {
       "name": "members",

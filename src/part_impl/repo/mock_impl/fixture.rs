@@ -1,7 +1,8 @@
 //! Mock fixture construction.
 
-use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::record::{
+    ObjKeyRecord as ObjKey, ObjMetaRecord as ObjMeta,
+};
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -11,7 +12,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::system_mail::SystemMailInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::term::TermInfo;
@@ -137,20 +138,24 @@ impl Mock {
     /// Seed a page directly into the mock state.
     /// # Panics
     /// Panics if the mock state, flags, or event mutex is poisoned.
-    pub fn seed_page(&self, page: PageInfo) {
+    pub fn seed_page(&self, page: PageSourceInfo) {
         self.state.lock().unwrap().pages.push(page);
     }
 
     /// Seed one verified page-image object for read-projection tests.
     /// # Panics
     /// Panics if the mock state, flags, or event mutex is poisoned.
-    pub fn seed_page_image_obj(&self, id: &str, ext: &str) {
+    pub fn seed_page_source_image_obj(&self, id: &str, ext: &str) {
         //
         let meta = ObjMeta {
             key: ObjKey {
                 id: id.to_owned(),
                 ver: 1,
-                image: ["page/chapter_test/", id, "-1.", ext].concat(),
+                domain: serde_json::json!({
+                    "chapter_id": "chapter--00000000001",
+                    "page_source_id": id,
+                    "ext": ext,
+                }),
             },
             is_avail: true,
             hash: vec![0; 32],
@@ -161,7 +166,7 @@ impl Mock {
             .lock()
             .unwrap()
             .objs
-            .entry("page_image")
+            .entry("page_source_image")
             .or_default()
             .insert(
                 id.to_owned(),

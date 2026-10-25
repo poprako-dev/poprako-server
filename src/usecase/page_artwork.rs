@@ -17,6 +17,7 @@ use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::model::url::ObjUrlSpec;
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
@@ -29,9 +30,9 @@ use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest};
-use crate::usecase::page::list as page_list_usecase;
+use crate::usecase::page_source::list as page_list_usecase;
 
-/// Reads ordered composite pages independently of source Pages.
+/// Reads ordered composite pages independently of source pages.
 #[instrument(
     level = "info",
     skip(repo, obj_dept, token),
@@ -71,10 +72,13 @@ where
         .map(|info| info.id.as_str())
         .collect::<Vec<_>>();
 
-    let image_metas = ListObjMetas::<PageArtworkImage>::new(&page_artwork_ids)
-        .run_on(obj_dept)
-        .await
-        .map_err(BaseError::from)?;
+    let page_artwork_image_ids = PageArtworkImage::ids(&page_artwork_ids)?;
+
+    let image_metas =
+        ListObjMetas::<PageArtworkImage>::new(&page_artwork_image_ids)
+            .run_on(obj_dept)
+            .await
+            .map_err(BaseError::from)?;
 
     let url_spec = ObjUrlSpec::default().with_origin().with_thumbnail();
 
@@ -88,9 +92,9 @@ where
         .into_iter()
         .map(|page_artwork_info| {
             //
-            let image_meta = image_metas.get(&page_artwork_info.id);
+            let image_meta = image_metas.get(page_artwork_info.id.as_str());
 
-            let image_urls = image_urls.get(&page_artwork_info.id);
+            let image_urls = image_urls.get(page_artwork_info.id.as_str());
 
             PageArtworkInfoView::from_model(
                 page_artwork_info,

@@ -18,11 +18,11 @@ fn alloc_instr(hash_byte: u8) -> AllocComicCoverInstr {
 }
 
 fn seed_alloc_scope(mock: &Mock) {
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
 }
 
 #[tokio::test]
@@ -33,8 +33,8 @@ async fn alloc_cover_updates_object_state_enqueues_check_and_returns_put_url() {
 
     let allocated = alloc::alloc_cover::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
         alloc_instr(1),
     )
     .await
@@ -45,7 +45,7 @@ async fn alloc_cover_updates_object_state_enqueues_check_and_returns_put_url() {
     assert_eq!(slot.image_ver, 1);
     assert_eq!(
         slot.put_url,
-        "https://obj.test/write/comic_cover/comic-1-1.png",
+        "https://obj.test/write/comic_cover/comic--00000000001/1.png",
     );
 
     let snapshot = mock.snapshot();
@@ -54,7 +54,7 @@ async fn alloc_cover_updates_object_state_enqueues_check_and_returns_put_url() {
         .objs
         .get("comic_cover")
         .unwrap()
-        .get("comic-1")
+        .get("comic--00000000001")
         .unwrap();
 
     assert_eq!(record.version, 1);
@@ -72,7 +72,7 @@ async fn alloc_cover_rolls_back_missing_comic() {
 
     let error = alloc::alloc_cover::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         "missing".into(),
         alloc_instr(1),
     )
@@ -98,7 +98,7 @@ async fn mark_cover_uploaded_marks_matching_generation() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get("comic--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -121,7 +121,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_generation() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get("comic--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -145,7 +145,7 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get("comic--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -162,8 +162,8 @@ async fn mark_cover_uploaded_rejects_old_allocation_replay() {
 
     let allocated = alloc::alloc_cover::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
         alloc_instr(1),
     )
     .await
@@ -181,7 +181,7 @@ async fn mark_cover_uploaded_rejects_old_allocation_replay() {
         .objs
         .get("comic_cover")
         .unwrap()
-        .get("comic-1")
+        .get("comic--00000000001")
         .unwrap();
 
     assert_eq!(record.version, 2);
@@ -204,8 +204,8 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
 
     delete::<_, MockContext, _>(
         (&mock, &mock),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
     )
     .await
     .unwrap();
@@ -213,7 +213,7 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics.len(), 1);
-    assert!(snapshot.deleted_comic_ids.contains("comic-1"));
+    assert!(snapshot.deleted_comic_ids.contains("comic--00000000001"));
     assert_eq!(snapshot.worksets.first().unwrap().comic_count, 0);
     assert!(snapshot.obj_tasks.is_empty());
 
@@ -228,7 +228,10 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
     assert!(swept_snapshot.comics.is_empty());
     assert!(swept_snapshot.objs.get("comic_cover").unwrap().is_empty());
     assert!(swept_snapshot.obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "comic-1")
+        matches!(
+            task,
+            ObjTask::Delete { key } if key.id == "comic--00000000001"
+        )
     }));
 }
 
@@ -236,12 +239,12 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
 async fn delete_rolls_back_missing_comic() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
     let error = delete::<_, MockContext, _>(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         "missing".into(),
     )
     .await

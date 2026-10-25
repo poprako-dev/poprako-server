@@ -4,6 +4,8 @@
 pub mod alloc;
 /// Current object metadata.
 pub mod meta;
+/// Raw persistence values for explicit typed restoration.
+pub mod record;
 /// Upload capability values.
 pub mod slot;
 /// Durable object-task values.

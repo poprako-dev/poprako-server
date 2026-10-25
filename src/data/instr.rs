@@ -26,10 +26,10 @@ pub mod issue_edit;
 pub mod member;
 /// Member-invitation instruction DTOs.
 pub mod member_invitation;
-/// Page instruction DTOs.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page instruction DTOs.
+pub mod page_source;
 /// System-mail instruction DTOs.
 pub mod system_mail;
 /// Team instruction DTOs.

@@ -21,7 +21,8 @@ use crate::complex::unit::text_transform as unit_text_transform_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseRest, ExpectedVariant};
-use crate::util::{Patch, next_snowflake_id};
+use crate::util::{Patch, next_business_id};
+use crate::value::business_id::BusinessIdKind;
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
 
@@ -65,7 +66,7 @@ pub fn build_transform_edit(
 
 /// Generates one permanent Unit ID.
 pub fn gen_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::Unit)
 }
 
 /// Returns workflow stages triggered by submitted Unit content.

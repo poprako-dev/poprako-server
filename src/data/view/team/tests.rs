@@ -12,7 +12,7 @@ use super::TeamInfoView;
 )]
 fn team_info_view_omits_absent_avatar_urls() {
     let team_info_view = TeamInfoView {
-        id: "team-1".into(),
+        id: "team--00000000001".into(),
         name: "Team".into(),
         description: String::new(),
         avatar_url: None,

@@ -8,7 +8,7 @@ use tracing::instrument;
 
 use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot,
-    ComicArchivePageSnapshot, ComicArchiveSnapshot,
+    ComicArchivePageSourceSnapshot, ComicArchiveSnapshot,
 };
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
@@ -139,19 +139,19 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     }
 }
 
-// Assemble the current review with ordered Page and visible Unit snapshots.
-fn page_snapshots(
+// Assemble the current review with ordered PageSource and visible Unit snapshots.
+fn page_source_snapshots(
     context: &MockContext,
     chapter_id: &str,
-) -> BaseRest<Vec<ComicArchivePageSnapshot>> {
+) -> BaseRest<Vec<ComicArchivePageSourceSnapshot>> {
     //
-    let mut page_snapshots = context
+    let mut page_source_snapshots = context
         .state
         .pages
         .iter()
-        .filter(|page_info| page_info.chapter_id == chapter_id)
+        .filter(|page_source_info| page_source_info.chapter_id == chapter_id)
         .cloned()
-        .map(|page_info| {
+        .map(|page_source_info| {
             //
             // Internal implementation detail.
             // Internal implementation detail.
@@ -159,7 +159,9 @@ fn page_snapshots(
                 .state
                 .units
                 .iter()
-                .filter(|unit_info| unit_info.page_id == page_info.id)
+                .filter(|unit_info| {
+                    unit_info.page_source_id == page_source_info.id
+                })
                 .cloned()
                 .collect();
 
@@ -167,16 +169,17 @@ fn page_snapshots(
 
             unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
-            accept!(ComicArchivePageSnapshot {
-                page_info,
+            accept!(ComicArchivePageSourceSnapshot {
+                page_source_info,
                 unit_infos,
             })
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    page_snapshots.sort_by_key(|snapshot| snapshot.page_info.index);
+    page_source_snapshots
+        .sort_by_key(|snapshot| snapshot.page_source_info.index);
 
-    accept!(page_snapshots)
+    accept!(page_source_snapshots)
 }
 
 // Assemble and return a comic archive snapshot (including chapter, page, and unit info) for submission.
@@ -245,7 +248,8 @@ fn get_snapshot_excluded(
                 })
                 .collect::<BaseRest<Vec<_>>>()?;
 
-            let page_snapshots = page_snapshots(context, &chapter_info.id)?;
+            let page_source_snapshots =
+                page_source_snapshots(context, &chapter_info.id)?;
 
             let mut workflow_record_infos = context
                 .state
@@ -297,7 +301,7 @@ fn get_snapshot_excluded(
                 chapter_info,
                 assignment_infos,
                 workflow_record_infos,
-                page_snapshots,
+                page_source_snapshots,
                 page_artwork_snapshots,
             })
         })
@@ -395,17 +399,25 @@ fn commit(
         .retain(|info| !entry.source_page_artwork_ids.contains(&info.id));
 
     context.state.units.retain(|unit_info| {
-        !entry.source_page_ids.contains(&unit_info.page_id)
+        //
+        !entry
+            .source_page_source_ids
+            .contains(&unit_info.page_source_id)
     });
 
-    context.state.pages.retain(|page_info| {
-        !entry.source_chapter_ids.contains(&page_info.chapter_id)
+    context.state.pages.retain(|page_source_info| {
+        //
+        !entry
+            .source_chapter_ids
+            .contains(&page_source_info.chapter_id)
     });
 
     context
         .state
-        .page_raw_idents
-        .retain(|page_id, _| !entry.source_page_ids.contains(page_id));
+        .page_source_raw_idents
+        .retain(|page_source_id, _| {
+            !entry.source_page_source_ids.contains(page_source_id)
+        });
 
     context.state.chapters.retain(|chapter_info| {
         !entry.source_chapter_ids.contains(&chapter_info.id)

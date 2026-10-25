@@ -6,7 +6,7 @@ use poprako_obj_dept::ObjDeptView;
 use poprako_prom::general::dispatch_flow::DispatchFlow;
 
 use crate::part::effect::Develop;
-use crate::part::obj_dept::PageImage;
+use crate::part::obj_dept::PageSourceImage;
 use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
@@ -14,7 +14,7 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::usecase::chapter::stage as chapter_stage_usecase;
 use crate::usecase::{
@@ -34,10 +34,10 @@ where
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + MemberInvitationRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Send
         + Sync,
-    V: ObjDeptView<PageImage, C> + Sync,
+    V: ObjDeptView<PageSourceImage, C> + Sync,
     D: Develop + Sync,
 {
     match task {

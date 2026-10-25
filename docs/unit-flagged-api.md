@@ -8,11 +8,11 @@ tombstone; restoring the Unit preserves it unless the patch supplies a value.
 
 ## Save and read
 
-`POST /api/v1/pages/{page_id}/units/save?save_id={uuid}` accepts the existing
+`POST /api/v1/page-sources/{page_source_id}/units/save?save_id={uuid}` accepts the existing
 edit array and returns the existing `200` save receipt:
 
 ```json
-[{ "edit": "patch", "id": "unit-id", "is_flagged": true }]
+[{ "edit": "patch", "id": "unit--23021530046", "is_flagged": true }]
 ```
 
 Create accepts `is_flagged`, defaulting to `false` when omitted. Patch accepts
@@ -32,18 +32,18 @@ Create's default false and Patch's absent flag are omitted from serialization.
 An explicit Patch false participates in the digest. Reusing a save identity
 with a different flag patch is rejected like any other changed payload.
 
-## Page navigation
+## PageSource navigation
 
-`GET /api/v1/chapters/{chapter_id}/pages/unit-flagged-stats` returns `200` with
+`GET /api/v1/chapters/{chapter_id}/page-sources/unit-flagged-stats` returns `200` with
 the normal response envelope. Its `data` is an array:
 
 ```json
-[{ "page_id": "page-id", "index": 2, "flagged_unit_count": 3 }]
+[{ "page_source_id": "page_source--23021530046", "index": 2, "flagged_unit_count": 3 }]
 ```
 
-Only visible flagged Units count. Pages with zero matches are omitted; an empty
-result is `[]`. Original zero-based Page indexes are preserved, ordered by
-`index`, then `page_id`. The frontend opens the Page and uses its Unit list to
+Only visible flagged Units count. PageSources with zero matches are omitted; an empty
+result is `[]`. Original zero-based PageSource indexes are preserved, ordered by
+`index`, then `page_source_id`. The frontend opens the PageSource and uses its Unit list to
 highlight flags. Access, missing-Chapter errors, and the complete Chapter page
 limit follow `unit-diff-stats`. Statistics are calculated on demand.
 

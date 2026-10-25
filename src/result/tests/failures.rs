@@ -17,11 +17,10 @@ use crate::shared::result::diesel;
 
 fn issue_record(index: i32) -> IssueRecord {
     IssueRecord {
-        f_id: "issue-1".into(),
-        f_page_artwork_id: "artwork-1".into(),
+        f_id: "issue--00000000001".into(),
+        f_page_artwork_id: "page_artwork--00000000001".into(),
         f_index: index,
         f_variant: "review".into(),
-        f_layer_name: Some("private-layer-sentinel".into()),
         f_x_coord: None,
         f_y_coord: None,
         f_width: None,
@@ -243,9 +242,15 @@ fn incomplete_stored_rectangles_log_ids_without_private_content() {
 
     let event = events.first().unwrap();
 
-    assert_eq!(event.fields.0.get("issue_id").unwrap(), "issue-1");
+    assert_eq!(
+        event.fields.0.get("issue_id").unwrap(),
+        "issue--00000000001"
+    );
 
-    assert_eq!(event.fields.0.get("page_artwork_id").unwrap(), "artwork-1");
+    assert_eq!(
+        event.fields.0.get("page_artwork_id").unwrap(),
+        "page_artwork--00000000001"
+    );
 
     assert!(event.fields.0.values().all(|value| {
         !value.contains("private-layer-sentinel")
@@ -255,7 +260,7 @@ fn incomplete_stored_rectangles_log_ids_without_private_content() {
 
 #[test]
 fn corrupt_unit_chains_record_one_internal_failure() {
-    let mut units = [("unit-1", None), ("unit-1", None)];
+    let mut units = [("unit--00000000001", None), ("unit--00000000001", None)];
 
     let (result, events) = capture(LevelFilter::ERROR, || {
         unit_sequence_complex::order_units(

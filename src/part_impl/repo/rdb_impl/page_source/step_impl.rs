@@ -1,0 +1,575 @@
+//! RDB-backed page repository step implementations.
+
+use diesel::PgExpressionMethods as _;
+use diesel::dsl::{case_when, count};
+use diesel::expression::functions::declare_sql_function;
+use diesel::prelude::{
+    BoolExpressionMethods as _, ExpressionMethods as _, JoinOnDsl as _,
+    NullableExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel::sql_types::{Nullable, Text};
+use diesel::upsert::excluded;
+use diesel_async::RunQueryDsl as _;
+use time::OffsetDateTime;
+use tracing::instrument;
+
+use poprako_rdb_core::RdbConn;
+use poprako_util::i18n::trl;
+
+use crate::model::read::proj::page_source::{
+    PageSourceInfo, PageSourceUnitDiffStats, PageSourceUnitFlaggedStats,
+    PageSourceUnitScope,
+};
+use crate::model::read::proj::unit::UnitCountMetrics;
+use crate::model::write::page_source::PageSourceManifestEntry;
+use crate::part_impl::repo::rdb_impl::entity::page_source::{
+    PageSourceInfoRecord, PageSourceItem, PageSourcePack,
+    PageSourceUnitScopeRecord,
+};
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32, usize_from_i64,
+};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter;
+use crate::part_impl::repo::rdb_impl::schema::t_page_source::dsl::{
+    f_chapter_id, f_id, f_index, f_updated_at, t_page_source,
+};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
+    f_hidden_at as unit_hidden_at, f_is_flagged as unit_is_flagged,
+    f_page_source_id as unit_page_source_id,
+    f_proofread_text as unit_proofread_text,
+    f_translated_text as unit_translated_text,
+    f_typography_note as unit_typography_note, t_unit,
+};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shared::result::diesel;
+use crate::value::page_source::{
+    CHAPTER_PAGE_SOURCE_SENTINEL_LIMIT, MAX_CHAPTER_PAGE_SOURCE_COUNT,
+};
+
+#[declare_sql_function]
+extern "SQL" {
+    /// `PostgreSQL` text trim with an explicit character set.
+    // PostgreSQL text trim with an explicit character set.
+    fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
+}
+
+// `char::is_whitespace` code points accepted by Unit text semantics.
+const UNIT_TEXT_WHITESPACE: &str = "\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{0085}\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}";
+
+/// Load a single page info by ID.
+#[instrument(level = "info", skip_all)]
+pub async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageSourceInfo> {
+    //
+    let record = t_page_source
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageSourceInfoRecord::as_select())
+        .get_result::<PageSourceInfoRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| {
+            //
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-page-not-found");
+                error_variant = ?ExpectedVariant::Args,
+                page_source_id = %id,
+                stage = "get_info_by_id",
+                "page not found",
+            }
+        })?;
+
+    record.try_into()
+}
+
+/// Loads the minimal source page scope used by Unit operations.
+#[instrument(level = "info", skip_all)]
+pub async fn get_unit_scope(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageSourceUnitScope> {
+    //
+    let record = t_page_source
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageSourceUnitScopeRecord::as_select())
+        .get_result::<PageSourceUnitScopeRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| missing_page(id, "get_unit_scope"))?;
+
+    record.try_into()
+}
+
+/// Locks and loads the minimal source page scope used by Unit edits.
+#[instrument(level = "info", skip_all)]
+pub async fn get_unit_scope_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageSourceUnitScope> {
+    //
+    let record = t_page_source
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageSourceUnitScopeRecord::as_select())
+        .for_update()
+        .get_result::<PageSourceUnitScopeRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| missing_page(id, "get_unit_scope_excluded"))?;
+
+    record.try_into()
+}
+
+/// Load a page info by ID, locking the record for update.
+#[instrument(level = "info", skip_all)]
+pub async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageSourceInfo> {
+    //
+    let record = t_page_source
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageSourceInfoRecord::as_select())
+        .for_update()
+        .get_result::<PageSourceInfoRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| {
+            //
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-page-not-found");
+                error_variant = ?ExpectedVariant::Args,
+                page_source_id = %id,
+                stage = "get_info_excluded",
+                "page not found",
+            }
+        })?;
+
+    record.try_into()
+}
+
+/// Queries page infos for a chapter, ordered by index.
+#[instrument(level = "info", skip_all)]
+pub async fn list_infos(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageSourceInfo>> {
+    //
+    let records = t_page_source
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(PageSourceInfoRecord::as_select())
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SOURCE_SENTINEL_LIMIT)
+        .load::<PageSourceInfoRecord>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let records =
+        ensure_chapter_page_source_count(records, chapter_id, "list_infos")?;
+
+    records.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Lists text statistics for Chapter source pages with visible revision differences.
+#[instrument(level = "info", skip_all)]
+pub async fn list_unit_diff_stats(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageSourceUnitDiffStats>> {
+    //
+    let has_translation =
+        btrim(unit_translated_text, UNIT_TEXT_WHITESPACE).ne("");
+
+    let has_revision = btrim(unit_proofread_text, UNIT_TEXT_WHITESPACE).ne("");
+
+    let has_typography_note =
+        btrim(unit_typography_note, UNIT_TEXT_WHITESPACE).ne("");
+
+    let has_edit = has_translation
+        .and(has_revision)
+        .and(unit_proofread_text.is_distinct_from(unit_translated_text));
+
+    let has_append = unit_translated_text
+        .is_null()
+        .or(btrim(unit_translated_text, UNIT_TEXT_WHITESPACE).eq(""))
+        .and(has_revision);
+
+    // Retain zero-diff PageSources until the complete Chapter count is checked.
+    let records = t_page_source
+        .filter(f_chapter_id.eq(chapter_id))
+        .left_join(
+            t_unit
+                .on(unit_page_source_id.eq(f_id).and(unit_hidden_at.is_null())),
+        )
+        .group_by((f_id, f_index))
+        .select((
+            f_id,
+            f_index,
+            count(
+                case_when(
+                    has_translation.or(has_typography_note),
+                    unit_page_source_id,
+                )
+                .nullable(),
+            ),
+            count(case_when(has_edit, unit_page_source_id).nullable()),
+            count(case_when(has_append, unit_page_source_id).nullable()),
+        ))
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SOURCE_SENTINEL_LIMIT)
+        .load::<(String, i32, i64, i64, i64)>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let records = ensure_chapter_page_source_count(
+        records,
+        chapter_id,
+        "list_unit_diff_stats",
+    )?;
+
+    let page_source_unit_diff_stats = records
+        .into_iter()
+        .map(|(page_source_id, index, translated, editted, appended)| {
+            //
+            accept!(PageSourceUnitDiffStats {
+                page_source_id,
+                index: usize_from_i32(index, "t_page_source.f_index")?,
+                translated_unit_count: usize_from_i64(
+                    translated,
+                    "unit_diff_stats.translated_unit_count",
+                )?,
+                editted_unit_count: usize_from_i64(
+                    editted,
+                    "unit_diff_stats.editted_unit_count",
+                )?,
+                proofreader_append_unit_count: usize_from_i64(
+                    appended,
+                    "unit_diff_stats.proofreader_append_unit_count",
+                )?,
+            })
+        })
+        .collect::<BaseRest<Vec<_>>>()?;
+
+    accept!(
+        page_source_unit_diff_stats
+            .into_iter()
+            .filter(|stats| {
+                //
+                stats.editted_unit_count > 0
+                    || stats.proofreader_append_unit_count > 0
+            })
+            .collect(),
+    )
+}
+
+/// Lists page infos while retaining record locks for a manifest transaction.
+#[instrument(level = "info", skip_all)]
+pub async fn list_infos_excluded(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageSourceInfo>> {
+    //
+    let records = t_page_source
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(PageSourceInfoRecord::as_select())
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SOURCE_SENTINEL_LIMIT)
+        .for_update()
+        .load::<PageSourceInfoRecord>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let records = ensure_chapter_page_source_count(
+        records,
+        chapter_id,
+        "list_infos_excluded",
+    )?;
+
+    records.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Places every normal page index into the temporary negative range.
+#[instrument(level = "info", skip_all)]
+pub async fn shift_indexes_temporary(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<()> {
+    //
+    diesel::update(
+        t_page_source
+            .filter(f_chapter_id.eq(chapter_id))
+            .filter(f_index.ge(0)),
+    )
+    .set(f_index.eq(f_index * -1 - 1))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept!(())
+}
+
+/// Applies the final manifest with one insert-or-index-update statement.
+#[instrument(level = "info", skip_all)]
+pub async fn apply_manifest(
+    conn: &mut RdbConn,
+    entries: &[PageSourceManifestEntry],
+) -> BaseRest<Vec<PageSourceInfo>> {
+    //
+    let items = entries
+        .iter()
+        .map(PageSourceItem::try_from)
+        .collect::<BaseRest<Vec<_>>>()?;
+
+    let manifest_upsert = diesel::insert_into(t_page_source)
+        .values(&items)
+        .on_conflict(f_id)
+        .do_update()
+        .set((
+            f_index.eq(excluded(f_index)),
+            f_updated_at.eq(excluded(f_updated_at)),
+        ));
+
+    let records = diesel::query_dsl::methods::FilterDsl::filter(
+        manifest_upsert,
+        f_chapter_id.eq(excluded(f_chapter_id)),
+    )
+    .returning(PageSourceInfoRecord::as_returning())
+    .get_results::<PageSourceInfoRecord>(conn)
+    .await
+    .map_err(diesel)?;
+
+    if records.len() != entries.len() {
+        //
+        return Err(unrecoverable_error! {
+            message: "page manifest upsert returned an unexpected record count"
+                .into();
+            expected_record_count = entries.len(),
+            actual_record_count = records.len(),
+            "page manifest upsert returned an unexpected record count",
+        });
+    }
+
+    records.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Query the lowest-index page info for each requested chapter.
+#[instrument(level = "info", skip_all)]
+pub async fn list_first_infos_by_chapter_ids(
+    conn: &mut RdbConn,
+    chapter_ids: &[&str],
+) -> BaseRest<Vec<PageSourceInfo>> {
+    //
+    let records = t_page_source
+        .filter(f_chapter_id.eq_any(chapter_ids))
+        .select(PageSourceInfoRecord::as_select())
+        .distinct_on(f_chapter_id)
+        .order_by((f_chapter_id.asc(), f_index.asc()))
+        .load::<PageSourceInfoRecord>(conn)
+        .await
+        .map_err(diesel)?;
+
+    records.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Persist unit counters (total, translated, proofread) onto a page record.
+#[instrument(level = "info", skip_all)]
+pub async fn set_unit_counts(
+    conn: &mut RdbConn,
+    id: &str,
+    counts: UnitCountMetrics,
+) -> BaseRest<()> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    let pack = PageSourcePack::new(now)
+        .total_unit_count(i32_from_usize(
+            counts.total,
+            "t_page_source.f_total_unit_count",
+        )?)
+        .translated_unit_count(i32_from_usize(
+            counts.translated,
+            "t_page_source.f_translated_unit_count",
+        )?)
+        .proofread_unit_count(i32_from_usize(
+            counts.proofread,
+            "t_page_source.f_proofread_unit_count",
+        )?);
+
+    diesel::update(t_page_source.filter(f_id.eq(id)))
+        .set(&pack)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept!(())
+}
+
+/// Delete all pages (and their child units) for a given chapter.
+#[instrument(level = "info", skip_all)]
+pub async fn delete_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<()> {
+    //
+    let page_source_ids = t_page_source
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(f_id)
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    if !page_source_ids.is_empty() {
+        //
+        diesel::delete(
+            t_unit.filter(unit_page_source_id.eq_any(&page_source_ids)),
+        )
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    }
+
+    diesel::delete(t_page_source.filter(f_chapter_id.eq(chapter_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept!(())
+}
+
+/// Deletes selected pages after deleting their child units.
+#[instrument(level = "info", skip_all)]
+pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
+    //
+    if ids.is_empty() {
+        return accept!(());
+    }
+
+    diesel::delete(t_unit.filter(unit_page_source_id.eq_any(ids)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    diesel::delete(t_page_source.filter(f_id.eq_any(ids)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept!(())
+}
+
+/// Lists flagged Unit counts while retaining the original Chapter source page order.
+#[instrument(level = "info", skip_all)]
+pub async fn list_unit_flagged_stats(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<PageSourceUnitFlaggedStats>> {
+    // Retain zero-count PageSources until the complete Chapter count is checked.
+    let records = t_page_source
+        .filter(f_chapter_id.eq(chapter_id))
+        .left_join(
+            t_unit.on(unit_page_source_id
+                .eq(f_id)
+                .and(unit_hidden_at.is_null())
+                .and(unit_is_flagged.eq(true))),
+        )
+        .group_by((f_id, f_index))
+        .select((f_id, f_index, count(unit_page_source_id.nullable())))
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SOURCE_SENTINEL_LIMIT)
+        .load::<(String, i32, i64)>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let records = ensure_chapter_page_source_count(
+        records,
+        chapter_id,
+        "list_unit_flagged_stats",
+    )?;
+
+    records
+        .into_iter()
+        .filter(|(_, _, flagged)| *flagged > 0)
+        .map(|(page_source_id, index, flagged)| {
+            //
+            accept!(PageSourceUnitFlaggedStats {
+                page_source_id,
+                index: usize_from_i32(index, "t_page_source.f_index")?,
+                flagged_unit_count: usize_from_i64(
+                    flagged,
+                    "unit_flagged_stats.flagged_unit_count",
+                )?,
+            })
+        })
+        .collect()
+}
+
+// Builds the expected error used when a PageSource scope cannot be found.
+fn missing_page(id: &str, operation: &str) -> BaseError {
+    //
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-page-not-found");
+        page_source_id = %id,
+        operation,
+        "page not found",
+    }
+}
+
+// Reject a persisted Chapter whose PageSource count exceeds the business invariant.
+fn ensure_chapter_page_source_count<T>(
+    records: Vec<T>,
+    chapter_id: &str,
+    operation: &'static str,
+) -> BaseRest<Vec<T>> {
+    //
+    if records.len() > MAX_CHAPTER_PAGE_SOURCE_COUNT {
+        //
+        return Err(unrecoverable_error! {
+            message: "persisted Chapter PageSource count exceeds \
+                the business maximum"
+                .into();
+            chapter_id = %chapter_id,
+            page_source_count_lower_bound = records.len(),
+            max_page_source_count = MAX_CHAPTER_PAGE_SOURCE_COUNT,
+            operation,
+            "persisted Chapter PageSource count exceeds the business maximum",
+        });
+    }
+
+    accept!(records)
+}

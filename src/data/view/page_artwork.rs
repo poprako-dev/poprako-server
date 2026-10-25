@@ -5,6 +5,7 @@ use serde::Serialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use poprako_obj_dept::key::ObjKind;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_util::time::ToUnixMilli as _;
 
@@ -53,12 +54,15 @@ pub struct PageArtworkInfoView {
 
 impl PageArtworkInfoView {
     /// Converts a [`PageArtworkInfo`] into a presentation-ready value.
-    pub fn from_model(
+    pub fn from_model<K>(
         model: PageArtworkInfo,
-        obj_meta: Option<&ObjMeta>,
+        obj_meta: Option<&ObjMeta<K>>,
         image_url: Option<String>,
         image_thumbnail_url: Option<String>,
-    ) -> Self {
+    ) -> Self
+    where
+        K: ObjKind<Ext = ImageExt>,
+    {
         //
         let image_hash = obj_meta.and_then(|meta| {
             //
@@ -67,7 +71,7 @@ impl PageArtworkInfoView {
             Some(ImageHash::new(bytes))
         });
 
-        let ext = obj_meta.and_then(|meta| ImageExt::parse(&meta.ext));
+        let ext = obj_meta.map(|meta| meta.ext);
 
         Self {
             id: model.id,
@@ -78,7 +82,7 @@ impl PageArtworkInfoView {
             image_thumbnail_url,
             image_hash,
             ext,
-            image_ver: obj_meta.map(|meta| meta.key.ver),
+            image_ver: obj_meta.map(|meta| meta.key.ver()),
             image_uploaded: obj_meta.is_some_and(|meta| meta.is_avail),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),

@@ -112,7 +112,7 @@ forward_steps!(
     chapter::UpdateChapterStage<'_>,
     chapter::StartChapterStage<'_>,
     chapter::CompleteChapterRawProvide<'_>,
-    chapter::SetChapterPageCountMetrics<'_>,
+    chapter::SetChapterPageSourceCountMetrics<'_>,
     chapter::AdjustChapterUnitCountDelta<'_>,
     chapter::UnpinOtherChapters<'_>,
     assignment::FindAssignmentInfo<'_, '_>,

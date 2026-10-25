@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS "t_team_avatar" (
 
     "f_version"     BIGINT      NOT NULL,
 
-    "f_key"         TEXT,
+    "f_domain"      JSONB,
     "f_is_uploaded" BOOLEAN,
 
     "f_hash"        BYTEA,

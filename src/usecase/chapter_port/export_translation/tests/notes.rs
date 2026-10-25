@@ -21,16 +21,24 @@ fn label_plus_annotations_roundtrip_body_selection_and_blank_lines() {
         ("译文", None, Some(" \t\u{3000}"), Some("译文")),
         ("", None, None, None),
     ] {
-        let mut unit_info =
-            unit("unit-1", "page-1", None, translation, revision);
+        let mut unit_info = unit(
+            "unit--00000000001",
+            "page_source--00000000001",
+            None,
+            translation,
+            revision,
+        );
 
         unit_info.typography_note = note.map(str::to_owned);
 
         unit_info.translation_note = Some("private-discussion".into());
 
         let output = chapter_translation_export_complex::make_label_plus(
-            &[page("page-1", 0, true)],
-            &HashMap::from([("page-1".into(), vec![unit_info])]),
+            &[page("page_source--00000000001", 0, true)],
+            &HashMap::from([(
+                "page_source--00000000001".into(),
+                vec![unit_info],
+            )]),
             &HashMap::new(),
             &HashMap::new(),
         );
@@ -104,7 +112,13 @@ async fn export_exposes_annotations_as_independent_json_fields() {
 
     seed_scope(&mock);
 
-    let mut unit_info = unit("unit-1", "page-1", None, "正文", Some("校对"));
+    let mut unit_info = unit(
+        "unit--00000000001",
+        "page_source--00000000001",
+        None,
+        "正文",
+        Some("校对"),
+    );
 
     unit_info.typography_note = Some("小字".into());
 
@@ -114,8 +128,8 @@ async fn export_exposes_annotations_as_independent_json_fields() {
 
     let exported = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         ExportFormatSpec::BOTH,
         false,
     )

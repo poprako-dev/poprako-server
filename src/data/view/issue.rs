@@ -48,8 +48,6 @@ pub struct IssueInfoView {
 
     /// Open category.
     pub variant: String,
-    /// Optional human-readable layer name, preserved verbatim.
-    pub layer_name: Option<String>,
     /// Optional whole-page rectangle.
     pub rect: Option<IssueRectView>,
 
@@ -65,7 +63,6 @@ impl From<IssueInfo> for IssueInfoView {
             page_artwork_id: info.page_artwork_id,
             index: info.index,
             variant: info.variant,
-            layer_name: info.layer_name,
             rect: info.rect.map(Into::into),
             note: info.note,
         }

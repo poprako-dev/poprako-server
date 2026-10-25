@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::data::view::page_port::PageTranslationPortView;
+use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::model::shared::translation_document::ChapterTranslationDocument;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
@@ -27,8 +27,8 @@ pub struct ChapterTranslationPortView {
     /// Comic title from the exporting comic.
     pub comic_title: String,
 
-    /// Pages and their translation units.
-    pub pages: Vec<PageTranslationPortView>,
+    /// source pages and their translation units.
+    pub pages: Vec<PageSourceTranslationPortView>,
 }
 
 impl From<ChapterTranslationDocument> for ChapterTranslationPortView {

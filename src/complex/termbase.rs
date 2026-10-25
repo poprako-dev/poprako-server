@@ -104,7 +104,8 @@ use crate::shape::write::term::{
     TermAppendPlanShape, TermAppendReplShape, TermEntryShape, TermReplShape,
     TermUpsertPlanShape,
 };
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::termbase::TERMBASE_TERM_LIMIT;
 
 /// Build a validated terminology-base entry.
@@ -135,7 +136,7 @@ pub fn build_entry(
     normalize_name(&name)?;
 
     accept!(TermbaseEntry {
-        id: next_snowflake_id(),
+        id: next_business_id(BusinessIdKind::Termbase),
         team_id,
         comic_id,
         name,
@@ -301,7 +302,7 @@ pub fn build_term_upsert_plan<'a>(
             }
 
             None => entries.push(TermEntryShape {
-                id: next_snowflake_id(),
+                id: next_business_id(BusinessIdKind::Term),
                 termbase_id,
                 source: imported_term.trimmed_source(),
                 targets: imported_term.trimmed_targets().collect(),

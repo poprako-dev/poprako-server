@@ -4,16 +4,17 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage, TeamAvatar,
 };
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::oper::subtree_delete::{
-    ClaimSubtreeSweep, ListSubtreePageIds, SweepSubtree,
+    ClaimSubtreeSweep, ListSubtreePageSourceIds, SweepSubtree,
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
@@ -33,7 +34,7 @@ where
     R: SubtreeRepo<C> + PageArtworkRepo<C> + Send + Sync,
     O: ObjDept<PageArtworkImage, C>
         + ObjDept<ChapterArtwork, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + ObjDept<ComicCover, C>
         + ObjDept<TeamAvatar, C>
         + Send
@@ -62,21 +63,33 @@ where
                         .map(|info| info.id)
                         .collect::<Vec<_>>();
 
-                    DeleteObjs::<PageArtworkImage>::new(&artwork_ids)
+                    let page_artwork_image_ids =
+                        PageArtworkImage::ids(&artwork_ids)?;
+
+                    DeleteObjs::<PageArtworkImage>::new(
+                        &page_artwork_image_ids,
+                    )
+                    .step_on(obj_dept, context)
+                    .await
+                    .map_err(BaseError::from)?;
+
+                    let chapter_artwork_ids =
+                        ChapterArtwork::ids(std::slice::from_ref(id))?;
+
+                    DeleteObjs::<ChapterArtwork>::new(&chapter_artwork_ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;
 
-                    DeleteObjs::<ChapterArtwork>::new(std::slice::from_ref(id))
-                        .step_on(obj_dept, context)
-                        .await
-                        .map_err(BaseError::from)?;
+                    let page_source_ids =
+                        ListSubtreePageSourceIds { chapter_id: id }
+                            .step_on(repo, context)
+                            .await?;
 
-                    let page_ids = ListSubtreePageIds { chapter_id: id }
-                        .step_on(repo, context)
-                        .await?;
+                    let page_source_image_ids =
+                        PageSourceImage::ids(&page_source_ids)?;
 
-                    DeleteObjs::<PageImage>::new(&page_ids)
+                    DeleteObjs::<PageSourceImage>::new(&page_source_image_ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;
@@ -84,7 +97,9 @@ where
 
                 SubtreeDeleteSweepTarget::Comics { ids } => {
                     //
-                    DeleteObjs::<ComicCover>::new(ids)
+                    let comic_cover_ids = ComicCover::ids(ids)?;
+
+                    DeleteObjs::<ComicCover>::new(&comic_cover_ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;
@@ -92,7 +107,10 @@ where
 
                 SubtreeDeleteSweepTarget::Team { id } => {
                     //
-                    DeleteObjs::<TeamAvatar>::new(std::slice::from_ref(id))
+                    let team_avatar_ids =
+                        TeamAvatar::ids(std::slice::from_ref(id))?;
+
+                    DeleteObjs::<TeamAvatar>::new(&team_avatar_ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;

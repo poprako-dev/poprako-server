@@ -27,7 +27,9 @@ use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comic::ComicRepl;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -41,7 +43,7 @@ use crate::part::repo::oper::subtree_delete::{
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, UpdateWorksetComicCount,
 };
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -159,10 +161,10 @@ where
         + MemberRepo<C>
         + TeamRepo<C>
         + ChapterRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,

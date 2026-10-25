@@ -17,7 +17,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 fn member(user_id: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
-        id: "member-1".into(),
+        id: "member--00000000001".into(),
         user_id: user_id.into(),
         user_nickname: "member".into(),
         user_last_active_at: OffsetDateTime::now_utc(),
@@ -32,15 +32,15 @@ fn member(user_id: &str, team_id: &str) -> MemberInfo {
 async fn workset_loader_returns_same_info_in_run_and_step_modes() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(member("user-1", "team-1"));
+    mock.seed_member(member("user--00000000001", "team--00000000001"));
 
     let run_info = MemberLoader::load_info_from_workset(
         &mock,
         LoadMode::Run,
-        "user-1",
-        "workset-1",
+        "user--00000000001",
+        "workset--00000000001",
     )
     .await
     .unwrap();
@@ -50,8 +50,8 @@ async fn workset_loader_returns_same_info_in_run_and_step_modes() {
             MemberLoader::load_info_from_workset(
                 &mock,
                 LoadMode::Step { context },
-                "user-1",
-                "workset-1",
+                "user--00000000001",
+                "workset--00000000001",
             )
             .await
         })
@@ -69,13 +69,13 @@ async fn workset_loader_returns_same_info_in_run_and_step_modes() {
 async fn workset_loader_rejects_missing_membership_before_pure_rules() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
     let error = MemberLoader::load_info_from_workset(
         &mock,
         LoadMode::Run,
-        "user-1",
-        "workset-1",
+        "user--00000000001",
+        "workset--00000000001",
     )
     .await
     .err()

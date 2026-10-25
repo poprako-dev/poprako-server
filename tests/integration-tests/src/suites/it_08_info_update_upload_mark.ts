@@ -46,7 +46,7 @@ import {
     getUserInfo,
     listMyMembers,
     listTeamAnnouncements,
-    listTeamAnnouncementsPaged,
+    listTeamAnnouncementsPageSourced,
     listTeamComments,
     listTeamMembers,
     login,
@@ -183,7 +183,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     // non-existent team avatar reserve -> 403/4 (perm check for non-existing team returns perm error)
     expectError(
-        await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/alloc", {
+        await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team--98148379086/avatar/alloc", {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
             new_byte_len: 1,
             ext: "png",
@@ -254,9 +254,9 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     );
 
     expectError(
-        await ctx.sadmin.put<ErrorBody>("/api/v1/announcements/announcement-does-not-exist", {
+        await ctx.sadmin.put<ErrorBody>("/api/v1/announcements/announcement--98148379086", {
             content: "missing",
-            id: "announcement-does-not-exist",
+            id: "announcement--98148379086",
             title: "missing",
         }),
         422,
@@ -278,7 +278,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/announcements", {
             content: "x",
-            team_id: "team-does-not-exist",
+            team_id: "team--98148379086",
             title: "x",
         }),
         403,
@@ -286,17 +286,17 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     );
 
     // pagination: limit=1 returns at most 1; offset=1 excludes the first
-    const page1 = await listTeamAnnouncementsPaged(ctx.sadmin, teamId, 0, 1);
+    const page1 = await listTeamAnnouncementsPageSourced(ctx.sadmin, teamId, 0, 1);
 
     assert.ok(page1.length <= 1, "limit=1 must return at most 1");
 
-    const page2 = await listTeamAnnouncementsPaged(ctx.sadmin, teamId, 1, 50);
+    const page2 = await listTeamAnnouncementsPageSourced(ctx.sadmin, teamId, 1, 50);
 
     assert.ok(!page2.find((a) => a.id === page1[0]?.id), "offset=1 must exclude the first");
 
     expectError(await trans01.api.delete<ErrorBody>(`/api/v1/announcements/${ann1.id}`), 403, 4);
 
-    expectError(await ctx.sadmin.delete<ErrorBody>("/api/v1/announcements/announcement-does-not-exist"), 422, 2);
+    expectError(await ctx.sadmin.delete<ErrorBody>("/api/v1/announcements/announcement--98148379086"), 422, 2);
 
     await deleteAnnouncement(ctx.sadmin, ann2.id);
 

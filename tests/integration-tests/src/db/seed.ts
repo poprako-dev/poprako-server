@@ -2,9 +2,9 @@ import { Client } from "pg";
 
 import { testEnv } from "../config/env.ts";
 
-const DEFAULT_TEAM_ID = "team-00000000-0000-0000-0000-000000000001";
-const DEFAULT_USER_ID = "user-00000000-0000-0000-0000-000000000001";
-const DEFAULT_MEMBER_ID = "member-00000000-0000-0000-0000-000000000001";
+const DEFAULT_TEAM_ID = "team--76707389133";
+const DEFAULT_USER_ID = "user--76707389133";
+const DEFAULT_MEMBER_ID = "member--76707389133";
 const DEFAULT_PASSWORD_HASH =
     "$argon2id$v=19$m=65536,t=3,p=4$UrCPl9xY0hk3LpfQWl+ZVA$4d+zkTiD9ghoc6XtJJSHpcvfzUpAK1IiZ5MAQezLgrE";
 
@@ -228,7 +228,7 @@ export async function cleanupToSeed(): Promise<void> {
 
             // 3. Units, pages, workflow records, chapters, terminology, comics, worksets (leaf -> root).
             await client.query(`DELETE FROM "t_unit"`);
-            await client.query(`DELETE FROM "t_page"`);
+            await client.query(`DELETE FROM "t_page_source"`);
             await client.query(`DELETE FROM "t_chapter_workflow_record"`);
             await client.query(`DELETE FROM "t_chapter"`);
             await client.query(`DELETE FROM "t_term"`);
@@ -239,7 +239,7 @@ export async function cleanupToSeed(): Promise<void> {
 
             // 4. Object metadata and durable tasks have no FKs to business rows.
             await client.query(`DELETE FROM "t_obj_prom_task"`);
-            await client.query(`DELETE FROM "t_page_image"`);
+            await client.query(`DELETE FROM "t_page_source_image"`);
             await client.query(`DELETE FROM "t_page_artwork_image"`);
             await client.query(`DELETE FROM "t_user_avatar"`);
             await client.query(`DELETE FROM "t_team_avatar"`);

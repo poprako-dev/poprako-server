@@ -3,14 +3,14 @@
 use super::*;
 use crate::config::repo::RepoConfig;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::ListPageUnitFlaggedStats;
-use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
+use crate::part::repo::oper::page_source::ListPageSourceUnitFlaggedStats;
+use crate::part_impl::repo::rdb_impl::test_shared::PageSourceFixture;
 
 // Verify hiding, restoring, clearing, and setting a flag preserve text and statistics.
 async fn verify_flag_patches(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    fixture: &PageFixture,
+    fixture: &PageSourceFixture,
 ) {
     let first_id = "rdb-test-unit-domain-flagged-a";
 
@@ -31,7 +31,7 @@ async fn verify_flag_patches(
                 .step(
                     context,
                     &ListUnitOrders {
-                        page_id: &fixture.page_entry.id,
+                        page_source_id: &fixture.page_source_entry.id,
                     },
                 )
                 .await?;
@@ -39,7 +39,7 @@ async fn verify_flag_patches(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                     orders: &orders,
                     edits: &[edit],
                 },
@@ -74,7 +74,7 @@ async fn verify_flag_patches(
         .unwrap();
 
         let stats = repo
-            .run(&ListPageUnitFlaggedStats {
+            .run(&ListPageSourceUnitFlaggedStats {
                 chapter_id: &fixture.chapter_info.id,
             })
             .await
@@ -125,7 +125,7 @@ pub async fn verify_flags(shared: RdbCore) {
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: &fixture.page_entry.id,
+                page_source_id: &fixture.page_source_entry.id,
                 orders: &[],
                 edits: &[first, second],
             },
@@ -138,7 +138,7 @@ pub async fn verify_flags(shared: RdbCore) {
     .unwrap();
 
     let stats = repo
-        .run(&ListPageUnitFlaggedStats {
+        .run(&ListPageSourceUnitFlaggedStats {
             chapter_id: &fixture.chapter_info.id,
         })
         .await
@@ -146,20 +146,20 @@ pub async fn verify_flags(shared: RdbCore) {
 
     assert_eq!(stats.len(), 1);
     assert_eq!(
-        stats.as_slice().first().unwrap().page_id,
-        fixture.page_entry.id
+        stats.as_slice().first().unwrap().page_source_id,
+        fixture.page_source_entry.id
     );
     assert_eq!(
         stats.as_slice().first().unwrap().index,
-        fixture.page_entry.index
+        fixture.page_source_entry.index
     );
     assert_eq!(stats.as_slice().first().unwrap().flagged_unit_count, 1);
 
     verify_flag_patches(&repo, &nucl, &fixture).await;
 
     let units = repo
-        .run(&ListUnitInfosByPageIds {
-            page_ids: &[fixture.page_entry.id.as_str()],
+        .run(&ListUnitInfosByPageSourceIds {
+            page_source_ids: &[fixture.page_source_entry.id.as_str()],
         })
         .await
         .unwrap();

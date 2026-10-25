@@ -7,7 +7,7 @@ pub mod chapter_workflow_record;
 /// Borrowed comic write payloads.
 pub mod comic;
 /// Borrowed page write payloads.
-pub mod page;
+pub mod page_source;
 /// Borrowed term write payloads.
 pub mod term;
 /// Borrowed unit write payloads.

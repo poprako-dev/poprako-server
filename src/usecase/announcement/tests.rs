@@ -130,7 +130,12 @@ fn update_instr(id: &str) -> UpdateAnnouncementInfoInstr {
 }
 
 fn seed_member(mock: &Mock, user_id: &str, team_id: &str, role_mask: RoleMask) {
-    mock.seed_member(member("member-1", user_id, team_id, role_mask));
+    mock.seed_member(member(
+        "member--00000000001",
+        user_id,
+        team_id,
+        role_mask,
+    ));
 }
 
 #[tokio::test]
@@ -142,36 +147,39 @@ async fn list_infos_team_member_lists_team_announcements() {
 
     seed_member(
         &mock,
-        "viewer-user",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         time,
     ));
 
     mock.seed_announcement(announcement(
-        "announcement-2",
-        "team-2",
-        "author-user",
+        "announcement--00000000002",
+        "team--00000000002",
+        "user--00000000002",
         time,
     ));
 
     let announcement_info_vals = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", Vec::new()),
+        token("user--00000000001"),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await
     .unwrap();
 
     assert_eq!(announcement_info_vals.len(), 1);
 
-    assert_eq!(announcement_info_vals.first().unwrap().id, "announcement-1");
+    assert_eq!(
+        announcement_info_vals.first().unwrap().id,
+        "announcement--00000000001"
+    );
 }
 
 #[tokio::test]
@@ -183,24 +191,27 @@ async fn list_infos_user_include_follows_request() {
 
     seed_member(
         &mock,
-        "viewer-user",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    mock.seed_user(user("author-user", "Author"), credential("author-user"));
+    mock.seed_user(
+        user("user--00000000002", "Author"),
+        credential("user--00000000002"),
+    );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         time,
     ));
 
     let without_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", Vec::new()),
+        token("user--00000000001"),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await
     .unwrap();
@@ -209,15 +220,15 @@ async fn list_infos_user_include_follows_request() {
 
     let with_user = list_infos(
         (&mock, &mock),
-        token("viewer-user"),
-        list_instr("team-1", vec![AnnouncementInclOpt::User]),
+        token("user--00000000001"),
+        list_instr("team--00000000001", vec![AnnouncementInclOpt::User]),
     )
     .await
     .unwrap();
 
     assert_eq!(
         with_user.first().unwrap().user.as_ref().unwrap().id,
-        "author-user"
+        "user--00000000002"
     );
 }
 
@@ -227,16 +238,16 @@ async fn list_infos_non_member_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         now(),
     ));
 
     let error = list_infos(
         (&mock, &mock),
         token("outsider-user"),
-        list_instr("team-1", Vec::new()),
+        list_instr("team--00000000001", Vec::new()),
     )
     .await
     .err()
@@ -253,14 +264,17 @@ async fn create_team_admin_creates_announcement() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let created_announcement =
-        create(&mock, token("admin-user"), create_instr("team-1"))
-            .await
-            .unwrap();
+    let created_announcement = create(
+        &mock,
+        token("admin-user"),
+        create_instr("team--00000000001"),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -271,7 +285,10 @@ async fn create_team_admin_creates_announcement() {
         created_announcement.id
     );
 
-    assert_eq!(snapshot.announcements.first().unwrap().team_id, "team-1");
+    assert_eq!(
+        snapshot.announcements.first().unwrap().team_id,
+        "team--00000000001"
+    );
 
     assert_eq!(
         snapshot.announcements.first().unwrap().user_id,
@@ -287,11 +304,11 @@ async fn create_and_update_trim_unicode_whitespace_from_announcement_texts() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let mut create_instr = create_instr("team-1");
+    let mut create_instr = create_instr("team--00000000001");
 
     create_instr.title = "\u{2003}created title\u{2003}".into();
 
@@ -331,15 +348,19 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
 
     seed_member(
         &mock,
-        "member-user",
-        "team-1",
+        "member--66614769577",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    let error = create(&mock, token("member-user"), create_instr("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let error = create(
+        &mock,
+        token("member--66614769577"),
+        create_instr("team--00000000001"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -351,10 +372,14 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let error = create(&mock, token("outsider-user"), create_instr("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let error = create(
+        &mock,
+        token("outsider-user"),
+        create_instr("team--00000000001"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -369,20 +394,24 @@ async fn update_info_team_admin_replaces_announcement_content() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         now(),
     ));
 
-    update_info(&mock, token("admin-user"), update_instr("announcement-1"))
-        .await
-        .unwrap();
+    update_info(
+        &mock,
+        token("admin-user"),
+        update_instr("announcement--00000000001"),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -398,7 +427,7 @@ async fn update_info_team_admin_replaces_announcement_content() {
 
     assert_eq!(
         snapshot.announcements.first().unwrap().user_id,
-        "author-user"
+        "user--00000000002"
     );
 }
 
@@ -409,22 +438,22 @@ async fn update_info_non_admin_member_is_rejected_without_mutation() {
 
     seed_member(
         &mock,
-        "member-user",
-        "team-1",
+        "member--66614769577",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         now(),
     ));
 
     let error = update_info(
         &mock,
-        token("member-user"),
-        update_instr("announcement-1"),
+        token("member--66614769577"),
+        update_instr("announcement--00000000001"),
     )
     .await
     .err()
@@ -446,7 +475,7 @@ async fn update_info_missing_announcement_is_rejected_without_mutation() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
@@ -469,20 +498,24 @@ async fn delete_team_admin_deletes_announcement() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         now(),
     ));
 
-    delete(&mock, token("admin-user"), "announcement-1".into())
-        .await
-        .unwrap();
+    delete(
+        &mock,
+        token("admin-user"),
+        "announcement--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     assert!(mock.snapshot().announcements.is_empty());
 }
@@ -494,22 +527,26 @@ async fn delete_non_admin_member_is_rejected_without_mutation() {
 
     seed_member(
         &mock,
-        "member-user",
-        "team-1",
+        "member--66614769577",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
     mock.seed_announcement(announcement(
-        "announcement-1",
-        "team-1",
-        "author-user",
+        "announcement--00000000001",
+        "team--00000000001",
+        "user--00000000002",
         now(),
     ));
 
-    let error = delete(&mock, token("member-user"), "announcement-1".into())
-        .await
-        .err()
-        .unwrap();
+    let error = delete(
+        &mock,
+        token("member--66614769577"),
+        "announcement--00000000001".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -524,7 +561,7 @@ async fn delete_missing_announcement_is_rejected_without_mutation() {
     seed_member(
         &mock,
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 

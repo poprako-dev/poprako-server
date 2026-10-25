@@ -3,34 +3,36 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::model::write::page::PageManifestEntry;
+use crate::model::write::page_source::PageSourceManifestEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::{ApplyPageManifest, ListPageUnitDiffStats};
+use crate::part::repo::oper::page_source::{
+    ApplyPageSourceManifest, ListPageSourceUnitDiffStats,
+};
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByPageIds, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfosByPageSourceIds, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
-use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
+use crate::part_impl::repo::rdb_impl::test_shared::PageSourceFixture;
 
 use super::{PREFIX, create_edit};
 
 // Verify repeated page identifiers preserve history ordering without duplicate records.
 async fn verify_selected_history(
     repo: &RdbRepo,
-    missing_translation_page_id: &str,
-    chunked_order_page_id: &str,
-    equal_page_id: &str,
+    missing_translation_page_source_id: &str,
+    chunked_order_page_source_id: &str,
+    equal_page_source_id: &str,
     hidden_diff_id: &str,
 ) {
     let selected_infos = repo
-        .run(&ListUnitInfosByPageIds {
-            page_ids: &[
-                missing_translation_page_id,
-                chunked_order_page_id,
-                equal_page_id,
-                chunked_order_page_id,
+        .run(&ListUnitInfosByPageSourceIds {
+            page_source_ids: &[
+                missing_translation_page_source_id,
+                chunked_order_page_source_id,
+                equal_page_source_id,
+                chunked_order_page_source_id,
             ],
         })
         .await
@@ -73,8 +75,8 @@ async fn verify_selected_history(
 async fn seed_text_matrix(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
-    matrix_page_id: &str,
+    page_source_fixture: &PageSourceFixture,
+    matrix_page_source_id: &str,
 ) {
     let text_cases = [
         (Some("translated"), None),
@@ -99,7 +101,7 @@ async fn seed_text_matrix(
     for (index, (translation, revision)) in text_cases.into_iter().enumerate() {
         matrix_edits.push(create_text_edit(
             &[PREFIX, "matrix-", &index.to_string()].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             translation,
             revision,
             index % 2 == 0,
@@ -109,7 +111,7 @@ async fn seed_text_matrix(
 
         matrix_edits.push(create_text_edit(
             &hidden_id,
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             translation,
             revision,
             index % 2 != 0,
@@ -122,7 +124,7 @@ async fn seed_text_matrix(
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: matrix_page_id,
+                page_source_id: matrix_page_source_id,
                 orders: &[],
                 edits: &matrix_edits,
             },
@@ -133,7 +135,7 @@ async fn seed_text_matrix(
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: matrix_page_id,
+                    page_source_id: matrix_page_source_id,
                 },
             )
             .await?;
@@ -141,7 +143,7 @@ async fn seed_text_matrix(
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: matrix_page_id,
+                page_source_id: matrix_page_source_id,
                 orders: &orders,
                 edits: &hidden_edits,
             },
@@ -158,12 +160,12 @@ async fn seed_text_matrix(
 async fn seed_missing_translation(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
-    missing_translation_page_id: &str,
+    page_source_fixture: &PageSourceFixture,
+    missing_translation_page_source_id: &str,
 ) {
     let missing_translation_edit = [create_text_edit(
         &[PREFIX, "missing-translation"].concat(),
-        &page_fixture.chapter_info.creator_id,
+        &page_source_fixture.chapter_info.creator_id,
         None,
         Some("proofread"),
         false,
@@ -173,7 +175,7 @@ async fn seed_missing_translation(
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: missing_translation_page_id,
+                page_source_id: missing_translation_page_source_id,
                 orders: &[],
                 edits: &missing_translation_edit,
             },
@@ -190,50 +192,50 @@ async fn seed_missing_translation(
 async fn seed_excluded_diff_cases(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
-    equal_page_id: &str,
+    page_source_fixture: &PageSourceFixture,
+    equal_page_source_id: &str,
 ) -> String {
     let hidden_diff_id = [PREFIX, "hidden-diff"].concat();
 
     let excluded_edits = [
         create_text_edit(
             &[PREFIX, "equal"].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             Some("same"),
             Some("same"),
             true,
         ),
         create_text_edit(
             &[PREFIX, "empty"].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             None,
             Some(""),
             true,
         ),
         create_text_edit(
             &[PREFIX, "ascii-whitespace"].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             None,
             Some(" \t\r\n"),
             true,
         ),
         create_text_edit(
             &[PREFIX, "unicode-whitespace"].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             None,
             Some("\u{3000}"),
             true,
         ),
         create_text_edit(
             &[PREFIX, "missing-proofread"].concat(),
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             Some("translated"),
             None,
             true,
         ),
         create_text_edit(
             &hidden_diff_id,
-            &page_fixture.chapter_info.creator_id,
+            &page_source_fixture.chapter_info.creator_id,
             Some("translated"),
             Some("hidden proofread"),
             true,
@@ -244,7 +246,7 @@ async fn seed_excluded_diff_cases(
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: equal_page_id,
+                page_source_id: equal_page_source_id,
                 orders: &[],
                 edits: &excluded_edits,
             },
@@ -261,7 +263,7 @@ async fn seed_excluded_diff_cases(
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: equal_page_id,
+                    page_source_id: equal_page_source_id,
                 },
             )
             .await?;
@@ -273,7 +275,7 @@ async fn seed_excluded_diff_cases(
         repo.step(
             context,
             &ApplyUnitEdits {
-                page_id: equal_page_id,
+                page_source_id: equal_page_source_id,
                 orders: &orders,
                 edits: &delete_hidden_diff,
             },
@@ -291,14 +293,14 @@ async fn seed_excluded_diff_cases(
 async fn verify_chunked_order(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    chunked_order_page_id: &str,
+    chunked_order_page_source_id: &str,
 ) {
     nucl.coord(async |context| {
         let orders = repo
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: chunked_order_page_id,
+                    page_source_id: chunked_order_page_source_id,
                 },
             )
             .await?;
@@ -339,8 +341,8 @@ async fn verify_chunked_order(
 async fn seed_chunked_history(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
-    chunked_order_page_id: &str,
+    page_source_fixture: &PageSourceFixture,
+    chunked_order_page_source_id: &str,
 ) {
     for batch_index in 0..6 {
         let batch_edits = (0..100)
@@ -356,7 +358,7 @@ async fn seed_chunked_history(
 
                 create_edit(
                     &unit_id,
-                    &page_fixture.chapter_info.creator_id,
+                    &page_source_fixture.chapter_info.creator_id,
                     "chunked",
                 )
             })
@@ -367,7 +369,7 @@ async fn seed_chunked_history(
                 .step(
                     context,
                     &ListUnitOrders {
-                        page_id: chunked_order_page_id,
+                        page_source_id: chunked_order_page_source_id,
                     },
                 )
                 .await?;
@@ -375,7 +377,7 @@ async fn seed_chunked_history(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: chunked_order_page_id,
+                    page_source_id: chunked_order_page_source_id,
                     orders: &orders,
                     edits: &batch_edits,
                 },
@@ -386,7 +388,7 @@ async fn seed_chunked_history(
                 .step(
                     context,
                     &ListUnitOrders {
-                        page_id: chunked_order_page_id,
+                        page_source_id: chunked_order_page_source_id,
                     },
                 )
                 .await?;
@@ -404,7 +406,7 @@ async fn seed_chunked_history(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: chunked_order_page_id,
+                    page_source_id: chunked_order_page_source_id,
                     orders: &orders,
                     edits: &delete_edits,
                 },
@@ -419,33 +421,33 @@ async fn seed_chunked_history(
 }
 
 // Create dedicated pages for equality, append-only, hidden history, and text matrix cases.
-async fn seed_diff_pages(
+async fn seed_diff_page_sources(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
 ) -> [String; 4] {
-    let equal_page_id = [PREFIX, "equal-page"].concat();
+    let equal_page_source_id = [PREFIX, "equal-page"].concat();
 
-    let missing_translation_page_id =
+    let missing_translation_page_source_id =
         [PREFIX, "missing-translation-page"].concat();
 
-    let chunked_order_page_id = [PREFIX, "chunked-order-page"].concat();
+    let chunked_order_page_source_id = [PREFIX, "chunked-order-page"].concat();
 
-    let matrix_page_id = [PREFIX, "matrix-page"].concat();
+    let matrix_page_source_id = [PREFIX, "matrix-page"].concat();
 
-    let empty_page_id = [PREFIX, "empty-page"].concat();
+    let empty_page_source_id = [PREFIX, "empty-page"].concat();
 
-    let additional_pages = [
-        (matrix_page_id.as_str(), 4),
-        (empty_page_id.as_str(), 5),
-        (equal_page_id.as_str(), 1),
-        (missing_translation_page_id.as_str(), 2),
-        (chunked_order_page_id.as_str(), 3),
+    let additional_page_sources = [
+        (matrix_page_source_id.as_str(), 4),
+        (empty_page_source_id.as_str(), 5),
+        (equal_page_source_id.as_str(), 1),
+        (missing_translation_page_source_id.as_str(), 2),
+        (chunked_order_page_source_id.as_str(), 3),
     ]
     .into_iter()
-    .map(|(id, index)| PageManifestEntry {
+    .map(|(id, index)| PageSourceManifestEntry {
         id: id.to_owned(),
-        chapter_id: page_fixture.chapter_info.id.clone(),
+        chapter_id: page_source_fixture.chapter_info.id.clone(),
         index,
     })
     .collect::<Vec<_>>();
@@ -453,8 +455,8 @@ async fn seed_diff_pages(
     nucl.coord(async |context| {
         repo.step(
             context,
-            &ApplyPageManifest {
-                entries: &additional_pages,
+            &ApplyPageSourceManifest {
+                entries: &additional_page_sources,
             },
         )
         .await?;
@@ -464,10 +466,10 @@ async fn seed_diff_pages(
     .await
     .unwrap();
     [
-        equal_page_id,
-        missing_translation_page_id,
-        chunked_order_page_id,
-        matrix_page_id,
+        equal_page_source_id,
+        missing_translation_page_source_id,
+        chunked_order_page_source_id,
+        matrix_page_source_id,
     ]
 }
 
@@ -482,55 +484,65 @@ async fn unit_diff_stats_use_testcontainer() {
 pub(super) async fn verify_chunking_and_diff(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
 ) {
     let [
-        equal_page_id,
-        missing_translation_page_id,
-        chunked_order_page_id,
-        matrix_page_id,
-    ] = seed_diff_pages(repo, nucl, page_fixture).await;
+        equal_page_source_id,
+        missing_translation_page_source_id,
+        chunked_order_page_source_id,
+        matrix_page_source_id,
+    ] = seed_diff_page_sources(repo, nucl, page_source_fixture).await;
 
-    seed_chunked_history(repo, nucl, page_fixture, &chunked_order_page_id)
-        .await;
+    seed_chunked_history(
+        repo,
+        nucl,
+        page_source_fixture,
+        &chunked_order_page_source_id,
+    )
+    .await;
 
-    verify_chunked_order(repo, nucl, &chunked_order_page_id).await;
+    verify_chunked_order(repo, nucl, &chunked_order_page_source_id).await;
 
-    let hidden_diff_id =
-        seed_excluded_diff_cases(repo, nucl, page_fixture, &equal_page_id)
-            .await;
+    let hidden_diff_id = seed_excluded_diff_cases(
+        repo,
+        nucl,
+        page_source_fixture,
+        &equal_page_source_id,
+    )
+    .await;
 
     seed_missing_translation(
         repo,
         nucl,
-        page_fixture,
-        &missing_translation_page_id,
+        page_source_fixture,
+        &missing_translation_page_source_id,
     )
     .await;
 
-    seed_text_matrix(repo, nucl, page_fixture, &matrix_page_id).await;
+    seed_text_matrix(repo, nucl, page_source_fixture, &matrix_page_source_id)
+        .await;
 
     verify_selected_history(
         repo,
-        &missing_translation_page_id,
-        &chunked_order_page_id,
-        &equal_page_id,
+        &missing_translation_page_source_id,
+        &chunked_order_page_source_id,
+        &equal_page_source_id,
         &hidden_diff_id,
     )
     .await;
 
-    let page_unit_diff_stats = repo
-        .run(&ListPageUnitDiffStats {
-            chapter_id: &page_fixture.chapter_info.id,
+    let page_source_unit_diff_stats = repo
+        .run(&ListPageSourceUnitDiffStats {
+            chapter_id: &page_source_fixture.chapter_info.id,
         })
         .await
         .unwrap();
 
     assert_eq!(
-        page_unit_diff_stats
+        page_source_unit_diff_stats
             .iter()
             .map(|stats| (
-                stats.page_id.as_str(),
+                stats.page_source_id.as_str(),
                 stats.index,
                 stats.translated_unit_count,
                 stats.editted_unit_count,
@@ -538,9 +550,15 @@ pub(super) async fn verify_chunking_and_diff(
             ))
             .collect::<Vec<_>>(),
         [
-            (page_fixture.page_entry.id.as_str(), 0, 0, 0, 1),
-            (missing_translation_page_id.as_str(), 2, 0, 0, 1),
-            (matrix_page_id.as_str(), 4, 7, 3, 4),
+            (
+                page_source_fixture.page_source_entry.id.as_str(),
+                0,
+                0,
+                0,
+                1
+            ),
+            (missing_translation_page_source_id.as_str(), 2, 0, 0, 1),
+            (matrix_page_source_id.as_str(), 4, 7, 3, 4),
         ]
     );
 }

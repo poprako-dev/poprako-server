@@ -15,11 +15,11 @@ use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo};
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 
-/// Return value for listing visible Units under one Page.
+/// Return value for listing visible Units under one source page.
 #[derive(Serialize)]
 #[cfg_attr(test, derive(Debug))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ListPageUnitInfosVal {
+pub struct ListPageSourceUnitInfosVal {
     /// Visible Units in final linked-list order.
     pub unit_infos: Vec<UnitInfoView>,
 
@@ -31,7 +31,7 @@ pub struct ListPageUnitInfosVal {
     pub proofread_unit_count: usize,
 }
 
-impl ListPageUnitInfosVal {
+impl ListPageSourceUnitInfosVal {
     /// Converts ordered persisted Units and counters into the response payload.
     pub fn from_models(
         unit_infos: Vec<UnitInfo>,
@@ -65,12 +65,12 @@ pub struct CreatedUnitIdVal {
 #[derive(Serialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct SavePageUnitEditsVal {
+pub struct SavePageSourceUnitEditsVal {
     /// Explicit identity pairs; empty when the batch creates no Units.
     pub created_unit_ids: Vec<CreatedUnitIdVal>,
 }
 
-impl From<&[UnitSaveCreatedUnitId]> for SavePageUnitEditsVal {
+impl From<&[UnitSaveCreatedUnitId]> for SavePageSourceUnitEditsVal {
     // Convert shared identities into the transport response shape.
     fn from(ids: &[UnitSaveCreatedUnitId]) -> Self {
         Self {

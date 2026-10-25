@@ -5,16 +5,12 @@ use poprako_util::i18n::trl;
 use crate::config::artwork::ArtworkConfig;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::artwork::ArtworkExt;
 use crate::value::role::RoleField;
 
 /// Validates arbitrary file suffixes without treating them as path segments.
 pub fn valid_ext(ext: &str) -> bool {
-    //
-    !ext.is_empty()
-        && ext.len() <= 32
-        && ext.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_'
-        })
+    ArtworkExt::is_valid(ext)
 }
 
 /// Constructs one classified, translated artwork error at its production leaf.

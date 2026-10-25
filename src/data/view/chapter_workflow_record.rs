@@ -103,7 +103,7 @@ pub enum ChapterWorkflowRecordEventView {
         /// Imported content format.
         format: ChapterWorkflowRecordTranslationFormatView,
         /// Number of pages whose visible Unit content changed.
-        imported_page_count: usize,
+        imported_page_source_count: usize,
         /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },
@@ -338,11 +338,11 @@ impl From<ChapterWorkflowRecordPayload> for ChapterWorkflowRecordEventView {
 
             ChapterWorkflowRecordPayload::TranslationImported {
                 format,
-                imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             } => Self::TranslationImported {
                 format: format.into(),
-                imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             },
 

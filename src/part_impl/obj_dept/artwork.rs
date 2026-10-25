@@ -1,66 +1,37 @@
-//! Canonical object-key mapping for the chapter artwork slot.
+//! One-way physical mapping for validated artwork identities.
 
-use poprako_obj_dept::key::KeyMap;
-use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
+use poprako_obj_dept::key::{ObjKind, ObjPath};
 
-use crate::complex::chapter_port::artwork as chapter_artwork_complex;
 use crate::part::obj_dept::ChapterArtwork;
-use crate::value::artwork::ChapterArtworkKey;
+use crate::value::artwork::{ArtworkExt, ChapterArtworkKey};
+use crate::value::business_id::ChapterId;
 
-impl KeyMap for ChapterArtwork {
-    // Chapter artwork key domain.
+impl ObjKind for ChapterArtwork {
+    // Validated identity of the object owner.
+    type Id = ChapterId;
+    // Validated file extension.
+    type Ext = ArtworkExt;
+    // Validated inputs to physical key construction.
     type Dom = ChapterArtworkKey;
-    // Object-storage key representation.
-    type Img = String;
 
-    // Builds the canonical chapter artwork object key.
-    fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
-        format!("chapter_artwork/{}-{}.{}", value.chapter_id, ver, value.ext)
-    }
-
-    // Parses and validates a canonical chapter artwork object key.
-    fn reverse(value: &Self::Img) -> ObjDeptRest<(Self::Dom, u32)> {
-        //
-        let parsed = value
-            .strip_prefix("chapter_artwork/")
-            .and_then(|suffix| suffix.rsplit_once('.'))
-            .and_then(|(identity, ext)| {
-                identity.rsplit_once('-').map(|(id, ver)| (id, ver, ext))
-            })
-            .and_then(|(id, ver, ext)| {
-                Some((id, ver.parse::<u32>().ok()?, ext))
-            })
-            .filter(|(id, _, ext)| {
-                //
-                !id.is_empty()
-                    && !id.contains('/')
-                    && chapter_artwork_complex::valid_ext(ext)
-            })
-            .map(|(id, ver, ext)| {
-                //
-                (
-                    ChapterArtworkKey {
-                        chapter_id: id.into(),
-                        ext: ext.into(),
-                    },
-                    ver,
-                )
-            });
-
-        parsed
-            .filter(|(key, ver)| Self::forward(key, *ver) == *value)
-            .ok_or_else(|| {
-                ObjDeptError::invalid("invalid chapter artwork key".into())
-            })
-    }
-
-    // Extracts the chapter identifier from the domain key.
-    fn id(value: &Self::Dom) -> &str {
+    // Returns the validated owner identity.
+    fn id(value: &Self::Dom) -> &Self::Id {
         &value.chapter_id
     }
 
-    // Extracts the file suffix from the domain key.
-    fn ext(value: &Self::Dom) -> &str {
+    // Returns the validated file extension.
+    fn ext(value: &Self::Dom) -> &Self::Ext {
         &value.ext
+    }
+
+    // Constructs the physical location for one allocated generation.
+    fn forward(value: &Self::Dom, ver: u32) -> ObjPath {
+        //
+        ObjPath::new(format!(
+            "chapter_artwork/{}/{}.{}",
+            value.chapter_id.as_str(),
+            ver,
+            value.ext.as_str()
+        ))
     }
 }

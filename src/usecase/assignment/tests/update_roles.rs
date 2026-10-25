@@ -34,7 +34,7 @@ async fn update_roles_team_admin_creates_missing_assignment() {
         (&mock, &mock),
         token("reviewer-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "target-user",
             role(RoleField::TRANSLATOR),
         ),
@@ -63,7 +63,7 @@ async fn update_roles_team_admin_overwrites_existing_assignment_roles() {
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -74,7 +74,7 @@ async fn update_roles_team_admin_overwrites_existing_assignment_roles() {
         (&mock, &mock),
         token("reviewer-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "target-user",
             role(RoleField::PROOFREADER),
         ),
@@ -101,7 +101,7 @@ async fn update_roles_self_role_reduction_updates_assignment() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
@@ -117,7 +117,7 @@ async fn update_roles_self_role_reduction_updates_assignment() {
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "worker-user",
             role(RoleField::TRANSLATOR),
         ),
@@ -139,7 +139,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -148,7 +148,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "worker-user",
             roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
         ),
@@ -168,7 +168,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
@@ -179,7 +179,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "worker-user",
             role(RoleField::TRANSLATOR),
         ),
@@ -199,7 +199,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -210,7 +210,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
         (&mock, &mock),
         token("worker-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "target-user",
             role(RoleField::PROOFREADER),
         ),
@@ -236,7 +236,11 @@ async fn update_roles_admin_role_is_rejected() {
     let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_roles_data("chapter-1", "target-user", role(RoleField::ADMIN)),
+        update_roles_data(
+            "chapter--00000000001",
+            "target-user",
+            role(RoleField::ADMIN),
+        ),
     )
     .await
     .err()
@@ -260,7 +264,7 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
         (&mock, &mock),
         token("admin-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "target-user",
             role(RoleField::PROOFREADER),
         ),
@@ -280,7 +284,7 @@ async fn update_roles_team_admin_can_reduce_own_worker_roles() {
     seed_scope(&mock);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "admin-user",
         roles(RoleField::REVIEWER, RoleField::TRANSLATOR),
     ));
@@ -294,7 +298,7 @@ async fn update_roles_team_admin_can_reduce_own_worker_roles() {
         (&mock, &mock),
         token("admin-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "admin-user",
             role(RoleField::TRANSLATOR),
         ),
@@ -319,7 +323,7 @@ async fn update_roles_team_admin_can_join_and_leave_review() {
         seed_scope(&mock);
 
         mock.seed_assignment(assignment(
-            "chapter-1",
+            "chapter--00000000001",
             "admin-user",
             remaining_roles,
         ));
@@ -334,7 +338,7 @@ async fn update_roles_team_admin_can_join_and_leave_review() {
             (&mock, &mock),
             token("admin-user"),
             JoinChapterAssignmentInstr {
-                chapter_id: "chapter-1".into(),
+                chapter_id: "chapter--00000000001".into(),
                 roles: role(RoleField::REVIEWER),
             },
         )
@@ -348,7 +352,11 @@ async fn update_roles_team_admin_can_join_and_leave_review() {
         update_roles(
             (&mock, &mock),
             token("admin-user"),
-            update_roles_data("chapter-1", "admin-user", remaining_roles),
+            update_roles_data(
+                "chapter--00000000001",
+                "admin-user",
+                remaining_roles,
+            ),
         )
         .await
         .unwrap();
@@ -368,7 +376,7 @@ async fn update_roles_team_admin_can_join_and_leave_review() {
 
         let workflow_record = snapshot.chapter_workflow_records.get(1).unwrap();
 
-        assert_eq!(workflow_record.chapter_id, "chapter-1");
+        assert_eq!(workflow_record.chapter_id, "chapter--00000000001");
 
         assert_eq!(
             workflow_record.actor_user_id.as_deref(),
@@ -396,7 +404,11 @@ async fn update_roles_team_admin_cannot_add_unsupported_worker_roles() {
 
     let original_roles = role(RoleField::REVIEWER);
 
-    mock.seed_assignment(assignment("chapter-1", "admin-user", original_roles));
+    mock.seed_assignment(assignment(
+        "chapter--00000000001",
+        "admin-user",
+        original_roles,
+    ));
 
     mock.seed_member(member(
         "admin-user",
@@ -407,7 +419,7 @@ async fn update_roles_team_admin_cannot_add_unsupported_worker_roles() {
         (&mock, &mock),
         token("admin-user"),
         update_roles_data(
-            "chapter-1",
+            "chapter--00000000001",
             "admin-user",
             role(RoleField::PUBLISHER),
         ),
@@ -434,7 +446,7 @@ async fn update_roles_existing_assignment_cannot_gain_admin() {
         mock.seed_member(member("admin-user", role(RoleField::ADMIN)));
 
         mock.seed_assignment(assignment(
-            "chapter-1",
+            "chapter--00000000001",
             "worker-user",
             role(RoleField::REVIEWER),
         ));
@@ -448,7 +460,7 @@ async fn update_roles_existing_assignment_cannot_gain_admin() {
             (&mock, &mock),
             token(actor_user_id),
             update_roles_data(
-                "chapter-1",
+                "chapter--00000000001",
                 "worker-user",
                 roles(RoleField::ADMIN, RoleField::REVIEWER),
             ),

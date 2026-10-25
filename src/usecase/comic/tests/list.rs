@@ -11,46 +11,58 @@ use crate::value::comic::ComicStatus;
 fn pinned_assignment_scope() -> Mock {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
     mock.seed_user(
-        user("user-1", "user-1", "User One"),
-        invalid_credential("user-1"),
+        user("user--00000000001", "user--00000000001", "User One"),
+        invalid_credential("user--00000000001"),
     );
 
     mock.seed_user(
-        user("user-2", "user-2", "User Two"),
-        invalid_credential("user-2"),
+        user("user--00000000002", "user--00000000002", "User Two"),
+        invalid_credential("user--00000000002"),
     );
 
     mock.seed_user(
-        user("user-3", "user-3", "User Three"),
-        invalid_credential("user-3"),
+        user("user--00000000003", "user--00000000003", "User Three"),
+        invalid_credential("user--00000000003"),
     );
 
-    mock.seed_comic(comic("comic-2", "workset-1", 2));
+    mock.seed_comic(comic("comic--00000000002", "workset--00000000001", 2));
 
-    mock.seed_comic(comic("comic-1", "workset-1", 1));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 1));
 
     mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
+        "chapter--00000000001",
+        "comic--00000000001",
         StageMask::try_from(0u32).unwrap(),
     ));
 
     mock.seed_chapter(chapter(
-        "chapter-2",
-        "comic-2",
+        "chapter--00000000002",
+        "comic--00000000002",
         StageMask::try_from(0u32).unwrap(),
     ));
 
-    mock.seed_assignment(assignment("assignment-1", "chapter-1", "user-1"));
+    mock.seed_assignment(assignment(
+        "assignment--00000000001",
+        "chapter--00000000001",
+        "user--00000000001",
+    ));
 
-    mock.seed_assignment(assignment("assignment-2", "chapter-1", "user-2"));
+    mock.seed_assignment(assignment(
+        "assignment--00000000002",
+        "chapter--00000000001",
+        "user--00000000002",
+    ));
 
-    mock.seed_assignment(assignment("assignment-3", "chapter-2", "user-3"));
+    mock.seed_assignment(assignment(
+        "assignment--00000000003",
+        "chapter--00000000002",
+        "user--00000000003",
+    ));
 
     mock
 }
@@ -60,13 +72,14 @@ async fn list_infos_filters_by_lifecycle_status() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-active", "workset-1", 0));
+    mock.seed_comic(comic("comic--28999254184", "workset--00000000001", 0));
 
-    let mut archived_comic_info = comic("comic-archived", "workset-1", 1);
+    let mut archived_comic_info =
+        comic("comic--40413916896", "workset--00000000001", 1);
 
     archived_comic_info.archived_at = Some(now());
 
@@ -74,11 +87,11 @@ async fn list_infos_filters_by_lifecycle_status() {
 
     let active_list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: Vec::new(),
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: Some(ComicStatus::Active),
@@ -91,15 +104,15 @@ async fn list_infos_filters_by_lifecycle_status() {
 
     assert_eq!(active_list.comics.len(), 1);
 
-    assert_eq!(active_list.comics.first().unwrap().id, "comic-active");
+    assert_eq!(active_list.comics.first().unwrap().id, "comic--28999254184");
 
     let archived_list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: Vec::new(),
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: Some(ComicStatus::Archived),
@@ -112,7 +125,10 @@ async fn list_infos_filters_by_lifecycle_status() {
 
     assert_eq!(archived_list.comics.len(), 1);
 
-    assert_eq!(archived_list.comics.first().unwrap().id, "comic-archived");
+    assert_eq!(
+        archived_list.comics.first().unwrap().id,
+        "comic--40413916896"
+    );
 }
 
 #[tokio::test]
@@ -122,14 +138,14 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![
                 ComicWithOpt::PinnedChapter,
                 ComicWithOpt::PinnedChapterAssignment,
             ],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,
@@ -151,7 +167,7 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             .first()
             .unwrap()
             .chapter_id,
-        "chapter-1"
+        "chapter--00000000001"
     );
 
     assert_eq!(
@@ -159,7 +175,8 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             .first()
             .unwrap()
             .iter()
-            .find(|assignment_view| assignment_view.user_id == "user-1")
+            .find(|assignment_view| assignment_view.user_id
+                == "user--00000000001")
             .unwrap()
             .user
             .as_ref()
@@ -175,7 +192,7 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             .get(1)
             .unwrap()
             .chapter_id,
-        "chapter-1"
+        "chapter--00000000001"
     );
 
     assert_eq!(
@@ -183,7 +200,8 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             .first()
             .unwrap()
             .iter()
-            .find(|assignment_view| assignment_view.user_id == "user-2")
+            .find(|assignment_view| assignment_view.user_id
+                == "user--00000000002")
             .unwrap()
             .user
             .as_ref()
@@ -201,7 +219,7 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             .first()
             .unwrap()
             .chapter_id,
-        "chapter-2"
+        "chapter--00000000002"
     );
 
     assert_eq!(
@@ -225,11 +243,11 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
 
     let error = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![ComicWithOpt::PinnedChapterAssignment],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,
@@ -249,35 +267,35 @@ async fn list_infos_filters_by_fuzzy_title() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
     mock.seed_comic(ComicInfo {
         title: "Alpha Adventure".into(),
         author: "Alice".into(),
-        ..comic("comic-alpha", "workset-1", 0)
+        ..comic("comic--98112322974", "workset--00000000001", 0)
     });
 
     mock.seed_comic(ComicInfo {
         title: "Beta Journey".into(),
         author: "Bob".into(),
-        ..comic("comic-beta", "workset-1", 1)
+        ..comic("comic--38335660265", "workset--00000000001", 1)
     });
 
     mock.seed_comic(ComicInfo {
         title: "Gamma Quest".into(),
         author: "Carol".into(),
-        ..comic("comic-gamma", "workset-1", 2)
+        ..comic("comic--36464404672", "workset--00000000001", 2)
     });
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("\u{2003}Beta\u{00a0}".into()),
             stages: None,
             status: None,
@@ -290,15 +308,15 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-beta");
+    assert_eq!(list.comics.first().unwrap().id, "comic--38335660265");
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("Carol".into()),
             stages: None,
             status: None,
@@ -311,15 +329,15 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-gamma");
+    assert_eq!(list.comics.first().unwrap().id, "comic--36464404672");
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("1".into()),
             stages: None,
             status: None,
@@ -332,5 +350,5 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-alpha");
+    assert_eq!(list.comics.first().unwrap().id, "comic--98112322974");
 }

@@ -212,7 +212,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
         assert.deepEqual(chapterInfo.comic_id, comic.id);
         assert.deepEqual(chapterInfo.index, 0);
-        assert.deepEqual(chapterInfo.page_count, 0);
+        assert.deepEqual(chapterInfo.page_source_count, 0);
         assert.deepEqual(chapterInfo.total_unit_count, 0);
         assert.deepEqual(chapterInfo.translated_unit_count, 0);
         assert.deepEqual(chapterInfo.proofread_unit_count, 0);
@@ -284,7 +284,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
             description: null,
             first_chapter_subtitle: null,
             title: titled("ghost-comic"),
-            workset_id: "workset-does-not-exist",
+            workset_id: "workset--98148379086",
         }),
         422,
         2,
@@ -425,7 +425,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // C5.9: create chapter with non-existent comic_id -> 422/2
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/chapters", {
-            comic_id: "comic-does-not-exist",
+            comic_id: "comic--98148379086",
             subtitle: "x",
         }),
         422,
@@ -506,11 +506,11 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     const teamOriginalDesc = teamForUpdate.description;
     const teamOriginalUpdated = teamForUpdate.updated_at;
 
-    await updateTeam(ctx.sadmin, teamId, `\u2003${titled("team-renamed")}\u2003`, `\u2003updated desc\u2003`);
+    await updateTeam(ctx.sadmin, teamId, `\u2003${titled("team--07737701303")}\u2003`, `\u2003updated desc\u2003`);
 
     const teamUpdated = await getTeam(ctx.sadmin, teamId);
 
-    assert.deepEqual(teamUpdated.name, titled("team-renamed"));
+    assert.deepEqual(teamUpdated.name, titled("team--07737701303"));
     assert.deepEqual(teamUpdated.description, "updated desc");
     assert.ok(teamUpdated.updated_at >= teamOriginalUpdated, "updated_at must not decrease");
 
@@ -553,14 +553,14 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     await updateComic(
         ctx.sadmin,
         xingchenId,
-        `\u2003${titled("comic-renamed")}\u2003`,
+        `\u2003${titled("comic--07737701303")}\u2003`,
         `\u2003new author\u2003`,
         `\u2003new desc\u2003`,
     );
 
     const comicUpdated = await getComic(ctx.sadmin, xingchenId);
 
-    assert.deepEqual(comicUpdated.title, titled("comic-renamed"));
+    assert.deepEqual(comicUpdated.title, titled("comic--07737701303"));
     assert.deepEqual(comicUpdated.author, "new author");
     assert.deepEqual(comicUpdated.description, "new desc");
     assert.deepEqual(comicUpdated.index, comicForUpdate.index, "index unchanged");
@@ -586,7 +586,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.deepEqual(chUpdated.subtitle, titled("ch-renamed"));
     assert.deepEqual(chUpdated.index, chForUpdate.index);
-    assert.deepEqual(chUpdated.page_count, chForUpdate.page_count);
+    assert.deepEqual(chUpdated.page_source_count, chForUpdate.page_source_count);
     assert.deepEqual(chUpdated.total_unit_count, chForUpdate.total_unit_count);
     assert.deepEqual(chUpdated.translated_unit_count, chForUpdate.translated_unit_count);
     assert.deepEqual(chUpdated.proofread_unit_count, chForUpdate.proofread_unit_count);
@@ -638,9 +638,9 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     // C7.7: update with non-existent id -> 422/2
     expectError(
-        await ctx.sadmin.put<ErrorBody>("/api/v1/worksets/workset-does-not-exist", {
+        await ctx.sadmin.put<ErrorBody>("/api/v1/worksets/workset--98148379086", {
             description: "x",
-            id: "workset-does-not-exist",
+            id: "workset--98148379086",
             name: "x",
         }),
         422,
@@ -648,10 +648,10 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     );
 
     expectError(
-        await ctx.sadmin.put<ErrorBody>("/api/v1/comics/comic-does-not-exist", {
+        await ctx.sadmin.put<ErrorBody>("/api/v1/comics/comic--98148379086", {
             author: "x",
             description: null,
-            id: "comic-does-not-exist",
+            id: "comic--98148379086",
             title: "x",
         }),
         422,
@@ -660,8 +660,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     // non-existent chapter patch -> 422/2 (ownership resolution requires a chapter)
     expectError(
-        await ctx.sadmin.patch<ErrorBody>("/api/v1/chapters/chapter-does-not-exist", {
-            id: "chapter-does-not-exist",
+        await ctx.sadmin.patch<ErrorBody>("/api/v1/chapters/chapter--98148379086", {
+            id: "chapter--98148379086",
             subtitle: "x",
         }),
         422,

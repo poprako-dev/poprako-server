@@ -2,8 +2,8 @@
 pub mod chapter_creation;
 /// Multi-operation member model loaders.
 pub mod member;
-/// Page relationships used by presentation fallback rules.
-pub mod page;
+/// source page relationships used by presentation fallback rules.
+pub mod page_source;
 /// Shared hierarchical deletion orchestration.
 pub mod subtree_delete;
 /// Multi-operation Unit access evidence loaders.

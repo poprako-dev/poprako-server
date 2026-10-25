@@ -5,7 +5,7 @@ INSERT INTO "t_user" (
     "f_is_sadmin",
     "f_password_hash"
 ) VALUES (
-    'user-11111111111',
+    'user--11111111111',
     'SuperAdmin-OvO',
     '123456',
     TRUE,

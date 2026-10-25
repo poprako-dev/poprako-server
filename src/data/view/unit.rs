@@ -23,8 +23,8 @@ pub struct UnitInfoView {
     /// Permanent Unit ID.
     pub id: String,
 
-    /// Owning Page ID.
-    pub page_id: String,
+    /// Owning source page ID.
+    pub page_source_id: String,
 
     /// Whether the Unit identifies a speech bubble.
     pub is_bubble: bool,
@@ -70,7 +70,7 @@ impl From<UnitInfo> for UnitInfoView {
     fn from(model: UnitInfo) -> Self {
         Self {
             id: model.id,
-            page_id: model.page_id,
+            page_source_id: model.page_source_id,
             is_bubble: model.is_bubble,
             is_flagged: model.is_flagged,
             is_proofread: model.is_proofread,

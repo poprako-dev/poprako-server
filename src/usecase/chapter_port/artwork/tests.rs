@@ -11,7 +11,7 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::value::chapter::mask::StageMask;
@@ -31,7 +31,7 @@ fn comic(id: &str) -> ComicInfo {
     ComicInfo {
         id: id.into(),
 
-        workset_id: "workset-1".into(),
+        workset_id: "workset--00000000001".into(),
 
         index: 0,
         title: "Pop Comic".into(),
@@ -39,7 +39,7 @@ fn comic(id: &str) -> ComicInfo {
         description: None,
         chapter_count: 1,
 
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
 
         workset: None,
         team: None,
@@ -60,7 +60,7 @@ fn workset(id: &str) -> WorksetInfo {
     WorksetInfo {
         id: id.into(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         index: 0,
         name: "workset".into(),
@@ -80,20 +80,20 @@ fn chapter(id: &str) -> ChapterInfo {
         confirmed_artwork_ver: None,
         id: id.into(),
 
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         is_pinned: true,
 
         index: 3,
         subtitle: "Arrival".into(),
 
-        page_count: 2,
+        page_source_count: 2,
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
 
         stages: StageMask::try_from(0u32).unwrap(),
 
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
 
         comic: None,
         creator: None,
@@ -137,7 +137,7 @@ fn member(user_id: &str) -> MemberInfo {
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         user: None,
         team: None,
@@ -149,15 +149,15 @@ fn member(user_id: &str) -> MemberInfo {
 fn seed(role: RoleField) -> Mock {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1"));
+    mock.seed_workset(workset("workset--00000000001"));
 
-    mock.seed_comic(comic("comic-1"));
+    mock.seed_comic(comic("comic--00000000001"));
 
-    mock.seed_chapter(chapter("chapter-1"));
+    mock.seed_chapter(chapter("chapter--00000000001"));
 
     match role {
         RoleField::ADMIN => {
-            let mut member_info = member("user-1");
+            let mut member_info = member("user--00000000001");
 
             member_info.roles = RoleMask::from(RoleField::ADMIN);
 
@@ -165,8 +165,8 @@ fn seed(role: RoleField) -> Mock {
         }
 
         _ => mock.seed_assignment(assignment(
-            "chapter-1",
-            "user-1",
+            "chapter--00000000001",
+            "user--00000000001",
             RoleMask::from(role),
         )),
     }
@@ -183,8 +183,8 @@ async fn allocate(mock: &Mock, hash: u8) -> BaseRest<AllocChapterArtworkVal> {
 
     alloc_artwork(
         (mock, mock, mock, &ArtworkConfig::default()),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         instr,
     )
     .await
@@ -197,8 +197,8 @@ async fn mark(mock: &Mock, version: u32) -> BaseRest<()> {
 
     mark_artwork_uploaded(
         (mock, mock, mock, mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         instr,
     )
     .await
@@ -208,7 +208,7 @@ async fn export(mock: &Mock, user: &str) -> BaseRest<ExportChapterArtworkVal> {
     export_artwork::<MockContext, _, _>(
         (mock, mock),
         token(user),
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
 }
@@ -217,9 +217,9 @@ async fn export(mock: &Mock, user: &str) -> BaseRest<ExportChapterArtworkVal> {
 fn seed_review(mock: &Mock) -> IssueInfo {
     let now = OffsetDateTime::now_utc();
 
-    mock.seed_page(PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    mock.seed_page(PageSourceInfo {
+        id: "page_source--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -230,8 +230,8 @@ fn seed_review(mock: &Mock) -> IssueInfo {
 
     mock.state.lock().unwrap().page_artworks.push(
         crate::model::read::proj::page_artwork::PageArtworkInfo {
-            id: "artwork-1".into(),
-            chapter_id: "chapter-1".into(),
+            id: "page_artwork--00000000001".into(),
+            chapter_id: "chapter--00000000001".into(),
             index: 2,
             raw_ident: None,
             created_at: now,
@@ -240,11 +240,10 @@ fn seed_review(mock: &Mock) -> IssueInfo {
     );
 
     let issue_info = IssueInfo {
-        id: "issue-1".into(),
-        page_artwork_id: "artwork-1".into(),
+        id: "issue--00000000001".into(),
+        page_artwork_id: "page_artwork--00000000001".into(),
         index: 0,
         variant: "custom".into(),
-        layer_name: None,
         rect: None,
         note: "review".into(),
     };
@@ -275,7 +274,7 @@ async fn artwork_completes_once_from_pending_and_active() {
 
         assert!(allocation.slot.is_some());
 
-        assert!(export(&mock, "user-1").await.is_err());
+        assert!(export(&mock, "user--00000000001").await.is_err());
 
         mark(&mock, allocation.artwork_ver).await.unwrap();
 
@@ -307,13 +306,17 @@ async fn artwork_completes_once_from_pending_and_active() {
 
         assert_eq!(mock.event_count(), 1);
 
-        let exported = export(&mock, "user-1").await.unwrap();
+        let exported = export(&mock, "user--00000000001").await.unwrap();
 
         assert_eq!(exported.artwork_ver, allocation.artwork_ver);
 
         assert_eq!(exported.artwork_hash.as_bytes(), &[1; 32]);
 
-        assert!(exported.download_url.contains("chapter_artwork/chapter-1-"));
+        assert!(
+            exported
+                .download_url
+                .contains("chapter_artwork/chapter--00000000001/")
+        );
 
         assert!(!exported.download_url.contains("thumbnail"));
 
@@ -365,7 +368,7 @@ async fn artwork_replacement_rejects_stale_confirmation() {
 
     assert_eq!(mock.snapshot().issues.len(), 1);
 
-    assert!(export(&mock, "user-1").await.is_err());
+    assert!(export(&mock, "user--00000000001").await.is_err());
 
     assert_eq!(
         mock.snapshot()
@@ -393,7 +396,7 @@ async fn artwork_replacement_rejects_stale_confirmation() {
     assert_eq!(mock.event_count(), 1);
 
     assert_eq!(
-        export(&mock, "user-1")
+        export(&mock, "user--00000000001")
             .await
             .unwrap()
             .artwork_hash
@@ -407,14 +410,14 @@ async fn artwork_replacement_rejects_stale_confirmation() {
         .objs
         .get_mut("chapter_artwork")
         .unwrap()
-        .get_mut("chapter-1")
+        .get_mut("chapter--00000000001")
         .unwrap()
         .meta
         .as_mut()
         .unwrap()
         .is_avail = false;
 
-    assert!(export(&mock, "user-1").await.is_err());
+    assert!(export(&mock, "user--00000000001").await.is_err());
 
     assert_eq!(
         mock.snapshot()
@@ -480,7 +483,7 @@ async fn artwork_completion_rolls_back_when_comic_touch_fails() {
             .objs
             .get("chapter_artwork")
             .unwrap()
-            .get("chapter-1")
+            .get("chapter--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -531,8 +534,8 @@ async fn artwork_allocation_enforces_limits_and_frozen_state() {
         assert!(
             alloc_artwork(
                 (&mock, &mock, &mock, &ArtworkConfig::default()),
-                token("user-1"),
-                "chapter-1".into(),
+                token("user--00000000001"),
+                "chapter--00000000001".into(),
                 instr
             )
             .await
@@ -550,8 +553,8 @@ async fn artwork_allocation_enforces_limits_and_frozen_state() {
 
     let allocated = alloc_artwork(
         (&mock, &mock, &mock, &ArtworkConfig::default()),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         instr,
     )
     .await

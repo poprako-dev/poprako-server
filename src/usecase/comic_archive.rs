@@ -10,6 +10,7 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::{ClearObjs, DeleteObjs};
 use poprako_util::i18n::trl;
 
@@ -22,7 +23,7 @@ use crate::data::val::comic_archive::{
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage,
 };
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
@@ -145,7 +146,7 @@ where
     O: ObjDept<PageArtworkImage, C>
         + ObjDept<ChapterArtwork, C>
         + ObjDept<ComicCover, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + Send
         + Sync,
 {
@@ -181,24 +182,35 @@ where
             )
             .await?;
 
-            ClearObjs::<ComicCover>::new(std::slice::from_ref(
+            let comic_cover_ids = ComicCover::ids(std::slice::from_ref(
                 &entry.record.source_comic_id,
-            ))
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+            ))?;
 
-            DeleteObjs::<PageArtworkImage>::new(&entry.source_page_artwork_ids)
+            ClearObjs::<ComicCover>::new(&comic_cover_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;
 
-            DeleteObjs::<PageImage>::new(&entry.source_page_ids)
+            let page_artwork_image_ids =
+                PageArtworkImage::ids(&entry.source_page_artwork_ids)?;
+
+            DeleteObjs::<PageArtworkImage>::new(&page_artwork_image_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;
 
-            DeleteObjs::<ChapterArtwork>::new(&entry.source_chapter_ids)
+            let page_source_image_ids =
+                PageSourceImage::ids(&entry.source_page_source_ids)?;
+
+            DeleteObjs::<PageSourceImage>::new(&page_source_image_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
+
+            let chapter_artwork_ids =
+                ChapterArtwork::ids(&entry.source_chapter_ids)?;
+
+            DeleteObjs::<ChapterArtwork>::new(&chapter_artwork_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;

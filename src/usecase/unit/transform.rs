@@ -13,7 +13,7 @@ use crate::data::instr::unit::{
     TransformChapterUnitsInstr, into_unit_transforms,
 };
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::{UnitCountDelta, UnitInfo};
 use crate::model::shared::user::UserToken;
 use crate::model::write::unit::{UnitEdit, UnitTransform};
@@ -27,13 +27,15 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{GetPageUnitScopeExcluded, ListPageInfos};
+use crate::part::repo::oper::page_source::{
+    GetPageSourceUnitScopeExcluded, ListPageSourceInfos,
+};
 use crate::part::repo::oper::unit::ListUnitInfosByIds;
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::stage as stage_usecase;
-use crate::usecase::unit::page_edit as unit_page_edit_usecase;
+use crate::usecase::unit::page_source_edit as unit_page_source_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::unit::UnitTextPart;
 
@@ -67,9 +69,9 @@ pub const fn add_count_delta(
     total.proofread += delta.proofread;
 }
 
-/// Builds the current content edits selected for one Page.
-pub fn build_page_edits(
-    page_id: &str,
+/// Builds the current content edits selected for one source page.
+pub fn build_page_source_edits(
+    page_source_id: &str,
     part: UnitTextPart,
     unit_transforms: &[UnitTransform],
     unit_infos: &HashMap<&str, &UnitInfo>,
@@ -85,7 +87,9 @@ pub fn build_page_edits(
             continue;
         };
 
-        if unit_info.page_id != page_id || unit_info.hidden_at.is_some() {
+        if unit_info.page_source_id != page_source_id
+            || unit_info.hidden_at.is_some()
+        {
             continue;
         }
 
@@ -110,8 +114,8 @@ pub fn build_page_edits(
 struct TransformScope {
     // Chapter being transformed.
     chapter_info: ChapterInfo,
-    // Pages belonging to the Chapter.
-    page_infos: Vec<PageInfo>,
+    // PageSources belonging to the Chapter.
+    page_source_infos: Vec<PageSourceInfo>,
     // Selected Units indexed by their persisted IDs.
     unit_infos: Vec<UnitInfo>,
 }
@@ -140,7 +144,7 @@ where
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + UnitRepo<C>
         + Send
         + Sync,
@@ -179,13 +183,13 @@ where
 
             let mut applied_edits = Vec::new();
 
-            for page_info in &transform_scope.page_infos {
+            for page_source_info in &transform_scope.page_source_infos {
                 //
-                let page_transform = apply_page_transforms(
+                let page_source_transform = apply_page_source_transforms(
                     repo,
                     context,
-                    &page_info.id,
-                    PageTransformData {
+                    &page_source_info.id,
+                    PageSourceTransformData {
                         part,
                         unit_transforms: &unit_transforms,
                         unit_infos: &unit_infos,
@@ -194,7 +198,7 @@ where
                 )
                 .await?;
 
-                let Some((count_delta, edits)) = page_transform else {
+                let Some((count_delta, edits)) = page_source_transform else {
                     continue;
                 };
 
@@ -241,7 +245,7 @@ where
     C::Level: AtLeast<Serial>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + UnitRepo<C>
         + Send
         + Sync,
@@ -268,7 +272,7 @@ where
 
     unit_perm_complex::ensure_user_can_transform(edit_perm, part)?;
 
-    let page_infos = ListPageInfos {
+    let page_source_infos = ListPageSourceInfos {
         chapter_id: &chapter_info.id,
     }
     .step_on(repo, context)
@@ -278,14 +282,15 @@ where
         .step_on(repo, context)
         .await?;
 
-    let chapter_page_ids = page_infos
+    let chapter_page_source_ids = page_source_infos
         .iter()
-        .map(|page_info| page_info.id.as_str())
+        .map(|page_source_info| page_source_info.id.as_str())
         .collect::<HashSet<_>>();
 
     for unit_info in &unit_infos {
         //
-        if !chapter_page_ids.contains(unit_info.page_id.as_str()) {
+        if !chapter_page_source_ids.contains(unit_info.page_source_id.as_str())
+        {
             //
             return Err(invalid_unit_transform(
                 &chapter_info.id,
@@ -297,13 +302,13 @@ where
 
     accept!(TransformScope {
         chapter_info,
-        page_infos,
+        page_source_infos,
         unit_infos,
     })
 }
 
-// Prepared Unit transforms and their current models for one Page.
-struct PageTransformData<'a> {
+// Prepared Unit transforms and their current models for one PageSource.
+struct PageSourceTransformData<'a> {
     // Text field selected for transformation.
     part: UnitTextPart,
     // Requested edits for the selected Units.
@@ -312,46 +317,56 @@ struct PageTransformData<'a> {
     unit_infos: &'a HashMap<&'a str, &'a UnitInfo>,
 }
 
-// Applies the selected text transforms and counter update to one Page.
-async fn apply_page_transforms<C, R>(
+// Applies the selected text transforms and counter update to one PageSource.
+async fn apply_page_source_transforms<C, R>(
     repo: &R,
     context: &mut C,
-    page_id: &str,
-    data: PageTransformData<'_>,
+    page_source_id: &str,
+    data: PageSourceTransformData<'_>,
     user_id: &str,
 ) -> BaseRest<Option<(UnitCountDelta, Vec<UnitEdit>)>>
 where
     C: Context + Send,
     C::Level: AtLeast<Serial>,
-    R: PageRepo<C> + UnitRepo<C> + Send + Sync,
+    R: PageSourceRepo<C> + UnitRepo<C> + Send + Sync,
 {
-    let PageTransformData {
+    let PageSourceTransformData {
         part,
         unit_transforms,
         unit_infos,
     } = data;
 
-    let edits =
-        build_page_edits(page_id, part, unit_transforms, unit_infos, user_id)?;
+    let edits = build_page_source_edits(
+        page_source_id,
+        part,
+        unit_transforms,
+        unit_infos,
+        user_id,
+    )?;
 
     if edits.is_empty() {
         return accept!(None);
     }
 
-    let page_scope = GetPageUnitScopeExcluded { id: page_id }
-        .step_on(repo, context)
-        .await?;
-
-    let page_edit =
-        unit_page_edit_usecase::apply_edits(repo, context, &page_scope, edits)
+    let page_source_scope =
+        GetPageSourceUnitScopeExcluded { id: page_source_id }
+            .step_on(repo, context)
             .await?;
 
-    accept!(Some(page_edit.into_changes()))
+    let page_source_edit = unit_page_source_edit_usecase::apply_edits(
+        repo,
+        context,
+        &page_source_scope,
+        edits,
+    )
+    .await?;
+
+    accept!(Some(page_source_edit.into_changes()))
 }
 
-// Aggregates persisted Unit changes across the transformed Pages.
+// Aggregates persisted Unit changes across the transformed PageSources.
 struct TransformChanges<'a> {
-    // Combined Chapter count change across Pages.
+    // Combined Chapter count change across PageSources.
     total_delta: UnitCountDelta,
     // Unit edits that were actually applied.
     applied_edits: &'a [UnitEdit],

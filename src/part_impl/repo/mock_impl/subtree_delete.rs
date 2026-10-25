@@ -16,7 +16,7 @@ use crate::model::read::proj::subtree_delete::{
 };
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::subtree_delete::{
-    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageIds,
+    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageSourceIds,
     LockSubtreeDeleteScope, MarkSubtree, SubtreeRoot, SweepSubtree,
 };
 use crate::part_impl::repo::mock_impl::{
@@ -108,13 +108,16 @@ pub fn chapter_ids(
 }
 
 /// Collect pages owned by a chapter.
-pub(super) fn page_ids(state: &MockState, chapter_id: &str) -> HashSet<String> {
+pub(super) fn page_source_ids(
+    state: &MockState,
+    chapter_id: &str,
+) -> HashSet<String> {
     //
     state
         .pages
         .iter()
-        .filter(|page_info| page_info.chapter_id == chapter_id)
-        .map(|page_info| page_info.id.clone())
+        .filter(|page_source_info| page_source_info.chapter_id == chapter_id)
+        .map(|page_source_info| page_source_info.id.clone())
         .collect()
 }
 
@@ -318,7 +321,7 @@ impl Step<ClaimSubtreeSweep, MockContext> for Mock {
     }
 }
 
-impl Step<ListSubtreePageIds<'_>, MockContext> for Mock {
+impl Step<ListSubtreePageSourceIds<'_>, MockContext> for Mock {
     // Required Orchestra execution level.
     type Level = ReptRead;
     // Shared repository error type.
@@ -329,10 +332,10 @@ impl Step<ListSubtreePageIds<'_>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &ListSubtreePageIds<'_>,
+        oper: &ListSubtreePageSourceIds<'_>,
     ) -> BaseRest<Vec<String>> {
         //
-        let mut ids = page_ids(&context.state, oper.chapter_id)
+        let mut ids = page_source_ids(&context.state, oper.chapter_id)
             .into_iter()
             .collect::<Vec<_>>();
 

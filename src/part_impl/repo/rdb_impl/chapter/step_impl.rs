@@ -15,20 +15,20 @@ use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{ChapterPatch, ChapterStageRepl};
-use crate::part::repo::oper::chapter::SetChapterPageCountMetrics;
+use crate::part::repo::oper::chapter::SetChapterPageSourceCountMetrics;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterInfoRecord, ChapterItem, ChapterPack, ChapterUnitEditScopeRecord,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id, f_deleted_at, f_id, f_index, f_is_pinned, f_page_count,
+    f_comic_id, f_deleted_at, f_id, f_index, f_is_pinned, f_page_source_count,
     f_proofread_at, f_proofread_unit_count, f_proofreading_at, f_published_at,
     f_total_unit_count, f_translated_at, f_translated_unit_count,
     f_translating_at, f_typeset_at, f_typesetting_at, f_updated_at,
     f_uploaded_at, t_chapter,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_page;
+use crate::part_impl::repo::rdb_impl::schema::t_page_source;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shared::result::diesel;
@@ -128,19 +128,19 @@ pub async fn get_info_excluded(
     accept!(info)
 }
 
-/// Locks the minimal Chapter edit scope owning the requested Page.
+/// Locks the minimal Chapter edit scope owning the requested source page.
 #[instrument(level = "info", skip_all)]
 pub async fn get_unit_edit_scope_excluded(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
 ) -> BaseRest<ChapterUnitEditScope> {
     //
     let record = t_chapter
         .filter(
             f_id.eq_any(
-                t_page::table
-                    .filter(t_page::f_id.eq(page_id))
-                    .select(t_page::f_chapter_id),
+                t_page_source::table
+                    .filter(t_page_source::f_id.eq(page_source_id))
+                    .select(t_page_source::f_chapter_id),
             ),
         )
         .filter(f_deleted_at.is_null())
@@ -155,7 +155,7 @@ pub async fn get_unit_edit_scope_excluded(
             expected_error! {
                 ExpectedVariant::Args,
                 message: trl("error-page-not-found");
-                page_id,
+                page_source_id,
                 operation = "get_unit_edit_scope_excluded",
                 "page not found",
             }
@@ -449,7 +449,7 @@ pub async fn complete_raw_provide(
             .filter(f_id.eq(id))
             .filter(f_deleted_at.is_null())
             .filter(f_uploaded_at.is_null())
-            .filter(f_page_count.gt(0)),
+            .filter(f_page_source_count.gt(0)),
     )
     .set((f_uploaded_at.eq(now), f_updated_at.eq(now)))
     .execute(conn)
@@ -461,15 +461,18 @@ pub async fn complete_raw_provide(
 
 /// Sets the page and unit counters on a chapter record.
 #[instrument(level = "info", skip_all)]
-pub async fn set_page_counts(
+pub async fn set_page_source_counts(
     conn: &mut RdbConn,
-    oper: &SetChapterPageCountMetrics<'_>,
+    oper: &SetChapterPageSourceCountMetrics<'_>,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let pack = ChapterPack::new(now)
-        .page_count(i32_from_usize(oper.page_count, "t_chapter.f_page_count")?)
+        .page_source_count(i32_from_usize(
+            oper.page_source_count,
+            "t_chapter.f_page_source_count",
+        )?)
         .total_unit_count(i32_from_usize(
             oper.total_unit_count,
             "t_chapter.f_total_unit_count",

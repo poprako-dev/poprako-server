@@ -8,7 +8,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::subtree_delete::{
-    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageIds,
+    ClaimSubtreeSweep, DeleteSubtree, ListSubtreePageSourceIds,
     LockSubtreeDeleteScope, MarkSubtree, SweepSubtree,
 };
 use crate::result::BaseError;
@@ -21,7 +21,7 @@ use crate::result::BaseError;
         for<'a> LockSubtreeDeleteScope<'a>,
         for<'a> MarkSubtree<'a>,
         ClaimSubtreeSweep,
-        for<'a> ListSubtreePageIds<'a>,
+        for<'a> ListSubtreePageSourceIds<'a>,
         for<'a> DeleteSubtree<'a>,
         for<'a> SweepSubtree<'a>,
     ),

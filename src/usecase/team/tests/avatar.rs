@@ -17,9 +17,13 @@ fn alloc_instr(hash_byte: u8, ext: ImageExt) -> AllocTeamAvatarInstr {
 }
 
 fn seed_alloc_scope(mock: &Mock) {
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 }
 
 fn mark_seeded_avatar_available(mock: &Mock) {
@@ -29,7 +33,7 @@ fn mark_seeded_avatar_available(mock: &Mock) {
         .objs
         .get_mut("team_avatar")
         .unwrap()
-        .get_mut("team-1")
+        .get_mut("team--00000000001")
         .unwrap()
         .meta
         .as_mut()
@@ -45,8 +49,8 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -57,7 +61,7 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
     assert_eq!(slot.image_ver, 1);
     assert_eq!(
         slot.put_url,
-        "https://obj.test/write/team_avatar/team-1-1.png",
+        "https://obj.test/write/team_avatar/team--00000000001/1.png",
     );
 
     let snapshot = mock.snapshot();
@@ -67,7 +71,7 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .get("team-1")
+            .get("team--00000000001")
             .unwrap()
             .version,
         1
@@ -87,8 +91,8 @@ async fn alloc_avatar_replacement_deletes_old_and_checks_new_generation() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         alloc_instr(2, ImageExt::Jpg),
     )
     .await
@@ -110,12 +114,16 @@ async fn alloc_avatar_replacement_deletes_old_and_checks_new_generation() {
 async fn alloc_avatar_rolls_back_when_team_is_missing() {
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 
     let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -142,8 +150,8 @@ async fn alloc_avatar_rejects_byte_length_above_team_limit() {
 
     let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &image_config),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         instr,
     )
     .await
@@ -164,8 +172,8 @@ async fn alloc_avatar_returns_no_slot_for_same_available_content() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         alloc_instr(0, ImageExt::Png),
     )
     .await
@@ -179,7 +187,11 @@ async fn alloc_avatar_returns_no_slot_for_same_available_content() {
 async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
     seed_team_avatar(&mock, 2);
 
     mark_team_avatar(&mock, 2).await.unwrap();
@@ -190,7 +202,7 @@ async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .get("team-1")
+            .get("team--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -208,8 +220,8 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -225,7 +237,7 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .get("team-1")
+            .get("team--00000000001")
             .unwrap()
             .version,
         2
@@ -242,8 +254,8 @@ async fn delete_marks_team_without_eager_avatar_delete() {
 
     delete::delete::<_, MockContext, _>(
         (&mock, &mock),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
     )
     .await
     .unwrap();
@@ -251,13 +263,13 @@ async fn delete_marks_team_without_eager_avatar_delete() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.teams.len(), 1);
-    assert!(snapshot.deleted_team_ids.contains("team-1"));
+    assert!(snapshot.deleted_team_ids.contains("team--00000000001"));
     assert!(
         snapshot
             .objs
             .get("team_avatar")
             .unwrap()
-            .contains_key("team-1")
+            .contains_key("team--00000000001")
     );
     assert!(snapshot.obj_tasks.is_empty());
 }
@@ -271,8 +283,8 @@ async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
 
     delete::delete::<_, MockContext, _>(
         (&mock, &mock),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
     )
     .await
     .unwrap();
@@ -290,7 +302,8 @@ async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
     assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(
             task,
-            ObjTask::Delete { key } if key.id == "team-1" && key.ver == 2
+            ObjTask::Delete { key }
+                if key.id == "team--00000000001" && key.ver == 2
         )
     }));
 }
@@ -299,13 +312,17 @@ async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
 async fn delete_missing_team_rolls_back_avatar_debt() {
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
     seed_team_avatar(&mock, 2);
 
     let error = delete::delete::<_, MockContext, _>(
         (&mock, &mock),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
     )
     .await
     .err()
@@ -321,6 +338,6 @@ async fn delete_missing_team_rolls_back_avatar_debt() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .contains_key("team-1")
+            .contains_key("team--00000000001")
     );
 }

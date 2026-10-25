@@ -7,7 +7,7 @@
 // save_tokens(UnitSaveCache)(negative): rollback publishes no successful token.
 use crate::config::repo::RepoConfig;
 use crate::data::instr::unit::{
-    SavePageUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
+    SavePageSourceUnitEditsInstr, UnitCoordInstr, UnitEditInstr,
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
@@ -25,9 +25,9 @@ use diesel::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _};
 
-fn batch(page_id: &str, save_id: &str) -> SavePageUnitEditsInstr {
-    SavePageUnitEditsInstr {
-        page_id: page_id.into(),
+fn batch(page_source_id: &str, save_id: &str) -> SavePageSourceUnitEditsInstr {
+    SavePageSourceUnitEditsInstr {
+        page_source_id: page_source_id.into(),
         save_id: save_id.into(),
         edits: vec![UnitEditInstr::Create {
             local_id: "local".into(),
@@ -62,7 +62,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     let user_id = fixture.chapter_info.creator_id.clone();
 
-    let page_id = fixture.page_entry.id.clone();
+    let page_source_id = fixture.page_source_entry.id.clone();
 
     let entry = AssignmentEntryShape {
         id: "save-token-assignment".into(),
@@ -93,14 +93,14 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
             UserToken {
                 user_id: user_id.clone()
             },
-            batch(&page_id, &save_id)
+            batch(&page_source_id, &save_id)
         ),
         unit_usecase::save_edits(
             (&nucl, &cloned_repo, &cloned_cache),
             UserToken {
                 user_id: user_id.clone()
             },
-            batch(&page_id, &save_id)
+            batch(&page_source_id, &save_id)
         )
     );
 
@@ -113,7 +113,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
         UserToken {
             user_id: user_id.clone(),
         },
-        batch(&page_id, &save_id),
+        batch(&page_source_id, &save_id),
     )
     .await
     .unwrap();
@@ -123,7 +123,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
     let mut conn = shared.get().await.unwrap();
 
     let count = t_unit::table
-        .filter(t_unit::f_page_id.eq(&page_id))
+        .filter(t_unit::f_page_source_id.eq(&page_source_id))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -133,7 +133,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
 
     let rejected_id = uuid::Uuid::new_v4().to_string();
 
-    let mut rejected = batch(&page_id, &rejected_id);
+    let mut rejected = batch(&page_source_id, &rejected_id);
 
     rejected.edits.push(UnitEditInstr::Delete {
         id: "missing".into(),
@@ -157,7 +157,7 @@ async fn concurrent_saves_publish_tokens_only_after_commit() {
         unit_usecase::save_edits(
             (&nucl, &repo, &cache),
             UserToken { user_id },
-            batch(&page_id, &rejected_id)
+            batch(&page_source_id, &rejected_id)
         )
         .await
         .is_ok()

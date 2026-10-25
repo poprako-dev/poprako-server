@@ -72,7 +72,7 @@ fn sign_returns_stable_token() {
     let signed = TokenAuth::sign_token(
         &mock,
         &UserToken {
-            user_id: "user-1".into(),
+            user_id: "user--00000000001".into(),
         },
     );
 
@@ -80,7 +80,7 @@ fn sign_returns_stable_token() {
 
     let signed = signed.ok().unwrap();
 
-    assert_eq!(signed, "token:user-1");
+    assert_eq!(signed, "token:user--00000000001");
 }
 
 /// Mock helper that verifies signing failure returns an unrecoverable error.
@@ -93,7 +93,7 @@ fn sign_failure_returns_unrecoverable() {
     let error_token = TokenAuth::sign_token(
         &mock,
         &UserToken {
-            user_id: "user-1".into(),
+            user_id: "user--00000000001".into(),
         },
     )
     .err()

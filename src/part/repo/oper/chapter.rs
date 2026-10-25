@@ -36,12 +36,12 @@ pub struct GetChapterInfoExcluded<'a, 'b> {
     pub incls: &'b [ChapterInclOpt],
 }
 
-/// Locks the minimal Chapter edit scope resolved from a Page ID.
+/// Locks the minimal Chapter edit scope resolved from a source page ID.
 #[derive(Oper)]
 #[oper(output = ChapterUnitEditScope)]
 pub struct GetChapterUnitEditScopeExcluded<'a> {
-    /// Page whose owning Chapter must be locked.
-    pub page_id: &'a str,
+    /// source page whose owning Chapter must be locked.
+    pub page_source_id: &'a str,
 }
 
 /// Lists chapter infos selected by a query specification.
@@ -125,11 +125,11 @@ pub struct CompleteChapterRawProvide<'a> {
 /// Sets all page and unit counters for a chapter.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct SetChapterPageCountMetrics<'a> {
+pub struct SetChapterPageSourceCountMetrics<'a> {
     /// Chapter identifier.
     pub id: &'a str,
     /// Number of pages.
-    pub page_count: usize,
+    pub page_source_count: usize,
     /// Total unit count.
     pub total_unit_count: usize,
     /// Translated unit count.

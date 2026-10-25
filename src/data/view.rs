@@ -28,12 +28,12 @@ pub mod member;
 pub mod member_invitation;
 /// Object URL presentation.
 pub mod obj_url;
-/// Page response views.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
-/// Page-port response views.
-pub mod page_port;
+/// source page response views.
+pub mod page_source;
+/// source page-port response views.
+pub mod page_source_port;
 /// System-mail response views.
 pub mod system_mail;
 /// Team response views.

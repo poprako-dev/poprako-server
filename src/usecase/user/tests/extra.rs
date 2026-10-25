@@ -16,8 +16,8 @@ fn alloc_instr(hash_byte: u8, ext: ImageExt) -> AllocUserAvatarInstr {
 
 fn seed_user_scope(mock: &Mock) {
     mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
+        user("user--00000000001", "qid-1", "Nick"),
+        credential("user--00000000001", "password"),
     );
 }
 
@@ -29,7 +29,7 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -40,7 +40,7 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
     assert_eq!(slot.image_ver, 1);
     assert_eq!(
         slot.put_url,
-        "https://obj.test/write/user_avatar/user-1-1.png",
+        "https://obj.test/write/user_avatar/user--00000000001/1.png",
     );
 
     let snapshot = mock.snapshot();
@@ -50,7 +50,7 @@ async fn alloc_avatar_creates_generation_check_and_put_url() {
             .objs
             .get("user_avatar")
             .unwrap()
-            .get("user-1")
+            .get("user--00000000001")
             .unwrap()
             .version,
         1
@@ -66,11 +66,11 @@ async fn alloc_avatar_replacement_deletes_old_and_checks_new_generation() {
     let mock = Mock::new();
 
     seed_user_scope(&mock);
-    seed_user_avatar(&mock, "user-1", 1);
+    seed_user_avatar(&mock, "user--00000000001", 1);
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         alloc_instr(2, ImageExt::Jpg),
     )
     .await
@@ -94,7 +94,7 @@ async fn alloc_avatar_rolls_back_when_user_is_missing() {
 
     let error = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -111,7 +111,7 @@ async fn alloc_avatar_returns_no_slot_for_same_available_content() {
     let mock = Mock::new();
 
     seed_user_scope(&mock);
-    seed_user_avatar(&mock, "user-1", 1);
+    seed_user_avatar(&mock, "user--00000000001", 1);
 
     mock.state
         .lock()
@@ -119,7 +119,7 @@ async fn alloc_avatar_returns_no_slot_for_same_available_content() {
         .objs
         .get_mut("user_avatar")
         .unwrap()
-        .get_mut("user-1")
+        .get_mut("user--00000000001")
         .unwrap()
         .meta
         .as_mut()
@@ -128,7 +128,7 @@ async fn alloc_avatar_returns_no_slot_for_same_available_content() {
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         alloc_instr(0, ImageExt::Png),
     )
     .await
@@ -143,11 +143,11 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
     let mock = Mock::new();
 
     seed_user_scope(&mock);
-    seed_user_avatar(&mock, "user-1", 1);
+    seed_user_avatar(&mock, "user--00000000001", 1);
 
     let allocated = alloc_avatar::<_, MockContext, _, _>(
         (&mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
+        token("user--00000000001"),
         alloc_instr(1, ImageExt::Png),
     )
     .await
@@ -157,8 +157,8 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 
     let error = mark_avatar_uploaded::<MockContext, _>(
         (&mock,),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
         MarkUserAvatarUploadedInstr { image_ver: 1 },
     )
     .await
@@ -171,7 +171,7 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
             .objs
             .get("user_avatar")
             .unwrap()
-            .get("user-1")
+            .get("user--00000000001")
             .unwrap()
             .version,
         2
@@ -182,13 +182,13 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
     let mock = Mock::new();
 
-    seed_user_avatar(&mock, "user-1", 3);
+    seed_user_avatar(&mock, "user--00000000001", 3);
 
     for _ in 0..2 {
         mark_avatar_uploaded::<MockContext, _>(
             (&mock,),
-            token("user-1"),
-            "user-1".into(),
+            token("user--00000000001"),
+            "user--00000000001".into(),
             MarkUserAvatarUploadedInstr { image_ver: 3 },
         )
         .await
@@ -200,7 +200,7 @@ async fn mark_avatar_uploaded_accepts_repeated_current_generation() {
             .objs
             .get("user_avatar")
             .unwrap()
-            .get("user-1")
+            .get("user--00000000001")
             .unwrap()
             .meta
             .as_ref()

@@ -12,10 +12,12 @@ pub struct UnitTranslationDocument {
     pub unit_index: usize,
 
     /// Parent page identifier from the exporting chapter.
-    pub page_id: String,
+    #[serde(rename = "page_id")]
+    pub page_source_id: String,
 
     /// Ordinal index of the page within its chapter.
-    pub page_index: usize,
+    #[serde(rename = "page_index")]
+    pub page_source_index: usize,
 
     /// Horizontal coordinate of the unit bounding box on the page.
     pub x_coord: f64,
@@ -46,13 +48,15 @@ pub struct UnitTranslationDocument {
     pub proofreader_id: Option<String>,
 }
 
-/// Page object exchanged by the `PopRaKo` translation port.
+/// source page object exchanged by the `PopRaKo` translation port.
 #[derive(Deserialize)]
-pub struct PageTranslationDocument {
-    /// Page identifier from the exporting chapter.
-    pub page_id: String,
+pub struct PageSourceTranslationDocument {
+    /// source page identifier from the exporting chapter.
+    #[serde(rename = "page_id")]
+    pub page_source_id: String,
     /// Zero-based page index within its chapter.
-    pub page_index: usize,
+    #[serde(rename = "page_index")]
+    pub page_source_index: usize,
 
     /// Units belonging to this page.
     pub units: Vec<UnitTranslationDocument>,
@@ -73,6 +77,6 @@ pub struct ChapterTranslationDocument {
     /// Comic title from the exporting comic.
     pub comic_title: String,
 
-    /// Pages and their translation units.
-    pub pages: Vec<PageTranslationDocument>,
+    /// source pages and their translation units.
+    pub pages: Vec<PageSourceTranslationDocument>,
 }

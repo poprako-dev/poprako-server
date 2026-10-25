@@ -4,6 +4,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::key::ObjKind as _;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::complex::{
@@ -30,7 +31,8 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::usecase::page_artwork::access::ensure_user_can_write;
 use crate::usecase::page_artwork::upload::alloc_image_slot;
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 
 /// Applies only explicit identities; names and hashes never infer page ownership.
 #[instrument(
@@ -99,7 +101,9 @@ where
             for (index, page) in instr.pages.into_iter().enumerate() {
                 //
                 let entry = PageArtworkEntry {
-                    id: page.page_artwork_id.unwrap_or_else(next_snowflake_id),
+                    id: page.page_artwork_id.unwrap_or_else(|| {
+                        next_business_id(BusinessIdKind::PageArtwork)
+                    }),
                     chapter_id: chapter_info.id.clone(),
                     index,
                     raw_ident: page.raw_ident,
@@ -120,7 +124,9 @@ where
                 .map(|info| info.id)
                 .collect::<Vec<_>>();
 
-            DeleteObjs::<PageArtworkImage>::new(&removed_ids)
+            let page_artwork_image_ids = PageArtworkImage::ids(&removed_ids)?;
+
+            DeleteObjs::<PageArtworkImage>::new(&page_artwork_image_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;

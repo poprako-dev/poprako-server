@@ -11,7 +11,9 @@ use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
 use crate::part::nucl::Serial;
-use crate::part::obj_dept::{ChapterArtwork, PageArtworkImage, PageImage};
+use crate::part::obj_dept::{
+    ChapterArtwork, PageArtworkImage, PageSourceImage,
+};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
@@ -56,7 +58,7 @@ where
         + Sync,
     O: ObjDept<ChapterArtwork, C>
         + ObjDept<PageArtworkImage, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + Send
         + Sync,
 {

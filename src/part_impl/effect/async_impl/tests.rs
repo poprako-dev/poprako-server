@@ -78,7 +78,7 @@ fn team_info() -> TeamInfo {
     let time = OffsetDateTime::now_utc();
 
     TeamInfo {
-        id: "team-1".to_string(),
+        id: "team--00000000001".to_string(),
         name: "Team One".to_string(),
         description: "Team description".to_string(),
         created_at: time,
@@ -94,8 +94,8 @@ fn workset_info() -> WorksetInfo {
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
-        id: "workset-1".to_string(),
-        team_id: "team-1".to_string(),
+        id: "workset--00000000001".to_string(),
+        team_id: "team--00000000001".to_string(),
         index: 0,
         name: "Workset One".to_string(),
         description: None,
@@ -113,8 +113,8 @@ fn comic_info() -> ComicInfo {
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
-        id: "comic-1".to_string(),
-        workset_id: "workset-1".to_string(),
+        id: "comic--00000000001".to_string(),
+        workset_id: "workset--00000000001".to_string(),
         index: 0,
         title: "Comic One".to_string(),
         author: "Author One".to_string(),
@@ -140,13 +140,13 @@ fn chapter_info() -> ChapterInfo {
 
     ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".to_string(),
-        comic_id: "comic-1".to_string(),
+        id: "chapter--00000000001".to_string(),
+        comic_id: "comic--00000000001".to_string(),
         comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "Chapter One".to_string(),
-        page_count: 1,
+        page_source_count: 1,
         total_unit_count: 1,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -181,7 +181,7 @@ fn assignment_info(id: &str, user_id: &str, roles: RoleMask) -> AssignmentInfo {
 
     AssignmentInfo {
         id: id.to_string(),
-        chapter_id: "chapter-1".to_string(),
+        chapter_id: "chapter--00000000001".to_string(),
         user_id: user_id.to_string(),
         user: None,
         chapter: None,
@@ -206,8 +206,8 @@ async fn develop_dispatches_user_signup() {
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
-            team_id: "team-1".to_string(),
-            invitor_id: "user-owner".to_string(),
+            team_id: "team--00000000001".to_string(),
+            invitor_id: "user--79587027057".to_string(),
             invitee_qid: "10001".to_string(),
         },
     }
@@ -224,7 +224,7 @@ async fn develop_dispatches_user_signup() {
 
     assert_eq!(
         snapshot.system_mails.first().unwrap().receiver_id,
-        "user-owner"
+        "user--79587027057"
     );
 }
 
@@ -237,13 +237,13 @@ async fn develop_dispatches_chapter_workflow_completed() {
     seed_chapter_scope(&mock);
 
     mock.seed_assignment(assignment_info(
-        "assignment-proofreader",
+        "assignment--74683309196",
         "proofreader-user",
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
     mock.seed_assignment(assignment_info(
-        "assignment-reviewer",
+        "assignment--19585650251",
         "reviewer-user",
         RoleMask::from(RoleField::REVIEWER),
     ));
@@ -255,7 +255,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
 
     Event::ChapterWorkflowCompleted {
         payload: ChapterWorkflowCompletedEvent {
-            chapter_id: "chapter-1".to_string(),
+            chapter_id: "chapter--00000000001".to_string(),
             completed_stage: Stage::Translate,
         },
     }
@@ -288,7 +288,7 @@ async fn develop_dispatches_chapter_published() {
     seed_chapter_scope(&mock);
 
     mock.seed_assignment(assignment_info(
-        "assignment-reviewer",
+        "assignment--19585650251",
         "reviewer-user",
         RoleMask::from(RoleField::REVIEWER),
     ));
@@ -300,7 +300,7 @@ async fn develop_dispatches_chapter_published() {
 
     Event::ChapterPublished {
         payload: ChapterPublishedEvent {
-            chapter_id: "chapter-1".to_string(),
+            chapter_id: "chapter--00000000001".to_string(),
         },
     }
     .develop_on(&develop)
@@ -349,7 +349,7 @@ async fn clone_drop_preserves_consumer() {
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
             invitor_id: "owner".into(),
             invitee_qid: "10001".into(),
         },
@@ -377,7 +377,7 @@ async fn construction_defers_processing() {
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
             invitor_id: "owner".into(),
             invitee_qid: "10001".into(),
         },
@@ -438,7 +438,7 @@ async fn join_reports_supervisor_failure() {
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
             invitor_id: "owner".into(),
             invitee_qid: "10001".into(),
         },

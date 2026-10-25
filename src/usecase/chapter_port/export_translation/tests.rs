@@ -18,7 +18,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
@@ -29,6 +29,12 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
+
+const USER_ID: &str = "user--00000000001";
+const COMIC_ID: &str = "comic--00000000001";
+const CHAPTER_ID: &str = "chapter--00000000001";
+const SOURCE_ID: &str = "page_source--00000000001";
+const SOURCE_2_ID: &str = "page_source--00000000002";
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -42,13 +48,13 @@ fn comic(id: &str) -> ComicInfo {
 
     ComicInfo {
         id: id.into(),
-        workset_id: "workset-1".into(),
+        workset_id: "workset--00000000001".into(),
         index: 0,
         title: "Pop Comic".into(),
         author: "author".into(),
         description: None,
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: USER_ID.into(),
         workset: None,
         team: None,
         creator: None,
@@ -65,7 +71,7 @@ fn workset(id: &str) -> WorksetInfo {
 
     WorksetInfo {
         id: id.into(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         index: 0,
         name: "workset".into(),
         description: None,
@@ -82,16 +88,16 @@ fn chapter(id: &str) -> ChapterInfo {
     ChapterInfo {
         confirmed_artwork_ver: None,
         id: id.into(),
-        comic_id: "comic-1".into(),
+        comic_id: COMIC_ID.into(),
         is_pinned: true,
         index: 3,
         subtitle: "Arrival".into(),
-        page_count: 2,
+        page_source_count: 2,
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: USER_ID.into(),
         comic: None,
         creator: None,
         created_at: time,
@@ -128,7 +134,7 @@ fn member(user_id: &str) -> MemberInfo {
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         user: None,
         team: None,
@@ -137,13 +143,13 @@ fn member(user_id: &str) -> MemberInfo {
     }
 }
 
-fn page(id: &str, index: usize, _image_uploaded: bool) -> PageInfo {
+fn page(id: &str, index: usize, _image_uploaded: bool) -> PageSourceInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    PageInfo {
+    PageSourceInfo {
         id: id.into(),
-        chapter_id: "chapter-1".into(),
+        chapter_id: CHAPTER_ID.into(),
         index,
         total_unit_count: 1,
         translated_unit_count: 1,
@@ -155,7 +161,7 @@ fn page(id: &str, index: usize, _image_uploaded: bool) -> PageInfo {
 
 fn unit(
     id: &str,
-    page_id: &str,
+    page_source_id: &str,
     next_id: Option<&str>,
     text: &str,
     proofread_text: Option<&str>,
@@ -165,7 +171,7 @@ fn unit(
 
     UnitInfo {
         id: id.into(),
-        page_id: page_id.into(),
+        page_source_id: page_source_id.into(),
         next_id: next_id.map(str::to_string),
         is_bubble: true,
         is_flagged: true,
@@ -188,23 +194,23 @@ fn unit(
 
 fn seed_scope(mock: &Mock) {
     //
-    mock.seed_workset(workset("workset-1"));
+    mock.seed_workset(workset("workset--00000000001"));
 
-    mock.seed_comic(comic("comic-1"));
+    mock.seed_comic(comic(COMIC_ID));
 
-    mock.seed_chapter(chapter("chapter-1"));
+    mock.seed_chapter(chapter(CHAPTER_ID));
 
-    mock.seed_page(page("page-1", 0, true));
+    mock.seed_page(page(SOURCE_ID, 0, true));
 
-    mock.seed_page_image_obj("page-1", "png");
+    mock.seed_page_source_image_obj(SOURCE_ID, "png");
 
-    mock.seed_page(page("page-2", 1, false));
+    mock.seed_page(page(SOURCE_2_ID, 1, false));
 
-    mock.seed_page_image_obj("page-2", "png");
+    mock.seed_page_source_image_obj(SOURCE_2_ID, "png");
 
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        CHAPTER_ID,
+        USER_ID,
         RoleMask::from(RoleField::TYPESETTER),
     ));
 }
@@ -216,20 +222,20 @@ async fn export_returns_both_formats_and_records_one_export() {
 
     seed_scope(&mock);
 
-    mock.seed_unit(unit("unit-b", "page-1", None, "beta", None));
+    mock.seed_unit(unit("unit--35727087946", SOURCE_ID, None, "beta", None));
 
     mock.seed_unit(unit(
-        "unit-a",
-        "page-1",
-        Some("unit-b"),
+        "unit--34844962250",
+        SOURCE_ID,
+        Some("unit--35727087946"),
         "alpha",
         Some("alpha proof"),
     ));
 
     let exported = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token(USER_ID),
+        CHAPTER_ID.into(),
         ExportFormatSpec::BOTH,
         false,
     )
@@ -241,7 +247,7 @@ async fn export_returns_both_formats_and_records_one_export() {
 
     let poprako = exported.poprako.unwrap();
 
-    assert_eq!(poprako.chapter_id, "chapter-1");
+    assert_eq!(poprako.chapter_id, CHAPTER_ID);
 
     assert!(
         poprako
@@ -273,7 +279,7 @@ async fn export_returns_both_formats_and_records_one_export() {
             .first()
             .unwrap()
             .unit_id,
-        "unit-a"
+        "unit--34844962250"
     );
 
     assert_eq!(
@@ -338,12 +344,12 @@ async fn export_by_unassigned_team_member_does_not_start_typeset_redraw() {
 
     seed_scope(&mock);
 
-    mock.seed_member(member("team-member"));
+    mock.seed_member(member("team--98176725518"));
 
     let exported = export_translation(
         (&mock, &mock, &mock),
-        token("team-member"),
-        "chapter-1".into(),
+        token("team--98176725518"),
+        CHAPTER_ID.into(),
         ExportFormatSpec::POPRAKO,
         false,
     )
@@ -372,23 +378,23 @@ async fn export_by_unassigned_team_member_does_not_start_typeset_redraw() {
 }
 
 #[tokio::test]
-async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
-{
+async fn export_raw_ident_is_opt_in_with_per_page_source_fallback_and_duplicate_names()
+ {
     use poprako_orchestra::{Nucl as _, OperStep as _};
 
-    use crate::part::repo::oper::page::UpdatePageRawIdents;
-    use crate::shape::write::page::PageRawIdentsReplShape;
+    use crate::part::repo::oper::page_source::UpdatePageSourceRawIdents;
+    use crate::shape::write::page_source::PageSourceRawIdentsReplShape;
 
     let mock = Mock::new();
 
     seed_scope(&mock);
 
-    let repls = PageRawIdentsReplShape {
-        idents: vec![("page-1", Some("原稿 01.JPG"))],
+    let repls = PageSourceRawIdentsReplShape {
+        idents: vec![(SOURCE_ID, Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {
-        UpdatePageRawIdents { repl: &repls }
+        UpdatePageSourceRawIdents { repl: &repls }
             .step_on(&mock, context)
             .await
     })
@@ -397,8 +403,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     let default_export = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token(USER_ID),
+        CHAPTER_ID.into(),
         ExportFormatSpec::BOTH,
         false,
     )
@@ -407,8 +413,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     let raw_export = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token(USER_ID),
+        CHAPTER_ID.into(),
         ExportFormatSpec::BOTH,
         true,
     )
@@ -421,7 +427,7 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     assert_eq!(raw_idents.len(), 1);
 
-    assert_eq!(raw_idents.first().unwrap().page_id, "page-1");
+    assert_eq!(raw_idents.first().unwrap().page_source_id, SOURCE_ID);
 
     assert_eq!(raw_idents.first().unwrap().raw_ident, "原稿 01.JPG");
 
@@ -441,12 +447,12 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
         serde_json::to_value(raw_export.poprako).unwrap()
     );
 
-    let repls = PageRawIdentsReplShape {
-        idents: vec![("page-2", Some("原稿 01.JPG"))],
+    let repls = PageSourceRawIdentsReplShape {
+        idents: vec![(SOURCE_2_ID, Some("原稿 01.JPG"))],
     };
 
     mock.coord(async |context| {
-        UpdatePageRawIdents { repl: &repls }
+        UpdatePageSourceRawIdents { repl: &repls }
             .step_on(&mock, context)
             .await
     })
@@ -455,8 +461,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     let duplicate_export = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token(USER_ID),
+        CHAPTER_ID.into(),
         ExportFormatSpec::LABEL_PLUS,
         true,
     )
@@ -467,9 +473,13 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     assert_eq!(duplicate_raw_idents.len(), 2);
 
-    assert_eq!(duplicate_raw_idents.first().unwrap().page_id, "page-1");
-
-    assert_eq!(duplicate_raw_idents.get(1).unwrap().page_id, "page-2");
+    assert_eq!(
+        duplicate_raw_idents
+            .iter()
+            .map(|ident| ident.page_source_id.as_str())
+            .collect::<Vec<_>>(),
+        [SOURCE_ID, SOURCE_2_ID]
+    );
 
     assert_eq!(
         duplicate_export
@@ -483,8 +493,8 @@ async fn export_raw_ident_is_opt_in_with_per_page_fallback_and_duplicate_names()
 
     let native_export = export_translation(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token(USER_ID),
+        CHAPTER_ID.into(),
         ExportFormatSpec::POPRAKO,
         true,
     )
@@ -518,14 +528,14 @@ async fn export_only_artwork_assignees_start_stage() {
 
             if role != RoleField::ADMIN {
                 mock.seed_assignment(assignment(
-                    "chapter-1",
-                    "user-1",
+                    CHAPTER_ID,
+                    USER_ID,
                     RoleMask::from(role),
                 ));
             }
 
             if is_member || role == RoleField::ADMIN {
-                let mut member_info = member("user-1");
+                let mut member_info = member(USER_ID);
 
                 member_info.roles = RoleMask::from(role);
 
@@ -535,8 +545,8 @@ async fn export_only_artwork_assignees_start_stage() {
             for _ in 0..2 {
                 export_translation(
                     (&mock, &mock, &mock),
-                    token("user-1"),
-                    "chapter-1".into(),
+                    token(USER_ID),
+                    CHAPTER_ID.into(),
                     ExportFormatSpec::POPRAKO,
                     false,
                 )

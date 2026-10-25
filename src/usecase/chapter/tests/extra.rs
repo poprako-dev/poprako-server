@@ -16,9 +16,10 @@ async fn update_stage_admin_reverts_without_role_holder() {
     //
     let mock = Mock::new();
 
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+    seed_scope(&mock, "user--00000000001", RoleMask::from(RoleField::ADMIN));
 
-    let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
+    let mut chapter_info =
+        chapter("chapter--00000000001", "comic--00000000001", 1, false);
 
     chapter_info.stages = chapter_info
         .stages
@@ -29,9 +30,9 @@ async fn update_stage_admin_reverts_without_role_holder() {
 
     update_stage(
         (&mock, &mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         UpdateChapterStageInstr {
-            id: "chapter-1".into(),
+            id: "chapter--00000000001".into(),
             stage: Stage::Translate.into(),
             oper: StageOper::Revert.into(),
         },

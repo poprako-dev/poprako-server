@@ -1,9 +1,9 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::Path;
+use syn::{Ident, Path};
 
 /// Generates typed Diesel storage for one latest-object table.
-pub fn expand(table: &Path) -> TokenStream {
+pub fn expand(table: &Path, marker: &Ident) -> TokenStream {
     //
     let write_and_cleanup_rows = write_and_cleanup_rows(table);
 
@@ -11,7 +11,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
     let load_rows = load_rows(table);
 
-    let decode_entries = decode_entries(table);
+    let decode_entries = decode_entries(table, marker);
 
     let upload_marks = upload_marks(table);
 
@@ -27,8 +27,8 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_version)]
             ver: i64,
 
-            #[diesel(column_name = f_key)]
-            key: Option<String>,
+            #[diesel(column_name = f_domain)]
+            domain: Option<::serde_json::Value>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -49,8 +49,8 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_version)]
             ver: i64,
 
-            #[diesel(column_name = f_key)]
-            key: Option<String>,
+            #[diesel(column_name = f_domain)]
+            domain: Option<::serde_json::Value>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -66,8 +66,8 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_version)]
             ver: i64,
 
-            #[diesel(column_name = f_key)]
-            key: Option<String>,
+            #[diesel(column_name = f_domain)]
+            domain: Option<::serde_json::Value>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -86,7 +86,7 @@ pub fn expand(table: &Path) -> TokenStream {
             fn from(record: ObjStateRecord) -> Self {
                 Self {
                     ver: record.ver,
-                    key: record.key,
+                    domain: record.domain,
                     f_is_uploaded: record.f_is_uploaded,
                     hash: record.hash,
                     ext: record.ext,
@@ -107,11 +107,25 @@ pub fn expand(table: &Path) -> TokenStream {
         const _: fn(FullRecord) = |record| {
             //
             let FullRecord {
-                id, ver, key, f_is_uploaded, hash, ext, created_at, updated_at,
+                id,
+                ver,
+                domain,
+                f_is_uploaded,
+                hash,
+                ext,
+                created_at,
+                updated_at,
             } = record;
 
             drop((
-                id, ver, key, f_is_uploaded, hash, ext, created_at, updated_at,
+                id,
+                ver,
+                domain,
+                f_is_uploaded,
+                hash,
+                ext,
+                created_at,
+                updated_at,
             ));
         };
     }
@@ -138,7 +152,7 @@ fn write_and_cleanup_rows(table: &Path) -> TokenStream {
                 .map(|write| ObjWriteItem {
                     id: write.id,
                     ver: i64::from(write.ver),
-                    key: write.key,
+                    domain: write.domain,
                     f_is_uploaded: false,
                     hash: write.hash,
                     ext: write.ext,
@@ -151,7 +165,7 @@ fn write_and_cleanup_rows(table: &Path) -> TokenStream {
                 .do_update()
                 .set((
                     #table::f_version.eq(excluded(#table::f_version)),
-                    #table::f_key.eq(excluded(#table::f_key)),
+                    #table::f_domain.eq(excluded(#table::f_domain)),
                     #table::f_is_uploaded.eq(false),
                     #table::f_hash.eq(excluded(#table::f_hash)),
                     #table::f_ext.eq(excluded(#table::f_ext)),
@@ -185,7 +199,7 @@ fn write_and_cleanup_rows(table: &Path) -> TokenStream {
             ::diesel::update(#table::table.filter(#table::f_id.eq_any(ids)))
                 .set((
                     #table::f_is_uploaded.eq(None::<bool>),
-                    #table::f_key.eq(None::<String>),
+                    #table::f_domain.eq(None::<::serde_json::Value>),
                     #table::f_hash.eq(None::<Vec<u8>>),
                     #table::f_ext.eq(None::<String>),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
@@ -363,7 +377,7 @@ fn load_rows(table: &Path) -> TokenStream {
             Ok(record.map(|record| {
                 let state = ::poprako_obj_dept::rdb_impl::ObjRdbRecord {
                     ver: record.ver,
-                    key: record.key,
+                    domain: record.domain,
                     f_is_uploaded: record.f_is_uploaded,
                     hash: record.hash,
                     ext: record.ext,
@@ -376,7 +390,7 @@ fn load_rows(table: &Path) -> TokenStream {
 }
 
 // Generates decode entries.
-fn decode_entries(table: &Path) -> TokenStream {
+fn decode_entries(table: &Path, marker: &Ident) -> TokenStream {
     //
     quote! {
         //
@@ -389,8 +403,8 @@ fn decode_entries(table: &Path) -> TokenStream {
 
             #[diesel(column_name = f_version)]
             ver: i64,
-            #[diesel(column_name = f_key)]
-            key: Option<String>,
+            #[diesel(column_name = f_domain)]
+            domain: Option<::serde_json::Value>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -411,7 +425,7 @@ fn decode_entries(table: &Path) -> TokenStream {
                     id: record.id,
                     record: ::poprako_obj_dept::rdb_impl::ObjRdbRecord {
                         ver: record.ver,
-                        key: record.key,
+                        domain: record.domain,
                         f_is_uploaded: record.f_is_uploaded,
                         hash: record.hash,
                         ext: record.ext,
@@ -420,16 +434,14 @@ fn decode_entries(table: &Path) -> TokenStream {
             }
         }
 
-        pub fn decode_many<K>(
+        pub fn decode_many(
             records: Vec<ObjRdbEntry>,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
             ::std::collections::HashMap<
-                String,
-                ::poprako_obj_dept::model::meta::ObjMeta,
+                <#marker as ::poprako_obj_dept::key::ObjKind>::Id,
+                ::poprako_obj_dept::model::meta::ObjMeta<#marker>,
             >,
         >
-        where
-            K: ::poprako_obj_dept::key::KeyMap<Img = String>,
         {
             //
             let mut obj_metas = ::std::collections::HashMap::new();
@@ -439,7 +451,7 @@ fn decode_entries(table: &Path) -> TokenStream {
                 let id = entry.id;
 
                 let Some(obj_meta) =
-                    ::poprako_obj_dept::rdb_impl::decode_record::<K>(
+                    ::poprako_obj_dept::rdb_impl::decode_record::<#marker>(
                         &id,
                         entry.record,
                     )?
@@ -447,7 +459,7 @@ fn decode_entries(table: &Path) -> TokenStream {
                     continue;
                 };
 
-                obj_metas.insert(id, obj_meta);
+                obj_metas.insert(obj_meta.key.id().clone(), obj_meta);
             }
 
             Ok(obj_metas)
@@ -471,8 +483,8 @@ fn decode_entries(table: &Path) -> TokenStream {
             #[diesel(column_name = f_version)]
             ver: i64,
 
-            #[diesel(column_name = f_key)]
-            key: &'a str,
+            #[diesel(column_name = f_domain)]
+            domain: &'a ::serde_json::Value,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: bool,
             #[diesel(column_name = f_hash)]
@@ -526,7 +538,7 @@ fn upload_marks(table: &Path) -> TokenStream {
                 #table::table
                     .filter(#table::f_id.eq(id))
                     .filter(#table::f_version.eq(i64::from(ver)))
-                    .filter(#table::f_key.is_not_null())
+                    .filter(#table::f_domain.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())
                     .filter(#table::f_hash.is_not_null())
                     .filter(#table::f_ext.is_not_null()),
@@ -555,7 +567,7 @@ fn upload_marks(table: &Path) -> TokenStream {
                     .filter(#table::f_id.eq(id))
                     .filter(#table::f_version.eq(i64::from(ver)))
                     .filter(#table::f_updated_at.eq(revision))
-                    .filter(#table::f_key.is_not_null())
+                    .filter(#table::f_domain.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())
                     .filter(#table::f_hash.is_not_null())
                     .filter(#table::f_ext.is_not_null()),

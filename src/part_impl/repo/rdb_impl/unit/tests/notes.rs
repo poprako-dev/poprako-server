@@ -4,7 +4,7 @@
 use super::*;
 use crate::config::repo::RepoConfig;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::ListPageUnitDiffStats;
+use crate::part::repo::oper::page_source::ListPageSourceUnitDiffStats;
 
 // Construct one annotation-only sparse patch.
 fn patch(
@@ -33,7 +33,7 @@ const SECOND_ID: &str = "rdb-test-unit-domain-notes-b";
 async fn create_notes(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    fixture: &PageFixture,
+    fixture: &PageSourceFixture,
 ) {
     let edits = [
         UnitEdit::Create {
@@ -71,7 +71,7 @@ async fn create_notes(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                     orders: &[],
                     edits: &edits,
                 },
@@ -92,7 +92,7 @@ async fn create_notes(
 async fn verify_patches(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    fixture: &PageFixture,
+    fixture: &PageSourceFixture,
 ) {
     for (edit, expected_note, expected_count) in [
         (patch(FIRST_ID, Patch::Skip, Patch::Clear), Some("小字"), 1),
@@ -126,7 +126,7 @@ async fn verify_patches(
                 .step(
                     context,
                     &ListUnitOrders {
-                        page_id: &fixture.page_entry.id,
+                        page_source_id: &fixture.page_source_entry.id,
                     },
                 )
                 .await?;
@@ -135,7 +135,7 @@ async fn verify_patches(
                 .step(
                     context,
                     &ApplyUnitEdits {
-                        page_id: &fixture.page_entry.id,
+                        page_source_id: &fixture.page_source_entry.id,
                         orders: &orders,
                         edits: &[edit],
                     },
@@ -181,14 +181,14 @@ async fn verify_patches(
 async fn verify_diff_stats(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    fixture: &PageFixture,
+    fixture: &PageSourceFixture,
 ) {
     nucl.coord(async |context| {
         let orders = repo
             .step(
                 context,
                 &ListUnitOrders {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                 },
             )
             .await?;
@@ -218,7 +218,7 @@ async fn verify_diff_stats(
             .step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                     orders: &orders,
                     edits: &[
                         patch(
@@ -242,7 +242,7 @@ async fn verify_diff_stats(
     .unwrap();
 
     let stats = repo
-        .run(&ListPageUnitDiffStats {
+        .run(&ListPageSourceUnitDiffStats {
             chapter_id: &fixture.chapter_info.id,
         })
         .await
@@ -259,7 +259,7 @@ async fn verify_diff_stats(
 async fn verify_rollback(
     repo: &RdbRepo,
     nucl: &RdbNucl<ReptRead>,
-    fixture: &PageFixture,
+    fixture: &PageSourceFixture,
 ) {
     let failed = nucl
         .coord(async |context| {
@@ -267,7 +267,7 @@ async fn verify_rollback(
                 .step(
                     context,
                     &ListUnitOrders {
-                        page_id: &fixture.page_entry.id,
+                        page_source_id: &fixture.page_source_entry.id,
                     },
                 )
                 .await?;
@@ -275,7 +275,7 @@ async fn verify_rollback(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                     orders: &orders,
                     edits: &[patch(
                         FIRST_ID,
@@ -291,7 +291,7 @@ async fn verify_rollback(
             repo.step(
                 context,
                 &ApplyUnitEdits {
-                    page_id: &fixture.page_entry.id,
+                    page_source_id: &fixture.page_source_entry.id,
                     orders: &orders,
                     edits: &[patch("missing", Patch::Clear, Patch::Skip)],
                 },
@@ -303,8 +303,8 @@ async fn verify_rollback(
     assert!(failed.is_err());
 
     let units = repo
-        .run(&ListUnitInfosByPageIds {
-            page_ids: &[&fixture.page_entry.id],
+        .run(&ListUnitInfosByPageSourceIds {
+            page_source_ids: &[&fixture.page_source_entry.id],
         })
         .await
         .unwrap();

@@ -43,7 +43,7 @@ pub struct ChapterInfoView {
     pub subtitle: String,
 
     /// Total number of image pages in the chapter.
-    pub page_count: usize,
+    pub page_source_count: usize,
     /// Total number of translation units across all pages.
     pub total_unit_count: usize,
     /// Number of units whose translation has been completed.
@@ -83,7 +83,7 @@ impl ChapterInfoView {
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,
-            page_count: model.page_count,
+            page_source_count: model.page_source_count,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,

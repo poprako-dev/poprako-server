@@ -5,11 +5,11 @@ use poprako_obj_dept::model::task::ObjTask;
 
 fn seed_user_with_avatar(mock: &Mock, is_avail: bool) {
     mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
+        user("user--00000000001", "qid-1", "Nick"),
+        credential("user--00000000001", "password"),
     );
 
-    seed_user_avatar(mock, "user-1", 2);
+    seed_user_avatar(mock, "user--00000000001", 2);
 
     mock.state
         .lock()
@@ -17,7 +17,7 @@ fn seed_user_with_avatar(mock: &Mock, is_avail: bool) {
         .objs
         .get_mut("user_avatar")
         .unwrap()
-        .get_mut("user-1")
+        .get_mut("user--00000000001")
         .unwrap()
         .meta
         .as_mut()
@@ -32,28 +32,38 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
 
     seed_user_with_avatar(&mock, true);
 
-    mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
-
-    mock.seed_member(member("member-2", "user-1", "Nick", "team-2"));
-
     mock.seed_member(member(
-        "member-team-1-admin",
-        "team-1-admin",
-        "Team 1 Admin",
-        "team-1",
+        "member--00000000001",
+        "user--00000000001",
+        "Nick",
+        "team--00000000001",
     ));
 
     mock.seed_member(member(
-        "member-team-2-admin",
-        "team-2-admin",
+        "member--00000000002",
+        "user--00000000001",
+        "Nick",
+        "team--00000000002",
+    ));
+
+    mock.seed_member(member(
+        "member--13944406377",
+        "team--67193363129",
+        "Team 1 Admin",
+        "team--00000000001",
+    ));
+
+    mock.seed_member(member(
+        "member--85994136460",
+        "team--19017062342",
         "Team 2 Admin",
-        "team-2",
+        "team--00000000002",
     ));
 
     user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
     )
     .await
     .unwrap();
@@ -70,7 +80,7 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
         snapshot
             .members
             .iter()
-            .all(|member_info| member_info.user_id != "user-1")
+            .all(|member_info| member_info.user_id != "user--00000000001")
     );
 
     assert!(snapshot.objs.get("user_avatar").unwrap().is_empty());
@@ -79,7 +89,7 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
         matches!(
             task,
             ObjTask::Delete { key }
-                if key.id == "user-1" && key.ver == 2
+                if key.id == "user--00000000001" && key.ver == 2
         )
     }));
 }
@@ -90,18 +100,23 @@ async fn delete_removes_memberships_from_tombstoned_teams() {
 
     seed_user_with_avatar(&mock, true);
 
-    mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "Nick",
+        "team--00000000001",
+    ));
 
     mock.state
         .lock()
         .unwrap()
         .deleted_team_ids
-        .insert("team-1".into());
+        .insert("team--00000000001".into());
 
     user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
     )
     .await
     .unwrap();
@@ -120,21 +135,31 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
 
     seed_user_with_avatar(&mock, true);
 
-    mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
-
-    mock.seed_member(member("member-2", "user-1", "Nick", "team-2"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "Nick",
+        "team--00000000001",
+    ));
 
     mock.seed_member(member(
-        "member-team-1-admin",
-        "team-1-admin",
+        "member--00000000002",
+        "user--00000000001",
+        "Nick",
+        "team--00000000002",
+    ));
+
+    mock.seed_member(member(
+        "member--13944406377",
+        "team--67193363129",
         "Team 1 Admin",
-        "team-1",
+        "team--00000000001",
     ));
 
     let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
     )
     .await
     .err()
@@ -157,7 +182,7 @@ async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
             .objs
             .get("user_avatar")
             .unwrap()
-            .contains_key("user-1")
+            .contains_key("user--00000000001")
     );
 }
 
@@ -170,8 +195,8 @@ async fn delete_pending_avatar_enqueues_exact_object_delete() {
 
     user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
     )
     .await
     .unwrap();
@@ -180,7 +205,7 @@ async fn delete_pending_avatar_enqueues_exact_object_delete() {
         matches!(
             task,
             ObjTask::Delete { key }
-                if key.id == "user-1" && key.ver == 2
+                if key.id == "user--00000000001" && key.ver == 2
         )
     }));
 }
@@ -191,14 +216,14 @@ async fn delete_rejects_non_owner_without_mutation() {
     let mock = Mock::new();
 
     mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
+        user("user--00000000001", "qid-1", "Nick"),
+        credential("user--00000000001", "password"),
     );
 
     let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-2"),
-        "user-1".into(),
+        token("user--00000000002"),
+        "user--00000000001".into(),
     )
     .await
     .err()
@@ -220,8 +245,8 @@ async fn delete_rolls_back_missing_user() {
 
     let error = user_delete_usecase::delete::<_, MockContext, _, _>(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
+        token("user--00000000001"),
+        "user--00000000001".into(),
     )
     .await
     .err()

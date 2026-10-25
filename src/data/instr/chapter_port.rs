@@ -112,7 +112,7 @@ impl From<TranslationFormat> for ChapterTranslationFormatInstr {
     }
 }
 
-/// Page-content strategy selected by a chapter translation import request.
+/// source page-content strategy selected by a chapter translation import request.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
@@ -157,7 +157,7 @@ pub struct ImportChapterTranslationInstr {
     /// The translation format (e.g., JSON, SRT).
     pub format: ChapterTranslationFormatInstr,
 
-    /// Page-content strategy used while applying the imported source.
+    /// source page-content strategy used while applying the imported source.
     pub mode: ChapterTranslationImportModeInstr,
 
     /// Raw translation content string.

@@ -6,7 +6,7 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::key::ObjGen;
+use poprako_obj_dept::key::{ObjGen, ObjKind as _};
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::model::url::ObjUrlSpec;
 use poprako_obj_dept::oper::{
@@ -50,7 +50,8 @@ use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShap
 use crate::usecase::chapter_port::perm as chapter_port_perm_usecase;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::value::artwork::{ArtworkHash, ChapterArtworkKey};
+use crate::value::artwork::{ArtworkExt, ArtworkHash, ChapterArtworkKey};
+use crate::value::business_id::ChapterId;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
@@ -110,8 +111,8 @@ where
 
             let artwork_spec = ObjSlotSpec {
                 dom: ChapterArtworkKey {
-                    chapter_id: chapter_info.id.clone(),
-                    ext: instr.ext,
+                    chapter_id: ChapterId::new(&chapter_info.id)?,
+                    ext: ArtworkExt::new(&instr.ext)?,
                 },
                 hash: instr.artwork_hash.as_bytes(),
                 content_type: "application/octet-stream",
@@ -125,7 +126,7 @@ where
                     .map_err(BaseError::from)?;
 
             let alloc = AllocChapterArtworkVal {
-                artwork_ver: artwork_alloc.key().ver,
+                artwork_ver: artwork_alloc.key().ver(),
                 slot: artwork_alloc.into_slot().map(|slot| {
                     ChapterArtworkUploadSlotView {
                         put_url: slot.url.to_string(),
@@ -188,10 +189,10 @@ where
 
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-            let artwork_key = ObjGen {
-                id: chapter_info.id.clone(),
-                ver: instr.artwork_ver,
-            };
+            let artwork_key = ObjGen::<ChapterArtwork>::new(
+                ChapterId::new(&chapter_info.id)?,
+                instr.artwork_ver,
+            );
 
             let marked = MarkObjUploaded::<ChapterArtwork>::new(&artwork_key)
                 .step_on(obj_dept, context)
@@ -328,14 +329,16 @@ where
     .run_on(repo)
     .await?;
 
+    let chapter_artwork_ids = ChapterArtwork::ids(&[chapter_info.id.as_str()])?;
+
     let artwork_metas =
-        ListObjMetas::<ChapterArtwork>::new(&[chapter_info.id.as_str()])
+        ListObjMetas::<ChapterArtwork>::new(&chapter_artwork_ids)
             .run_on(obj_dept)
             .await
             .map_err(BaseError::from)?;
 
     let artwork_meta = artwork_metas
-        .get(&chapter_info.id)
+        .get(chapter_info.id.as_str())
         .filter(|meta| meta.is_avail)
         .ok_or_else(|| {
             //
@@ -354,14 +357,14 @@ where
     .map_err(BaseError::from)?;
 
     let download_url = artwork_urls
-        .get(&chapter_info.id)
+        .get(chapter_info.id.as_str())
         .and_then(|urls| urls.origin_url.as_ref())
         .ok_or_else(|| {
             //
             unrecoverable_error! {
                 message: "available artwork has no original URL".into();
                 chapter_id = %chapter_info.id,
-                artwork_ver = artwork_meta.key.ver,
+                artwork_ver = artwork_meta.key.ver(),
                 "available artwork has no original URL",
             }
         })?;
@@ -377,9 +380,9 @@ where
     })?;
 
     let artwork_export = ExportChapterArtworkVal {
-        artwork_ver: artwork_meta.key.ver,
+        artwork_ver: artwork_meta.key.ver(),
         artwork_hash: ArtworkHash::new(hash_bytes),
-        ext: artwork_meta.ext.clone(),
+        ext: artwork_meta.ext.as_str().to_owned(),
         download_url: download_url.to_string(),
     };
 
@@ -387,7 +390,7 @@ where
         &chapter_info.id,
         Some(&token.user_id),
         ChapterWorkflowRecordPayload::ArtworkExported {
-            artwork_ver: artwork_meta.key.ver,
+            artwork_ver: artwork_meta.key.ver(),
         },
     );
 

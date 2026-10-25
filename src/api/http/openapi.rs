@@ -40,13 +40,13 @@ use crate::data::instr::member::{
 use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, UpdateMemberInvitationRolesInstr,
 };
-use crate::data::instr::page::{
-    AllocChapterPagesInstr, AllocPageImageInstr, MarkPageImageUploadedInstr,
-    PageImageInstr,
-};
 use crate::data::instr::page_artwork::{
     AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
     MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
+};
+use crate::data::instr::page_source::{
+    AllocChapterPageSourcesInstr, AllocPageSourceImageInstr,
+    MarkPageSourceImageUploadedInstr, PageSourceImageInstr,
 };
 use crate::data::instr::system_mail::MarkSystemMailReadInstr;
 use crate::data::instr::team::{
@@ -81,14 +81,15 @@ use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::val::issue::ImportChapterIssuesVal;
+use crate::data::val::issue_edit::{CreatedIssueIdVal, SavePageIssuesVal};
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::val::page::{
-    AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
-    PageUnitFlaggedStatsVal,
-};
 use crate::data::val::page_artwork::{
     AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
+};
+use crate::data::val::page_source::{
+    AllocChapterPageSourcesVal, AllocatedPageSourceVal,
+    PageSourceUnitDiffStatsVal, PageSourceUnitFlaggedStatsVal,
 };
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
@@ -96,7 +97,7 @@ use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::val::termbase_port::{
     AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
 };
-use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::val::unit::ListPageSourceUnitInfosVal;
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::announcement::AnnouncementInfoView;
@@ -115,9 +116,9 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::issue::{IssueInfoView, IssueRectView};
 use crate::data::view::member::MemberInfoView;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
-use crate::data::view::page::PageInfoView;
 use crate::data::view::page_artwork::PageArtworkInfoView;
-use crate::data::view::page_port::PageTranslationPortView;
+use crate::data::view::page_source::PageSourceInfoView;
+use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::data::view::system_mail::SystemMailInfoView;
 use crate::data::view::team::TeamInfoView;
 use crate::data::view::term::TermInfoView;
@@ -201,14 +202,14 @@ use crate::value::unit::UnitTextPart;
         handler::issue_edit::save_infos,
         handler::issue_edit::list_variant_infos,
         handler::issue_edit::rename_variant,
-        handler::page::list_infos,
-        handler::page::list_unit_diff_stats,
-        handler::page::list_unit_flagged_stats,
-        handler::page::get_info,
-        handler::page::delete,
-        handler::page::alloc_chapter_pages,
-        handler::page::alloc_image,
-        handler::page::mark_image_uploaded,
+        handler::page_source::list_infos,
+        handler::page_source::list_unit_diff_stats,
+        handler::page_source::list_unit_flagged_stats,
+        handler::page_source::get_info,
+        handler::page_source::delete,
+        handler::page_source::alloc_chapter_page_sources,
+        handler::page_source::alloc_image,
+        handler::page_source::mark_image_uploaded,
         handler::unit::list_infos,
         handler::unit::search_infos,
         handler::unit::save_infos,
@@ -258,7 +259,9 @@ use crate::value::unit::UnitTextPart;
     ),
     components(schemas(
         ImportChapterIssuesInstr, PageIssuesInstr, IssueInstr, IssueRectInstr,
-        ImportChapterIssuesVal, IssueInfoView, IssueRectView,
+        ImportChapterIssuesVal,
+        SavePageIssuesVal,
+        CreatedIssueIdVal, IssueInfoView, IssueRectView,
         AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
         MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
         AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
@@ -308,23 +311,23 @@ use crate::value::unit::UnitTextPart;
         ChapterStageOperInstr,
         UpdateChapterStageInstr,
         ChapterTranslationPortView,
-        PageTranslationPortView,
+        PageSourceTranslationPortView,
         UnitTranslationPortView,
         ChapterTranslationFormatInstr,
         ChapterTranslationImportModeInstr,
         ImportChapterTranslationInstr,
         ImportChapterTranslationVal,
-        PageInfoView,
-        PageImageInstr,
+        PageSourceInfoView,
+        PageSourceImageInstr,
         ImageUploadSlotView,
-        AllocChapterPagesInstr,
-        AllocChapterPagesVal,
-        AllocPageImageInstr,
-        AllocatedPageVal,
-        MarkPageImageUploadedInstr,
+        AllocChapterPageSourcesInstr,
+        AllocChapterPageSourcesVal,
+        AllocPageSourceImageInstr,
+        AllocatedPageSourceVal,
+        MarkPageSourceImageUploadedInstr,
         UnitInfoView,
-        ListPageUnitInfosVal,
-        PageUnitDiffStatsVal, PageUnitFlaggedStatsVal,
+        ListPageSourceUnitInfosVal,
+        PageSourceUnitDiffStatsVal, PageSourceUnitFlaggedStatsVal,
         UnitEditInstr,
         UnitCoordInstr,
         UnitTranslationInstr,
@@ -398,8 +401,9 @@ use crate::value::unit::UnitTextPart;
         (name = "page-artworks",
             description = "Composite artwork page endpoints"),
         (name = "issues", description = "Composite artwork review endpoints"),
-        (name = "pages", description = "Page management endpoints"),
-        (name = "units", description = "Page unit endpoints"),
+        (name = "page-sources",
+            description = "Source page management endpoints"),
+        (name = "units", description = "Source page unit endpoints"),
         (name = "members", description = "Member management endpoints"),
         (
             name = "member-invitations",
