@@ -28,7 +28,8 @@ use crate::model::read::proj::comic_archive::{
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseRest, ExpectedVariant};
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic_archive::artwork::{
     ArchivedIssuePayload, ArchivedIssueRectPayload, ArchivedPageArtworkPayload,
@@ -37,7 +38,7 @@ use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordD
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload,
     ArchivedChapterWorkflowRecordPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
+    ArchivedPageSourcePayload, ArchivedUnitPayload, ArchivedUserPayload,
     ArchivedWorksetPayload,
 };
 
@@ -114,7 +115,7 @@ fn build_entry(
     archived_at: OffsetDateTime,
 ) -> BaseRest<ComicArchiveEntry> {
     //
-    let archived_comic_id = next_snowflake_id();
+    let archived_comic_id = next_business_id(BusinessIdKind::ComicArchive);
 
     let archived_payload = {
         //
@@ -150,7 +151,7 @@ fn build_entry(
         created_at: archived_at,
     };
 
-    let (mut source_chapter_ids, mut source_page_ids) =
+    let (mut source_chapter_ids, mut source_page_source_ids) =
         (Vec::new(), Vec::new());
 
     let mut source_page_artwork_ids = Vec::new();
@@ -166,18 +167,17 @@ fn build_entry(
                 .map(|snapshot| snapshot.page_artwork_info.id),
         );
 
-        source_page_ids.extend(
-            chapter_snapshot
-                .page_snapshots
-                .into_iter()
-                .map(|page_snapshot| page_snapshot.page_info.id),
+        source_page_source_ids.extend(
+            chapter_snapshot.page_source_snapshots.into_iter().map(
+                |page_source_snapshot| page_source_snapshot.page_source_info.id,
+            ),
         );
     }
 
     accept!(ComicArchiveEntry {
         record,
         source_chapter_ids,
-        source_page_ids,
+        source_page_source_ids,
         source_page_artwork_ids,
     })
 }
@@ -226,26 +226,26 @@ fn build_comic_payload(
 }
 
 // Convert page and unit data while intentionally excluding image metadata.
-fn build_page_payloads(
+fn build_page_source_payloads(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
-) -> Vec<ArchivedPagePayload<'_>> {
+) -> Vec<ArchivedPageSourcePayload<'_>> {
     //
     chapter_snapshot
-        .page_snapshots
+        .page_source_snapshots
         .iter()
-        .map(|page_snapshot| {
+        .map(|page_source_snapshot| {
             //
-            let page_info = &page_snapshot.page_info;
+            let page_source_info = &page_source_snapshot.page_source_info;
 
-            ArchivedPagePayload {
-                source_page_id: &page_info.id,
-                index: page_info.index,
-                total_unit_count: page_info.total_unit_count,
-                translated_unit_count: page_info.translated_unit_count,
-                proofread_unit_count: page_info.proofread_unit_count,
-                created_at: page_info.created_at.to_unix_milli(),
-                updated_at: page_info.updated_at.to_unix_milli(),
-                units: page_snapshot
+            ArchivedPageSourcePayload {
+                source_page_source_id: &page_source_info.id,
+                index: page_source_info.index,
+                total_unit_count: page_source_info.total_unit_count,
+                translated_unit_count: page_source_info.translated_unit_count,
+                proofread_unit_count: page_source_info.proofread_unit_count,
+                created_at: page_source_info.created_at.to_unix_milli(),
+                updated_at: page_source_info.updated_at.to_unix_milli(),
+                units: page_source_snapshot
                     .unit_infos
                     .iter()
                     .enumerate()
@@ -326,7 +326,7 @@ fn build_chapter_payload(
         is_pinned: chapter_info.is_pinned,
         index: chapter_info.index,
         subtitle: &chapter_info.subtitle,
-        page_count: chapter_info.page_count,
+        page_source_count: chapter_info.page_source_count,
         total_unit_count: chapter_info.total_unit_count,
         translated_unit_count: chapter_info.translated_unit_count,
         proofread_unit_count: chapter_info.proofread_unit_count,
@@ -384,6 +384,6 @@ fn build_chapter_payload(
                 }
             })
             .collect(),
-        pages: build_page_payloads(chapter_snapshot),
+        pages: build_page_source_payloads(chapter_snapshot),
     })
 }

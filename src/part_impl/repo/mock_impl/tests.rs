@@ -10,11 +10,16 @@ async fn run_reads_seeded_user() {
     let mock = Mock::new();
 
     mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
+        user("user--00000000001", "qid-1", "Nick"),
+        credential("user--00000000001", "password"),
     );
 
-    let user_info = GetUserInfo { id: "user-1" }.run_on(&mock).await.unwrap();
+    let user_info = GetUserInfo {
+        id: "user--00000000001",
+    }
+    .run_on(&mock)
+    .await
+    .unwrap();
 
     assert_eq!(user_info.nickname, "Nick");
 }
@@ -23,7 +28,7 @@ async fn run_reads_seeded_user() {
 async fn coord_rolls_back_state() {
     let mock = Mock::new();
 
-    let seeded = user("user-1", "qid-1", "Nick");
+    let seeded = user("user--00000000001", "qid-1", "Nick");
 
     let rest = mock
         .coord(async move |context| {

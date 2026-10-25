@@ -28,8 +28,9 @@ use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
-use crate::usecase::page::list as page_list_usecase;
-use crate::util::next_snowflake_id;
+use crate::usecase::page_source::list as page_list_usecase;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 
 /// Atomically replaces all issues without changing workflow or Unit counters.
 #[instrument(
@@ -106,7 +107,7 @@ where
                 for (index, issue) in page.issues.into_iter().enumerate() {
                     //
                     let entry = IssueEntry {
-                        id: next_snowflake_id(),
+                        id: next_business_id(BusinessIdKind::Issue),
                         page_artwork_id: page.page_artwork_id.clone(),
                         index,
                         variant: issue.variant,

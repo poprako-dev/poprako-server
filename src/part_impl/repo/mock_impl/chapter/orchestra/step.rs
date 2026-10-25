@@ -7,12 +7,12 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfosExcluded, LockChapters,
-    SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
+    SetChapterConfirmedArtworkVer, SetChapterPageSourceCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
-    create_chapter, get_chapter_by_id, get_unit_edit_scope_by_page_id,
+    create_chapter, get_chapter_by_id, get_unit_edit_scope_by_page_source_id,
     list_infos,
 };
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
@@ -66,7 +66,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .chapters
             .get(chapter_index)
             .unwrap()
-            .page_count
+            .page_source_count
             == 0
         {
             return accept!(false);
@@ -181,13 +181,17 @@ impl Step<GetChapterUnitEditScopeExcluded<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Loads the minimal Chapter scope owning the requested Page.
+    // Loads the minimal Chapter scope owning the requested PageSource.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetChapterUnitEditScopeExcluded<'_>,
     ) -> BaseRest<ChapterUnitEditScope> {
-        get_unit_edit_scope_by_page_id(&context.state, oper.page_id)
+        //
+        get_unit_edit_scope_by_page_source_id(
+            &context.state,
+            oper.page_source_id,
+        )
     }
 }
 
@@ -346,7 +350,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<SetChapterPageCountMetrics<'a>, MockContext> for Mock {
+impl<'a> Step<SetChapterPageSourceCountMetrics<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -358,7 +362,7 @@ impl<'a> Step<SetChapterPageCountMetrics<'a>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &SetChapterPageCountMetrics<'a>,
+        oper: &SetChapterPageSourceCountMetrics<'a>,
     ) -> BaseRest<()> {
         //
         if context.state.deleted_chapter_ids.contains(oper.id) {
@@ -374,7 +378,7 @@ impl<'a> Step<SetChapterPageCountMetrics<'a>, MockContext> for Mock {
             .find(|chapter_info| chapter_info.id == oper.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        chapter_info.page_count = oper.page_count;
+        chapter_info.page_source_count = oper.page_source_count;
 
         chapter_info.total_unit_count = oper.total_unit_count;
 

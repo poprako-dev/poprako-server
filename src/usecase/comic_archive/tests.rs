@@ -20,7 +20,9 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::{PageInfo, PageRawIdentInfo};
+use crate::model::read::proj::page_source::{
+    PageSourceInfo, PageSourceRawIdentInfo,
+};
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
@@ -33,7 +35,11 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
-// Seed active descendants that archive must capture and remove.
+const USER_ID: &str = "user--00000000001";
+const COMIC_ID: &str = "comic--00000000001";
+const CHAPTER_ID: &str = "chapter--00000000001";
+const SOURCE_ID: &str = "page_source--00000000001";
+
 fn seed_archive_descendants(
     mock: &Mock,
     archived_at: OffsetDateTime,
@@ -41,27 +47,27 @@ fn seed_archive_descendants(
 ) {
     mock.seed_chapter(ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".into(),
-        comic_id: "comic-1".into(),
+        id: CHAPTER_ID.into(),
+        comic_id: COMIC_ID.into(),
         comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "chapter subtitle".into(),
-        page_count: 1,
+        page_source_count: 1,
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 1,
         stages: stage_mask,
-        creator_id: "user-1".into(),
+        creator_id: USER_ID.into(),
         creator: None,
         created_at: archived_at,
         updated_at: archived_at,
     });
 
     mock.seed_assignment(AssignmentInfo {
-        id: "assignment-1".into(),
-        chapter_id: "chapter-1".into(),
-        user_id: "user-1".into(),
+        id: "assignment--00000000001".into(),
+        chapter_id: CHAPTER_ID.into(),
+        user_id: USER_ID.into(),
         user: None,
         chapter: None,
         roles: RoleMask::from(RoleField::TRANSLATOR),
@@ -71,8 +77,8 @@ fn seed_archive_descendants(
 
     mock.seed_assignment_invitation(AssignmentInvitationInfo {
         id: "invitation-1".into(),
-        chapter_id: "chapter-1".into(),
-        inviter_id: "user-1".into(),
+        chapter_id: CHAPTER_ID.into(),
+        inviter_id: USER_ID.into(),
         invitee_qid: "qid-invitee".into(),
         code: "invite-code".into(),
         is_pending: true,
@@ -81,19 +87,19 @@ fn seed_archive_descendants(
         updated_at: archived_at,
     });
 
-    mock.state.lock().unwrap().page_raw_idents.insert(
-        "page-1".into(),
-        PageRawIdentInfo {
-            page_id: "page-1".into(),
+    mock.state.lock().unwrap().page_source_raw_idents.insert(
+        SOURCE_ID.into(),
+        PageSourceRawIdentInfo {
+            page_source_id: SOURCE_ID.into(),
             raw_ident: "source.png".into(),
             created_at: archived_at,
             updated_at: archived_at,
         },
     );
 
-    mock.seed_page(PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    mock.seed_page(PageSourceInfo {
+        id: SOURCE_ID.into(),
+        chapter_id: CHAPTER_ID.into(),
         index: 0,
         total_unit_count: 1,
         translated_unit_count: 1,
@@ -103,8 +109,8 @@ fn seed_archive_descendants(
     });
 
     mock.seed_unit(UnitInfo {
-        id: "unit-1".into(),
-        page_id: "page-1".into(),
+        id: "unit--00000000001".into(),
+        page_source_id: SOURCE_ID.into(),
         next_id: None,
         is_bubble: true,
         is_flagged: true,
@@ -116,9 +122,9 @@ fn seed_archive_descendants(
         typography_note: None,
         translation_note: None,
         translated_text: Some("translated".into()),
-        last_translator_id: Some("user-1".into()),
+        last_translator_id: Some(USER_ID.into()),
         proofread_text: Some("proofread".into()),
-        last_proofreader_id: Some("user-1".into()),
+        last_proofreader_id: Some(USER_ID.into()),
         hidden_at: None,
         created_at: archived_at,
         updated_at: archived_at,
@@ -126,7 +132,6 @@ fn seed_archive_descendants(
 }
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
-    //
     let archived_at = OffsetDateTime::now_utc();
 
     let stage_mask = StageMask::try_from(0)
@@ -136,7 +141,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
 
     mock.seed_user(
         UserInfo {
-            id: "user-1".into(),
+            id: USER_ID.into(),
             qid: "qid-user-1".into(),
             nickname: "archiver".into(),
             is_sadmin: false,
@@ -145,14 +150,14 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
             updated_at: archived_at,
         },
         UserCredential {
-            user_id: "user-1".into(),
+            user_id: USER_ID.into(),
             password_hash: "hashed".into(),
         },
     );
 
     mock.seed_workset(WorksetInfo {
-        id: "workset-1".into(),
-        team_id: "team-1".into(),
+        id: "workset--00000000001".into(),
+        team_id: "team--00000000001".into(),
         index: 4,
         name: "workset".into(),
         description: Some("archive scope".into()),
@@ -162,25 +167,25 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     });
 
     mock.seed_member(MemberInfo {
-        id: "member-1".into(),
-        user_id: "user-1".into(),
+        id: "member--00000000001".into(),
+        user_id: USER_ID.into(),
         user_nickname: "archiver".into(),
         user_last_active_at: archived_at,
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles: member_roles,
     });
 
     mock.seed_comic(ComicInfo {
-        id: "comic-1".into(),
-        workset_id: "workset-1".into(),
+        id: COMIC_ID.into(),
+        workset_id: "workset--00000000001".into(),
         index: 2,
         title: "comic title".into(),
         author: "comic author".into(),
         description: Some("comic description".into()),
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: USER_ID.into(),
         workset: None,
         team: None,
         creator: None,
@@ -195,27 +200,29 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
 
 fn token() -> UserToken {
     UserToken {
-        user_id: "user-1".into(),
+        user_id: USER_ID.into(),
     }
 }
 
 fn seed_archive_objs(mock: &Mock) -> (ObjKey, ObjKey) {
     let cover_key = ObjKey {
-        id: "comic-1".into(),
+        id: COMIC_ID.into(),
         ver: 5,
-        image: "comic_cover/comic-1-5.png".into(),
+        image: "comic_cover/comic--00000000001/5.png".into(),
     };
 
-    let page_key = ObjKey {
-        id: "page-1".into(),
+    let page_source_key = ObjKey {
+        id: SOURCE_ID.into(),
         ver: 4,
-        image: "page/chapter_chapter-1/page-1-4.webp".into(),
+        image:
+            "page_source/chapter--00000000001/page_source--00000000001/4.webp"
+                .into(),
     };
 
     let mut state = mock.state.lock().unwrap();
 
     state.objs.entry("comic_cover").or_default().insert(
-        "comic-1".into(),
+        COMIC_ID.into(),
         MockObjRecord {
             version: cover_key.ver,
             meta: Some(ObjMeta {
@@ -227,12 +234,12 @@ fn seed_archive_objs(mock: &Mock) -> (ObjKey, ObjKey) {
         },
     );
 
-    state.objs.entry("page_image").or_default().insert(
-        "page-1".into(),
+    state.objs.entry("page_source_image").or_default().insert(
+        SOURCE_ID.into(),
         MockObjRecord {
-            version: page_key.ver,
+            version: page_source_key.ver,
             meta: Some(ObjMeta {
-                key: page_key.clone(),
+                key: page_source_key.clone(),
                 is_avail: false,
                 hash: vec![4; 32],
                 ext: "webp".into(),
@@ -240,7 +247,7 @@ fn seed_archive_objs(mock: &Mock) -> (ObjKey, ObjKey) {
         },
     );
 
-    let rest = (cover_key, page_key);
+    let rest = (cover_key, page_source_key);
 
     drop(state);
 
@@ -253,75 +260,73 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
-    let (cover_key, page_key) = seed_archive_objs(&mock);
+    let (cover_key, page_source_key) = seed_archive_objs(&mock);
 
     let archive_comic_val =
-        archive((&mock, &mock, &mock), token(), "comic-1".into())
+        archive((&mock, &mock, &mock), token(), COMIC_ID.into())
             .await
             .unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert_ne!(archive_comic_val.archived_id, "comic-1");
+    assert_ne!(archive_comic_val.archived_id, COMIC_ID);
 
     assert_eq!(snapshot.comics.len(), 1);
-    assert_eq!(snapshot.comics.first().unwrap().id, "comic-1");
+    assert_eq!(snapshot.comics.first().unwrap().id, COMIC_ID);
     assert!(snapshot.comics.first().unwrap().archived_at.is_some());
 
     assert!(snapshot.chapters.is_empty());
     assert!(snapshot.assignments.is_empty());
     assert!(snapshot.assignment_invitations.is_empty());
     assert!(snapshot.pages.is_empty());
-    assert!(snapshot.page_raw_idents.is_empty());
+    assert!(snapshot.page_source_raw_idents.is_empty());
     assert!(snapshot.units.is_empty());
 
     assert_eq!(snapshot.worksets.first().unwrap().comic_count, 7);
 
     assert_eq!(snapshot.comic_archives.len(), 1);
-    assert_eq!(snapshot.comic_archives.first().unwrap().team_id, "team-1");
+    assert_eq!(
+        snapshot.comic_archives.first().unwrap().team_id,
+        "team--00000000001"
+    );
     assert_eq!(
         snapshot.comic_archives.first().unwrap().source_comic_id,
-        "comic-1"
+        COMIC_ID
     );
     assert_eq!(
         snapshot.comic_archives.first().unwrap().archiver_id,
-        "user-1"
+        USER_ID
     );
 
     assert_archive_payload(
         &snapshot.comic_archives.first().unwrap().archived_payload,
     );
 
-    assert!(
-        snapshot
-            .objs
-            .get("comic_cover")
-            .unwrap()
-            .get("comic-1")
-            .unwrap()
-            .meta
-            .is_none()
-    );
-    assert!(snapshot.objs.get("page_image").unwrap().is_empty());
+    let covers = snapshot.objs.get("comic_cover").unwrap();
+
+    assert!(covers.get(COMIC_ID).unwrap().meta.is_none());
+    assert!(snapshot.objs.get("page_source_image").unwrap().is_empty());
     assert_eq!(snapshot.obj_tasks.len(), 2);
     assert!(snapshot.obj_tasks.iter().any(|(topic, task)| {
         *topic == "comic_cover"
             && matches!(task, ObjTask::Delete { key } if key == &cover_key)
     }));
     assert!(snapshot.obj_tasks.iter().any(|(topic, task)| {
-        *topic == "page_image"
-            && matches!(task, ObjTask::Delete { key } if key == &page_key)
+        *topic == "page_source_image"
+            && matches!(
+                task,
+                ObjTask::Delete { key } if key == &page_source_key
+            )
     }));
 }
 
 #[tokio::test]
 async fn export_returns_stored_strings_grouped_by_month() {
-    //
     let mock = Mock::new();
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
-    archive((&mock, &mock, &mock), token(), "comic-1".into())
+    archive((&mock, &mock, &mock), token(), COMIC_ID.into())
         .await
         .unwrap();
 
@@ -332,7 +337,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
     let val = export(
         (&mock,),
         token(),
-        "team-1".into(),
+        "team--00000000001".into(),
         ExportComicArchivesInstr {
             months: vec![month.clone()],
         },
@@ -349,15 +354,14 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
 #[tokio::test]
 async fn archive_rejects_non_admin_without_writing_or_deleting() {
-    //
     let mock = Mock::new();
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::TRANSLATOR));
 
-    let (cover_key, page_key) = seed_archive_objs(&mock);
+    let (cover_key, page_source_key) = seed_archive_objs(&mock);
 
     let archive_result =
-        archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
+        archive((&mock, &mock, &mock), token(), COMIC_ID.into()).await;
 
     assert_expected_variant(
         &archive_result.unwrap_err(),
@@ -375,7 +379,7 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get(COMIC_ID)
             .unwrap()
             .meta
             .as_ref()
@@ -386,15 +390,15 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
     assert_eq!(
         snapshot
             .objs
-            .get("page_image")
+            .get("page_source_image")
             .unwrap()
-            .get("page-1")
+            .get(SOURCE_ID)
             .unwrap()
             .meta
             .as_ref()
             .unwrap()
             .key,
-        page_key
+        page_source_key
     );
     assert!(snapshot.obj_tasks.is_empty());
 }
@@ -405,16 +409,16 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
-    let (cover_key, page_key) = seed_archive_objs(&mock);
+    let (cover_key, page_source_key) = seed_archive_objs(&mock);
 
     mock.state
         .lock()
         .unwrap()
         .deleted_comic_ids
-        .insert("comic-1".into());
+        .insert(COMIC_ID.into());
 
     let archive_result =
-        archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
+        archive((&mock, &mock, &mock), token(), COMIC_ID.into()).await;
 
     assert_expected_variant(
         &archive_result.unwrap_err(),
@@ -426,14 +430,14 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
     assert!(snapshot.comic_archives.is_empty());
     assert_eq!(snapshot.chapters.len(), 1);
     assert_eq!(snapshot.pages.len(), 1);
-    assert_eq!(snapshot.page_raw_idents.len(), 1);
+    assert_eq!(snapshot.page_source_raw_idents.len(), 1);
 
     assert_eq!(
         snapshot
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get(COMIC_ID)
             .unwrap()
             .meta
             .as_ref()
@@ -444,30 +448,29 @@ async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
     assert_eq!(
         snapshot
             .objs
-            .get("page_image")
+            .get("page_source_image")
             .unwrap()
-            .get("page-1")
+            .get(SOURCE_ID)
             .unwrap()
             .meta
             .as_ref()
             .unwrap()
             .key,
-        page_key
+        page_source_key
     );
     assert!(snapshot.obj_tasks.is_empty());
 }
 
 #[tokio::test]
 async fn archive_rolls_back_when_archive_persistence_fails() {
-    //
     let mock = Mock::new().with_archive_commit_failure();
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
-    let (cover_key, page_key) = seed_archive_objs(&mock);
+    let (cover_key, page_source_key) = seed_archive_objs(&mock);
 
     let archive_result =
-        archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
+        archive((&mock, &mock, &mock), token(), COMIC_ID.into()).await;
 
     assert!(matches!(
         archive_result,
@@ -497,7 +500,7 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get(COMIC_ID)
             .unwrap()
             .meta
             .as_ref()
@@ -508,15 +511,15 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
     assert_eq!(
         snapshot
             .objs
-            .get("page_image")
+            .get("page_source_image")
             .unwrap()
-            .get("page-1")
+            .get(SOURCE_ID)
             .unwrap()
             .meta
             .as_ref()
             .unwrap()
             .key,
-        page_key
+        page_source_key
     );
     assert!(snapshot.obj_tasks.is_empty());
 }
@@ -537,7 +540,7 @@ fn assert_archive_payload(payload: &str) {
 
     assert_eq!(
         (*archived_comic_payload.get("source_comic_id").unwrap()),
-        "comic-1"
+        COMIC_ID
     );
     assert_eq!(
         (*archived_comic_payload
@@ -545,20 +548,18 @@ fn assert_archive_payload(payload: &str) {
             .unwrap()
             .get("id")
             .unwrap()),
-        "workset-1"
+        "workset--00000000001"
     );
-    assert_eq!(
-        archived_comic_payload
-            .get("chapters")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .len(),
-        1
-    );
+    let chapters = archived_comic_payload
+        .get("chapters")
+        .unwrap()
+        .as_array()
+        .unwrap();
+
+    assert_eq!(chapters.len(), 1);
     assert_eq!(
         (*archived_chapter.get("source_chapter_id").unwrap()),
-        "chapter-1"
+        CHAPTER_ID
     );
     assert_eq!(
         archived_chapter
@@ -581,17 +582,14 @@ fn assert_archive_payload(payload: &str) {
             .unwrap()),
         "archiver"
     );
+    let pages = archived_chapter.get("pages").unwrap().as_array().unwrap();
+
+    assert_eq!(pages.len(), 1);
+    assert_eq!((*archived_page.get("source_page_id").unwrap()), SOURCE_ID);
     assert_eq!(
-        archived_chapter
-            .get("pages")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .len(),
-        1
+        (*archived_unit.get("source_unit_id").unwrap()),
+        "unit--00000000001"
     );
-    assert_eq!((*archived_page.get("source_page_id").unwrap()), "page-1");
-    assert_eq!((*archived_unit.get("source_unit_id").unwrap()), "unit-1");
 
     assert_eq!((*archived_unit.get("is_flagged").unwrap()), true);
 }

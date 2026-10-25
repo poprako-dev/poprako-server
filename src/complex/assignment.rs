@@ -214,12 +214,13 @@ pub mod perm {
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::write::assignment::AssignmentRoleRepl;
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::role::RoleMask;
 
 /// Generate a unique assignment identifier backed by a snowflake value.
 pub fn gen_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::Assignment)
 }
 
 /// Merge new roles into an existing assignment.

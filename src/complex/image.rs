@@ -9,46 +9,50 @@ use poprako_util::i18n::trl_kv;
 
 use crate::config::image::ImageConfig;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::business_id::BusinessIdKind;
 use crate::value::image::{
-    ComicCoverKey, ImageExt, ImageKind, PageImageKey, TeamAvatarKey,
+    ComicCoverKey, ImageExt, ImageKind, PageSourceImageKey, TeamAvatarKey,
     UserAvatarKey,
 };
 
 // Number of bytes in one mebibyte.
 const BYTES_PER_MIB: u64 = 1024 * 1024;
 
-/// Builds the canonical page-image physical key.
-pub fn page_key(value: &PageImageKey, ver: u32) -> String {
+/// Builds the canonical source image key from complete business identities.
+pub fn page_source_key(value: &PageSourceImageKey, ver: u32) -> String {
     //
     format!(
-        "page/chapter_{}/{}-{}.{}",
+        "page_source/{}/{}/{}.{}",
         value.chapter_id,
-        value.page_id,
+        value.page_source_id,
         ver,
-        value.ext.suffix(),
+        value.ext.suffix()
     )
 }
 
-/// Parses one canonical page-image physical key.
-pub fn parse_page_key(value: &str) -> Option<(PageImageKey, u32)> {
+/// Parses a source image key with exact domain and generation validation.
+pub fn parse_page_source_key(value: &str) -> Option<(PageSourceImageKey, u32)> {
     //
-    let path = value.strip_prefix("page/chapter_")?;
+    let path = value.strip_prefix("page_source/")?;
 
-    let (chapter_id, filename) = path.split_once('/')?;
+    let (chapter_id, path) = path.split_once('/')?;
 
-    let (stem, ext) = filename.rsplit_once('.')?;
+    let (page_source_id, gen_no) = path.split_once('/')?;
 
-    let (page_id, ver) = stem.rsplit_once('-')?;
+    let (ver, ext) = gen_no.split_once('.')?;
 
-    let image_key = PageImageKey {
-        chapter_id: chapter_id.to_owned(),
-        page_id: page_id.to_owned(),
+    let dom = PageSourceImageKey {
+        chapter_id: chapter_id.into(),
+        page_source_id: page_source_id.into(),
         ext: ImageExt::parse(ext)?,
     };
 
     let ver = ver.parse().ok()?;
 
-    (page_key(&image_key, ver) == value).then_some((image_key, ver))
+    (BusinessIdKind::Chapter.is_valid_id(chapter_id)
+        && BusinessIdKind::PageSource.is_valid_id(page_source_id)
+        && page_source_key(&dom, ver) == value)
+        .then_some((dom, ver))
 }
 
 /// Builds the canonical user-avatar physical key.
@@ -140,7 +144,7 @@ pub fn ensure_byte_length(
 
 // Builds one canonical non-page physical key.
 fn flat_key(prefix: &str, id: &str, ver: u32, ext: ImageExt) -> String {
-    format!("{}/{}-{}.{}", prefix, id, ver, ext.suffix())
+    format!("{}/{}/{}.{}", prefix, id, ver, ext.suffix())
 }
 
 // Parses one canonical non-page physical key.
@@ -149,11 +153,26 @@ fn parse_flat_key(
     value: &str,
 ) -> Option<(String, ImageExt, u32)> {
     //
-    let filename = value.strip_prefix(prefix)?.strip_prefix('/')?;
+    let path = value.strip_prefix(prefix)?.strip_prefix('/')?;
 
-    let (stem, ext) = filename.rsplit_once('.')?;
+    let (id, filename) = path.split_once('/')?;
 
-    let (id, ver) = stem.rsplit_once('-')?;
+    let (ver, ext) = filename.split_once('.')?;
+
+    let kind = match prefix {
+        //
+        "user_avatar" => BusinessIdKind::User,
+
+        "team_avatar" => BusinessIdKind::Team,
+
+        "comic_cover" => BusinessIdKind::Comic,
+
+        _ => return None,
+    };
+
+    if !kind.is_valid_id(id) {
+        return None;
+    }
 
     let ext = ImageExt::parse(ext)?;
 

@@ -48,7 +48,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .merge(v1::v1_comic_router())
         .merge(v1::v1_comic_archive_router())
         .merge(v1::v1_chapter_router())
-        .merge(v1::v1_page_router())
+        .merge(v1::v1_page_source_router())
         .merge(v1::v1_unit_router())
         .merge(v1::v1_assignment_router())
         .merge(v1::v1_assignment_invitation_router())

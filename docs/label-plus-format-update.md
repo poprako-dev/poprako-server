@@ -3,7 +3,7 @@
 ## PopRaKo JSON
 
 The PopRaKo export document is also the PopRaKo import document. The shared
-DTOs are `ChapterTranslationPortView`, `PageTranslationPortView`, and
+DTOs are `ChapterTranslationPortView`, `PageSourceTranslationPortView`, and
 `UnitTranslationPortView`; their serialized field names are unchanged from
 the export contract.
 
@@ -13,7 +13,7 @@ titles, subtitles, and original translator/proofreader IDs are export
 metadata. Imported units receive new IDs and are assigned to the importing
 user subject to that user's translator and proofreader roles.
 
-Page and unit indexes are zero-based. Page indexes must be complete and
+PageSource and unit indexes are zero-based. PageSource indexes must be complete and
 unique, unit indexes must be non-negative and unique within a page, coordinates
 must be finite, the document may contain at most 200 pages, and each page may
 contain at most 100 units. The old project shape using `author`, `title`,
@@ -24,7 +24,7 @@ contain at most 100 units. The old project shape using `author`, `title`,
 
 LabelPlus import accepts one leading UTF-8 BOM, LF or CRLF line endings,
 official and group-generated preamble spacing, and trailing spaces or tabs on
-structure lines. Translation text is kept without an overall trim. Page files
+structure lines. Translation text is kept without an overall trim. PageSource files
 are matched by page order; filenames are not matched to stored page images.
 Export uses three-digit filenames from `000` through `199` by default.
 Both translation export endpoints accept `with_raw_ident=true` to use each
@@ -34,7 +34,7 @@ extension (or `jpg` when object metadata is absent). Original names are used
 verbatim, including extension and case; duplicate names are allowed. This
 option does not change the PopRaKo document, page ordering, or import matching.
 When requested, the export response also includes `raw_idents`, an ordered
-array of `{ page_id, raw_ident }` mappings for Pages with stored original
+array of `{ page_source_id, raw_ident }` mappings for PageSources with stored original
 filenames. The field is `null` when `with_raw_ident` is false.
 
 Chapter page allocation accepts `raw_ident` on each `pages` item, and single
@@ -64,6 +64,6 @@ Both formats fully replace the visible text boxes of every target page. An
 empty imported page clears its target page. Existing visible units are soft
 deleted in batches of at most 100, the unit order is read again, and imported
 units are created in batches of at most 100 in one transaction. Hidden history
-is retained. Page and chapter counters are written once from the original
+is retained. PageSource and chapter counters are written once from the original
 state to the final state. Workflow records and stage transitions are part of
 the same transaction, so a failure on any page rolls back the whole import.

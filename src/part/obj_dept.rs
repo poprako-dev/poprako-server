@@ -1,7 +1,7 @@
 //! Business-object markers registered with ObjDept.
 
-/// Page-image object association.
-pub struct PageImage;
+/// source page-image object association.
+pub struct PageSourceImage;
 
 /// User-avatar object association.
 pub struct UserAvatar;

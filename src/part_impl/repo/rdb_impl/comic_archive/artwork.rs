@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::schema::{t_issue, t_page_artwork};
 use crate::result::BaseRest;
 use crate::shared::result::diesel;
 
-/// Loads composites even when the Chapter has no source Pages.
+/// Loads composites even when the Chapter has no source pages.
 pub async fn load_archive_page_artworks(
     conn: &mut RdbConn,
     chapter_ids: &[String],

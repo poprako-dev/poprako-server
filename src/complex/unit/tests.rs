@@ -60,8 +60,8 @@ fn order(id: &str, next_id: Option<&str>, is_hidden: bool) -> UnitOrder {
 fn unit(translated_text: &str, proofread_text: &str) -> UnitInfo {
     //
     UnitInfo {
-        id: "unit-1".to_string(),
-        page_id: "page-1".to_string(),
+        id: "unit--00000000001".to_string(),
+        page_source_id: "page_source--00000000001".to_string(),
         next_id: None,
         is_bubble: true,
         is_flagged: false,
@@ -86,7 +86,7 @@ fn unit(translated_text: &str, proofread_text: &str) -> UnitInfo {
 fn transform(pairs: &[(&str, &str)]) -> UnitTransform {
     //
     UnitTransform {
-        unit_id: "unit-1".to_string(),
+        unit_id: "unit--00000000001".to_string(),
         transforms: pairs
             .iter()
             .map(|(origin, target)| UnitTextTransform {

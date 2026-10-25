@@ -4,6 +4,8 @@ pub mod announcement;
 pub mod artwork;
 /// Assignment value types.
 pub mod assignment;
+/// Canonical business identity namespaces.
+pub mod business_id;
 /// Chapter value types (stage, stage phase, stage oper).
 pub mod chapter;
 /// Chapter port value types.
@@ -22,14 +24,16 @@ pub mod image;
 pub mod incl;
 /// Index computation helpers.
 pub mod index;
+/// Annotation save receipts and assigned identities.
+pub mod issue_save;
 /// Member value types.
 pub mod member;
 /// Member invitation value types.
 pub mod member_invitation;
-/// Page-specific values.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page-specific values.
+pub mod page_source;
 /// Bounded ordinary-list pagination values.
 pub mod pagination;
 /// Role and perm value types.

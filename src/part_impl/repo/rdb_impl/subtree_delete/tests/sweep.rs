@@ -3,7 +3,7 @@
 use super::*;
 
 use crate::config::repo::RepoConfig;
-use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
+use crate::part_impl::repo::rdb_impl::schema::t_page_source_raw_ident;
 use diesel::expression::AsExpression;
 use diesel::sql_types::Text;
 use tokio::sync::oneshot;
@@ -73,7 +73,7 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
         Scale {
             comics: 2,
             chapters_per_comic: 2,
-            pages_per_chapter: 3,
+            page_sources_per_chapter: 3,
             units_per_page: 2,
         },
     )
@@ -82,20 +82,20 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
     {
         let mut conn = shared.get().await.unwrap();
 
-        diesel::insert_into(t_page_raw_ident::table)
+        diesel::insert_into(t_page_source_raw_ident::table)
             .values(
-                t_page::table
-                    .filter(t_page::f_id.like([PREFIX, "%"].concat()))
+                t_page_source::table
+                    .filter(t_page_source::f_id.like([PREFIX, "%"].concat()))
                     .select((
-                        t_page::f_id,
+                        t_page_source::f_id,
                         <&str as AsExpression<Text>>::as_expression(
                             "source.png",
                         ),
                     )),
             )
             .into_columns((
-                t_page_raw_ident::f_page_id,
-                t_page_raw_ident::f_raw_ident,
+                t_page_source_raw_ident::f_page_source_id,
+                t_page_source_raw_ident::f_raw_ident,
             ))
             .execute(&mut conn)
             .await
@@ -105,8 +105,8 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
     mark_and_sweep_workset(shared, &workset_id).await;
 
     let mut conn = shared.get().await.unwrap();
-    let remaining_pages = t_page::table
-        .filter(t_page::f_id.like([PREFIX, "%"].concat()))
+    let remaining_page_sources = t_page_source::table
+        .filter(t_page_source::f_id.like([PREFIX, "%"].concat()))
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -118,11 +118,14 @@ async fn removes_a_complete_workset_subtree(shared: &RdbCore) {
         .await
         .unwrap();
 
-    assert_eq!(remaining_pages, 0);
+    assert_eq!(remaining_page_sources, 0);
     assert_eq!(remaining_units, 0);
 
-    let remaining_raw_idents = t_page_raw_ident::table
-        .filter(t_page_raw_ident::f_page_id.like([PREFIX, "%"].concat()))
+    let remaining_raw_idents = t_page_source_raw_ident::table
+        .filter(
+            t_page_source_raw_ident::f_page_source_id
+                .like([PREFIX, "%"].concat()),
+        )
         .count()
         .get_result::<i64>(&mut conn)
         .await
@@ -144,7 +147,7 @@ async fn explicit_comic_claim_does_not_short_circuit_on_chapter(
         Scale {
             comics: 2,
             chapters_per_comic: 1,
-            pages_per_chapter: 0,
+            page_sources_per_chapter: 0,
             units_per_page: 0,
         },
     )
@@ -206,7 +209,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
         Scale {
             comics: 4,
             chapters_per_comic: 0,
-            pages_per_chapter: 0,
+            page_sources_per_chapter: 0,
             units_per_page: 0,
         },
     )
@@ -394,7 +397,7 @@ async fn chapter_and_team_claim_one_row(shared: &RdbCore) {
         Scale {
             comics: 1,
             chapters_per_comic: 2,
-            pages_per_chapter: 0,
+            page_sources_per_chapter: 0,
             units_per_page: 0,
         },
     )
@@ -456,7 +459,7 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
         Scale {
             comics: 2,
             chapters_per_comic: 1,
-            pages_per_chapter: 0,
+            page_sources_per_chapter: 0,
             units_per_page: 0,
         },
     )

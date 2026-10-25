@@ -1,4 +1,4 @@
-//! Locked Page and Unit snapshots for comic archives.
+//! Locked source page and Unit snapshots for comic archives.
 
 use std::collections::HashMap;
 
@@ -9,50 +9,54 @@ use diesel_async::RunQueryDsl as _;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::model::read::proj::comic_archive::ComicArchivePageSnapshot;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::comic_archive::ComicArchivePageSourceSnapshot;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRecord;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceInfoRecord;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRecord;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
-    t_page,
+use crate::part_impl::repo::rdb_impl::schema::t_page_source::dsl::{
+    f_chapter_id as page_source_chapter_id, f_id as page_source_id,
+    f_index as page_source_index, t_page_source,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_page_id as unit_page_id, t_unit,
+    f_page_source_id as unit_page_source_id, t_unit,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;
 
-/// Locks ordered source Pages with their translation Units.
-pub async fn load_archive_pages(
+/// Locks ordered source pages with their translation Units.
+pub async fn load_archive_page_sources(
     conn: &mut RdbConn,
     source_chapter_ids: &[String],
-) -> BaseRest<(Vec<PageInfo>, Vec<UnitInfo>)> {
+) -> BaseRest<(Vec<PageSourceInfo>, Vec<UnitInfo>)> {
     //
-    let page_records = t_page
-        .filter(page_chapter_id.eq_any(source_chapter_ids))
-        .select(PageInfoRecord::as_select())
-        .order_by((page_chapter_id.asc(), page_index.asc(), page_id.asc()))
+    let page_source_records = t_page_source
+        .filter(page_source_chapter_id.eq_any(source_chapter_ids))
+        .select(PageSourceInfoRecord::as_select())
+        .order_by((
+            page_source_chapter_id.asc(),
+            page_source_index.asc(),
+            page_source_id.asc(),
+        ))
         .for_update()
-        .load::<PageInfoRecord>(conn)
+        .load::<PageSourceInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let page_infos = page_records
+    let page_source_infos = page_source_records
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseRest<Vec<PageInfo>>>()?;
+        .collect::<BaseRest<Vec<PageSourceInfo>>>()?;
 
-    let source_page_ids = page_infos
+    let source_page_source_ids = page_source_infos
         .iter()
-        .map(|page_info| page_info.id.clone())
+        .map(|page_source_info| page_source_info.id.clone())
         .collect::<Vec<_>>();
 
     let unit_records = t_unit
-        .filter(unit_page_id.eq_any(&source_page_ids))
+        .filter(unit_page_source_id.eq_any(&source_page_source_ids))
         .select(UnitInfoRecord::as_select())
-        .order_by(unit_page_id.asc())
+        .order_by(unit_page_source_id.asc())
         .for_update()
         .load::<UnitInfoRecord>(conn)
         .await
@@ -63,46 +67,47 @@ pub async fn load_archive_pages(
         .map(Into::into)
         .collect::<Vec<UnitInfo>>();
 
-    accept!((page_infos, unit_infos))
+    accept!((page_source_infos, unit_infos))
 }
 
-/// Assembles ordered Page details after all descendant records have been locked.
-pub fn assemble_page_snapshots(
-    page_infos: Vec<PageInfo>,
+/// Assembles ordered source page details after all descendant records have been locked.
+pub fn assemble_page_source_snapshots(
+    page_source_infos: Vec<PageSourceInfo>,
     unit_infos: Vec<UnitInfo>,
-) -> BaseRest<HashMap<String, Vec<ComicArchivePageSnapshot>>> {
+) -> BaseRest<HashMap<String, Vec<ComicArchivePageSourceSnapshot>>> {
     //
     let mut unit_infos_by_page = HashMap::new();
 
     for unit_info in unit_infos {
         //
         unit_infos_by_page
-            .entry(unit_info.page_id.clone())
+            .entry(unit_info.page_source_id.clone())
             .or_insert_with(Vec::new)
             .push(unit_info);
     }
 
-    let mut page_snapshots_by_chapter = HashMap::new();
+    let mut page_source_snapshots_by_chapter = HashMap::new();
 
-    for page_info in page_infos {
+    for page_source_info in page_source_infos {
         //
-        let unordered_unit_infos =
-            unit_infos_by_page.remove(&page_info.id).unwrap_or_default();
+        let unordered_unit_infos = unit_infos_by_page
+            .remove(&page_source_info.id)
+            .unwrap_or_default();
 
         let mut unit_infos = order_unit_infos(unordered_unit_infos)?;
 
         unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
-        page_snapshots_by_chapter
-            .entry(page_info.chapter_id.clone())
+        page_source_snapshots_by_chapter
+            .entry(page_source_info.chapter_id.clone())
             .or_insert_with(Vec::new)
-            .push(ComicArchivePageSnapshot {
-                page_info,
+            .push(ComicArchivePageSourceSnapshot {
+                page_source_info,
                 unit_infos,
             });
     }
 
-    accept!(page_snapshots_by_chapter)
+    accept!(page_source_snapshots_by_chapter)
 }
 
 // Reorder chained unit infos by next_id links and return only visible units.

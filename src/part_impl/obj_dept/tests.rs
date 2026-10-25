@@ -168,7 +168,7 @@ async fn insert_task(
     diesel::insert_into(t_obj_prom_task::table)
         .values((
             t_obj_prom_task::f_id.eq([PREFIX, suffix].concat()),
-            t_obj_prom_task::f_topic.eq("page_image"),
+            t_obj_prom_task::f_topic.eq("page_source_image"),
             t_obj_prom_task::f_oper.eq("obj_prom_oper:check"),
             t_obj_prom_task::f_obj_id.eq([PREFIX, "page"].concat()),
             t_obj_prom_task::f_version.eq(1_i64),
@@ -255,7 +255,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     let expires_at = OffsetDateTime::now_utc() - Duration::minutes(2);
 
     nucl.coord(async |context| {
-        prom.defer_check(context, "page_image", &key, expires_at)
+        prom.defer_check(context, "page_source_image", &key, expires_at)
             .await
     })
     .await
@@ -265,7 +265,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
 
     // Repeated defer must retain the currently executing credential.
     nucl.coord(async |context| {
-        prom.defer_check(context, "page_image", &key, expires_at)
+        prom.defer_check(context, "page_source_image", &key, expires_at)
             .await
     })
     .await
@@ -276,7 +276,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     assert_eq!(complete_task(shared, &old).await.unwrap(), 0);
 
     nucl.coord(async |context| {
-        prom.defer_check(context, "page_image", &key, expires_at)
+        prom.defer_check(context, "page_source_image", &key, expires_at)
             .await
     })
     .await
@@ -326,7 +326,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
     );
 
     nucl.coord(async |context| {
-        prom.defer_check(context, "page_image", &key, expires_at)
+        prom.defer_check(context, "page_source_image", &key, expires_at)
             .await
     })
     .await
@@ -341,7 +341,7 @@ async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
 
     assert!(
         nucl.coord(async |context| prom
-            .defer_check(context, "page_image", &key, expires_at)
+            .defer_check(context, "page_source_image", &key, expires_at)
             .await)
             .await
             .is_err()
@@ -379,7 +379,7 @@ async fn repeated_defer_locks_completion(shared: &RdbCore) {
     let expires_at = OffsetDateTime::now_utc() - Duration::minutes(2);
 
     nucl.coord(async |context| {
-        prom.defer_check(context, "page_image", &key, expires_at)
+        prom.defer_check(context, "page_source_image", &key, expires_at)
             .await
     })
     .await
@@ -389,7 +389,7 @@ async fn repeated_defer_locks_completion(shared: &RdbCore) {
 
     let completion = nucl
         .coord(async |context| {
-            prom.defer_check(context, "page_image", &key, expires_at)
+            prom.defer_check(context, "page_source_image", &key, expires_at)
                 .await?;
 
             let core = shared.clone();
@@ -474,7 +474,7 @@ pub async fn artwork_transactional_mark(shared: RdbCore) {
         super::RdbObjDeptProm::new(shared.clone()),
     );
 
-    let chapter_id = "rdb-test-artwork-transaction";
+    let chapter_id = "chapter--00000000003";
 
     let artwork_spec = ObjSlotSpec {
         dom: ChapterArtworkKey {

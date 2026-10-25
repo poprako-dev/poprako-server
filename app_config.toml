@@ -20,7 +20,10 @@ team_avatar_limit_mib = 1
 # Maximum comic-cover upload size in MiB. Default: 2; must be positive.
 comic_cover_limit_mib = 2
 # Maximum page-image upload size in MiB. Default: 25; local override: 30.
-page_image_limit_mib = 30
+page_source_image_limit_mib = 30
+
+# Maximum finished-page image size in MiB; default: 25.
+page_artwork_image_limit_mib = 25
 
 [artwork]
 # Maximum chapter-artwork upload size in MiB. Default: 512; must be positive.

@@ -39,7 +39,7 @@ export interface ChapterRefs {
     chapterId: string;
     comicId: string;
     worksetId: string;
-    // Page ids in index order (0..n-1).
+    // PageSource ids in index order (0..n-1).
     pageIds: string[];
     // Assignment id keyed by persona, for this chapter.
     assignmentIds: Record<string, string>;

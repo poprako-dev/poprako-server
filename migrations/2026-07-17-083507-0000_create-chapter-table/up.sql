@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS "t_chapter" (
     "f_index"                     INTEGER     NOT NULL,
     "f_subtitle"                  TEXT        NOT NULL,
 
-    "f_page_count"                INTEGER     NOT NULL DEFAULT 0,
+    "f_page_source_count"         INTEGER     NOT NULL DEFAULT 0,
     "f_total_unit_count"          INTEGER     NOT NULL DEFAULT 0,
     "f_translated_unit_count"     INTEGER     NOT NULL DEFAULT 0,
     "f_proofread_unit_count"      INTEGER     NOT NULL DEFAULT 0,

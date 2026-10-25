@@ -152,10 +152,10 @@ fn update_role_instr(id: &str) -> UpdateMemberRolesInstr {
 // Seed an admin member used by privileged member operations.
 fn seed_admin(mock: &Mock) {
     mock.seed_member(member(
-        "member-admin",
+        "member--66825055253",
         "admin-user",
         "Admin",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 }
@@ -167,14 +167,14 @@ async fn create_admin_creates_member_with_target_user_nickname() {
 
     seed_admin(&mock);
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     let create_outcome = create(
         (&mock, &mock),
         token("admin-user"),
-        create_instr("target-user", "team-1"),
+        create_instr("target-user", "team--00000000001"),
     )
     .await;
 
@@ -194,7 +194,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
 
     assert_eq!(created_member_info.user_nickname, "Target");
 
-    assert_eq!(created_member_info.team_id, "team-1");
+    assert_eq!(created_member_info.team_id, "team--00000000001");
 
     assert_eq!(
         created_member_info.roles,
@@ -208,21 +208,21 @@ async fn create_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-normal",
+        "member--35634922393",
         "normal-user",
         "Normal",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     let error = create(
         (&mock, &mock),
         token("normal-user"),
-        create_instr("target-user", "team-1"),
+        create_instr("target-user", "team--00000000001"),
     )
     .await
     .err()
@@ -240,22 +240,22 @@ async fn create_duplicate_member_is_rejected() {
 
     seed_admin(&mock);
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let error = create(
         (&mock, &mock),
         token("admin-user"),
-        create_instr("target-user", "team-1"),
+        create_instr("target-user", "team--00000000001"),
     )
     .await
     .err()
@@ -274,10 +274,10 @@ async fn list_infos_member_lists_team_members() {
     let baseline = test_util::now();
 
     let mut admin_member_info = member(
-        "member-admin",
+        "member--66825055253",
         "admin-user",
         "Admin",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
@@ -286,10 +286,10 @@ async fn list_infos_member_lists_team_members() {
     mock.seed_member(admin_member_info);
 
     let mut translator_member_info = member(
-        "member-translator",
+        "member--35035565321",
         "translator-user",
         "Translator",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
@@ -299,9 +299,12 @@ async fn list_infos_member_lists_team_members() {
 
     mock.seed_member(translator_member_info);
 
-    let member_info_vals =
-        list_infos((&mock, &mock), token("admin-user"), list_instr("team-1"))
-            .await;
+    let member_info_vals = list_infos(
+        (&mock, &mock),
+        token("admin-user"),
+        list_instr("team--00000000001"),
+    )
+    .await;
 
     assert!(member_info_vals.is_ok());
 
@@ -309,9 +312,9 @@ async fn list_infos_member_lists_team_members() {
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals.first().unwrap().id, "member-translator");
+    assert_eq!(member_info_vals.first().unwrap().id, "member--35035565321");
 
-    assert_eq!(member_info_vals.get(1).unwrap().id, "member-admin");
+    assert_eq!(member_info_vals.get(1).unwrap().id, "member--66825055253");
 
     assert_eq!(
         member_info_vals.first().unwrap().last_active_at,
@@ -327,18 +330,18 @@ async fn list_infos_filters_by_role() {
     seed_admin(&mock);
 
     mock.seed_member(member(
-        "member-reviewer",
+        "member--19585650251",
         "reviewer-user",
         "Alice Reviewer",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::REVIEWER),
     ));
 
     mock.seed_member(member(
-        "member-translator",
+        "member--35035565321",
         "translator-user",
         "Alice Translator",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
@@ -347,7 +350,7 @@ async fn list_infos_filters_by_role() {
         token("admin-user"),
         ListMemberInfosInstr {
             owner_id: None,
-            team_id: Some("team-1".into()),
+            team_id: Some("team--00000000001".into()),
             fuzzy_nickname: None,
             role: Some(RoleField::REVIEWER),
             incl_opt: Vec::new(),
@@ -363,7 +366,7 @@ async fn list_infos_filters_by_role() {
 
     assert_eq!(member_info_vals.len(), 1);
 
-    assert_eq!(member_info_vals.first().unwrap().id, "member-reviewer");
+    assert_eq!(member_info_vals.first().unwrap().id, "member--19585650251");
 }
 
 #[tokio::test]
@@ -374,10 +377,10 @@ async fn list_infos_applies_pagination_after_filtering() {
     let baseline = test_util::now();
 
     let mut admin_member_info = member(
-        "member-admin",
+        "member--66825055253",
         "admin-user",
         "Admin",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     );
 
@@ -386,10 +389,10 @@ async fn list_infos_applies_pagination_after_filtering() {
     mock.seed_member(admin_member_info);
 
     let mut reviewer_member_info = member(
-        "member-reviewer",
+        "member--19585650251",
         "reviewer-user",
         "Reviewer",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::REVIEWER),
     );
 
@@ -398,10 +401,10 @@ async fn list_infos_applies_pagination_after_filtering() {
     mock.seed_member(reviewer_member_info);
 
     let mut translator_member_info = member(
-        "member-translator",
+        "member--35035565321",
         "translator-user",
         "Translator",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
@@ -414,7 +417,7 @@ async fn list_infos_applies_pagination_after_filtering() {
         token("admin-user"),
         ListMemberInfosInstr {
             owner_id: None,
-            team_id: Some("team-1".into()),
+            team_id: Some("team--00000000001".into()),
             fuzzy_nickname: None,
             role: None,
             incl_opt: Vec::new(),
@@ -430,7 +433,7 @@ async fn list_infos_applies_pagination_after_filtering() {
 
     assert_eq!(member_info_vals.len(), 1);
 
-    assert_eq!(member_info_vals.first().unwrap().id, "member-reviewer");
+    assert_eq!(member_info_vals.first().unwrap().id, "member--19585650251");
 }
 
 #[tokio::test]
@@ -441,10 +444,10 @@ async fn list_infos_owner_lists_own_memberships() {
     let baseline = test_util::now();
 
     let mut first_member_info = member(
-        "member-one",
-        "user-1",
+        "member--91765445504",
+        "user--00000000001",
         "User",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
@@ -453,10 +456,10 @@ async fn list_infos_owner_lists_own_memberships() {
     mock.seed_member(first_member_info);
 
     let mut second_member_info = member(
-        "member-two",
-        "user-1",
+        "member--13070461154",
+        "user--00000000001",
         "User",
-        "team-2",
+        "team--00000000002",
         RoleMask::from(RoleField::REVIEWER),
     );
 
@@ -465,18 +468,18 @@ async fn list_infos_owner_lists_own_memberships() {
     mock.seed_member(second_member_info);
 
     mock.seed_member(member(
-        "member-other",
-        "user-2",
+        "member--85117610840",
+        "user--00000000002",
         "Other",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
     let member_info_vals = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListMemberInfosInstr {
-            owner_id: Some("user-1".into()),
+            owner_id: Some("user--00000000001".into()),
             team_id: None,
             fuzzy_nickname: None,
             role: None,
@@ -493,9 +496,9 @@ async fn list_infos_owner_lists_own_memberships() {
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals.first().unwrap().id, "member-two");
+    assert_eq!(member_info_vals.first().unwrap().id, "member--13070461154");
 
-    assert_eq!(member_info_vals.get(1).unwrap().id, "member-one");
+    assert_eq!(member_info_vals.get(1).unwrap().id, "member--91765445504");
 }
 
 #[tokio::test]
@@ -504,17 +507,17 @@ async fn list_infos_non_member_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let error = list_infos(
         (&mock, &mock),
         token("stranger-user"),
-        list_instr("team-1"),
+        list_instr("team--00000000001"),
     )
     .await
     .err()
@@ -527,8 +530,8 @@ async fn list_infos_non_member_is_rejected() {
 fn list_infos_rejects_invalid_combination() {
     //
     let error = TryInto::<MemberListSpec>::try_into(ListMemberInfosInstr {
-        owner_id: Some("user-1".into()),
-        team_id: Some("team-1".into()),
+        owner_id: Some("user--00000000001".into()),
+        team_id: Some("team--00000000001".into()),
         fuzzy_nickname: None,
         role: None,
         incl_opt: Vec::new(),
@@ -545,7 +548,7 @@ fn list_infos_rejects_invalid_combination() {
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
     let member_list_spec: MemberListSpec = ListMemberInfosInstr {
-        owner_id: Some("user-1".into()),
+        owner_id: Some("user--00000000001".into()),
         team_id: None,
         fuzzy_nickname: None,
         role: None,
@@ -559,6 +562,8 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     assert!(matches!(
         member_list_spec,
         MemberListSpec::User { owner_id, offset, limit, .. }
-            if owner_id == "user-1" && offset == 3 && limit.get() == 5
+            if owner_id == "user--00000000001"
+                && offset == 3
+                && limit.get() == 5
     ));
 }

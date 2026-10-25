@@ -97,9 +97,14 @@ async fn object_allocs_retain_every_selected_generation() {
 
     let dept = NormObjDept::new(core.clone(), Pool, RdbObjDeptProm::new(core));
 
-    let specs = ["available", "pending", "new"].map(|id| ObjSlotSpec {
+    let specs = [
+        "page_artwork--00000000001",
+        "page_artwork--00000000002",
+        "page_artwork--00000000003",
+    ]
+    .map(|id| ObjSlotSpec {
         dom: PageArtworkImageKey {
-            chapter_id: "allocation-chapter".into(),
+            chapter_id: "chapter--00000000001".into(),
             page_artwork_id: id.into(),
             ext: ImageExt::Png,
         },
@@ -169,11 +174,14 @@ async fn object_allocs_retain_every_selected_generation() {
 
     assert_eq!(allocs.len(), specs.len());
 
-    let metas =
-        ListObjMetas::<PageArtworkImage>::new(&["available", "pending", "new"])
-            .run_on(&dept)
-            .await
-            .unwrap();
+    let metas = ListObjMetas::<PageArtworkImage>::new(&[
+        "page_artwork--00000000001",
+        "page_artwork--00000000002",
+        "page_artwork--00000000003",
+    ])
+    .run_on(&dept)
+    .await
+    .unwrap();
 
     for (id, alloc) in allocs {
         assert_eq!(alloc.key(), &metas.get(&id).unwrap().key);
@@ -181,9 +189,9 @@ async fn object_allocs_retain_every_selected_generation() {
         assert_eq!(alloc.key().ver, 1);
 
         match alloc.into_slot() {
-            None => assert_eq!(id, "available"),
+            None => assert_eq!(id, "page_artwork--00000000001"),
             Some(slot) => {
-                assert_ne!(id, "available");
+                assert_ne!(id, "page_artwork--00000000001");
 
                 assert!(slot.url.path().ends_with(&slot.key.image));
 
@@ -208,7 +216,25 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let fixture = test_shared::seed_chapter(&core, "rdb-test-composite-").await;
 
-    let chapter_id = &fixture.chapter_info.id;
+    let chapter_id = &"chapter--00000000002".to_owned();
+
+    let mut conn = core.get().await.unwrap();
+
+    diesel::update(
+        crate::part_impl::repo::rdb_impl::schema::t_chapter::table.filter(
+            crate::part_impl::repo::rdb_impl::schema::t_chapter::f_id
+                .eq(&fixture.chapter_info.id),
+        ),
+    )
+    .set(
+        crate::part_impl::repo::rdb_impl::schema::t_chapter::f_id
+            .eq(chapter_id),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+
+    drop(conn);
 
     let repo = RdbRepo::new(core.clone(), RepoConfig::default());
 
@@ -219,13 +245,13 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let mut entries = vec![
         PageArtworkEntry {
-            id: "composite-a".into(),
+            id: "page_artwork--00000000004".into(),
             chapter_id: chapter_id.clone(),
             index: 0,
             raw_ident: Some("same.psd".into()),
         },
         PageArtworkEntry {
-            id: "composite-b".into(),
+            id: "page_artwork--00000000005".into(),
             chapter_id: chapter_id.clone(),
             index: 1,
             raw_ident: Some("same.psd".into()),
@@ -234,7 +260,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     let dom = PageArtworkImageKey {
         chapter_id: chapter_id.clone(),
-        page_artwork_id: "composite-a".into(),
+        page_artwork_id: "page_artwork--00000000004".into(),
         ext: ImageExt::Png,
     };
 
@@ -242,7 +268,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
     assert_eq!(
         PageArtworkImage::reverse(&key).unwrap().0.page_artwork_id,
-        "composite-a"
+        "page_artwork--00000000004"
     );
 
     assert!(
@@ -279,7 +305,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
         assert!(
             MarkObjUploaded::<PageArtworkImage>::new(&ObjGen {
-                id: "composite-a".into(),
+                id: "page_artwork--00000000004".into(),
                 ver: slot.key().ver
             })
             .step_on(&dept, context)
@@ -289,7 +315,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
 
         let issues = vec![IssueEntry {
             id: "composite-issue".into(),
-            page_artwork_id: "composite-a".into(),
+            page_artwork_id: "page_artwork--00000000004".into(),
             index: 0,
             variant: "custom".into(),
             layer_name: None,
@@ -342,7 +368,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .first()
             .unwrap()
             .id,
-        "composite-b"
+        "page_artwork--00000000005"
     );
 
     assert_eq!(
@@ -360,7 +386,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
         .unwrap();
 
     let page_artwork_patch = PageArtworkPatch {
-        id: "composite-a".into(),
+        id: "page_artwork--00000000004".into(),
         raw_ident: Some("renamed.psd".into()),
     };
 
@@ -397,7 +423,7 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
     let failure = nucl
         .coord(async |context| {
             let page_artwork_patch = PageArtworkPatch {
-                id: "composite-a".into(),
+                id: "page_artwork--00000000004".into(),
                 raw_ident: None,
             };
 
@@ -407,10 +433,12 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             .step_on(&repo, context)
             .await?;
 
-            DeleteObjs::<PageArtworkImage>::new(&["composite-a".into()])
-                .step_on(&dept, context)
-                .await
-                .map_err(BaseError::from)?;
+            DeleteObjs::<PageArtworkImage>::new(&[
+                "page_artwork--00000000004".into()
+            ])
+            .step_on(&dept, context)
+            .await
+            .map_err(BaseError::from)?;
 
             ReplacePageArtworkManifest {
                 chapter_id,
@@ -454,20 +482,22 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
     );
 
     assert!(
-        ListObjMetas::<PageArtworkImage>::new(&["composite-a"])
+        ListObjMetas::<PageArtworkImage>::new(&["page_artwork--00000000004"])
             .run_on(&dept)
             .await
             .unwrap()
-            .get("composite-a")
+            .get("page_artwork--00000000004")
             .unwrap()
             .is_avail
     );
 
     nucl.coord(async |context| {
-        DeleteObjs::<PageArtworkImage>::new(&["composite-a".into()])
-            .step_on(&dept, context)
-            .await
-            .map_err(BaseError::from)?;
+        DeleteObjs::<PageArtworkImage>::new(&[
+            "page_artwork--00000000004".into()
+        ])
+        .step_on(&dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
         ReplacePageArtworkManifest {
             chapter_id,
@@ -497,6 +527,16 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
         .unwrap();
 
     assert!(count > 0);
+
+    diesel::delete(
+        crate::part_impl::repo::rdb_impl::schema::t_chapter::table.filter(
+            crate::part_impl::repo::rdb_impl::schema::t_chapter::f_id
+                .eq(chapter_id),
+        ),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
 
     drop(conn);
 

@@ -54,20 +54,20 @@ fn parse_poprako_preserves_zero_based_indexes() {
     //
     let pages = chapter_translation_import_complex::parse_poprako(
         r#"{
-            "chapter_id": "chapter-1",
+            "chapter_id": "chapter--00000000001",
             "chapter_index": 0,
             "chapter_subtitle": null,
-            "comic_id": "comic-1",
+            "comic_id": "comic--00000000001",
             "comic_title": "title",
             "pages": [
                 {
-                    "page_id": "page-1",
+                    "page_id": "page_source--00000000001",
                     "page_index": 0,
                     "units": [
                         {
-                            "unit_id": "unit-1",
+                            "unit_id": "unit--00000000001",
                             "unit_index": 7,
-                            "page_id": "page-1",
+                            "page_id": "page_source--00000000001",
                             "page_index": 0,
                             "x_coord": 0.1,
                             "y_coord": 0.2,
@@ -110,7 +110,7 @@ fn build_unit_create_produces_a_complete_create() {
 
     let edit = chapter_translation_import_complex::build_unit_create(
         pages.first().unwrap().units.first().unwrap(),
-        "unit-new".to_string(),
+        "unit--98124474837".to_string(),
         "proofreader-1",
         false,
         true,
@@ -125,7 +125,7 @@ fn build_unit_create_produces_a_complete_create() {
             is_flagged: false,
             revision: Some(_),
             ..
-        } if id == "unit-new"
+        } if id == "unit--98124474837"
     ));
 }
 
@@ -229,16 +229,16 @@ fn parse_label_plus_preserves_text_and_annotations_across_buffer_reuse() {
 }
 
 #[test]
-fn parse_poprako_rejects_duplicate_page_indexes() {
+fn parse_poprako_rejects_duplicate_page_source_indexes() {
     let content = r#"{
-        "chapter_id": "chapter-1",
+        "chapter_id": "chapter--00000000001",
         "chapter_index": 0,
         "chapter_subtitle": null,
-        "comic_id": "comic-1",
+        "comic_id": "comic--00000000001",
         "comic_title": "title",
         "pages": [
-            { "page_id": "page-1", "page_index": 0, "units": [] },
-            { "page_id": "page-2", "page_index": 0, "units": [] }
+            { "page_id": "page_source--00000000001", "page_index": 0, "units": [] },
+            { "page_id": "page_source--00000000002", "page_index": 0, "units": [] }
         ]
     }"#;
 

@@ -69,7 +69,7 @@ query deduplication and rendering occurrence order require separate sequences.
 `ObjUrlView` has no Clone implementation. Single-use URLs move from `Url` into
 `String` without copying the text buffer, then move into the DTO. Only repeated
 consumers allocate an `Arc<String>`; intermediate consumers increment its reference
-count and the final consumer takes the cached handle. Page URL usage counts
+count and the final consumer takes the cached handle. PageSource URL usage counts
 include only occurrences without dedicated cover metadata. An existing metadata
 record whose URL fields are absent still suppresses fallback, preserving the
 previous behavior.
@@ -113,7 +113,7 @@ Unit content and review notes retain their original whitespace.
 | --- | --- |
 | Comic/Chapter/Assignment/workflow entries | Loaded projections and tokens retain foreign IDs through persistence; generated fields move into the Shape. |
 | UnitWritePlanShape and UnitWriteChangeShape | Submitted edits and current sequence retain text/IDs; sparse writes borrow them. New edits remain owned. |
-| PageRawIdentsReplShape | Manifest/page data retain strings; the vector of reference pairs moves into the Shape. |
+| PageSourceRawIdentsReplShape | Manifest/page data retain strings; the vector of reference pairs moves into the Shape. |
 | TermEntryShape and TermReplShape | Owned imports and persisted terms retain source, targets, and IDs during bulk writes. Reference vectors are allocated without string copies. |
 | TermAppendReplShape | Existing and imported terms retain targets; merged comments require a new owned string. |
 

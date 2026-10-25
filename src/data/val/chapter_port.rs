@@ -20,16 +20,16 @@ pub struct ExportChapterTranslationsVal {
     pub label_plus: Option<String>,
     /// Native `PopRaKo` document, absent when that format was not selected.
     pub poprako: Option<ChapterTranslationPortView>,
-    /// Page-to-original-filename mappings, absent unless requested.
-    pub raw_idents: Option<Vec<ChapterPageRawIdentVal>>,
+    /// source page-to-original-filename mappings, absent unless requested.
+    pub raw_idents: Option<Vec<ChapterPageSourceRawIdentVal>>,
 }
 
-/// One exported Page's original filename mapping.
+/// One exported source page's original filename mapping.
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ChapterPageRawIdentVal {
-    /// Stable Page identifier.
-    pub page_id: String,
+pub struct ChapterPageSourceRawIdentVal {
+    /// Stable source page identifier.
+    pub page_source_id: String,
     /// Complete original image filename.
     pub raw_ident: String,
 }
@@ -39,7 +39,7 @@ pub struct ChapterPageRawIdentVal {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
     /// Number of pages whose visible Unit content changed.
-    pub imported_page_count: usize,
+    pub imported_page_source_count: usize,
     /// Number of Units created from the imported source.
     pub imported_unit_count: usize,
 }

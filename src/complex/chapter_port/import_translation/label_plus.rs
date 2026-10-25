@@ -5,10 +5,11 @@ use std::collections::{HashMap, HashSet};
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::write::translation_import::{
-    PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
+    PageSourceTranslationImport, UnitTranslationImport,
+    UnitTranslationImportSource,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
-use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
+use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Copies non-blank `LabelPlus` text while preserving whitespace and lines.
@@ -50,7 +51,7 @@ pub fn trim_label_plus_structure_line(line: &str) -> &str {
 }
 
 /// Check whether a line is a complete `LabelPlus` page header.
-pub fn is_label_plus_page_header(line: &str) -> bool {
+pub fn is_label_plus_page_source_header(line: &str) -> bool {
     //
     let line = trim_label_plus_structure_line(line);
 
@@ -157,11 +158,11 @@ pub fn flush_label_plus_unit(
         return accept!(());
     };
 
-    let Some(page_units) = current_page.as_mut() else {
+    let Some(page_source_units) = current_page.as_mut() else {
         return Err(invalid_label_plus_content("LabelPlus unit has no page"));
     };
 
-    if page_units.len() >= MAX_PAGE_UNIT_COUNT {
+    if page_source_units.len() >= MAX_PAGE_UNIT_COUNT {
         //
         return Err(invalid_label_plus_limit(
             "error-chapter-import-unit-count",
@@ -170,7 +171,7 @@ pub fn flush_label_plus_unit(
         ));
     }
 
-    if page_units
+    if page_source_units
         .iter()
         .any(|unit| unit.index == label_plus_unit.index)
     {
@@ -182,7 +183,7 @@ pub fn flush_label_plus_unit(
 
     let (text, typography_note) = split_label_plus_text(main_text);
 
-    page_units.push(UnitTranslationImport {
+    page_source_units.push(UnitTranslationImport {
         index: label_plus_unit.index,
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
@@ -280,7 +281,9 @@ where
 }
 
 /// Parse a complete `LabelPlus` document into chapter import pages.
-pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
+pub fn parse_label_plus(
+    content: &str,
+) -> BaseRest<Vec<PageSourceTranslationImport>> {
     //
     let content = content.strip_prefix('\u{feff}').unwrap_or(content);
 
@@ -299,7 +302,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
 
     for line in lines {
         //
-        if is_label_plus_page_header(line) {
+        if is_label_plus_page_source_header(line) {
             //
             flush_label_plus_unit(
                 &mut current_page,
@@ -311,8 +314,8 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
                 //
                 finalize_label_plus_page(&mut units)?;
 
-                pages.push(PageTranslationImport {
-                    page_index: pages.len(),
+                pages.push(PageSourceTranslationImport {
+                    page_source_index: pages.len(),
                     units,
                 });
             }
@@ -374,17 +377,17 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         //
         finalize_label_plus_page(&mut units)?;
 
-        pages.push(PageTranslationImport {
-            page_index: pages.len(),
+        pages.push(PageSourceTranslationImport {
+            page_source_index: pages.len(),
             units,
         });
     }
 
-    if pages.len() > MAX_CHAPTER_PAGE_COUNT {
+    if pages.len() > MAX_CHAPTER_PAGE_SOURCE_COUNT {
         //
         return Err(invalid_label_plus_limit(
             "error-chapter-import-page-count",
-            MAX_CHAPTER_PAGE_COUNT,
+            MAX_CHAPTER_PAGE_SOURCE_COUNT,
             "LabelPlus document has too many pages",
         ));
     }

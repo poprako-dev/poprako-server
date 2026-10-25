@@ -16,10 +16,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_id as chapter_i
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, t_chapter_workflow_record};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_archived_at as comic_archived_at, f_deleted_at as comic_deleted_at, f_id as comic_id, f_updated_at as comic_updated_at, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, t_page};
+use crate::part_impl::repo::rdb_impl::schema::t_page_source::dsl::{f_chapter_id as page_source_chapter_id, t_page_source};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{f_termbase_id as term_termbase_id, t_term};
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{f_comic_id as termbase_comic_id, f_id as termbase_id, t_termbase};
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_source_id as unit_page_source_id, t_unit};
 use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
@@ -107,13 +107,17 @@ pub async fn commit(
     .await
     .map_err(diesel)?;
 
-    diesel::delete(t_unit.filter(unit_page_id.eq_any(&entry.source_page_ids)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::delete(
+        t_unit
+            .filter(unit_page_source_id.eq_any(&entry.source_page_source_ids)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     diesel::delete(
-        t_page.filter(page_chapter_id.eq_any(&entry.source_chapter_ids)),
+        t_page_source
+            .filter(page_source_chapter_id.eq_any(&entry.source_chapter_ids)),
     )
     .execute(conn)
     .await

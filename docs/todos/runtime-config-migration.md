@@ -54,7 +54,7 @@
 
 | 参数 | 当前值 | 代码位置 |
 |---|---|---|
-| 章节自动推进延迟 | 20 分钟，两处 | [page/alloc.rs](../../src/usecase/page/alloc.rs)、[page/alloc/manifest.rs](../../src/usecase/page/alloc/manifest.rs) 中的延迟任务 |
+| 章节自动推进延迟 | 20 分钟，两处 | [page/alloc.rs](../../src/usecase/page_source/alloc.rs)、[page/alloc/manifest.rs](../../src/usecase/page_source/alloc/manifest.rs) 中的延迟任务 |
 | Scheduler 中止工作任务后的额外等待 | 1 秒 | [sched/supervisor.rs](../../src/extra/sched/supervisor.rs)，`workers.shutdown()` 的超时 |
 
 Scheduler 的常规退出宽限已经配置化；这里仅记录中止后的额外等待。
@@ -64,7 +64,7 @@ Scheduler 的常规退出宽限已经配置化；这里仅记录中止后的额�
 | 参数 | 当前值 | 代码位置 |
 |---|---|---|
 | 公共列表单次返回上限 | 200 条 | [pagination.rs](../../src/value/pagination.rs)，`MAX_PUB_LIST_LIMIT` |
-| 每章页数上限 | 200 页 | [page.rs](../../src/value/page.rs)，`MAX_CHAPTER_PAGE_COUNT` |
+| 每章页数上限 | 200 页 | [page_source.rs](../../src/value/page_source.rs)，`MAX_CHAPTER_PAGE_SOURCE_COUNT` |
 | 每页 Unit 数量上限 | 100 个 | [unit.rs](../../src/value/unit.rs)，`MAX_PAGE_UNIT_COUNT` |
 | 单次 Unit 编辑数量上限 | 100 个 | [unit.rs](../../src/value/unit.rs)，`MAX_UNIT_EDIT_COUNT` |
 | 单次 Unit 变换目标数量上限 | 100 个 | [unit.rs](../../src/value/unit.rs)，`MAX_UNIT_TRANSFORM_COUNT` |

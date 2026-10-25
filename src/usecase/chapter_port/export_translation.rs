@@ -15,19 +15,21 @@ use poprako_obj_dept::oper::ListObjMetas;
 
 use crate::complex::chapter_port::export_translation as chapter_translation_export_complex;
 use crate::data::val::chapter_port::{
-    ChapterPageRawIdentVal, ExportChapterTranslationsVal,
+    ChapterPageSourceRawIdentVal, ExportChapterTranslationsVal,
 };
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::page::{PageInfo, PageRawIdentInfo};
+use crate::model::read::proj::page_source::{
+    PageSourceInfo, PageSourceRawIdentInfo,
+};
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::translation_document::{
-    ChapterTranslationDocument, PageTranslationDocument,
+    ChapterTranslationDocument, PageSourceTranslationDocument,
     UnitTranslationDocument,
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::PageImage;
+use crate::part::obj_dept::PageSourceImage;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -38,9 +40,11 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::GetComicInfo;
-use crate::part::repo::oper::page::{ListPageInfos, ListPageRawIdentInfos};
-use crate::part::repo::oper::unit::ListUnitInfosByPageIds;
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::oper::page_source::{
+    ListPageSourceInfos, ListPageSourceRawIdentInfos,
+};
+use crate::part::repo::oper::unit::ListUnitInfosByPageSourceIds;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest};
@@ -61,11 +65,11 @@ struct ChapterExportSnapshot<'a> {
     comic_title: String,
 
     // Ordered content and source filenames from the same read snapshot.
-    page_infos: &'a [PageInfo],
+    page_source_infos: &'a [PageSourceInfo],
     // Translation units grouped into pages during assembly.
     unit_infos: Vec<UnitInfo>,
     // Original filenames read alongside the chapter pages.
-    raw_ident_infos: &'a [PageRawIdentInfo],
+    raw_ident_infos: &'a [PageSourceRawIdentInfo],
 
     // Metadata used to render page image extensions without another lookup.
     obj_metas: &'a HashMap<String, ObjMeta>,
@@ -94,11 +98,11 @@ where
         + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + UnitRepo<C>
         + Send
         + Sync,
-    O: ObjDeptView<PageImage, C> + Sync,
+    O: ObjDeptView<PageSourceImage, C> + Sync,
 {
     let actor_has_artwork_assignment =
         chapter_port_perm_usecase::ensure_export_access::<C, R>(
@@ -122,19 +126,19 @@ where
     .run_on(repo)
     .await?;
 
-    let page_infos = ListPageInfos {
+    let page_source_infos = ListPageSourceInfos {
         chapter_id: &chapter_info.id,
     }
     .run_on(repo)
     .await?;
 
-    let page_ids = page_infos
+    let page_source_ids = page_source_infos
         .iter()
-        .map(|page_info| page_info.id.as_str())
+        .map(|page_source_info| page_source_info.id.as_str())
         .collect::<Vec<_>>();
 
-    let unit_infos = ListUnitInfosByPageIds {
-        page_ids: &page_ids,
+    let unit_infos = ListUnitInfosByPageSourceIds {
+        page_source_ids: &page_source_ids,
     }
     .run_on(repo)
     .await?;
@@ -143,8 +147,8 @@ where
         //
         Some(()) => {
             //
-            ListPageRawIdentInfos {
-                page_ids: &page_ids,
+            ListPageSourceRawIdentInfos {
+                page_source_ids: &page_source_ids,
             }
             .run_on(repo)
             .await?
@@ -153,7 +157,7 @@ where
         None => Vec::new(),
     };
 
-    let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
+    let obj_metas = ListObjMetas::<PageSourceImage>::new(&page_source_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
@@ -161,7 +165,7 @@ where
     let snapshot = ChapterExportSnapshot {
         chapter_info: &chapter_info,
         comic_title: comic_info.title,
-        page_infos: &page_infos,
+        page_source_infos: &page_source_infos,
         unit_infos,
         raw_ident_infos: &raw_ident_infos,
         obj_metas: &obj_metas,
@@ -191,52 +195,54 @@ fn make_export_val(
     let ChapterExportSnapshot {
         chapter_info,
         comic_title,
-        page_infos,
+        page_source_infos,
         unit_infos,
         raw_ident_infos,
         obj_metas,
     } = snapshot;
 
-    let raw_ident_by_page_id = raw_ident_infos
+    let raw_ident_by_page_source_id = raw_ident_infos
         .iter()
-        .map(|info| (info.page_id.clone(), info.raw_ident.clone()))
+        .map(|info| (info.page_source_id.clone(), info.raw_ident.clone()))
         .collect::<HashMap<_, _>>();
 
     let raw_idents = with_raw_ident.then(|| {
         //
-        page_infos
+        page_source_infos
             .iter()
-            .filter_map(|page_info| {
+            .filter_map(|page_source_info| {
                 //
-                raw_ident_by_page_id.get(&page_info.id).map(|raw_ident| {
-                    ChapterPageRawIdentVal {
-                        page_id: page_info.id.clone(),
+                raw_ident_by_page_source_id.get(&page_source_info.id).map(
+                    |raw_ident| ChapterPageSourceRawIdentVal {
+                        page_source_id: page_source_info.id.clone(),
                         raw_ident: raw_ident.clone(),
-                    }
-                })
+                    },
+                )
             })
             .collect()
     });
 
-    let mut units_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
+    let mut units_by_page_source_id = HashMap::<String, Vec<UnitInfo>>::new();
 
-    let mut ext_by_page_id = HashMap::<String, String>::new();
+    let mut ext_by_page_source_id = HashMap::<String, String>::new();
 
     for unit_info in unit_infos
         .into_iter()
         .filter(|unit_info| unit_info.hidden_at.is_none())
     {
         //
-        units_by_page_id
-            .entry(unit_info.page_id.clone())
+        units_by_page_source_id
+            .entry(unit_info.page_source_id.clone())
             .or_default()
             .push(unit_info);
     }
 
-    for page_info in page_infos {
+    for page_source_info in page_source_infos {
         //
-        if let Some(obj_meta) = obj_metas.get(&page_info.id) {
-            ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext.clone());
+        if let Some(obj_meta) = obj_metas.get(&page_source_info.id) {
+            //
+            ext_by_page_source_id
+                .insert(page_source_info.id.clone(), obj_meta.ext.clone());
         }
     }
 
@@ -245,8 +251,8 @@ fn make_export_val(
         make_native_document(
             chapter_info,
             comic_title,
-            page_infos,
-            &units_by_page_id,
+            page_source_infos,
+            &units_by_page_source_id,
         )
     });
 
@@ -254,10 +260,10 @@ fn make_export_val(
         label_plus: formats.includes_label_plus().then(|| {
             //
             chapter_translation_export_complex::make_label_plus(
-                page_infos,
-                &units_by_page_id,
-                &ext_by_page_id,
-                &raw_ident_by_page_id,
+                page_source_infos,
+                &units_by_page_source_id,
+                &ext_by_page_source_id,
+                &raw_ident_by_page_source_id,
             )
         }),
         poprako,
@@ -327,27 +333,27 @@ where
 fn make_native_document(
     chapter_info: &ChapterInfo,
     comic_title: String,
-    page_infos: &[PageInfo],
-    units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
+    page_source_infos: &[PageSourceInfo],
+    units_by_page_source_id: &HashMap<String, Vec<UnitInfo>>,
 ) -> ChapterTranslationPortView {
     //
-    let page_documents = page_infos
+    let page_source_documents = page_source_infos
         .iter()
-        .map(|page_info| {
+        .map(|page_source_info| {
             //
-            let unit_documents = units_by_page_id
-                .get(&page_info.id)
+            let unit_documents = units_by_page_source_id
+                .get(&page_source_info.id)
                 .map_or(&[][..], Vec::as_slice)
                 .iter()
                 .enumerate()
                 .map(|(index, unit_info)| {
-                    make_unit_export(page_info, index, unit_info)
+                    make_unit_export(page_source_info, index, unit_info)
                 })
                 .collect();
 
-            PageTranslationDocument {
-                page_id: page_info.id.clone(),
-                page_index: page_info.index,
+            PageSourceTranslationDocument {
+                page_source_id: page_source_info.id.clone(),
+                page_source_index: page_source_info.index,
                 units: unit_documents,
             }
         })
@@ -359,7 +365,7 @@ fn make_native_document(
         chapter_subtitle: non_empty(&chapter_info.subtitle),
         comic_id: chapter_info.comic_id.clone(),
         comic_title,
-        pages: page_documents,
+        pages: page_source_documents,
     };
 
     document.into()
@@ -367,7 +373,7 @@ fn make_native_document(
 
 // Builds a [`UnitTranslationDocument`] from page and unit info.
 fn make_unit_export(
-    page_info: &PageInfo,
+    page_source_info: &PageSourceInfo,
     index: usize,
     unit_info: &UnitInfo,
 ) -> UnitTranslationDocument {
@@ -375,8 +381,8 @@ fn make_unit_export(
     UnitTranslationDocument {
         unit_id: unit_info.id.clone(),
         unit_index: index,
-        page_id: page_info.id.clone(),
-        page_index: page_info.index,
+        page_source_id: page_source_info.id.clone(),
+        page_source_index: page_source_info.index,
         x_coord: unit_info.coord.x_coord,
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,

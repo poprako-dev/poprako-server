@@ -22,7 +22,7 @@ use crate::data::val::comic_archive::{
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage,
 };
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
@@ -145,7 +145,7 @@ where
     O: ObjDept<PageArtworkImage, C>
         + ObjDept<ChapterArtwork, C>
         + ObjDept<ComicCover, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + Send
         + Sync,
 {
@@ -193,7 +193,7 @@ where
                 .await
                 .map_err(BaseError::from)?;
 
-            DeleteObjs::<PageImage>::new(&entry.source_page_ids)
+            DeleteObjs::<PageSourceImage>::new(&entry.source_page_source_ids)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)?;

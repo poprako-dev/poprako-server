@@ -148,7 +148,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         is_pinned: true,
         index: 0,
         subtitle: "subtitle".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -168,7 +168,7 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: now(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles: role_mask,
@@ -209,7 +209,7 @@ fn invitation(
 
     AssignmentInvitationInfo {
         id: id.into(),
-        chapter_id: "chapter-1".into(),
+        chapter_id: "chapter--00000000001".into(),
         inviter_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "AINV123".into(),
@@ -229,7 +229,7 @@ fn role(role_field: RoleField) -> RoleMask {
 // Build list instr that fetch current pending invitation list.
 fn list_data() -> ListAssignmentInvitationInfosInstr {
     ListAssignmentInvitationInfosInstr {
-        chapter_id: "chapter-1".into(),
+        chapter_id: "chapter--00000000001".into(),
         is_pending: Some(true),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
@@ -239,7 +239,7 @@ fn list_data() -> ListAssignmentInvitationInfosInstr {
 // Build create instr targeting a specific invitee qid.
 fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationInstr {
     CreateAssignmentInvitationInstr {
-        chapter_id: "chapter-1".into(),
+        chapter_id: "chapter--00000000001".into(),
         invitee_qid: invitee_qid.into(),
         roles: role(RoleField::TRANSLATOR),
     }
@@ -255,25 +255,26 @@ fn join_data() -> JoinAssignmentInvitationInstr {
 // Seed shared team/workset/comic/chapter references for all invitation tests.
 fn seed_scope(mock: &Mock) {
     //
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1"));
+    mock.seed_chapter(chapter("chapter--00000000001", "comic--00000000001"));
 }
 
 // Seed a chapter that is frozen because publishing has completed.
 fn seed_published_scope(mock: &Mock) {
     //
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    let mut chapter_info = chapter("chapter-1", "comic-1");
+    let mut chapter_info =
+        chapter("chapter--00000000001", "comic--00000000001");
 
     chapter_info.stages = chapter_info
         .stages
@@ -327,7 +328,7 @@ async fn create_existing_assignment_is_rejected() {
     );
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -424,7 +425,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
 
     assert_eq!(
         snapshot.assignments.first().unwrap().chapter_id,
-        "chapter-1"
+        "chapter--00000000001"
     );
 
     assert_eq!(snapshot.assignments.first().unwrap().user_id, "target-user");
@@ -455,7 +456,7 @@ async fn join_existing_assignment_merges_roles() {
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));

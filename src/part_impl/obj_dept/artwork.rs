@@ -6,6 +6,7 @@ use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 use crate::complex::chapter_port::artwork as chapter_artwork_complex;
 use crate::part::obj_dept::ChapterArtwork;
 use crate::value::artwork::ChapterArtworkKey;
+use crate::value::business_id::BusinessIdKind;
 
 impl KeyMap for ChapterArtwork {
     // Chapter artwork key domain.
@@ -15,7 +16,7 @@ impl KeyMap for ChapterArtwork {
 
     // Builds the canonical chapter artwork object key.
     fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
-        format!("chapter_artwork/{}-{}.{}", value.chapter_id, ver, value.ext)
+        format!("chapter_artwork/{}/{}.{}", value.chapter_id, ver, value.ext)
     }
 
     // Parses and validates a canonical chapter artwork object key.
@@ -23,17 +24,16 @@ impl KeyMap for ChapterArtwork {
         //
         let parsed = value
             .strip_prefix("chapter_artwork/")
-            .and_then(|suffix| suffix.rsplit_once('.'))
-            .and_then(|(identity, ext)| {
-                identity.rsplit_once('-').map(|(id, ver)| (id, ver, ext))
+            .and_then(|suffix| suffix.split_once('/'))
+            .and_then(|(id, generation)| {
+                generation.split_once('.').map(|(ver, ext)| (id, ver, ext))
             })
             .and_then(|(id, ver, ext)| {
                 Some((id, ver.parse::<u32>().ok()?, ext))
             })
             .filter(|(id, _, ext)| {
                 //
-                !id.is_empty()
-                    && !id.contains('/')
+                BusinessIdKind::Chapter.is_valid_id(id)
                     && chapter_artwork_complex::valid_ext(ext)
             })
             .map(|(id, ver, ext)| {

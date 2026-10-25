@@ -22,10 +22,10 @@ pub mod issue_edit;
 pub mod member;
 /// Member invitation repository operations.
 pub mod member_invitation;
-/// Page repository operations.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page repository operations.
+pub mod page_source;
 /// Hierarchical subtree deletion operations.
 pub mod subtree_delete;
 /// System mail repository operations.

@@ -23,8 +23,8 @@ pub struct UnitInfo {
     /// Permanent Unit ID.
     pub id: String,
 
-    /// Owning Page ID.
-    pub page_id: String,
+    /// Owning source page ID.
+    pub page_source_id: String,
     /// Permanent ID of the following Unit.
     pub next_id: Option<String>,
 
@@ -33,7 +33,7 @@ pub struct UnitInfo {
     /// Whether this Unit is flagged for later review.
     pub is_flagged: bool,
 
-    /// Page-relative coordinate.
+    /// source page-relative coordinate.
     pub coord: UnitCoord,
 
     /// Translation text annotation delivered to typesetters.
@@ -77,7 +77,7 @@ pub fn has_unit_text(text: Option<&str>) -> bool {
     text.is_some_and(|value| !value.trim().is_empty())
 }
 
-/// Unit counters stored on a Page and its Chapter.
+/// Unit counters stored on a source page and its Chapter.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCountMetrics {
     /// Number of visible Units.
@@ -103,7 +103,7 @@ impl UnitCountMetrics {
     }
 }
 
-/// Counter change applied to a Chapter after one Page mutation.
+/// Counter change applied to a Chapter after one source page mutation.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCountDelta {
     /// Visible Unit count change.

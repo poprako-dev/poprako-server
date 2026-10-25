@@ -1,6 +1,6 @@
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page_source::PageSourceEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
@@ -71,8 +71,11 @@ pub fn chapter_entry<'a>(
 }
 
 #[must_use]
-pub fn page_entry(prefix: &str, chapter: &ChapterInfo) -> PageEntry {
-    PageEntry {
+pub fn page_source_entry(
+    prefix: &str,
+    chapter: &ChapterInfo,
+) -> PageSourceEntry {
+    PageSourceEntry {
         id: [prefix, "page"].concat(),
         chapter_id: chapter.id.clone(),
         index: 0,

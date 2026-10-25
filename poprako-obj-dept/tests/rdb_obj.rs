@@ -7,7 +7,7 @@
 use poprako_obj_dept::objs_def;
 
 diesel::table! {
-    t_page_image (f_id) {
+    t_page_source_image (f_id) {
         f_id -> Text,
         f_version -> BigInt,
         f_key -> Nullable<Text>,
@@ -19,18 +19,18 @@ diesel::table! {
     }
 }
 
-struct PageImage;
+struct PageSourceImage;
 
 objs_def! {
-    PageImage {
-        table: t_page_image,
-        topic: "page_image",
+    PageSourceImage {
+        table: t_page_source_image,
+        topic: "page_source_image",
     },
 }
 
 #[test]
 fn expands_direct_typed_object() {
-    let _: PageImage = PageImage;
+    let _: PageSourceImage = PageSourceImage;
 
-    assert_eq!(page_image_rdb_impl::TOPIC, "page_image");
+    assert_eq!(page_source_image_rdb_impl::TOPIC, "page_source_image");
 }

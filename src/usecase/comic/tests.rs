@@ -57,17 +57,26 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
+const USER_ID: &str = "user--00000000001";
+const COMIC_ID: &str = "comic--00000000001";
+const CHAPTER_ID: &str = "chapter--00000000001";
+
 fn seed_comic_cover_scope(mock: &Mock, version: u32) {
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_comic(comic(COMIC_ID, "workset--00000000001", 0));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
     let key = ObjKey {
-        id: "comic-1".into(),
+        id: COMIC_ID.into(),
         ver: version,
-        image: ["comic_cover/comic-1-", &version.to_string(), ".png"].concat(),
+        image: [
+            "comic_cover/comic--00000000001/",
+            &version.to_string(),
+            ".png",
+        ]
+        .concat(),
     };
 
     let meta = ObjMeta {
@@ -84,7 +93,7 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
         .entry("comic_cover")
         .or_default()
         .insert(
-            "comic-1".into(),
+            COMIC_ID.into(),
             MockObjRecord {
                 version,
                 meta: Some(meta),
@@ -98,8 +107,8 @@ async fn mark_comic_cover(
 ) -> crate::result::BaseRest<()> {
     super::cover::mark_uploaded::<MockContext, _, _>(
         (mock, mock),
-        token("user-1"),
-        "comic-1".into(),
+        token(USER_ID),
+        COMIC_ID.into(),
         MarkComicCoverUploadedInstr { image_ver: version },
     )
     .await
@@ -107,12 +116,11 @@ async fn mark_comic_cover(
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    let mut creator_member = admin_member("user-1", "team-1");
+    let mut creator_member = admin_member(USER_ID, "team--00000000001");
 
     creator_member.roles = creator_member
         .roles
@@ -120,7 +128,7 @@ async fn create_allocates_index_and_updates_count() {
 
     mock.seed_member(creator_member);
 
-    let mut instr = create_instr("workset-1");
+    let mut instr = create_instr("workset--00000000001");
 
     instr.title = "\u{2003}new\u{00a0}".into();
 
@@ -132,7 +140,7 @@ async fn create_allocates_index_and_updates_count() {
 
     instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let created = create((&mock, &mock), token("user-1"), instr).await;
+    let created = create((&mock, &mock), token(USER_ID), instr).await;
 
     assert!(created.is_ok());
 
@@ -147,7 +155,7 @@ async fn create_allocates_index_and_updates_count() {
 
     assert_eq!(comic_info.index, 0);
 
-    assert_eq!(comic_info.creator_id, "user-1");
+    assert_eq!(comic_info.creator_id, USER_ID);
 
     assert_eq!(comic_info.title, "new");
 
@@ -187,7 +195,7 @@ async fn create_allocates_index_and_updates_count() {
         created.chapter_id
     );
 
-    assert_eq!(snapshot.assignments.first().unwrap().user_id, "user-1");
+    assert_eq!(snapshot.assignments.first().unwrap().user_id, USER_ID);
 
     assert_eq!(
         snapshot.assignments.first().unwrap().roles,
@@ -200,7 +208,7 @@ async fn create_allocates_index_and_updates_count() {
 
     assert_eq!(record.chapter_id, created.chapter_id);
 
-    assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
+    assert_eq!(record.actor_user_id.as_deref(), Some(USER_ID));
 
     assert!(matches!(
             record.payload,
@@ -211,14 +219,12 @@ async fn create_allocates_index_and_updates_count() {
 
 #[tokio::test]
 async fn create_rolls_back_missing_workset() {
-    //
     let mock = Mock::new();
 
-    let error =
-        create((&mock, &mock), token("user-1"), create_instr("missing"))
-            .await
-            .err()
-            .unwrap();
+    let error = create((&mock, &mock), token(USER_ID), create_instr("missing"))
+        .await
+        .err()
+        .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -242,7 +248,7 @@ async fn mark_cover_uploaded_marks_current_generation_idempotently() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get(COMIC_ID)
             .unwrap()
             .meta
             .as_ref()
@@ -267,7 +273,7 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
             .objs
             .get("comic_cover")
             .unwrap()
-            .get("comic-1")
+            .get(COMIC_ID)
             .unwrap()
             .meta
             .as_ref()
@@ -278,12 +284,11 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
 
 #[tokio::test]
 async fn get_info_propagates_missing_comic() {
-    //
     let mock = Mock::new();
 
     let error = get_info(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         "missing".into(),
         GetComicInfoInstr::default(),
     )
@@ -296,12 +301,11 @@ async fn get_info_propagates_missing_comic() {
 
 #[tokio::test]
 async fn list_infos_filters_and_sorts_by_last_activity() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
     let baseline = OffsetDateTime::now_utc();
 
@@ -309,21 +313,21 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
         mock.seed_comic(comic_info);
     }
 
-    mock.seed_comic(comic("comic-other", "workset-2", 0));
+    mock.seed_comic(comic("comic--85117610840", "workset--00000000002", 0));
 
     mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
+        CHAPTER_ID,
+        COMIC_ID,
         StageMask::try_from(0u32).unwrap(),
     ));
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![ComicWithOpt::PinnedChapter],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,
@@ -339,15 +343,15 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
     assert_eq!(list.comics.len(), 2);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-1");
+    assert_eq!(list.comics.first().unwrap().id, COMIC_ID);
 
-    assert_eq!(list.comics.get(1).unwrap().id, "comic-2");
+    assert_eq!(list.comics.get(1).unwrap().id, "comic--00000000002");
 
     assert_eq!(list.pinned_chapters.len(), list.comics.len());
 
     assert_eq!(
         list.pinned_chapters.first().unwrap().as_ref().unwrap().id,
-        "chapter-1"
+        CHAPTER_ID
     );
 
     assert!(list.pinned_chapters.get(1).unwrap().is_none());
@@ -361,20 +365,19 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
 #[tokio::test]
 async fn list_infos_returns_empty_for_workset_contents() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,
@@ -391,16 +394,15 @@ async fn list_infos_returns_empty_for_workset_contents() {
 
 #[tokio::test]
 async fn list_infos_filters_by_pinned_chapter_stages() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
-    mock.seed_comic(comic("comic-active", "workset-1", 0));
+    mock.seed_comic(comic("comic--28999254184", "workset--00000000001", 0));
 
-    mock.seed_comic(comic("comic-pending", "workset-1", 1));
+    mock.seed_comic(comic("comic--47740658756", "workset--00000000001", 1));
 
     let completed_translate_mask = StageMask::try_from(0u32)
         .unwrap()
@@ -408,14 +410,14 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
         .unwrap();
 
     mock.seed_chapter(chapter(
-        "chapter-active",
-        "comic-active",
+        "chapter--28999254184",
+        "comic--28999254184",
         completed_translate_mask,
     ));
 
     mock.seed_chapter(chapter(
-        "chapter-pending",
-        "comic-pending",
+        "chapter--47740658756",
+        "comic--47740658756",
         StageMask::try_from(0u32).unwrap(),
     ));
 
@@ -426,11 +428,11 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: Some(filter_mask.into()),
             status: None,
@@ -446,25 +448,24 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-active");
+    assert_eq!(list.comics.first().unwrap().id, "comic--28999254184");
 }
 
 #[tokio::test]
 async fn list_infos_rejects_invalid_stages_filter() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
     let error = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: Some(0b01 << 8),
             status: None,
@@ -481,26 +482,27 @@ async fn list_infos_rejects_invalid_stages_filter() {
 
 #[tokio::test]
 async fn list_infos_applies_pagination() {
-    //
     let fixed_time = OffsetDateTime::now_utc();
 
-    let mut comic_0_info = comic("comic-0", "workset-1", 0);
+    let mut comic_0_info =
+        comic("comic--00000000000", "workset--00000000001", 0);
 
     comic_0_info.last_active_at = fixed_time;
 
-    let mut comic_1_info = comic("comic-1", "workset-1", 1);
+    let mut comic_1_info = comic(COMIC_ID, "workset--00000000001", 1);
 
     comic_1_info.last_active_at = fixed_time;
 
-    let mut comic_2_info = comic("comic-2", "workset-1", 2);
+    let mut comic_2_info =
+        comic("comic--00000000002", "workset--00000000001", 2);
 
     comic_2_info.last_active_at = fixed_time;
 
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
     mock.seed_comic(comic_0_info);
 
@@ -510,11 +512,11 @@ async fn list_infos_applies_pagination() {
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token(USER_ID),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,
@@ -530,25 +532,24 @@ async fn list_infos_applies_pagination() {
 
     assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list.comics.first().unwrap().id, "comic-1");
+    assert_eq!(list.comics.first().unwrap().id, COMIC_ID);
 }
 
 #[tokio::test]
 async fn update_info_updates_comic() {
-    //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member(USER_ID, "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_comic(comic(COMIC_ID, "workset--00000000001", 0));
 
     update_info(
         (&mock,),
-        token("user-1"),
+        token(USER_ID),
         UpdateComicInfoInstr {
-            id: "comic-1".into(),
+            id: COMIC_ID.into(),
             title: "\u{2003}updated\u{00a0}".into(),
             author: "\u{2003}updated-author\u{00a0}".into(),
             description: Some("\u{2003}updated-desc\u{00a0}".into()),
@@ -571,12 +572,11 @@ async fn update_info_updates_comic() {
 
 #[tokio::test]
 async fn update_info_propagates_missing_comic() {
-    //
     let mock = Mock::new();
 
     let error = update_info(
         (&mock,),
-        token("user-1"),
+        token(USER_ID),
         UpdateComicInfoInstr {
             id: "missing".into(),
             title: "updated".into(),

@@ -10,9 +10,9 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 // construction(new)(positive): an existing chapter and actor remain borrowed through record construction.
 #[test]
 fn workflow_record_preserves_borrowed_identifiers() {
-    let chapter_id = String::from("chapter-1");
+    let chapter_id = String::from("chapter--00000000001");
 
-    let actor_user_id = String::from("user-1");
+    let actor_user_id = String::from("user--00000000001");
 
     let entry = ChapterWorkflowRecordEntryShape::new(
         chapter_id.as_str(),

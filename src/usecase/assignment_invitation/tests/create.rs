@@ -44,7 +44,7 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.assignment_invitations.first().unwrap().chapter_id,
-        "chapter-1"
+        "chapter--00000000001"
     );
 
     assert_eq!(

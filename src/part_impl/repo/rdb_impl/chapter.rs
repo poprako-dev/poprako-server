@@ -17,7 +17,7 @@ use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
     GetChapterUnitEditScopeExcluded, ListChapterInfos,
     ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
-    SetChapterConfirmedArtworkVer, SetChapterPageCountMetrics,
+    SetChapterConfirmedArtworkVer, SetChapterPageSourceCountMetrics,
     StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::RdbRepo;
@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     adjust_unit_counts, complete_raw_provide, create,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
     get_unit_edit_scope_excluded, list_infos, list_infos_excluded,
-    list_pinned_infos_by_comic_ids, lock_chapters, set_page_counts,
+    list_pinned_infos_by_comic_ids, lock_chapters, set_page_source_counts,
     start_stage, unpin_others, update_info, update_stage,
 };
 use crate::result::{BaseError, BaseRest};
@@ -227,13 +227,13 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Locks and loads the minimal Chapter scope owning the requested Page.
+    // Locks and loads the minimal Chapter scope owning the requested PageSource.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
         oper: &GetChapterUnitEditScopeExcluded<'_>,
     ) -> BaseRest<ChapterUnitEditScope> {
-        get_unit_edit_scope_excluded(context.conn(), oper.page_id).await
+        get_unit_edit_scope_excluded(context.conn(), oper.page_source_id).await
     }
 }
 
@@ -365,7 +365,7 @@ where
     }
 }
 
-impl<L> Step<SetChapterPageCountMetrics<'_>, RdbContext<L>> for RdbRepo
+impl<L> Step<SetChapterPageSourceCountMetrics<'_>, RdbContext<L>> for RdbRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -380,9 +380,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &SetChapterPageCountMetrics<'_>,
+        oper: &SetChapterPageSourceCountMetrics<'_>,
     ) -> BaseRest<()> {
-        set_page_counts(context.conn(), oper).await
+        set_page_source_counts(context.conn(), oper).await
     }
 }
 

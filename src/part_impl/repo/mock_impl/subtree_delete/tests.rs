@@ -3,7 +3,7 @@
 fn subtree_cleanup_removes_current_review_issues() {
     use super::sweep;
     use crate::model::read::proj::issue::IssueInfo;
-    use crate::model::read::proj::page::PageInfo;
+    use crate::model::read::proj::page_source::PageSourceInfo;
     use crate::part_impl::repo::mock_impl::MockState;
     use time::OffsetDateTime;
 
@@ -11,9 +11,9 @@ fn subtree_cleanup_removes_current_review_issues() {
 
     let mut state = MockState::default();
 
-    state.pages.push(PageInfo {
-        id: "page-review".into(),
-        chapter_id: "chapter-review".into(),
+    state.pages.push(PageSourceInfo {
+        id: "page_source--77009868014".into(),
+        chapter_id: "chapter--77009868014".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -24,8 +24,8 @@ fn subtree_cleanup_removes_current_review_issues() {
 
     state.page_artworks.push(
         crate::model::read::proj::page_artwork::PageArtworkInfo {
-            id: "artwork-review".into(),
-            chapter_id: "chapter-review".into(),
+            id: "page_artwork--77009868014".into(),
+            chapter_id: "chapter--77009868014".into(),
             index: 5,
             raw_ident: None,
             created_at: now,
@@ -34,8 +34,8 @@ fn subtree_cleanup_removes_current_review_issues() {
     );
 
     state.issues.push(IssueInfo {
-        id: "issue-review".into(),
-        page_artwork_id: "artwork-review".into(),
+        id: "issue--77009868014".into(),
+        page_artwork_id: "page_artwork--77009868014".into(),
         index: 0,
         variant: "custom".into(),
         layer_name: None,
@@ -43,7 +43,7 @@ fn subtree_cleanup_removes_current_review_issues() {
         note: "review".into(),
     });
 
-    sweep::delete_chapter(&mut state, "chapter-review");
+    sweep::delete_chapter(&mut state, "chapter--77009868014");
 
     assert!(state.issues.is_empty());
 

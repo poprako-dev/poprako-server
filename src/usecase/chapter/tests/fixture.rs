@@ -49,7 +49,7 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         chapter_count: 2,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -77,12 +77,12 @@ pub fn chapter(
         is_pinned,
         index,
         subtitle: ["chapter ", &index.to_string()].concat(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,
@@ -124,9 +124,9 @@ pub fn assignment(
 
 pub fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
     //
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    mock.seed_member(member(user_id, "team-1", role_mask));
+    mock.seed_member(member(user_id, "team--00000000001", role_mask));
 }

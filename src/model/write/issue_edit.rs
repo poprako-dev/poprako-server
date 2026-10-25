@@ -1,4 +1,4 @@
-//! Page replacement and chapter category rename commands.
+//! Finished page replacement and chapter category rename commands.
 
 use crate::model::write::issue::IssueEntry;
 

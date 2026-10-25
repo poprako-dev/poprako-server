@@ -8,17 +8,17 @@ async fn update_roles_admin_updates_member_role_mask() {
     seed_admin(&mock);
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let update_member_role = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_instr("member-target"),
+        update_role_instr("member--79630565486"),
     )
     .await;
 
@@ -29,7 +29,7 @@ async fn update_roles_admin_updates_member_role_mask() {
     let member_info = snapshot
         .members
         .iter()
-        .find(|m| m.id == "member-target")
+        .find(|m| m.id == "member--79630565486")
         .unwrap();
 
     assert_eq!(member_info.roles, RoleMask::from(RoleField::REVIEWER));
@@ -43,17 +43,17 @@ async fn update_roles_one_of_two_admins_removes_own_admin_role() {
     seed_admin(&mock);
 
     mock.seed_member(member(
-        "member-other-admin",
+        "member--24859484410",
         "other-admin-user",
         "Other Admin",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
     let update_member_role = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_instr("member-admin"),
+        update_role_instr("member--66825055253"),
     )
     .await;
 
@@ -64,7 +64,7 @@ async fn update_roles_one_of_two_admins_removes_own_admin_role() {
     let member_info = snapshot
         .members
         .iter()
-        .find(|member_info| member_info.id == "member-admin")
+        .find(|member_info| member_info.id == "member--66825055253")
         .unwrap();
 
     assert_eq!(member_info.roles, RoleMask::from(RoleField::REVIEWER));
@@ -80,7 +80,7 @@ async fn update_roles_last_admin_role_is_retained() {
     let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_instr("member-admin"),
+        update_role_instr("member--66825055253"),
     )
     .await
     .err()
@@ -100,25 +100,25 @@ async fn update_roles_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-normal",
+        "member--35634922393",
         "normal-user",
         "Normal",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let error = update_roles(
         (&mock, &mock),
         token("normal-user"),
-        update_role_instr("member-target"),
+        update_role_instr("member--79630565486"),
     )
     .await
     .err()
@@ -129,7 +129,7 @@ async fn update_roles_non_admin_is_rejected() {
     let member_info = snapshot
         .members
         .iter()
-        .find(|m| m.id == "member-target")
+        .find(|m| m.id == "member--79630565486")
         .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
@@ -147,7 +147,7 @@ async fn update_roles_missing_member_is_rejected() {
     let error = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_instr("member-missing"),
+        update_role_instr("member--66314807403"),
     )
     .await
     .err()
@@ -164,16 +164,19 @@ async fn delete_admin_deletes_member() {
     seed_admin(&mock);
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let delete_member =
-        delete((&mock, &mock), token("admin-user"), "member-target".into())
-            .await;
+    let delete_member = delete(
+        (&mock, &mock),
+        token("admin-user"),
+        "member--79630565486".into(),
+    )
+    .await;
 
     assert!(delete_member.is_ok());
 
@@ -182,7 +185,7 @@ async fn delete_admin_deletes_member() {
             .snapshot()
             .members
             .iter()
-            .any(|member_info| member_info.id == "member-target")
+            .any(|member_info| member_info.id == "member--79630565486")
     );
 }
 
@@ -194,16 +197,19 @@ async fn delete_one_of_two_admins_deletes_own_member() {
     seed_admin(&mock);
 
     mock.seed_member(member(
-        "member-other-admin",
+        "member--24859484410",
         "other-admin-user",
         "Other Admin",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let delete_member =
-        delete((&mock, &mock), token("admin-user"), "member-admin".into())
-            .await;
+    let delete_member = delete(
+        (&mock, &mock),
+        token("admin-user"),
+        "member--66825055253".into(),
+    )
+    .await;
 
     assert!(delete_member.is_ok());
 
@@ -212,7 +218,7 @@ async fn delete_one_of_two_admins_deletes_own_member() {
             .snapshot()
             .members
             .iter()
-            .any(|member_info| member_info.id == "member-admin")
+            .any(|member_info| member_info.id == "member--66825055253")
     );
 }
 
@@ -223,11 +229,14 @@ async fn delete_last_admin_member_is_retained() {
 
     seed_admin(&mock);
 
-    let error =
-        delete((&mock, &mock), token("admin-user"), "member-admin".into())
-            .await
-            .err()
-            .unwrap();
+    let error = delete(
+        (&mock, &mock),
+        token("admin-user"),
+        "member--66825055253".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -235,7 +244,7 @@ async fn delete_last_admin_member_is_retained() {
         mock.snapshot()
             .members
             .iter()
-            .any(|member_info| member_info.id == "member-admin")
+            .any(|member_info| member_info.id == "member--66825055253")
     );
 }
 
@@ -245,26 +254,29 @@ async fn delete_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-normal",
+        "member--35634922393",
         "normal-user",
         "Normal",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let error =
-        delete((&mock, &mock), token("normal-user"), "member-target".into())
-            .await
-            .err()
-            .unwrap();
+    let error = delete(
+        (&mock, &mock),
+        token("normal-user"),
+        "member--79630565486".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 
@@ -272,7 +284,7 @@ async fn delete_non_admin_is_rejected() {
         mock.snapshot()
             .members
             .iter()
-            .any(|member_info| member_info.id == "member-target")
+            .any(|member_info| member_info.id == "member--79630565486")
     );
 }
 
@@ -283,11 +295,14 @@ async fn delete_missing_member_is_rejected() {
 
     seed_admin(&mock);
 
-    let error =
-        delete((&mock, &mock), token("admin-user"), "member-missing".into())
-            .await
-            .err()
-            .unwrap();
+    let error = delete(
+        (&mock, &mock),
+        token("admin-user"),
+        "member--66314807403".into(),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Args);
 

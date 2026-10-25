@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_unit" (
     "f_id"                  TEXT             PRIMARY KEY,
 
-    "f_page_id"             TEXT             NOT NULL REFERENCES "t_page" ("f_id") ON DELETE RESTRICT,
+    "f_page_source_id"      TEXT             NOT NULL REFERENCES "t_page_source" ("f_id") ON DELETE RESTRICT,
     "f_next_id"             TEXT             REFERENCES "t_unit" ("f_id") DEFERRABLE INITIALLY DEFERRED,
 
     "f_hidden_at"           TIMESTAMPTZ,

@@ -55,7 +55,8 @@ pub enum ArchivedChapterWorkflowRecordDetail<'a> {
         /// Imported content format.
         format: TranslationFormat,
         /// Number of pages whose visible Unit content changed.
-        imported_page_count: usize,
+        #[serde(rename = "imported_page_count")]
+        imported_page_source_count: usize,
         /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },
@@ -134,11 +135,11 @@ impl<'a> From<&'a ChapterWorkflowRecordPayload>
 
             ChapterWorkflowRecordPayload::TranslationImported {
                 format,
-                imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             } => Self::TranslationImported {
                 format: *format,
-                imported_page_count: *imported_page_count,
+                imported_page_source_count: *imported_page_source_count,
                 imported_unit_count: *imported_unit_count,
             },
 

@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::part_impl::repo::mock_impl::MockState;
-use crate::part_impl::repo::mock_impl::subtree_delete::page_ids;
+use crate::part_impl::repo::mock_impl::subtree_delete::page_source_ids;
 use crate::value::subtree_delete::SubtreeSweepLevel;
 
 /// Claim eligible tombstones from one explicit hierarchy level.
@@ -97,7 +97,7 @@ pub fn claim(
 /// Delete one claimed chapter and its objects.
 pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
     //
-    let page_ids = page_ids(state, chapter_id);
+    let page_source_ids = page_source_ids(state, chapter_id);
 
     state
         .assignment_invitations
@@ -126,13 +126,17 @@ pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
         .page_artworks
         .retain(|info| info.chapter_id != chapter_id);
 
-    state.units.retain(|info| !page_ids.contains(&info.page_id));
-
-    state.pages.retain(|info| !page_ids.contains(&info.id));
+    state
+        .units
+        .retain(|info| !page_source_ids.contains(&info.page_source_id));
 
     state
-        .page_raw_idents
-        .retain(|page_id, _| !page_ids.contains(page_id));
+        .pages
+        .retain(|info| !page_source_ids.contains(&info.id));
+
+    state
+        .page_source_raw_idents
+        .retain(|page_source_id, _| !page_source_ids.contains(page_source_id));
 
     state.chapters.retain(|info| info.id != chapter_id);
 

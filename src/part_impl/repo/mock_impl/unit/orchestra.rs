@@ -6,11 +6,11 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageSourceIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    apply_edits, list_infos, list_infos_by_ids, list_infos_by_page_ids,
+    apply_edits, list_infos, list_infos_by_ids, list_infos_by_page_source_ids,
     list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
@@ -51,16 +51,16 @@ fn search_chapter_ids(
     let mut pages = state
         .pages
         .iter()
-        .filter(|page_info| page_info.chapter_id == chapter_id)
+        .filter(|page_source_info| page_source_info.chapter_id == chapter_id)
         .collect::<Vec<_>>();
 
-    pages.sort_by_key(|page_info| page_info.index);
+    pages.sort_by_key(|page_source_info| page_source_info.index);
 
     let mut ids = Vec::new();
 
-    for page_info in pages {
+    for page_source_info in pages {
         //
-        for unit_info in list_infos(state, &page_info.id)? {
+        for unit_info in list_infos(state, &page_source_info.id)? {
             //
             if unit_info.hidden_at.is_some()
                 || !text_part_contains(unit_info, part, phrase)
@@ -79,33 +79,35 @@ fn search_chapter_ids(
     accept!(ids)
 }
 
-// Loads selected Unit infos in stable Chapter Page and linked-list order.
+// Loads selected Unit infos in stable Chapter PageSource and linked-list order.
 fn list_infos_in_chapter_order(
     state: &MockState,
     ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
-    let page_ids = state
+    let page_source_ids = state
         .units
         .iter()
         .filter(|unit_info| ids.contains(&unit_info.id.as_str()))
-        .map(|unit_info| unit_info.page_id.as_str())
+        .map(|unit_info| unit_info.page_source_id.as_str())
         .collect::<HashSet<_>>();
 
     let mut pages = state
         .pages
         .iter()
-        .filter(|page_info| page_ids.contains(page_info.id.as_str()))
+        .filter(|page_source_info| {
+            page_source_ids.contains(page_source_info.id.as_str())
+        })
         .collect::<Vec<_>>();
 
-    pages.sort_by_key(|page_info| page_info.index);
+    pages.sort_by_key(|page_source_info| page_source_info.index);
 
     let mut selected_infos = Vec::new();
 
-    for page_info in pages {
+    for page_source_info in pages {
         //
         selected_infos.extend(
-            list_infos(state, &page_info.id)?
+            list_infos(state, &page_source_info.id)?
                 .into_iter()
                 .filter(|unit_info| {
                     //
@@ -119,7 +121,7 @@ fn list_infos_in_chapter_order(
     accept!(selected_infos)
 }
 
-impl Run<ListUnitInfosByPageIds<'_>> for Mock {
+impl Run<ListUnitInfosByPageSourceIds<'_>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -128,14 +130,14 @@ impl Run<ListUnitInfosByPageIds<'_>> for Mock {
     // Internal implementation of `run`.
     async fn run(
         &self,
-        oper: &ListUnitInfosByPageIds<'_>,
+        oper: &ListUnitInfosByPageSourceIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        list_infos_by_page_ids(&state, oper.page_ids)
+        list_infos_by_page_source_ids(&state, oper.page_source_ids)
     }
 }
 
@@ -214,7 +216,7 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListUnitOrders<'_>,
     ) -> BaseRest<Vec<UnitOrder>> {
-        list_orders(&context.state, oper.page_id)
+        list_orders(&context.state, oper.page_source_id)
     }
 }
 
@@ -232,6 +234,12 @@ impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ApplyUnitEdits<'_>,
     ) -> BaseRest<UnitCountMetrics> {
-        apply_edits(&mut context.state, oper.page_id, oper.orders, oper.edits)
+        //
+        apply_edits(
+            &mut context.state,
+            oper.page_source_id,
+            oper.orders,
+            oper.edits,
+        )
     }
 }

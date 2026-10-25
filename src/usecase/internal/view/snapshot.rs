@@ -16,11 +16,13 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
-use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::part::repo::oper::page_source::ListFirstPageSourceInfos;
 use crate::result::{BaseError, BaseRest};
-use crate::usecase::internal::page::PageLoader;
+use crate::usecase::internal::page_source::PageSourceLoader;
 use crate::usecase::internal::view::obj_urls::{
     ObjUrlBatch, ObjUrlViews, load_obj_urls,
 };
@@ -162,10 +164,10 @@ impl ObjViewSnapshot {
     where
         C: Context,
         R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-            + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+            + for<'a> Run<ListFirstPageSourceInfos<'a>, Error = BaseError>
             + Sync,
         O: ObjDeptView<ComicCover, C>
-            + ObjDeptView<PageImage, C>
+            + ObjDeptView<PageSourceImage, C>
             + ObjDeptView<TeamAvatar, C>
             + ObjDeptView<UserAvatar, C>
             + Sync,
@@ -178,14 +180,14 @@ impl ObjViewSnapshot {
                 ids.team_avatars,
                 ids.user_avatars
             ),
-            PageLoader::load_ids_from_comics(
+            PageSourceLoader::load_ids_from_comics(
                 repo,
                 &ids.comic_covers,
                 pinned_chapters
             ),
         )?;
 
-        let (page_ids, positions) = pages.into_loaded();
+        let (page_source_ids, positions) = pages.into_loaded();
 
         let fallback_ids = snapshot
             .comic_covers
@@ -193,13 +195,14 @@ impl ObjViewSnapshot {
             .zip(&positions)
             .filter(|(cover, _)| cover.is_none())
             .filter_map(|(_, position)| {
-                position.and_then(|position| page_ids.get(position))
+                position.and_then(|position| page_source_ids.get(position))
             })
             .map(String::as_str)
             .collect();
 
-        let mut page_urls =
-            load_obj_urls::<_, _, PageImage>(obj_dept, fallback_ids).await?;
+        let mut page_source_urls =
+            load_obj_urls::<_, _, PageSourceImage>(obj_dept, fallback_ids)
+                .await?;
 
         for (cover, position) in snapshot.comic_covers.iter_mut().zip(positions)
         {
@@ -208,10 +211,10 @@ impl ObjViewSnapshot {
                 continue;
             }
 
-            if let Some(page_id) =
-                position.and_then(|position| page_ids.get(position))
+            if let Some(page_source_id) =
+                position.and_then(|position| page_source_ids.get(position))
             {
-                *cover = page_urls.take(page_id);
+                *cover = page_source_urls.take(page_source_id);
             }
         }
 

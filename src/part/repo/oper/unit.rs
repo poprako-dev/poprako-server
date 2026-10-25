@@ -7,9 +7,9 @@ use crate::value::unit::UnitTextPart;
 /// Lists unit infos for multiple pages in each page's linked-list order.
 #[derive(Oper)]
 #[oper(output = Vec<UnitInfo>)]
-pub struct ListUnitInfosByPageIds<'a> {
+pub struct ListUnitInfosByPageSourceIds<'a> {
     /// The page ids whose Units should be retrieved.
-    pub page_ids: &'a [&'a str],
+    pub page_source_ids: &'a [&'a str],
 }
 
 /// Lists requested Unit infos that currently exist.
@@ -36,7 +36,7 @@ pub struct SearchChapterUnitIds<'a> {
     pub fetch_count: usize,
 }
 
-/// Loads selected Unit infos in Chapter Page and linked-list order.
+/// Loads selected Unit infos in Chapter source page and linked-list order.
 #[derive(Oper)]
 #[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfosInChapterOrder<'a> {
@@ -49,7 +49,7 @@ pub struct ListUnitInfosInChapterOrder<'a> {
 #[oper(output = Vec<UnitOrder>)]
 pub struct ListUnitOrders<'a> {
     /// The page id.
-    pub page_id: &'a str,
+    pub page_source_id: &'a str,
 }
 
 /// Applies unit edits (reorder, create, update, delete) for a page.
@@ -60,7 +60,7 @@ pub struct ListUnitOrders<'a> {
 #[oper(output = UnitCountMetrics)]
 pub struct ApplyUnitEdits<'a> {
     /// The page id.
-    pub page_id: &'a str,
+    pub page_source_id: &'a str,
 
     /// The new unit order for the page.
     pub orders: &'a [UnitOrder],

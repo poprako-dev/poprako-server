@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::numeric::usize_from_i64;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_hidden_at, f_id, f_is_bubble, f_is_flagged, f_is_proofread,
-    f_last_proofreader_id, f_last_translator_id, f_next_id, f_page_id,
+    f_last_proofreader_id, f_last_translator_id, f_next_id, f_page_source_id,
     f_proofread_text, f_translated_text, f_translation_note, f_typography_note,
     f_updated_at, f_x_coord, f_y_coord, t_unit as unit_table,
 };
@@ -54,7 +54,7 @@ type UnitPacks<'a> = BTreeMap<&'a str, UnitPack<'a>>;
 #[instrument(level = "info", skip_all)]
 pub async fn apply_edits(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
     orders: &[UnitOrder],
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
@@ -64,7 +64,7 @@ pub async fn apply_edits(
     if !write_plan.skipped_ids.is_empty() {
         //
         let matched = unit_table
-            .filter(f_page_id.eq(page_id))
+            .filter(f_page_source_id.eq(page_source_id))
             .filter(f_id.eq_any(&write_plan.skipped_ids))
             .count()
             .get_result::<i64>(conn)
@@ -72,7 +72,7 @@ pub async fn apply_edits(
             .map_err(diesel)?;
 
         ensure_affected(
-            page_id,
+            page_source_id,
             "batch",
             "validate skipped targets",
             usize_from_i64(matched, "count skipped Unit targets")?,
@@ -88,13 +88,14 @@ pub async fn apply_edits(
             return Err(invalid_unit_edit_plan_error());
         };
 
-        let item = UnitItem::from_edit(page_id, edit, next_id.as_deref())
-            .ok_or_else(invalid_unit_edit_plan_error)?;
+        let item =
+            UnitItem::from_edit(page_source_id, edit, next_id.as_deref())
+                .ok_or_else(invalid_unit_edit_plan_error)?;
 
         items.push(item);
     }
 
-    apply_create_items(conn, page_id, &items).await?;
+    apply_create_items(conn, page_source_id, &items).await?;
 
     let mut packs = UnitPacks::new();
 
@@ -122,14 +123,14 @@ pub async fn apply_edits(
         packs.insert(*id, pack);
     }
 
-    apply_update_packs(conn, page_id, &packs).await?;
+    apply_update_packs(conn, page_source_id, &packs).await?;
 
-    count_visible_units(conn, page_id).await
+    count_visible_units(conn, page_source_id).await
 }
 
 // Reject an invariant-breaking affected-row count.
 fn ensure_affected(
-    page_id: &str,
+    page_source_id: &str,
     unit_id: &str,
     operation: &str,
     affected: usize,
@@ -142,7 +143,7 @@ fn ensure_affected(
 
     Err(unrecoverable_error! {
         message: "Unit batch affected an unexpected row count".into();
-        page_id,
+        page_source_id,
         unit_id,
         operation,
         affected,
@@ -164,7 +165,7 @@ fn invalid_unit_edit_plan_error() -> BaseError {
 // Insert an exact Unit row set in one statement.
 async fn apply_create_items(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
     items: &[UnitItem<'_>],
 ) -> BaseRest<()> {
     //
@@ -178,13 +179,13 @@ async fn apply_create_items(
         .await
         .map_err(diesel)?;
 
-    ensure_affected(page_id, "batch", "create", affected, items.len())
+    ensure_affected(page_source_id, "batch", "create", affected, items.len())
 }
 
 // Applies every existing-row mutation through one typed CASE update.
 async fn apply_update_packs(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
     packs: &UnitPacks<'_>,
 ) -> BaseRest<()> {
     //
@@ -251,7 +252,7 @@ async fn apply_update_packs(
 
     let affected = diesel::update(
         unit_table
-            .filter(f_page_id.eq(page_id))
+            .filter(f_page_source_id.eq(page_source_id))
             .filter(f_id.eq_any(&ids)),
     )
     .set((
@@ -274,13 +275,13 @@ async fn apply_update_packs(
     .await
     .map_err(diesel)?;
 
-    ensure_affected(page_id, "batch", "update", affected, packs.len())
+    ensure_affected(page_source_id, "batch", "update", affected, packs.len())
 }
 
 // Aggregates visible Unit counters inside PostgreSQL.
 async fn count_visible_units(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
 ) -> BaseRest<UnitCountMetrics> {
     //
     let has_translation = btrim(f_translated_text, UNIT_TEXT_WHITESPACE).ne("");
@@ -291,7 +292,7 @@ async fn count_visible_units(
         btrim(f_typography_note, UNIT_TEXT_WHITESPACE).ne("");
 
     let (total, translated, proofread) = unit_table
-        .filter(f_page_id.eq(page_id))
+        .filter(f_page_source_id.eq(page_source_id))
         .filter(f_hidden_at.is_null())
         .select((
             diesel::dsl::count_star(),

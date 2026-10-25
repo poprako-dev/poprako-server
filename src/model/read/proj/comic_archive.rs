@@ -7,8 +7,8 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::issue::IssueInfo;
-use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::page_artwork::PageArtworkInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 
@@ -31,16 +31,16 @@ pub struct ComicArchiveChapterSnapshot {
     /// Immutable workflow records retained in language-neutral form.
     pub workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
     /// All pages under this chapter, each containing its text units.
-    pub page_snapshots: Vec<ComicArchivePageSnapshot>,
+    pub page_source_snapshots: Vec<ComicArchivePageSourceSnapshot>,
 
     /// Independently ordered composite pages and their current issues.
     pub page_artwork_snapshots: Vec<ComicArchivePageArtworkSnapshot>,
 }
 
 /// Active page data and its ordered text units.
-pub struct ComicArchivePageSnapshot {
+pub struct ComicArchivePageSourceSnapshot {
     /// The page record being archived.
-    pub page_info: PageInfo,
+    pub page_source_info: PageSourceInfo,
     /// Ordered text units belonging to this page at the time of archiving.
     pub unit_infos: Vec<UnitInfo>,
 }

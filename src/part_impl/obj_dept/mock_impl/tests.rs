@@ -15,26 +15,31 @@ use poprako_obj_dept::oper::{
     ClearObjs, DeleteObjs, GenObjUrls, MarkObjUploaded,
 };
 
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::value::image::{
-    ComicCoverKey, ImageExt, PageImageKey, TeamAvatarKey, UserAvatarKey,
+    ComicCoverKey, ImageExt, PageSourceImageKey, TeamAvatarKey, UserAvatarKey,
 };
 
-fn page_dom(page_id: &str) -> PageImageKey {
-    PageImageKey {
-        chapter_id: "chapter-1".into(),
-        page_id: page_id.into(),
+fn page_source_dom(page_source_id: &str) -> PageSourceImageKey {
+    PageSourceImageKey {
+        chapter_id: "chapter--00000000001".into(),
+        page_source_id: page_source_id.into(),
         ext: ImageExt::Png,
     }
 }
 
 #[test]
 fn key_maps_preserve_the_business_physical_key_contract() {
-    let page_key = PageImage::forward(&page_dom("page-1"), 7);
+    let page_source_key = PageSourceImage::forward(
+        &page_source_dom("page_source--00000000001"),
+        7,
+    );
 
     let user_key = UserAvatar::forward(
         &UserAvatarKey {
-            user_id: "user-1".into(),
+            user_id: "user--00000000001".into(),
             ext: ImageExt::Jpg,
         },
         8,
@@ -42,7 +47,7 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 
     let team_key = TeamAvatar::forward(
         &TeamAvatarKey {
-            team_id: "team-1".into(),
+            team_id: "team--00000000001".into(),
             ext: ImageExt::Webp,
         },
         9,
@@ -50,35 +55,46 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 
     let comic_key = ComicCover::forward(
         &ComicCoverKey {
-            comic_id: "comic-1".into(),
+            comic_id: "comic--00000000001".into(),
             ext: ImageExt::Avif,
         },
         10,
     );
 
-    assert_eq!(page_key, "page/chapter_chapter-1/page-1-7.png");
-
-    assert_eq!(user_key, "user_avatar/user-1-8.jpg");
-
-    assert_eq!(team_key, "team_avatar/team-1-9.webp");
-
-    assert_eq!(comic_key, "comic_cover/comic-1-10.avif");
-
     assert_eq!(
-        PageImage::forward(&PageImage::reverse(&page_key).unwrap().0, 7),
-        page_key
+        page_source_key,
+        "page_source/chapter--00000000001/page_source--00000000001/7.png"
     );
 
-    assert!(PageImage::reverse(&"page_image/page-1/7".into()).is_err());
+    assert_eq!(user_key, "user_avatar/user--00000000001/8.jpg");
+
+    assert_eq!(team_key, "team_avatar/team--00000000001/9.webp");
+
+    assert_eq!(comic_key, "comic_cover/comic--00000000001/10.avif");
+
+    assert_eq!(
+        PageSourceImage::forward(
+            &PageSourceImage::reverse(&page_source_key).unwrap().0,
+            7
+        ),
+        page_source_key
+    );
+
+    assert!(
+        PageSourceImage::reverse(
+            &"page_source_image/page_source--00000000001/7".into()
+        )
+        .is_err()
+    );
 }
 
 #[test]
 fn origin_only_spec_omits_image_renditions() {
     let meta = ObjMeta {
         key: ObjKey {
-            id: String::from("page-1"),
+            id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page/chapter_chapter-1/page-1-1.png".into(),
+            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
         },
         is_avail: true,
         hash: vec![1; 32],
@@ -100,9 +116,9 @@ fn origin_only_spec_omits_image_renditions() {
 fn selected_image_renditions_are_generated() {
     let meta = ObjMeta {
         key: ObjKey {
-            id: String::from("page-1"),
+            id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page/chapter_chapter-1/page-1-1.png".into(),
+            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
         },
         is_avail: true,
         hash: vec![1; 32],
@@ -126,11 +142,12 @@ async fn mock_operation_rejects_empty_url_spec_without_metadata() {
 
     let metas = HashMap::new();
 
-    let error = GenObjUrls::<PageImage>::new(&metas, ObjUrlSpec::default())
-        .run_on(&mock)
-        .await
-        .err()
-        .expect("URL generation must reject an empty URL spec");
+    let error =
+        GenObjUrls::<PageSourceImage>::new(&metas, ObjUrlSpec::default())
+            .run_on(&mock)
+            .await
+            .err()
+            .expect("URL generation must reject an empty URL spec");
 
     assert!(matches!(error, ObjDeptError::Invalid { .. }));
 }
@@ -140,28 +157,29 @@ async fn mock_operation_can_disable_thumbnails() {
     let mock = Mock::new().with_obj_thumbnail_disabled();
     let meta = ObjMeta {
         key: ObjKey {
-            id: String::from("page-1"),
+            id: String::from("page_source--00000000001"),
             ver: 1,
-            image: "page/chapter_chapter-1/page-1-1.png".into(),
+            image: "page_source/chapter--00000000001/page_source--00000000001/1.png".into(),
         },
         is_avail: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
-    let metas = HashMap::from([(String::from("page-1"), meta)]);
+    let metas =
+        HashMap::from([(String::from("page_source--00000000001"), meta)]);
 
     let obj_url_spec = ObjUrlSpec::default()
         .with_origin()
         .with_optimized()
         .with_thumbnail();
 
-    let urls = GenObjUrls::<PageImage>::new(&metas, obj_url_spec)
+    let urls = GenObjUrls::<PageSourceImage>::new(&metas, obj_url_spec)
         .run_on(&mock)
         .await
         .unwrap();
 
     assert!(matches!(
-        urls.get("page-1"),
+        urls.get("page_source--00000000001"),
         Some(ObjUrls {
             thumbnail_url: None,
             ..
@@ -169,7 +187,7 @@ async fn mock_operation_can_disable_thumbnails() {
     ));
 
     assert!(matches!(
-        urls.get("page-1"),
+        urls.get("page_source--00000000001"),
         Some(ObjUrls {
             optimized_url: Some(_),
             ..
@@ -181,9 +199,11 @@ async fn mock_operation_can_disable_thumbnails() {
 async fn upload_mark_is_exact_current_and_idempotent() {
     let mock = Mock::new();
     let key = ObjKey {
-        id: String::from("page-1"),
+        id: String::from("page_source--00000000001"),
         ver: 4,
-        image: "page/chapter_chapter-1/page-1-4.png".into(),
+        image:
+            "page_source/chapter--00000000001/page_source--00000000001/4.png"
+                .into(),
     };
     let meta = ObjMeta {
         key: key.clone(),
@@ -196,7 +216,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         .lock()
         .unwrap()
         .objs
-        .entry("page_image")
+        .entry("page_source_image")
         .or_default()
         .insert(
             key.id.clone(),
@@ -211,11 +231,11 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         ver: key.ver,
     };
 
-    let first = MarkObjUploaded::<PageImage>::new(&generation)
+    let first = MarkObjUploaded::<PageSourceImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
-    let second = MarkObjUploaded::<PageImage>::new(&generation)
+    let second = MarkObjUploaded::<PageSourceImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
@@ -223,7 +243,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         id: key.id.clone(),
         ver: 3,
     };
-    let stale = MarkObjUploaded::<PageImage>::new(&stale_key)
+    let stale = MarkObjUploaded::<PageSourceImage>::new(&stale_key)
         .run_on(&mock)
         .await
         .unwrap();
@@ -231,7 +251,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         id: String::from("missing"),
         ver: 1,
     };
-    let missing = MarkObjUploaded::<PageImage>::new(&missing_key)
+    let missing = MarkObjUploaded::<PageSourceImage>::new(&missing_key)
         .run_on(&mock)
         .await
         .unwrap();
@@ -247,8 +267,8 @@ async fn upload_mark_is_exact_current_and_idempotent() {
     let snapshot = mock.snapshot();
     let uploaded = snapshot
         .objs
-        .get("page_image")
-        .and_then(|objs| objs.get("page-1"))
+        .get("page_source_image")
+        .and_then(|objs| objs.get("page_source--00000000001"))
         .and_then(|record| record.meta.as_ref())
         .is_some_and(|meta| meta.is_avail);
 
@@ -259,8 +279,8 @@ async fn upload_mark_is_exact_current_and_idempotent() {
 
         match mock_state
             .objs
-            .get_mut("page_image")
-            .and_then(|objs| objs.get_mut("page-1"))
+            .get_mut("page_source_image")
+            .and_then(|objs| objs.get_mut("page_source--00000000001"))
         {
             Some(record) => {
                 record.meta = None;
@@ -273,7 +293,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
 
     assert!(detached_prepared);
 
-    let detached = MarkObjUploaded::<PageImage>::new(&generation)
+    let detached = MarkObjUploaded::<PageSourceImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
@@ -290,19 +310,19 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
     mock.coord(async move |context| {
         //
         let obj_spec = ObjSlotSpec {
-            dom: page_dom("page-1"),
+            dom: page_source_dom("page_source--00000000001"),
             hash: &[1; 32],
             content_type: "image/png",
             byte_len: 1024,
         };
 
-        GenObjSlot::<PageImage>::new(&obj_spec)
+        GenObjSlot::<PageSourceImage>::new(&obj_spec)
             .step_on(&obj_dept, context)
             .await?;
 
-        let ids = vec![String::from("page-1")];
+        let ids = vec![String::from("page_source--00000000001")];
 
-        DeleteObjs::<PageImage>::new(&ids)
+        DeleteObjs::<PageSourceImage>::new(&ids)
             .step_on(&obj_dept, context)
             .await?;
 
@@ -316,7 +336,7 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
     assert!(
         snapshot
             .objs
-            .get("page_image")
+            .get("page_source_image")
             .is_none_or(HashMap::is_empty)
     );
 
@@ -337,8 +357,13 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
 async fn allocs_retain_generations_for_new_pending_and_avail_content() {
     let mock = Mock::new();
 
-    let specs = ["page-1", "page-2", "page-3"].map(|id| ObjSlotSpec {
-        dom: page_dom(id),
+    let specs = [
+        "page_source--00000000001",
+        "page_source--00000000002",
+        "page_source--00000000003",
+    ]
+    .map(|id| ObjSlotSpec {
+        dom: page_source_dom(id),
         hash: &[1; 32],
         content_type: "image/png",
         byte_len: 1024,
@@ -346,7 +371,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
     let first = mock
         .coord(async |context| {
-            GenObjSlot::<PageImage>::new(&specs[0])
+            GenObjSlot::<PageSourceImage>::new(&specs[0])
                 .step_on(&mock, context)
                 .await
         })
@@ -364,7 +389,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
     assert!(first_slot.url.path().ends_with(&first_key.image));
 
     mock.coord(async |context| {
-        let resumed = GenObjSlot::<PageImage>::new(&specs[0])
+        let resumed = GenObjSlot::<PageSourceImage>::new(&specs[0])
             .step_on(&mock, context)
             .await?;
 
@@ -372,7 +397,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
         assert_eq!(resumed.into_slot().unwrap().key, first_key);
 
-        MarkObjUploaded::<PageImage>::new(&ObjGen {
+        MarkObjUploaded::<PageSourceImage>::new(&ObjGen {
             id: first_key.id.clone(),
             ver: first_key.ver,
         })
@@ -381,7 +406,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
         let task_count = context.state.obj_tasks.len();
 
-        let available = GenObjSlot::<PageImage>::new(&specs[0])
+        let available = GenObjSlot::<PageSourceImage>::new(&specs[0])
             .step_on(&mock, context)
             .await?;
 
@@ -391,7 +416,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
         assert_eq!(context.state.obj_tasks.len(), task_count);
 
-        GenObjSlot::<PageImage>::new(&specs[1])
+        GenObjSlot::<PageSourceImage>::new(&specs[1])
             .step_on(&mock, context)
             .await?;
 
@@ -404,7 +429,7 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
     let allocs = mock
         .coord(async |context| {
-            GenObjSlots::<PageImage>::new(&specs)
+            GenObjSlots::<PageSourceImage>::new(&specs)
                 .step_on(&mock, context)
                 .await
         })
@@ -419,9 +444,9 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
         assert_eq!(alloc.key().ver, 1);
 
         match alloc.into_slot() {
-            None => assert_eq!(id, "page-1"),
+            None => assert_eq!(id, "page_source--00000000001"),
             Some(slot) => {
-                assert_ne!(id, "page-1");
+                assert_ne!(id, "page_source--00000000001");
 
                 assert!(slot.url.path().ends_with(&slot.key.image));
             }
@@ -430,17 +455,11 @@ async fn allocs_retain_generations_for_new_pending_and_avail_content() {
 
     let after = mock.snapshot();
 
-    assert!(
-        after
-            .objs
-            .get("page_image")
-            .unwrap()
-            .values()
-            .all(|record| {
-                record.version == 1
-                    && record.meta.as_ref().unwrap().key.ver == 1
-            })
-    );
+    assert!(after.objs.get("page_source_image").unwrap().values().all(
+        |record| {
+            record.version == 1 && record.meta.as_ref().unwrap().key.ver == 1
+        }
+    ));
 
     assert_eq!(after.obj_tasks.len(), before.obj_tasks.len() + 2);
 
@@ -457,23 +476,23 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
     let replacement = mock
         .coord(async move |context| {
             let obj_spec = ObjSlotSpec {
-                dom: page_dom("page-1"),
+                dom: page_source_dom("page_source--00000000001"),
                 hash: &[1; 32],
                 content_type: "image/png",
                 byte_len: 1024,
             };
 
-            GenObjSlot::<PageImage>::new(&obj_spec)
+            GenObjSlot::<PageSourceImage>::new(&obj_spec)
                 .step_on(&obj_dept, context)
                 .await?;
 
-            let ids = vec![String::from("page-1")];
+            let ids = vec![String::from("page_source--00000000001")];
 
-            ClearObjs::<PageImage>::new(&ids)
+            ClearObjs::<PageSourceImage>::new(&ids)
                 .step_on(&obj_dept, context)
                 .await?;
 
-            GenObjSlot::<PageImage>::new(&obj_spec)
+            GenObjSlot::<PageSourceImage>::new(&obj_spec)
                 .step_on(&obj_dept, context)
                 .await
         })
@@ -492,20 +511,20 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
         .coord(async move |context| {
             let specs = [
                 ObjSlotSpec {
-                    dom: page_dom("page-1"),
+                    dom: page_source_dom("page_source--00000000001"),
                     hash: &[1; 32],
                     content_type: "image/png",
                     byte_len: 1024,
                 },
                 ObjSlotSpec {
-                    dom: page_dom("page-1"),
+                    dom: page_source_dom("page_source--00000000001"),
                     hash: &[2; 32],
                     content_type: "image/png",
                     byte_len: 2048,
                 },
             ];
 
-            GenObjSlots::<PageImage>::new(&specs)
+            GenObjSlots::<PageSourceImage>::new(&specs)
                 .step_on(&obj_dept, context)
                 .await
         })
@@ -520,7 +539,7 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.objs.contains_key("page_image"));
+    assert!(!snapshot.objs.contains_key("page_source_image"));
 
     assert!(snapshot.obj_tasks.is_empty());
 }
@@ -532,7 +551,7 @@ fn artwork_key_mapping_rejects_noncanonical_paths() {
     use crate::value::artwork::ChapterArtworkKey;
 
     let artwork_key = ChapterArtworkKey {
-        chapter_id: "chapter-123".into(),
+        chapter_id: "chapter--00000000123".into(),
         ext: "PSD".into(),
     };
 

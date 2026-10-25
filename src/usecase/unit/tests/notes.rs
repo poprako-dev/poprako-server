@@ -106,8 +106,8 @@ async fn notes_are_shared_and_typography_note_starts_translation() {
         let listed = list_infos(
             (&mock, &mock),
             token("translator-1"),
-            ListPageUnitInfosInstr {
-                page_id: "page-1".into(),
+            ListPageSourceUnitInfosInstr {
+                page_source_id: "page_source--00000000001".into(),
             },
         )
         .await

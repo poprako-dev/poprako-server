@@ -25,7 +25,9 @@ use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -41,7 +43,7 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
@@ -72,10 +74,10 @@ where
         + MemberRepo<C>
         + TeamRepo<C>
         + UserRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,

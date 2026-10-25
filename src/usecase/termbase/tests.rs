@@ -78,7 +78,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         chapter_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -106,7 +106,7 @@ fn termbase(
         name: name.into(),
         description: description.map(Into::into),
         term_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         created_at: time,
         updated_at: time,
     }
@@ -122,7 +122,7 @@ fn term(id: &str, termbase_id: &str) -> TermInfo {
         source: "source".into(),
         targets: vec!["target".into()],
         comment: None,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         created_at: time,
         updated_at: time,
     }
@@ -130,7 +130,7 @@ fn term(id: &str, termbase_id: &str) -> TermInfo {
 
 fn create_instr() -> CreateTermbaseInstr {
     CreateTermbaseInstr {
-        team_id: Some("team-1".into()),
+        team_id: Some("team--00000000001".into()),
         comic_id: None,
         name: "  Glossary  ".into(),
         description: Some("   ".into()),
@@ -142,17 +142,18 @@ async fn create_normalizes_and_persists_for_proofreader() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
-    let val = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap();
+    let val =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -170,17 +171,18 @@ async fn create_persists_for_translator() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let val = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap();
+    let val =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap();
 
     assert_eq!(mock.snapshot().termbases.first().unwrap().id, val.id);
 }
@@ -190,17 +192,18 @@ async fn create_rejects_admin_without_translation_role() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let error = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap_err();
+    let error =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap_err();
 
     assert_expected_message(
         error,
@@ -217,13 +220,13 @@ async fn create_rejects_invalid_scope() {
     let mock = Mock::new();
 
     let instr = CreateTermbaseInstr {
-        team_id: Some("team-1".into()),
-        comic_id: Some("comic-1".into()),
+        team_id: Some("team--00000000001".into()),
+        comic_id: Some("comic--00000000001".into()),
         name: "Glossary".into(),
         description: None,
     };
 
-    let error = create((&mock, &mock), token("user-1"), instr)
+    let error = create((&mock, &mock), token("user--00000000001"), instr)
         .await
         .unwrap_err();
 
@@ -237,62 +240,62 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    mock.seed_comic(comic("comic-2", "workset-1"));
+    mock.seed_comic(comic("comic--00000000002", "workset--00000000001"));
 
     mock.seed_termbase(termbase(
-        "termbase-team",
-        Some("team-1"),
+        "termbase--97855603245",
+        Some("team--00000000001"),
         None,
         "Hero Team",
         None,
     ));
 
     mock.seed_termbase(termbase(
-        "termbase-comic",
+        "termbase--44965309070",
         None,
-        Some("comic-1"),
+        Some("comic--00000000001"),
         "Hero Comic",
         None,
     ));
 
     mock.seed_termbase(termbase(
-        "termbase-sibling",
+        "termbase--18605221028",
         None,
-        Some("comic-2"),
+        Some("comic--00000000002"),
         "Hero Sibling",
         None,
     ));
 
     let instr = ListComicTermbaseInfosInstr {
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         fuzzy_name: Some("hero".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
-    let infos = list_comic_infos((&mock,), token("user-1"), instr)
+    let infos = list_comic_infos((&mock,), token("user--00000000001"), instr)
         .await
         .unwrap();
 
     assert_eq!(infos.len(), 2);
 
-    assert!(infos.iter().any(|info| info.id == "termbase-team"));
+    assert!(infos.iter().any(|info| info.id == "termbase--97855603245"));
 
-    assert!(infos.iter().any(|info| info.id == "termbase-comic"));
+    assert!(infos.iter().any(|info| info.id == "termbase--44965309070"));
 
-    assert!(!infos.iter().any(|info| info.id == "termbase-sibling"));
+    assert!(!infos.iter().any(|info| info.id == "termbase--18605221028"));
 }
 
 #[tokio::test]
@@ -300,28 +303,28 @@ async fn list_comic_infos_rejects_non_member() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
     mock.seed_termbase(termbase(
-        "termbase-team",
-        Some("team-1"),
+        "termbase--97855603245",
+        Some("team--00000000001"),
         None,
         "Hero Team",
         None,
     ));
 
     let instr = ListComicTermbaseInfosInstr {
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         fuzzy_name: None,
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
-    let error = list_comic_infos((&mock,), token("user-outside"), instr)
+    let error = list_comic_infos((&mock,), token("user--86681268827"), instr)
         .await
         .unwrap_err();
 
@@ -333,34 +336,34 @@ async fn list_comic_infos_does_not_search_description() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
     mock.seed_termbase(termbase(
-        "termbase-1",
-        Some("team-1"),
+        "termbase--00000000001",
+        Some("team--00000000001"),
         None,
         "Glossary",
         Some("secret phrase"),
     ));
 
     let instr = ListComicTermbaseInfosInstr {
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         fuzzy_name: Some("secret".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
-    let infos = list_comic_infos((&mock,), token("user-1"), instr)
+    let infos = list_comic_infos((&mock,), token("user--00000000001"), instr)
         .await
         .unwrap();
 
@@ -372,26 +375,35 @@ async fn delete_removes_child_terms() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "user-1",
-        "team-1",
+        "user--00000000001",
+        "team--00000000001",
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
-    let mut termbase_info =
-        termbase("termbase-1", Some("team-1"), None, "Glossary", None);
+    let mut termbase_info = termbase(
+        "termbase--00000000001",
+        Some("team--00000000001"),
+        None,
+        "Glossary",
+        None,
+    );
 
     termbase_info.term_count = 1;
 
     mock.seed_termbase(termbase_info);
 
-    mock.seed_term(term("term-1", "termbase-1"));
+    mock.seed_term(term("term--00000000001", "termbase--00000000001"));
 
-    delete((&mock, &mock), token("user-1"), "termbase-1".into())
-        .await
-        .unwrap();
+    delete(
+        (&mock, &mock),
+        token("user--00000000001"),
+        "termbase--00000000001".into(),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 

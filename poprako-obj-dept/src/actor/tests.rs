@@ -180,14 +180,14 @@ async fn maintenance_keeps_its_cadence_while_claimed_work_is_busy() {
 
 fn task() -> ObjDeptPromTask {
     let key = ObjKey {
-        id: "page-1".into(),
+        id: "page_source--00000000001".into(),
         ver: 1,
         image: "page/page-1-1.png".into(),
     };
 
     ObjDeptPromTask {
-        id: obj_task_id("page_image", CHECK, &key, 0),
-        topic: "page_image".into(),
+        id: obj_task_id("page_source_image", CHECK, &key, 0),
+        topic: "page_source_image".into(),
         oper: CHECK.into(),
         obj_id: key.id,
         ver: i64::from(key.ver),

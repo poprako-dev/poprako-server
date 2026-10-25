@@ -41,8 +41,8 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
     let listed = list_infos(
         (&mock, &mock),
         token("translator-1"),
-        ListPageUnitInfosInstr {
-            page_id: "page-1".to_string(),
+        ListPageSourceUnitInfosInstr {
+            page_source_id: "page_source--00000000001".to_string(),
         },
     )
     .await?;
@@ -61,16 +61,16 @@ async fn list_preserves_visible_order_across_a_tombstone() -> BaseRest<()> {
 }
 
 #[tokio::test]
-async fn list_rejects_page_count_drift() {
+async fn list_rejects_page_source_count_drift() {
     let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    mock.seed_unit(unit_info("unit-1"));
+    mock.seed_unit(unit_info("unit--00000000001"));
 
     let result = list_infos(
         (&mock, &mock),
         token("translator-1"),
-        ListPageUnitInfosInstr {
-            page_id: "page-1".to_string(),
+        ListPageSourceUnitInfosInstr {
+            page_source_id: "page_source--00000000001".to_string(),
         },
     )
     .await;
@@ -84,7 +84,7 @@ fn unit_info(id: &str) -> UnitInfo {
     UnitInfo {
         id: id.to_string(),
 
-        page_id: "page-1".to_string(),
+        page_source_id: "page_source--00000000001".to_string(),
         next_id: None,
 
         is_bubble: true,

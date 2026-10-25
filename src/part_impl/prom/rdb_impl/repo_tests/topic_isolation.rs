@@ -153,13 +153,17 @@ async fn maintenance_preserves_other_topics() {
     let now = OffsetDateTime::now_utc();
 
     let items = [
-        ("chapter-processing", "chapter", LocalTaskStatus::Processing),
+        (
+            "chapter--19263767584",
+            "chapter",
+            LocalTaskStatus::Processing,
+        ),
         (
             "invitation-processing",
             "invitation",
             LocalTaskStatus::Processing,
         ),
-        ("chapter-dead", "chapter", LocalTaskStatus::Dead),
+        ("chapter--99060490736", "chapter", LocalTaskStatus::Dead),
         ("invitation-dead", "invitation", LocalTaskStatus::Dead),
     ]
     .map(|(id, topic, status)| LocalTaskItem {
@@ -203,7 +207,7 @@ async fn maintenance_preserves_other_topics() {
     assert_eq!(purged, 1);
 
     let chapter = t_local_message::table
-        .filter(t_local_message::f_id.eq("chapter-processing"))
+        .filter(t_local_message::f_id.eq("chapter--19263767584"))
         .select((
             t_local_message::f_status,
             t_local_message::f_claim_token,

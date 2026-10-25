@@ -30,8 +30,8 @@ fn same_owner(
         && termbase_info.comic_id.as_deref() == comic_id
 }
 
-// Internal implementation of `page_infos`.
-fn page_infos(
+// Internal implementation of `page_source_infos`.
+fn page_source_infos(
     mut termbase_infos: Vec<TermbaseInfo>,
     offset: u32,
     limit: u32,
@@ -157,7 +157,7 @@ fn list_infos(
         });
     }
 
-    accept!(page_infos(termbase_infos, offset, limit))
+    accept!(page_source_infos(termbase_infos, offset, limit))
 }
 
 // Resolve one termbase by id and return it with expected-args missing error.

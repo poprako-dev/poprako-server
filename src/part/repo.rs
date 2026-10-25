@@ -50,10 +50,10 @@ pub mod member;
 pub mod member_invitation;
 /// Repository operation descriptors.
 pub mod oper;
-/// Page repository port.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// source page repository port.
+pub mod page_source;
 /// Hierarchical subtree deletion repository port.
 pub mod subtree_delete;
 /// System mail repository port.

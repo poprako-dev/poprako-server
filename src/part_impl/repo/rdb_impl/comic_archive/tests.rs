@@ -25,10 +25,11 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::{
-    t_chapter, t_comic, t_comic_archive, t_page, t_page_raw_ident, t_workset,
+    t_chapter, t_comic, t_comic_archive, t_page_source,
+    t_page_source_raw_ident, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
+use crate::part_impl::repo::rdb_impl::test_shared::PageSourceFixture;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
@@ -38,14 +39,14 @@ const PREFIX: &str = "rdb-test-comic-archive-domain-";
 // Verify archive metadata, retained comic and counters, removed descendants, and cleanup.
 async fn verify_archive_storage(
     shared: &RdbCore,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     comic_archive_entry: &ComicArchiveEntry,
     workflow_record_entry: &ChapterWorkflowRecordEntryShape<'_>,
     (archive_workset_id, workset_comic_count_before): (&str, i32),
 ) {
-    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
+    let source_comic_id = page_source_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id = page_fixture.chapter_info.creator_id.clone();
+    let archiver_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let mut conn = shared.get().await.unwrap();
 
@@ -75,7 +76,7 @@ async fn verify_archive_storage(
         .await
         .unwrap();
 
-    assert_eq!(archive_team_id, page_fixture.team_entry.id);
+    assert_eq!(archive_team_id, page_source_fixture.team_entry.id);
 
     assert_eq!(archive_source_comic_id, source_comic_id.as_str());
 
@@ -85,7 +86,7 @@ async fn verify_archive_storage(
 
     verify_archived_payload(
         &comic_archived_payload,
-        page_fixture,
+        page_source_fixture,
         workflow_record_entry,
     );
 
@@ -101,7 +102,7 @@ async fn verify_archive_storage(
 
     assert_eq!(
         t_chapter::table
-            .filter(t_chapter::f_id.eq(&page_fixture.chapter_info.id))
+            .filter(t_chapter::f_id.eq(&page_source_fixture.chapter_info.id))
             .count()
             .get_result::<i64>(&mut conn)
             .await
@@ -110,8 +111,11 @@ async fn verify_archive_storage(
     );
 
     assert_eq!(
-        t_page::table
-            .filter(t_page::f_id.eq(&page_fixture.page_entry.id))
+        t_page_source::table
+            .filter(
+                t_page_source::f_id
+                    .eq(&page_source_fixture.page_source_entry.id)
+            )
             .count()
             .get_result::<i64>(&mut conn)
             .await
@@ -122,8 +126,11 @@ async fn verify_archive_storage(
     assert_eq!(workset_comic_count_after, workset_comic_count_before);
 
     assert_eq!(
-        t_page_raw_ident::table
-            .filter(t_page_raw_ident::f_page_id.eq(&page_fixture.page_entry.id))
+        t_page_source_raw_ident::table
+            .filter(
+                t_page_source_raw_ident::f_page_source_id
+                    .eq(&page_source_fixture.page_source_entry.id)
+            )
             .count()
             .get_result::<i64>(&mut conn)
             .await
@@ -143,10 +150,10 @@ async fn verify_archive_storage(
 // Verify the stored archive JSON contains chapter history and original page identity.
 fn verify_archived_payload(
     comic_archived_payload: &str,
-    page_fixture: &PageFixture,
+    page_source_fixture: &PageSourceFixture,
     workflow_record_entry: &ChapterWorkflowRecordEntryShape<'_>,
 ) {
-    let source_comic_id = page_fixture.chapter_info.comic_id.as_ref();
+    let source_comic_id = page_source_fixture.chapter_info.comic_id.as_ref();
 
     let archived_comic_payload: serde_json::Value =
         serde_json::from_str(comic_archived_payload).unwrap();
@@ -172,7 +179,7 @@ fn verify_archived_payload(
 
     assert_eq!(
         (*archived_chapter.get("source_chapter_id").unwrap()),
-        page_fixture.chapter_info.id
+        page_source_fixture.chapter_info.id
     );
 
     assert_eq!(
@@ -206,7 +213,7 @@ fn verify_archived_payload(
 
     assert_eq!(
         (*archived_page.get("source_page_id").unwrap()),
-        page_fixture.page_entry.id
+        page_source_fixture.page_source_entry.id
     );
 }
 
@@ -217,15 +224,16 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
 
-    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+    let page_source_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
     {
         let mut conn = shared.get().await.unwrap();
 
-        diesel::insert_into(t_page_raw_ident::table)
+        diesel::insert_into(t_page_source_raw_ident::table)
             .values((
-                t_page_raw_ident::f_page_id.eq(&page_fixture.page_entry.id),
-                t_page_raw_ident::f_raw_ident.eq("source.png"),
+                t_page_source_raw_ident::f_page_source_id
+                    .eq(&page_source_fixture.page_source_entry.id),
+                t_page_source_raw_ident::f_raw_ident.eq("source.png"),
             ))
             .execute(&mut conn)
             .await
@@ -236,13 +244,13 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
+    let source_comic_id = page_source_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id = page_fixture.chapter_info.creator_id.clone();
+    let archiver_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let workflow_record_entry = ChapterWorkflowRecordEntryShape {
         id: [PREFIX, "workflow-record"].concat(),
-        chapter_id: &page_fixture.chapter_info.id,
+        chapter_id: &page_source_fixture.chapter_info.id,
         actor_user_id: Some(&archiver_id),
         payload: ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
             previous_subtitle: "before archive".into(),
@@ -314,7 +322,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     verify_archive_storage(
         &shared,
-        &page_fixture,
+        &page_source_fixture,
         &comic_archive_entry,
         &workflow_record_entry,
         (&archive_workset_id, workset_comic_count_before),
@@ -334,15 +342,15 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
-    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+    let page_source_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
     let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let source_comic_id = page_fixture.chapter_info.comic_id.clone();
+    let source_comic_id = page_source_fixture.chapter_info.comic_id.clone();
 
-    let archiver_id = page_fixture.chapter_info.creator_id.clone();
+    let archiver_id = page_source_fixture.chapter_info.creator_id.clone();
 
     let comic_archive_snapshot = nucl
         .coord(async |context| {
@@ -426,7 +434,7 @@ pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
         .unwrap();
 
     let chapter_count = t_chapter::table
-        .filter(t_chapter::f_id.eq(&page_fixture.chapter_info.id))
+        .filter(t_chapter::f_id.eq(&page_source_fixture.chapter_info.id))
         .count()
         .get_result::<i64>(&mut conn)
         .await

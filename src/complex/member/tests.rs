@@ -14,7 +14,7 @@ fn member(id: &str, role: RoleField) -> MemberInfo {
         user_id: format!("user-{}", id),
         user_nickname: id.into(),
         user_last_active_at: test_util::now(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles: RoleMask::from(role),

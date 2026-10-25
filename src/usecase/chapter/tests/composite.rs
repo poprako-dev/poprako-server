@@ -18,7 +18,8 @@ use crate::usecase::chapter::delete as chapter_delete_usecase;
 
 // delete(delete)(positive,negative): direct Chapter deletion cleans independent composite objects and issues; failed cleanup preserves all business state.
 #[tokio::test]
-async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
+async fn chapter_delete_cleans_composites_without_source_page_sources_atomically()
+ {
     for fails in [false, true] {
         let mut mock = Mock::new();
 
@@ -26,24 +27,33 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
             mock = mock.with_obj_delete_failure();
         }
 
-        seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+        seed_scope(
+            &mock,
+            "user--00000000001",
+            RoleMask::from(RoleField::ADMIN),
+        );
 
-        mock.seed_chapter(chapter("chapter-1", "comic-1", 0, false));
+        mock.seed_chapter(chapter(
+            "chapter--00000000001",
+            "comic--00000000001",
+            0,
+            false,
+        ));
 
         let time = OffsetDateTime::now_utc();
 
         let key = ObjKey {
-            id: "artwork-1".into(),
+            id: "page_artwork--00000000001".into(),
             ver: 1,
-            image: "page_artwork/chapter_chapter-1/artwork-1-1.png".into(),
+            image: "page_artwork/chapter--00000000001/page_artwork--00000000001/1.png".into(),
         };
 
         {
             let mut state = mock.state.lock().unwrap();
 
             state.page_artworks.push(PageArtworkInfo {
-                id: "artwork-1".into(),
-                chapter_id: "chapter-1".into(),
+                id: "page_artwork--00000000001".into(),
+                chapter_id: "chapter--00000000001".into(),
                 index: 0,
                 raw_ident: Some("tail.psd".into()),
                 created_at: time,
@@ -51,8 +61,8 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
             });
 
             state.issues.push(IssueInfo {
-                id: "issue-1".into(),
-                page_artwork_id: "artwork-1".into(),
+                id: "issue--00000000001".into(),
+                page_artwork_id: "page_artwork--00000000001".into(),
                 index: 0,
                 variant: "custom".into(),
                 layer_name: None,
@@ -61,7 +71,7 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
             });
 
             state.objs.entry("page_artwork_image").or_default().insert(
-                "artwork-1".into(),
+                "page_artwork--00000000001".into(),
                 MockObjRecord {
                     version: 1,
                     meta: Some(ObjMeta {
@@ -80,8 +90,8 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
 
         let result = chapter_delete_usecase::delete(
             (&mock, &mock, &mock),
-            token("user-1"),
-            "chapter-1".into(),
+            token("user--00000000001"),
+            "chapter--00000000001".into(),
         )
         .await;
 
@@ -94,7 +104,10 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
 
             assert_eq!(after.chapters.len(), before.chapters.len());
 
-            assert_eq!(after.chapters.first().unwrap().id, "chapter-1");
+            assert_eq!(
+                after.chapters.first().unwrap().id,
+                "chapter--00000000001"
+            );
 
             assert_eq!(after.page_artworks, before.page_artworks);
 
@@ -102,7 +115,13 @@ async fn chapter_delete_cleans_composites_without_source_pages_atomically() {
 
             assert!(after.obj_tasks.is_empty());
 
-            assert!(image_records.get("artwork-1").unwrap().meta.is_some());
+            assert!(
+                image_records
+                    .get("page_artwork--00000000001")
+                    .unwrap()
+                    .meta
+                    .is_some()
+            );
 
             continue;
         }

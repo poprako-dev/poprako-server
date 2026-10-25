@@ -34,10 +34,10 @@ pub mod issue_edit;
 pub mod member;
 /// Mock in-memory implementations for member invitation repository operations.
 pub mod member_invitation;
-/// Mock implementations for page repository operations.
-pub mod page;
 /// Composite artwork pages.
 pub mod page_artwork;
+/// Mock implementations for page repository operations.
+pub mod page_source;
 /// Mock hierarchy deletion repository operations.
 pub mod subtree_delete;
 /// Mock implementations for system mail repository operations.
@@ -79,7 +79,7 @@ use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::system_mail::SystemMailInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::term::TermInfo;
@@ -111,8 +111,10 @@ pub struct MockState {
         Vec<crate::model::read::proj::page_artwork::PageArtworkInfo>,
 
     /// Original filenames keyed by the owning page identity.
-    pub page_raw_idents:
-        HashMap<String, crate::model::read::proj::page::PageRawIdentInfo>,
+    pub page_source_raw_idents: HashMap<
+        String,
+        crate::model::read::proj::page_source::PageSourceRawIdentInfo,
+    >,
 
     //
     /// Mock storage for user records.
@@ -146,7 +148,7 @@ pub struct MockState {
     /// Mock storage for assignment invitation records.
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     /// Mock storage for page records.
-    pub pages: Vec<PageInfo>,
+    pub pages: Vec<PageSourceInfo>,
     /// Mock storage for unit records.
     pub units: Vec<UnitInfo>,
     /// Mock storage for system mail records.
@@ -182,8 +184,10 @@ pub struct MockSnapshot {
         Vec<crate::model::read::proj::page_artwork::PageArtworkInfo>,
 
     /// Original filenames keyed by page identity.
-    pub page_raw_idents:
-        HashMap<String, crate::model::read::proj::page::PageRawIdentInfo>,
+    pub page_source_raw_idents: HashMap<
+        String,
+        crate::model::read::proj::page_source::PageSourceRawIdentInfo,
+    >,
 
     //
     /// Snapshot of user records at the capture time.
@@ -217,7 +221,7 @@ pub struct MockSnapshot {
     /// Snapshot of assignment invitation records at the capture time.
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     /// Snapshot of page records at the capture time.
-    pub pages: Vec<PageInfo>,
+    pub pages: Vec<PageSourceInfo>,
     /// Snapshot of unit records at the capture time.
     pub units: Vec<UnitInfo>,
     /// Snapshot of system mail records at the capture time.
@@ -265,7 +269,7 @@ impl From<MockState> for MockSnapshot {
             assignments: state.assignments,
             assignment_invitations: state.assignment_invitations,
             pages: state.pages,
-            page_raw_idents: state.page_raw_idents,
+            page_source_raw_idents: state.page_source_raw_idents,
             units: state.units,
             system_mails: state.system_mails,
             comic_archives: state.comic_archives,

@@ -26,16 +26,16 @@ use crate::implement_mock_obj_dept;
 
 use crate::complex::image as image_complex;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage, TeamAvatar,
     UserAvatar,
 };
 use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter_artwork, t_comic_cover, t_obj_prom_task, t_page_artwork_image,
-    t_page_image, t_team_avatar, t_user_avatar,
+    t_page_source_image, t_team_avatar, t_user_avatar,
 };
 use crate::value::image::{
-    ComicCoverKey, PageImageKey, TeamAvatarKey, UserAvatarKey,
+    ComicCoverKey, PageSourceImageKey, TeamAvatarKey, UserAvatarKey,
 };
 
 // Implements image-key mapping with kind-specific builders and parsers.
@@ -66,12 +66,12 @@ macro_rules! impl_image_key_map {
 }
 
 impl_image_key_map!(
-    PageImage,
-    PageImageKey,
-    page_id,
+    PageSourceImage,
+    PageSourceImageKey,
+    page_source_id,
     "page image",
-    image_complex::page_key,
-    image_complex::parse_page_key
+    image_complex::page_source_key,
+    image_complex::parse_page_source_key
 );
 
 impl_image_key_map!(
@@ -116,9 +116,9 @@ objs_def! {
         table: t_page_artwork_image,
         topic: "page_artwork_image",
     },
-    PageImage {
-        table: t_page_image,
-        topic: "page_image",
+    PageSourceImage {
+        table: t_page_source_image,
+        topic: "page_source_image",
     },
     UserAvatar {
         table: t_user_avatar,

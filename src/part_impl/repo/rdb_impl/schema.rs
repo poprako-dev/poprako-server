@@ -49,7 +49,7 @@ diesel::table! {
         f_is_pinned -> Bool,
         f_index -> Int4,
         f_subtitle -> Text,
-        f_page_count -> Int4,
+        f_page_source_count -> Int4,
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,
@@ -235,19 +235,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_page (f_id) {
-        f_id -> Text,
-        f_chapter_id -> Text,
-        f_index -> Int4,
-        f_total_unit_count -> Int4,
-        f_translated_unit_count -> Int4,
-        f_proofread_unit_count -> Int4,
-        f_created_at -> Timestamptz,
-        f_updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     t_page_artwork (f_id) {
         f_id -> Text,
         f_chapter_id -> Text,
@@ -273,7 +260,20 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_page_image (f_id) {
+    t_page_source (f_id) {
+        f_id -> Text,
+        f_chapter_id -> Text,
+        f_index -> Int4,
+        f_total_unit_count -> Int4,
+        f_translated_unit_count -> Int4,
+        f_proofread_unit_count -> Int4,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_page_source_image (f_id) {
         f_id -> Text,
         f_version -> Int8,
         f_key -> Nullable<Text>,
@@ -286,8 +286,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_page_raw_ident (f_page_id) {
-        f_page_id -> Text,
+    t_page_source_raw_ident (f_page_source_id) {
+        f_page_source_id -> Text,
         f_raw_ident -> Text,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
@@ -360,7 +360,7 @@ diesel::table! {
 diesel::table! {
     t_unit (f_id) {
         f_id -> Text,
-        f_page_id -> Text,
+        f_page_source_id -> Text,
         f_next_id -> Nullable<Text>,
         f_hidden_at -> Nullable<Timestamptz>,
         f_is_bubble -> Bool,
@@ -439,16 +439,16 @@ diesel::joinable!(t_member -> t_team (f_team_id));
 diesel::joinable!(t_member -> t_user (f_user_id));
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
-diesel::joinable!(t_page -> t_chapter (f_chapter_id));
 diesel::joinable!(t_page_artwork -> t_chapter (f_chapter_id));
-diesel::joinable!(t_page_raw_ident -> t_page (f_page_id));
+diesel::joinable!(t_page_source -> t_chapter (f_chapter_id));
+diesel::joinable!(t_page_source_raw_ident -> t_page_source (f_page_source_id));
 diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
 diesel::joinable!(t_term -> t_termbase (f_termbase_id));
 diesel::joinable!(t_term -> t_user (f_creator_id));
 diesel::joinable!(t_termbase -> t_comic (f_comic_id));
 diesel::joinable!(t_termbase -> t_team (f_team_id));
 diesel::joinable!(t_termbase -> t_user (f_creator_id));
-diesel::joinable!(t_unit -> t_page (f_page_id));
+diesel::joinable!(t_unit -> t_page_source (f_page_source_id));
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -467,11 +467,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_member,
     t_member_invitation,
     t_obj_prom_task,
-    t_page,
     t_page_artwork,
     t_page_artwork_image,
-    t_page_image,
-    t_page_raw_ident,
+    t_page_source,
+    t_page_source_image,
+    t_page_source_raw_ident,
     t_system_mail,
     t_team,
     t_team_avatar,

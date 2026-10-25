@@ -23,7 +23,7 @@ fn entry_owns_input_and_borrows_normalized_fields() {
     let comment_ptr = comment.as_ptr();
 
     let entry = build_entry(
-        "termbase-1".into(),
+        "termbase--00000000001".into(),
         source,
         vec![target],
         Some(comment),

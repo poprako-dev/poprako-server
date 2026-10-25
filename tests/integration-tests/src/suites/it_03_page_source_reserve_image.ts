@@ -1,0 +1,555 @@
+// it_03 — PageSource reserve, image mark-uploaded, page index/counters, delete+rebuild.
+//
+// Preconditions:
+//   - it_00 + it_01 + it_02 have run.
+//   - `ctx.main` is `星尘旅人 / 第 2 话 月面信号` with no pages yet.
+//   - `ctx.auxChapters.get("cascade")` exists (2 comics on 归档池).
+//
+// Postconditions:
+//   - `ctx.main.pageIds` filled with 8 page ids (index 0..7), each image
+//     marked uploaded.
+//   - `ctx.auxChapters.get("cascade")` has 2 pages reserved on its chapter
+//     (and on the other cascade chapter) for it_10.
+//   - `ctx.auxChapters.get("d3")` set to a `钢铁魔女 / 第 2 话 D3辅助`
+//     chapter with 3 pages + 6 units, then deleted-and-rebuilt to 2 pages.
+//
+// Covers test-plan: D1, D2, D3.
+//
+// Grounded perm pins:
+//   - page reserve (batch + single): assignment with RAW_PROVIDER or REVIEWER.
+//   - page image mark-uploaded: assignment with RAW_PROVIDER or REVIEWER.
+//   - page delete-all: team ADMIN.
+//   - sadmin's auto-assignment from chapter create is ADMIN only, so sadmin
+//     CANNOT reserve pages until granted RAW_PROVIDER. We reuse
+//     `grantChapterWorkerRoles` (sets raw_provider + translator timestamps)
+//     to add RAW_PROVIDER to sadmin's admin assignment on the main chapter.
+//   - guest_01 has no assignment on main -> reserve/mark -> 403/4.
+//
+// Status: IMPLEMENTED.
+
+import assert from "node:assert/strict";
+
+import { grantChapterWorkerRoles } from "../db/seed.ts";
+import { expectError, expectStatus } from "../http/assertions.ts";
+import type { ErrorBody } from "../http/apiClient.ts";
+import { assertChapterInvariant, assertChapterPageSourceCountMetricsConsistent } from "../http/invariants.ts";
+import {
+    createChapter,
+    deleteChapterPageSources,
+    getChapter,
+    getComic,
+    listChapterPageSources,
+    listComicChapters,
+    listWorksetComics,
+    newBubbleUnit,
+    newPageSourceManifest,
+    reserveChapterPageSources,
+    reservePageSourceImage,
+    savePageSourceUnits,
+} from "../http/fixtures.ts";
+import { titled } from "../state/prefix.ts";
+import type { ChapterRefs, RunCtx } from "../state/runCtx.ts";
+import { cascadeExtraIds } from "./it_02_workset_comic_chapter_index.ts";
+
+export const IMPLEMENTED = true as const;
+
+export async function runIt03Module(ctx: RunCtx): Promise<void> {
+    assert.ok(ctx.main, "it_02 must have set ctx.main");
+    assert.ok(ctx.ids.defaultUserId);
+
+    const mainChapterId = ctx.main.chapterId;
+    const guest01 = ctx.users.get("guest_01");
+
+    assert.ok(guest01, "it_01 must have registered guest_01");
+
+    // Grant sadmin RAW_PROVIDER (+ TRANSLATOR) on main so page reserve/mark
+    // and unit save (translator) are permitted.
+    await grantChapterWorkerRoles(mainChapterId, ctx.ids.defaultUserId);
+
+    // ---------- D1. batch reserve 8 pages on main ----------
+
+    const sourceManifest = newPageSourceManifest(8, "jpg");
+
+    sourceManifest[0]!.raw_ident = "原稿 01.PNG";
+
+    const reserveVal = await reserveChapterPageSources(ctx.sadmin, mainChapterId, sourceManifest);
+
+    assert.deepEqual(reserveVal.pages.length, 8);
+
+    const pageIds: string[] = [];
+    const pageVersions = new Map<string, number>();
+    const seenPageSourceIds = new Set<string>();
+
+    for (const creation of reserveVal.pages) {
+        assert.ok(creation.page_source_id);
+        assert.ok(creation.slot?.put_url.startsWith("http"), "put_url must be an http url");
+        assert.ok(Number.isInteger(creation.slot?.image_version) && creation.slot!.image_version > 0);
+
+        assert.ok(!seenPageSourceIds.has(creation.page_source_id), "page ids must be unique");
+        seenPageSourceIds.add(creation.page_source_id);
+
+        pageIds.push(creation.page_source_id);
+        pageVersions.set(creation.page_source_id, creation.slot!.image_version);
+    }
+
+    ctx.main.pageIds = pageIds;
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: mainChapterId,
+            pages: reserveVal.pages.map((page) => ({
+                page_source_id: page.page_source_id,
+                image_hash: page.image_hash,
+                ext: page.ext,
+            })),
+        }),
+        422,
+        2,
+    );
+
+    const obsoleteField = await ctx.sadmin.post(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+        chapter_id: mainChapterId,
+        pages: [{ page_id: pageIds[0], image_hash: reserveVal.pages[0]!.image_hash, ext: "jpg", new_byte_len: 1 }],
+    });
+    assert.equal(obsoleteField.status, 422);
+
+    const retainedPendingManifest = await reserveChapterPageSources(
+        ctx.sadmin,
+        mainChapterId,
+        reserveVal.pages.map((page) => ({
+            page_source_id: page.page_source_id,
+            image_hash: page.image_hash,
+            new_byte_len: sourceManifest[page.index]!.new_byte_len,
+            ext: page.ext,
+            raw_ident: page.index === 0 ? "原稿 01.PNG" : null,
+        })),
+    );
+
+    assert.deepEqual(
+        retainedPendingManifest.pages.map((page) => page.page_source_id),
+        pageIds,
+        "pending images with identical hash and extension must retain page identities",
+    );
+    assert.ok(
+        retainedPendingManifest.pages.every(
+            (page) =>
+                page.slot !== null &&
+                page.slot.image_version === pageVersions.get(page.page_source_id) &&
+                page.image_version === page.slot.image_version,
+        ),
+        "retained pending identities must re-sign the same generation",
+    );
+
+    // list pages: 8 pages, index 0..7, all unit counts 0
+    const pages = await listChapterPageSources(ctx.sadmin, mainChapterId);
+
+    assert.deepEqual(pages.length, 8);
+
+    const sortedPageSources = [...pages].sort((a, b) => a.index - b.index);
+
+    sortedPageSources.forEach((page, i) => {
+        assert.deepEqual(page.index, i, `page index must be ${i}`);
+        assert.equal(page.image_version, pageVersions.get(page.id));
+        assert.equal(page.image_uploaded, false);
+        assert.equal(page.raw_ident, sourceManifest[i]!.raw_ident ?? null);
+        assert.deepEqual(page.total_unit_count, 0);
+        assert.deepEqual(page.translated_unit_count, 0);
+        assert.deepEqual(page.proofread_unit_count, 0);
+    });
+
+    // chapter counters
+    const mainChapter = await getChapter(ctx.sadmin, mainChapterId);
+
+    assert.deepEqual(mainChapter.page_source_count, 8);
+    assert.deepEqual(mainChapter.total_unit_count, 0);
+    assert.deepEqual(mainChapter.translated_unit_count, 0);
+    assert.deepEqual(mainChapter.proofread_unit_count, 0);
+
+    // duplicate explicit page ids are rejected before the manifest transaction
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: mainChapterId,
+            pages: [
+                {
+                    page_source_id: pageIds[0],
+                    image_hash: sortedPageSources[0]!.image_hash,
+                    new_byte_len: 1,
+                    ext: sortedPageSources[0]!.ext,
+                },
+                {
+                    page_source_id: pageIds[0],
+                    image_hash: sortedPageSources[0]!.image_hash,
+                    new_byte_len: 1,
+                    ext: sortedPageSources[0]!.ext,
+                },
+            ],
+        }),
+        422,
+        2,
+    );
+
+    // page_source_count 0 -> 422/2
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: mainChapterId,
+            pages: [],
+        }),
+        422,
+        2,
+    );
+
+    // path chapter_id / body chapter_id mismatch -> 422 (path/body id rule)
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: "not-the-path-id",
+            pages: newPageSourceManifest(1, "jpg"),
+        }),
+        422,
+        7,
+    );
+
+    await assertChapterInvariant(ctx.sadmin, mainChapterId);
+
+    // ---------- D2. mark-uploaded + single page replace ----------
+
+    // mark all 8 pages uploaded
+    for (const pageId of pageIds) {
+        const version = pageVersions.get(pageId)!;
+
+        expectStatus(
+            await ctx.sadmin.post<null>(`/api/v1/page-sources/${pageId}/image/mark-uploaded`, {
+                image_version: version,
+            }),
+            204,
+        );
+    }
+
+    // Mark optimistically exposes the exact current generation. The delayed
+    // actor may revoke it if remote presence verification fails.
+    const markedPageSources = await listChapterPageSources(ctx.sadmin, mainChapterId);
+
+    for (const page of markedPageSources) {
+        assert.equal(page.image_uploaded, true);
+        assert.equal(page.image_version, pageVersions.get(page.id));
+        assert.ok(page.image_url, `page ${page.id} image_url must be available after mark`);
+        assert.ok(page.image_optimized_url, `page ${page.id} image_optimized_url must be available after mark`);
+        assert.ok(page.image_thumbnail_url, `page ${page.id} image_thumbnail_url must be available after mark`);
+    }
+
+    const firstMarkedPageSource = markedPageSources.find((page) => page.index === 0)!;
+
+    const fallbackComic = await getComic(ctx.sadmin, ctx.main.comicId);
+
+    assert.deepEqual(
+        fallbackComic.cover_url,
+        firstMarkedPageSource.image_url,
+        "comic cover must fall back to the pinned chapter's first uploaded page",
+    );
+    assert.deepEqual(
+        fallbackComic.cover_thumbnail_url,
+        firstMarkedPageSource.image_thumbnail_url,
+        "comic cover thumbnail must use the same fallback page generation",
+    );
+
+    const worksetComics = await listWorksetComics(ctx.sadmin, ctx.main.worksetId);
+    const fallbackComicInList = worksetComics.find((comic) => comic.id === ctx.main!.comicId)!;
+
+    assert.deepEqual(fallbackComicInList.cover_url, firstMarkedPageSource.image_url);
+    assert.deepEqual(fallbackComicInList.cover_thumbnail_url, firstMarkedPageSource.image_thumbnail_url);
+
+    const chaptersWithComic = await listComicChapters(ctx.sadmin, ctx.main.comicId, "&incl=comic");
+    const pinnedChapterWithComic = chaptersWithComic.find((chapter) => chapter.id === mainChapterId)!;
+
+    assert.deepEqual(pinnedChapterWithComic.comic?.cover_url, firstMarkedPageSource.image_url);
+    assert.deepEqual(pinnedChapterWithComic.comic?.cover_thumbnail_url, firstMarkedPageSource.image_thumbnail_url);
+
+    const retainedManifest = await reserveChapterPageSources(
+        ctx.sadmin,
+        mainChapterId,
+        [...markedPageSources]
+            .sort((a, b) => a.index - b.index)
+            .map((page) => ({
+                page_source_id: page.id,
+                image_hash: page.image_hash!,
+                ext: page.ext!,
+                raw_ident: sourceManifest[page.index]?.raw_ident ?? null,
+            })),
+    );
+
+    assert.ok(
+        retainedManifest.pages.every(
+            (page) => page.slot === null && page.image_version === pageVersions.get(page.page_source_id),
+        ),
+        "unchanged uploaded manifest entries without new_byte_len must not receive slots",
+    );
+
+    // Missing identities create new pages even when image hashes match.
+    // Use the auxiliary D3 chapter below to avoid replacing the shared main fixtures.
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: mainChapterId,
+            pages: [
+                {
+                    page_source_id: pageIds[0],
+                    image_hash: markedPageSources.find((page) => page.id === pageIds[0])!.image_hash,
+                    ext: "png",
+                },
+            ],
+        }),
+        422,
+        2,
+    );
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/page-sources/alloc`, {
+            chapter_id: mainChapterId,
+            pages: [
+                ...markedPageSources.map((page) => ({
+                    page_source_id: page.id,
+                    image_hash: page.image_hash,
+                    ext: page.ext,
+                })),
+                {
+                    page_source_id: null,
+                    image_hash: markedPageSources[0]!.image_hash,
+                    ext: "png",
+                },
+            ],
+        }),
+        422,
+        2,
+    );
+
+    // single page replace on page index 2 (p2)
+    const p2Id = pageIds[2]!;
+    const p2OldVersion = pageVersions.get(p2Id)!;
+
+    const p2Reserve = await reservePageSourceImage(ctx.sadmin, p2Id, "png", "replacement.JPG");
+
+    assert.deepEqual(p2Reserve.page_source_id, p2Id);
+    assert.ok(p2Reserve.slot?.put_url.startsWith("http"));
+    assert.ok(p2Reserve.slot && p2Reserve.slot.image_version > p2OldVersion, "new image_version must exceed old");
+
+    const p2NewVersion = p2Reserve.slot!.image_version;
+
+    // mark new version
+    expectStatus(
+        await ctx.sadmin.post<null>(`/api/v1/page-sources/${p2Id}/image/mark-uploaded`, {
+            image_version: p2NewVersion,
+        }),
+        204,
+    );
+
+    // Replacement mark immediately exposes the new generation's URLs.
+    const p2After = (await listChapterPageSources(ctx.sadmin, mainChapterId)).find((p) => p.id === p2Id);
+
+    assert.ok(p2After?.image_url, "p2 image_url must be available after replacement mark");
+    assert.ok(p2After?.image_thumbnail_url, "p2 image_thumbnail_url must be available after replacement mark");
+
+    // stale version mark -> 422/2 (version mismatch)
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/page-sources/${p2Id}/image/mark-uploaded`, {
+            image_version: p2OldVersion,
+        }),
+        422,
+        2,
+    );
+
+    // D2.6: non-assigned member (guest_01 has no assignment on main) mark/reserve -> 403/4
+    expectError(
+        await guest01.api.post<ErrorBody>(`/api/v1/page-sources/${p2Id}/image/mark-uploaded`, {
+            image_version: p2NewVersion,
+        }),
+        403,
+        4,
+    );
+
+    expectError(
+        await guest01.api.post<ErrorBody>(`/api/v1/page-sources/${p2Id}/image/alloc`, {
+            image_hash: sortedPageSources[2]!.image_hash,
+            new_byte_len: 1,
+            ext: sortedPageSources[2]!.ext,
+        }),
+        403,
+        4,
+    );
+
+    // D2.7: non-existent page_source_id reserve/mark -> 422/2
+    expectError(
+        await ctx.sadmin.post<ErrorBody>("/api/v1/page-sources/page-does-not-exist/image/alloc", {
+            image_hash: sortedPageSources[0]!.image_hash,
+            new_byte_len: 1,
+            ext: sortedPageSources[0]!.ext,
+        }),
+        422,
+        2,
+    );
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>("/api/v1/page-sources/page-does-not-exist/image/mark-uploaded", {
+            image_version: 1,
+        }),
+        422,
+        2,
+    );
+
+    // ---------- D3. delete all pages + rebuild (on aux chapter, NOT main) ----------
+
+    // Build the d3 aux chapter on 钢铁魔女.
+    const gangtieId = ctx.ids.comicIds["钢铁魔女"]!;
+
+    const d3Chapter = await createChapter(ctx.sadmin, gangtieId, titled("第 2 话 D3辅助"));
+
+    const d3ChapterId = d3Chapter.id;
+
+    // grant sadmin worker roles on d3 chapter (gets RAW_PROVIDER + TRANSLATOR)
+    await grantChapterWorkerRoles(d3ChapterId, ctx.ids.defaultUserId);
+
+    const d3Refs: ChapterRefs = {
+        chapterId: d3ChapterId,
+        comicId: gangtieId,
+        worksetId: ctx.ids.worksetIds["连载池"]!,
+        pageIds: [],
+        assignmentIds: {},
+    };
+
+    ctx.auxChapters.set("d3", d3Refs);
+
+    // reserve 3 pages on d3
+    const d3Reserve = await reserveChapterPageSources(ctx.sadmin, d3ChapterId, newPageSourceManifest(3, "jpg"));
+
+    assert.deepEqual(d3Reserve.pages.length, 3);
+
+    const d3PageSourceIds = d3Reserve.pages.map((c) => c.page_source_id);
+
+    d3Refs.pageIds = d3PageSourceIds;
+
+    const replacementManifest = await reserveChapterPageSources(
+        ctx.sadmin,
+        d3ChapterId,
+        d3Reserve.pages.map((page) => ({
+            image_hash: page.image_hash,
+            ext: page.ext,
+            new_byte_len: newPageSourceManifest(1, page.ext)[0]!.new_byte_len,
+        })),
+    );
+    assert.ok(replacementManifest.pages.every((page) => !d3PageSourceIds.includes(page.page_source_id)));
+    d3PageSourceIds.splice(0, d3PageSourceIds.length, ...replacementManifest.pages.map((page) => page.page_source_id));
+
+    // write 2 units on each of the 3 pages (sadmin has TRANSLATOR via grant)
+    for (const pageId of d3PageSourceIds) {
+        const save = await savePageSourceUnits(ctx.sadmin, pageId, [
+            newBubbleUnit("d3_u1", 0.1, 0.1),
+            newBubbleUnit("d3_u2", 0.2, 0.2),
+        ]);
+
+        assert.deepEqual(save.total_unit_count, 2);
+    }
+
+    const d3ChapterBefore = await getChapter(ctx.sadmin, d3ChapterId);
+
+    assert.deepEqual(d3ChapterBefore.page_source_count, 3);
+    assert.deepEqual(d3ChapterBefore.total_unit_count, 6);
+    assert.deepEqual(d3ChapterBefore.translated_unit_count, 0);
+    assert.deepEqual(d3ChapterBefore.proofread_unit_count, 0);
+
+    // delete all pages
+    await deleteChapterPageSources(ctx.sadmin, d3ChapterId);
+
+    // list pages empty
+    const d3PageSourcesAfterDelete = await listChapterPageSources(ctx.sadmin, d3ChapterId);
+
+    assert.deepEqual(d3PageSourcesAfterDelete.length, 0);
+
+    // chapter counters all zero
+    const d3ChapterAfter = await getChapter(ctx.sadmin, d3ChapterId);
+
+    assert.deepEqual(d3ChapterAfter.page_source_count, 0);
+    assert.deepEqual(d3ChapterAfter.total_unit_count, 0);
+    assert.deepEqual(d3ChapterAfter.translated_unit_count, 0);
+    assert.deepEqual(d3ChapterAfter.proofread_unit_count, 0);
+
+    // rebuild: reserve 2 pages
+    const d3RebuildReserve = await reserveChapterPageSources(ctx.sadmin, d3ChapterId, newPageSourceManifest(2, "jpg"));
+
+    assert.deepEqual(d3RebuildReserve.pages.length, 2);
+
+    const d3RebuildPageSources = await listChapterPageSources(ctx.sadmin, d3ChapterId);
+
+    assert.deepEqual(d3RebuildPageSources.length, 2);
+
+    const d3RebuildSorted = [...d3RebuildPageSources].sort((a, b) => a.index - b.index);
+
+    d3RebuildSorted.forEach((page, i) => {
+        assert.deepEqual(page.index, i, `rebuild page index must be ${i}`);
+    });
+
+    // old page id units -> 422/2
+    const oldD3PageSourceId = d3PageSourceIds[0]!;
+
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(`/api/v1/page-sources/${oldD3PageSourceId}/units?offset=0&limit=20`),
+        422,
+        2,
+    );
+
+    // old page id image reserve -> 422/2
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/page-sources/${oldD3PageSourceId}/image/alloc`, {
+            image_hash: sortedPageSources[0]!.image_hash,
+            new_byte_len: 1,
+            ext: sortedPageSources[0]!.ext,
+        }),
+        422,
+        2,
+    );
+
+    // update d3Refs pageIds to the rebuilt pages
+    d3Refs.pageIds = d3RebuildReserve.pages.map((c) => c.page_source_id);
+
+    await assertChapterInvariant(ctx.sadmin, d3ChapterId);
+    await assertChapterPageSourceCountMetricsConsistent(ctx.sadmin, d3ChapterId);
+
+    // ---------- aux: reserve pages on cascade chapters for it_10 ----------
+
+    const cascadeRefs = ctx.auxChapters.get("cascade");
+
+    assert.ok(cascadeRefs, "it_02 must have set cascade aux chapter");
+
+    // Grant sadmin RAW_PROVIDER on each cascade chapter first (reserve needs
+    // RAW_PROVIDER; sadmin's auto-assignment from create is ADMIN only).
+    await grantChapterWorkerRoles(cascadeRefs.chapterId, ctx.ids.defaultUserId);
+    await grantChapterWorkerRoles(cascadeExtraIds.cascadeComicACh1, ctx.ids.defaultUserId);
+    await grantChapterWorkerRoles(cascadeExtraIds.cascadeComicBCh1, ctx.ids.defaultUserId);
+
+    // reserve 2 pages on cascadeComicACh2 (the cascade ChapterRefs chapterId)
+    const cascadeACh2Reserve = await reserveChapterPageSources(
+        ctx.sadmin,
+        cascadeRefs.chapterId,
+        newPageSourceManifest(2, "jpg"),
+    );
+
+    assert.deepEqual(cascadeACh2Reserve.pages.length, 2);
+
+    cascadeRefs.pageIds = cascadeACh2Reserve.pages.map((c) => c.page_source_id);
+
+    // reserve 2 pages on cascadeComicACh1 and cascadeComicBCh1 too
+    const reserveACh1 = await reserveChapterPageSources(
+        ctx.sadmin,
+        cascadeExtraIds.cascadeComicACh1,
+        newPageSourceManifest(2, "jpg"),
+    );
+
+    const reserveBCh1 = await reserveChapterPageSources(
+        ctx.sadmin,
+        cascadeExtraIds.cascadeComicBCh1,
+        newPageSourceManifest(2, "jpg"),
+    );
+
+    assert.deepEqual(reserveACh1.pages.length, 2);
+    assert.deepEqual(reserveBCh1.pages.length, 2);
+
+    // sanity: main chapter invariant still holds
+    await assertChapterInvariant(ctx.sadmin, mainChapterId);
+}

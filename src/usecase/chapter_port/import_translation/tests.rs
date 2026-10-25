@@ -18,7 +18,7 @@ use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
@@ -79,13 +79,13 @@ fn comic(id: &str) -> ComicInfo {
 
     ComicInfo {
         id: id.into(),
-        workset_id: "workset-1".into(),
+        workset_id: "workset--00000000001".into(),
         index: 0,
         title: "Pop Comic".into(),
         author: "author".into(),
         description: None,
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -104,7 +104,7 @@ fn workset(id: &str) -> WorksetInfo {
 
     WorksetInfo {
         id: id.into(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         index: 0,
         name: "workset".into(),
         description: None,
@@ -116,7 +116,7 @@ fn workset(id: &str) -> WorksetInfo {
 
 // Build chapter fixture with provided unit and proofread counters.
 fn chapter(
-    page_count: usize,
+    page_source_count: usize,
     total_unit_count: usize,
     proofread_unit_count: usize,
 ) -> ChapterInfo {
@@ -126,17 +126,17 @@ fn chapter(
 
     ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".into(),
-        comic_id: "comic-1".into(),
+        id: "chapter--00000000001".into(),
+        comic_id: "comic--00000000001".into(),
         is_pinned: true,
         index: 3,
         subtitle: "Arrival".into(),
-        page_count,
+        page_source_count,
         total_unit_count,
         translated_unit_count: total_unit_count,
         proofread_unit_count,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         comic: None,
         creator: None,
         created_at: time,
@@ -172,14 +172,14 @@ fn page(
     index: usize,
     total_unit_count: usize,
     proofread_unit_count: usize,
-) -> PageInfo {
+) -> PageSourceInfo {
     //
     // Build one page fixture and pre-seed image metadata.
     let time = OffsetDateTime::now_utc();
 
-    PageInfo {
+    PageSourceInfo {
         id: id.into(),
-        chapter_id: "chapter-1".into(),
+        chapter_id: "chapter--00000000001".into(),
         index,
         total_unit_count,
         translated_unit_count: total_unit_count,
@@ -190,13 +190,13 @@ fn page(
 }
 
 // Build unit fixture with translator metadata and optional translated content.
-fn unit(id: &str, page_id: &str, _index: usize, text: &str) -> UnitInfo {
+fn unit(id: &str, page_source_id: &str, _index: usize, text: &str) -> UnitInfo {
     //
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
         id: id.into(),
-        page_id: page_id.into(),
+        page_source_id: page_source_id.into(),
         next_id: None,
         is_bubble: true,
         is_flagged: false,
@@ -220,33 +220,38 @@ fn unit(id: &str, page_id: &str, _index: usize, text: &str) -> UnitInfo {
 // Seed workset/comic/chapter/assignment baseline for chapter import.
 fn seed_base(
     mock: &Mock,
-    page_count: usize,
+    page_source_count: usize,
     total_unit_count: usize,
     proofread_unit_count: usize,
 ) {
     //
     // Seed the minimal base graph (workset, comic, chapter, assignment).
-    mock.seed_workset(workset("workset-1"));
+    mock.seed_workset(workset("workset--00000000001"));
 
-    mock.seed_comic(comic("comic-1"));
+    mock.seed_comic(comic("comic--00000000001"));
 
     mock.seed_chapter(chapter(
-        page_count,
+        page_source_count,
         total_unit_count,
         proofread_unit_count,
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        "chapter--00000000001",
+        "user--00000000001",
         RoleMask::from(RoleField::PROOFREADER),
     ));
 }
 
 // Seed a full set of placeholder pages used by import material input.
-fn seed_material_pages(mock: &Mock) {
+fn seed_material_page_sources(mock: &Mock) {
     for index in 0..9 {
-        mock.seed_page(page(&format!("page-{}", index + 1), index, 0, 0));
+        mock.seed_page(page(
+            &format!("page_source--{:011}", index + 1),
+            index,
+            0,
+            0,
+        ));
     }
 }
 
@@ -258,17 +263,17 @@ async fn import_label_plus_material_updates_units_and_counts() {
 
     seed_base(&mock, 9, 0, 0);
 
-    seed_material_pages(&mock);
+    seed_material_page_sources(&mock);
 
     let imported = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await;
 
@@ -279,22 +284,26 @@ async fn import_label_plus_material_updates_units_and_counts() {
     let first_unit = snapshot
         .units
         .iter()
-        .find(|unit_info| unit_info.page_id == "page-1")
+        .find(|unit_info| {
+            unit_info.page_source_id == "page_source--00000000001"
+        })
         .unwrap();
 
     let last_unit = snapshot
         .units
         .iter()
-        .rfind(|unit_info| unit_info.page_id == "page-9")
+        .rfind(|unit_info| {
+            unit_info.page_source_id == "page_source--00000000009"
+        })
         .unwrap();
 
     let chapter_info = snapshot
         .chapters
         .iter()
-        .find(|chapter_info| chapter_info.id == "chapter-1")
+        .find(|chapter_info| chapter_info.id == "chapter--00000000001")
         .unwrap();
 
-    assert_eq!(imported.imported_page_count, 9);
+    assert_eq!(imported.imported_page_source_count, 9);
 
     assert_eq!(imported.imported_unit_count, 65);
 
@@ -302,7 +311,10 @@ async fn import_label_plus_material_updates_units_and_counts() {
 
     assert_eq!(first_unit.proofread_text, Some("喂 游斗哥".into()));
 
-    assert_eq!(first_unit.last_proofreader_id, Some("user-1".into()));
+    assert_eq!(
+        first_unit.last_proofreader_id,
+        Some("user--00000000001".into())
+    );
 
     assert_eq!(
         last_unit.proofread_text,
@@ -315,13 +327,13 @@ async fn import_label_plus_material_updates_units_and_counts() {
 
     let imported_again = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
     .expect("repeated import should replace visible units");
@@ -346,28 +358,33 @@ async fn import_label_plus_material_updates_units_and_counts() {
 }
 
 #[tokio::test]
-async fn import_rejects_page_count_mismatch_without_mutation() {
+async fn import_rejects_page_source_count_mismatch_without_mutation() {
     //
     // Verify mismatched page counts fail atomically and avoid mutating seeded data.
     let mock = Mock::new();
 
     seed_base(&mock, 2, 1, 0);
 
-    mock.seed_page(page("page-1", 0, 1, 0));
+    mock.seed_page(page("page_source--00000000001", 0, 1, 0));
 
-    mock.seed_page(page("page-2", 1, 0, 0));
+    mock.seed_page(page("page_source--00000000002", 1, 0, 0));
 
-    mock.seed_unit(unit("unit-a", "page-1", 0, "old"));
+    mock.seed_unit(unit(
+        "unit--34844962250",
+        "page_source--00000000001",
+        0,
+        "old",
+    ));
 
     let error = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
     .err()
@@ -388,75 +405,97 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 }
 
 #[tokio::test]
-async fn import_replaces_units_and_clears_empty_pages() {
+async fn import_replaces_units_and_clears_empty_page_sources() {
     let mock = Mock::new();
 
     seed_base(&mock, 2, 2, 0);
-    mock.seed_page(page("page-1", 0, 1, 0));
-    mock.seed_page(page("page-2", 1, 1, 0));
-    mock.seed_unit(unit("unit-a", "page-1", 0, "old page one"));
-    mock.seed_unit(unit("unit-b", "page-2", 0, "old page two"));
+    mock.seed_page(page("page_source--00000000001", 0, 1, 0));
+    mock.seed_page(page("page_source--00000000002", 1, 1, 0));
+    mock.seed_unit(unit(
+        "unit--34844962250",
+        "page_source--00000000001",
+        0,
+        "old page one",
+    ));
+    mock.seed_unit(unit(
+        "unit--35727087946",
+        "page_source--00000000002",
+        0,
+        "old page two",
+    ));
 
     let imported = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
     .expect("import with an empty page should succeed");
 
     let snapshot = mock.snapshot();
-    let visible_page_one = snapshot
+    let visible_page_source_one = snapshot
         .units
         .iter()
         .filter(|unit_info| {
-            unit_info.page_id == "page-1" && unit_info.hidden_at.is_none()
+            unit_info.page_source_id == "page_source--00000000001"
+                && unit_info.hidden_at.is_none()
         })
         .collect::<Vec<_>>();
-    let visible_page_two = snapshot
+    let visible_page_source_two = snapshot
         .units
         .iter()
         .filter(|unit_info| {
-            unit_info.page_id == "page-2" && unit_info.hidden_at.is_none()
+            unit_info.page_source_id == "page_source--00000000002"
+                && unit_info.hidden_at.is_none()
         })
         .count();
 
-    assert_eq!(imported.imported_page_count, 2);
+    assert_eq!(imported.imported_page_source_count, 2);
     assert_eq!(imported.imported_unit_count, 1);
-    assert_eq!(visible_page_one.len(), 1);
+    assert_eq!(visible_page_source_one.len(), 1);
     assert_eq!(
-        visible_page_one.first().unwrap().proofread_text,
+        visible_page_source_one.first().unwrap().proofread_text,
         Some("new text".into())
     );
-    assert_eq!(visible_page_two, 0);
+    assert_eq!(visible_page_source_two, 0);
     assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
     assert_eq!(snapshot.chapters.first().unwrap().proofread_unit_count, 1);
 }
 
 #[tokio::test]
-async fn import_keep_preserves_visible_page_units() {
+async fn import_keep_preserves_visible_page_source_units() {
     let mock = Mock::new();
 
     seed_base(&mock, 2, 2, 0);
-    mock.seed_page(page("page-1", 0, 1, 0));
-    mock.seed_page(page("page-2", 1, 1, 0));
-    mock.seed_unit(unit("unit-a", "page-1", 0, "old page one"));
-    mock.seed_unit(unit("unit-b", "page-2", 0, "old page two"));
+    mock.seed_page(page("page_source--00000000001", 0, 1, 0));
+    mock.seed_page(page("page_source--00000000002", 1, 1, 0));
+    mock.seed_unit(unit(
+        "unit--34844962250",
+        "page_source--00000000001",
+        0,
+        "old page one",
+    ));
+    mock.seed_unit(unit(
+        "unit--35727087946",
+        "page_source--00000000002",
+        0,
+        "old page two",
+    ));
 
     let imported = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Keep.into(),
             content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
     .expect("keep import should preserve populated pages");
@@ -468,7 +507,7 @@ async fn import_keep_preserves_visible_page_units() {
         .filter(|unit_info| unit_info.hidden_at.is_none())
         .collect::<Vec<_>>();
 
-    assert_eq!(imported.imported_page_count, 0);
+    assert_eq!(imported.imported_page_source_count, 0);
     assert_eq!(imported.imported_unit_count, 0);
     assert_eq!(visible_units.len(), 2);
     assert_eq!(
@@ -484,7 +523,7 @@ async fn import_keep_preserves_visible_page_units() {
     assert!(matches!(
         snapshot.chapter_workflow_records.first().unwrap().payload,
         ChapterWorkflowRecordPayload::TranslationImported {
-            imported_page_count: 0,
+            imported_page_source_count: 0,
             imported_unit_count: 0,
             ..
         }
@@ -492,44 +531,50 @@ async fn import_keep_preserves_visible_page_units() {
 }
 
 #[tokio::test]
-async fn import_keep_reuses_page_with_only_hidden_units() {
+async fn import_keep_reuses_page_source_with_only_hidden_units() {
     let mock = Mock::new();
 
     seed_base(&mock, 2, 0, 0);
-    mock.seed_page(page("page-1", 0, 0, 0));
-    mock.seed_page(page("page-2", 1, 0, 0));
+    mock.seed_page(page("page_source--00000000001", 0, 0, 0));
+    mock.seed_page(page("page_source--00000000002", 1, 0, 0));
 
-    let mut hidden_unit = unit("unit-hidden", "page-2", 0, "historical");
+    let mut hidden_unit = unit(
+        "unit--79303876260",
+        "page_source--00000000002",
+        0,
+        "historical",
+    );
     hidden_unit.hidden_at = Some(OffsetDateTime::now_utc());
     mock.seed_unit(hidden_unit);
 
     let imported = import_translation(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Keep.into(),
             content: LABEL_PLUS_WITH_POPULATED_SECOND_PAGE.into(),
         },
-        "chapter-1".into(),
+        "chapter--00000000001".into(),
     )
     .await
     .expect("keep import should reuse pages with only hidden Units");
 
     let snapshot = mock.snapshot();
-    let visible_page_two = snapshot
+    let visible_page_source_two = snapshot
         .units
         .iter()
         .filter(|unit_info| {
-            unit_info.page_id == "page-2" && unit_info.hidden_at.is_none()
+            unit_info.page_source_id == "page_source--00000000002"
+                && unit_info.hidden_at.is_none()
         })
         .collect::<Vec<_>>();
 
-    assert_eq!(imported.imported_page_count, 1);
+    assert_eq!(imported.imported_page_source_count, 1);
     assert_eq!(imported.imported_unit_count, 1);
-    assert_eq!(visible_page_two.len(), 1);
+    assert_eq!(visible_page_source_two.len(), 1);
     assert_eq!(
-        visible_page_two.first().unwrap().proofread_text,
+        visible_page_source_two.first().unwrap().proofread_text,
         Some("new second-page text".into())
     );
     assert_eq!(snapshot.chapters.first().unwrap().total_unit_count, 1);
@@ -537,7 +582,7 @@ async fn import_keep_reuses_page_with_only_hidden_units() {
         snapshot
             .units
             .iter()
-            .any(|unit_info| unit_info.id == "unit-hidden"
+            .any(|unit_info| unit_info.id == "unit--79303876260"
                 && unit_info.hidden_at.is_some())
     );
 }

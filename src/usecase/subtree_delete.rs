@@ -9,11 +9,11 @@ use poprako_obj_dept::oper::DeleteObjs;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{
-    ChapterArtwork, ComicCover, PageArtworkImage, PageImage, TeamAvatar,
+    ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage, TeamAvatar,
 };
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::oper::subtree_delete::{
-    ClaimSubtreeSweep, ListSubtreePageIds, SweepSubtree,
+    ClaimSubtreeSweep, ListSubtreePageSourceIds, SweepSubtree,
 };
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
@@ -33,7 +33,7 @@ where
     R: SubtreeRepo<C> + PageArtworkRepo<C> + Send + Sync,
     O: ObjDept<PageArtworkImage, C>
         + ObjDept<ChapterArtwork, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + ObjDept<ComicCover, C>
         + ObjDept<TeamAvatar, C>
         + Send
@@ -72,11 +72,12 @@ where
                         .await
                         .map_err(BaseError::from)?;
 
-                    let page_ids = ListSubtreePageIds { chapter_id: id }
-                        .step_on(repo, context)
-                        .await?;
+                    let page_source_ids =
+                        ListSubtreePageSourceIds { chapter_id: id }
+                            .step_on(repo, context)
+                            .await?;
 
-                    DeleteObjs::<PageImage>::new(&page_ids)
+                    DeleteObjs::<PageSourceImage>::new(&page_source_ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;

@@ -58,7 +58,7 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
 
     delete_fixture_rows!(&mut conn, &id_pattern, t_unit, f_id);
 
-    delete_fixture_rows!(&mut conn, &id_pattern, t_page, f_id);
+    delete_fixture_rows!(&mut conn, &id_pattern, t_page_source, f_id);
 
     delete_fixture_rows!(
         &mut conn,
@@ -143,7 +143,7 @@ pub async fn assert_no_leftovers(
         f_id
     );
 
-    assert_fixture_table_empty!(&mut conn, &id_pattern, t_page, f_id);
+    assert_fixture_table_empty!(&mut conn, &id_pattern, t_page_source, f_id);
 
     assert_fixture_table_empty!(&mut conn, &id_pattern, t_system_mail, f_id);
 

@@ -136,12 +136,12 @@ async fn create_admin_creates_pending_invitation() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
@@ -157,7 +157,7 @@ async fn create_admin_creates_pending_invitation() {
     let created = create(
         (&mock, &mock, &mock, &config),
         token("admin-user"),
-        create_instr("team-1", "\u{2003}qid-2\u{00a0}"),
+        create_instr("team--00000000001", "\u{2003}qid-2\u{00a0}"),
     )
     .await
     .unwrap();
@@ -208,16 +208,16 @@ async fn create_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "normal-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let error = create(
         (&mock, &mock, &mock, &InvitationConfig::default()),
         token("normal-user"),
-        create_instr("team-1", "qid-2"),
+        create_instr("team--00000000001", "qid-2"),
     )
     .await
     .err()
@@ -236,18 +236,25 @@ async fn list_infos_member_lists_invitations() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
-        "member-user",
-        "team-1",
+        "member--00000000001",
+        "member--66614769577",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
-    let listed =
-        list_infos((&mock, &mock), token("member-user"), list_instr("team-1"))
-            .await
-            .unwrap();
+    let listed = list_infos(
+        (&mock, &mock),
+        token("member--66614769577"),
+        list_instr("team--00000000001"),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(listed.len(), 1);
 
@@ -260,16 +267,19 @@ async fn list_infos_empty_returns_after_membership() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
-        "member-user",
-        "team-1",
+        "member--00000000001",
+        "member--66614769577",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let listed =
-        list_infos((&mock, &mock), token("member-user"), list_instr("team-1"))
-            .await
-            .unwrap();
+    let listed = list_infos(
+        (&mock, &mock),
+        token("member--66614769577"),
+        list_instr("team--00000000001"),
+    )
+    .await
+    .unwrap();
 
     assert!(listed.is_empty());
 }
@@ -279,13 +289,20 @@ async fn list_infos_non_member_is_rejected() {
     //
     let mock = Mock::new();
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
-    let error =
-        list_infos((&mock, &mock), token("stranger"), list_instr("team-1"))
-            .await
-            .err()
-            .unwrap();
+    let error = list_infos(
+        (&mock, &mock),
+        token("stranger"),
+        list_instr("team--00000000001"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 }
@@ -296,13 +313,17 @@ async fn update_roles_admin_updates_role_mask() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
     update_roles((&mock,), token("admin-user"), update_instr("inv-1"))
         .await
@@ -320,13 +341,17 @@ async fn update_roles_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "normal-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
     let error =
         update_roles((&mock,), token("normal-user"), update_instr("inv-1"))
@@ -343,13 +368,17 @@ async fn delete_admin_deletes_invitation() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "admin-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
     delete((&mock,), token("admin-user"), "inv-1".into())
         .await
@@ -364,13 +393,17 @@ async fn delete_non_admin_is_rejected() {
     let mock = Mock::new();
 
     mock.seed_member(member(
-        "member-1",
+        "member--00000000001",
         "normal-user",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
+    mock.seed_member_invitation(invitation(
+        "inv-1",
+        "team--00000000001",
+        "qid-2",
+    ));
 
     let error = delete((&mock,), token("normal-user"), "inv-1".into())
         .await

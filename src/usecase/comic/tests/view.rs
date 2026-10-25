@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 
 fn seed_available_object(
     mock: &Mock,
@@ -36,23 +36,23 @@ fn seed_available_object(
 }
 
 fn seed_read_scope(mock: &Mock) {
-    mock.seed_workset(workset("workset-1", "team-1"));
-    mock.seed_member(admin_member("user-1", "team-1"));
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001", 0));
 }
 
 fn seed_fallback_page(mock: &Mock, is_avail: bool) {
     mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
+        "chapter--00000000001",
+        "comic--00000000001",
         StageMask::try_from(0).unwrap(),
     ));
 
     let created_at = OffsetDateTime::now_utc();
 
-    mock.seed_page(PageInfo {
-        id: "page-1".into(),
-        chapter_id: "chapter-1".into(),
+    mock.seed_page(PageSourceInfo {
+        id: "page_source--00000000001".into(),
+        chapter_id: "chapter--00000000001".into(),
         index: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -63,9 +63,9 @@ fn seed_fallback_page(mock: &Mock, is_avail: bool) {
 
     seed_available_object(
         mock,
-        "page_image",
-        "page-1",
-        "page/chapter_chapter-1/page-1-1.png",
+        "page_source_image",
+        "page_source--00000000001",
+        "page_source/chapter--00000000001/page_source--00000000001/1.png",
         is_avail,
     );
 }
@@ -78,15 +78,15 @@ async fn get_info_returns_uploaded_cover_url() {
     seed_available_object(
         &mock,
         "comic_cover",
-        "comic-1",
-        "comic_cover/comic-1-1.png",
+        "comic--00000000001",
+        "comic_cover/comic--00000000001/1.png",
         true,
     );
 
     let comic_view = get_info(
         (&mock, &mock),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
         GetComicInfoInstr::default(),
     )
     .await
@@ -94,11 +94,11 @@ async fn get_info_returns_uploaded_cover_url() {
 
     assert_eq!(
         comic_view.cover_url.as_deref(),
-        Some("https://obj.test/comic_cover/comic-1-1.png"),
+        Some("https://obj.test/comic_cover/comic--00000000001/1.png"),
     );
     assert_eq!(
         comic_view.cover_thumbnail_url.as_deref(),
-        Some("https://obj.test/thumbnail/comic_cover/comic-1-1.png"),
+        Some("https://obj.test/thumbnail/comic_cover/comic--00000000001/1.png"),
     );
 }
 
@@ -111,8 +111,8 @@ async fn get_info_falls_back_to_uploaded_first_pinned_page() {
 
     let comic_view = get_info(
         (&mock, &mock),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
         GetComicInfoInstr::default(),
     )
     .await
@@ -120,11 +120,17 @@ async fn get_info_falls_back_to_uploaded_first_pinned_page() {
 
     assert_eq!(
         comic_view.cover_url.as_deref(),
-        Some("https://obj.test/page/chapter_chapter-1/page-1-1.png"),
+        Some(
+            "https://obj.test/page_source/chapter--00000000001/\
+                page_source--00000000001/1.png"
+        ),
     );
     assert_eq!(
         comic_view.cover_thumbnail_url.as_deref(),
-        Some("https://obj.test/thumbnail/page/chapter_chapter-1/page-1-1.png",),
+        Some(
+            "https://obj.test/thumbnail/page_source/\
+                chapter--00000000001/page_source--00000000001/1.png",
+        ),
     );
 }
 
@@ -137,11 +143,11 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
 
     let list = list_infos(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: Vec::new(),
-            workset_id: "workset-1".into(),
+            workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
             status: None,

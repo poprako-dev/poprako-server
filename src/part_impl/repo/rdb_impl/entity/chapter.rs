@@ -25,7 +25,7 @@ pub struct ChapterInfoRecord {
     pub f_index: i32,
     pub f_subtitle: String,
 
-    pub f_page_count: i32,
+    pub f_page_source_count: i32,
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
     pub f_proofread_unit_count: i32,
@@ -85,9 +85,9 @@ impl TryFrom<ChapterInfoRecord> for ChapterInfo {
             is_pinned: record.f_is_pinned,
             index: usize_from_i32(record.f_index, "t_chapter.f_index")?,
             subtitle: record.f_subtitle,
-            page_count: usize_from_i32(
-                record.f_page_count,
-                "t_chapter.f_page_count",
+            page_source_count: usize_from_i32(
+                record.f_page_source_count,
+                "t_chapter.f_page_source_count",
             )?,
             total_unit_count: usize_from_i32(
                 record.f_total_unit_count,
@@ -176,7 +176,7 @@ pub struct ChapterPack<'a> {
     pub f_reviewed_at: Option<Option<OffsetDateTime>>,
     pub f_published_at: Option<Option<OffsetDateTime>>,
 
-    pub f_page_count: Option<i32>,
+    pub f_page_source_count: Option<i32>,
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
     pub f_proofread_unit_count: Option<i32>,
@@ -199,7 +199,7 @@ impl<'a> ChapterPack<'a> {
             f_typeset_at: None,
             f_reviewed_at: None,
             f_published_at: None,
-            f_page_count: None,
+            f_page_source_count: None,
             f_total_unit_count: None,
             f_translated_unit_count: None,
             f_proofread_unit_count: None,
@@ -252,9 +252,9 @@ impl<'a> ChapterPack<'a> {
     }
 
     #[must_use]
-    pub const fn page_count(mut self, val: i32) -> Self {
+    pub const fn page_source_count(mut self, val: i32) -> Self {
         //
-        self.f_page_count = Some(val);
+        self.f_page_source_count = Some(val);
 
         self
     }

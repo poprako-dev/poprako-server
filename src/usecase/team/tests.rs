@@ -82,9 +82,14 @@ fn token(user_id: &str) -> UserToken {
 
 fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
-        id: "team-1".into(),
+        id: "team--00000000001".into(),
         ver: version,
-        image: ["team_avatar/team-1-", &version.to_string(), ".png"].concat(),
+        image: [
+            "team_avatar/team--00000000001/",
+            &version.to_string(),
+            ".png",
+        ]
+        .concat(),
     };
 
     let meta = ObjMeta {
@@ -101,7 +106,7 @@ fn seed_team_avatar(mock: &Mock, version: u32) {
         .entry("team_avatar")
         .or_default()
         .insert(
-            "team-1".into(),
+            "team--00000000001".into(),
             MockObjRecord {
                 version,
                 meta: Some(meta),
@@ -115,8 +120,8 @@ async fn mark_team_avatar(
 ) -> crate::result::BaseRest<()> {
     mark_avatar_uploaded::<MockContext, _, _>(
         (mock, mock),
-        token("user-1"),
-        "team-1".into(),
+        token("user--00000000001"),
+        "team--00000000001".into(),
         MarkTeamAvatarUploadedInstr { image_ver: version },
     )
     .await
@@ -177,11 +182,14 @@ async fn create_persists_team_and_returns_info() {
     //
     let mock = Mock::new();
 
-    mock.seed_user(user("user-1", true), credential("user-1"));
+    mock.seed_user(
+        user("user--00000000001", true),
+        credential("user--00000000001"),
+    );
 
     let val = create(
         (&mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateTeamInstr {
             name: "\u{2003}Team\u{00a0}".into(),
             description: "\u{2003}Desc\u{00a0}".into(),
@@ -210,11 +218,14 @@ async fn create_makes_creator_admin_member() {
     //
     let mock = Mock::new();
 
-    mock.seed_user(user("user-1", true), credential("user-1"));
+    mock.seed_user(
+        user("user--00000000001", true),
+        credential("user--00000000001"),
+    );
 
     let val = create(
         (&mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateTeamInstr {
             name: "Team".into(),
             description: "Desc".into(),
@@ -231,7 +242,7 @@ async fn create_makes_creator_admin_member() {
         .find(|member_info| member_info.team_id == val.id)
         .unwrap();
 
-    assert_eq!(member_info.user_id, "user-1");
+    assert_eq!(member_info.user_id, "user--00000000001");
 
     assert!(member_info.roles.has_any_role(&[RoleField::ADMIN]));
 }
@@ -241,11 +252,14 @@ async fn create_propagates_repo_failure() {
     //
     let mock = Mock::new().with_create_team_failure();
 
-    mock.seed_user(user("user-1", true), credential("user-1"));
+    mock.seed_user(
+        user("user--00000000001", true),
+        credential("user--00000000001"),
+    );
 
     let error = create(
         (&mock, &mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         CreateTeamInstr {
             name: "Team".into(),
             description: "Desc".into(),
@@ -263,11 +277,13 @@ async fn get_info_returns_team_without_avatar() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
-    let val = get_info((&mock, &mock), "team-1".into()).await.unwrap();
+    let val = get_info((&mock, &mock), "team--00000000001".into())
+        .await
+        .unwrap();
 
-    assert_eq!(val.id, "team-1");
+    assert_eq!(val.id, "team--00000000001");
 
     assert!(val.avatar_url.is_none());
 }
@@ -277,7 +293,7 @@ async fn get_info_propagates_missing_team() {
     //
     let mock = Mock::new();
 
-    let error = get_info((&mock, &mock), "team-1".into())
+    let error = get_info((&mock, &mock), "team--00000000001".into())
         .await
         .err()
         .unwrap();
@@ -290,42 +306,54 @@ async fn list_infos_returns_paged_teams() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "A", "Desc"));
+    mock.seed_team(team("team--00000000001", "A", "Desc"));
 
-    mock.seed_team(team("team-2", "B", "Desc"));
+    mock.seed_team(team("team--00000000002", "B", "Desc"));
 
-    mock.seed_team(team("team-3", "C", "Desc"));
+    mock.seed_team(team("team--00000000003", "C", "Desc"));
 
-    mock.seed_member(member("member-1", "user-1", "team-2"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000002",
+    ));
 
-    mock.seed_member(member("member-2", "user-1", "team-3"));
+    mock.seed_member(member(
+        "member--00000000002",
+        "user--00000000001",
+        "team--00000000003",
+    ));
 
-    mock.seed_member(member("member-3", "user-2", "team-1"));
+    mock.seed_member(member(
+        "member--00000000003",
+        "user--00000000002",
+        "team--00000000001",
+    ));
 
     let val = list_infos(
         (&mock, &mock),
-        token("user-1"),
-        list_instr(Some("user-1"), 0, 1),
+        token("user--00000000001"),
+        list_instr(Some("user--00000000001"), 0, 1),
     )
     .await
     .unwrap();
 
     assert_eq!(val.len(), 1);
 
-    assert_ne!(val.first().unwrap().id, "team-1");
+    assert_ne!(val.first().unwrap().id, "team--00000000001");
 }
 
 #[tokio::test]
-async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
+async fn list_infos_returns_empty_page_source_when_offset_exceeds_data() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "A", "Desc"));
+    mock.seed_team(team("team--00000000001", "A", "Desc"));
 
     let val = list_infos(
         (&mock, &mock),
-        token("user-1"),
-        list_instr(Some("user-1"), 10, 10),
+        token("user--00000000001"),
+        list_instr(Some("user--00000000001"), 10, 10),
     )
     .await
     .unwrap();
@@ -338,15 +366,21 @@ async fn list_infos_all_teams_requires_sadmin() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "A", "Desc"));
+    mock.seed_team(team("team--00000000001", "A", "Desc"));
 
-    mock.seed_user(user("user-1", false), credential("user-1"));
+    mock.seed_user(
+        user("user--00000000001", false),
+        credential("user--00000000001"),
+    );
 
-    let error =
-        list_infos((&mock, &mock), token("user-1"), list_instr(None, 0, 10))
-            .await
-            .err()
-            .unwrap();
+    let error = list_infos(
+        (&mock, &mock),
+        token("user--00000000001"),
+        list_instr(None, 0, 10),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 }
@@ -356,14 +390,18 @@ async fn list_infos_rejects_another_user_filter() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "A", "Desc"));
+    mock.seed_team(team("team--00000000001", "A", "Desc"));
 
-    mock.seed_member(member("member-1", "user-2", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000002",
+        "team--00000000001",
+    ));
 
     let error = list_infos(
         (&mock, &mock),
-        token("user-1"),
-        list_instr(Some("user-2"), 0, 10),
+        token("user--00000000001"),
+        list_instr(Some("user--00000000002"), 0, 10),
     )
     .await
     .err()
@@ -377,15 +415,19 @@ async fn update_info_updates_team() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1", "Old", "Old Desc"));
+    mock.seed_team(team("team--00000000001", "Old", "Old Desc"));
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 
     update_info(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         update_instr(
-            "team-1",
+            "team--00000000001",
             "\u{2003}New\u{00a0}",
             "\u{2003}New Desc\u{00a0}",
         ),
@@ -405,12 +447,16 @@ async fn update_info_propagates_missing_team() {
     //
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 
     let error = update_info(
         (&mock,),
-        token("user-1"),
-        update_instr("team-1", "New", "New Desc"),
+        token("user--00000000001"),
+        update_instr("team--00000000001", "New", "New Desc"),
     )
     .await
     .err()
@@ -423,7 +469,11 @@ async fn update_info_propagates_missing_team() {
 async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 
     seed_team_avatar(&mock, 3);
 
@@ -436,7 +486,7 @@ async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .get("team-1")
+            .get("team--00000000001")
             .unwrap()
             .meta
             .as_ref()
@@ -449,7 +499,11 @@ async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
 async fn mark_avatar_uploaded_rejects_stale_generation() {
     let mock = Mock::new();
 
-    mock.seed_member(member("member-1", "user-1", "team-1"));
+    mock.seed_member(member(
+        "member--00000000001",
+        "user--00000000001",
+        "team--00000000001",
+    ));
 
     seed_team_avatar(&mock, 3);
 
@@ -463,7 +517,7 @@ async fn mark_avatar_uploaded_rejects_stale_generation() {
             .objs
             .get("team_avatar")
             .unwrap()
-            .get("team-1")
+            .get("team--00000000001")
             .unwrap()
             .meta
             .as_ref()

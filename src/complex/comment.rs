@@ -21,9 +21,10 @@ pub mod perm {
     }
 }
 
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 
 /// Generate a unique comment identifier backed by a snowflake value.
 pub fn gen_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::Comment)
 }

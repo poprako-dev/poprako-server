@@ -19,19 +19,19 @@ fn patch_fields_distinguish_missing_null_and_value() {
     let edits = serde_json::from_value::<Vec<UnitEditInstr>>(json!([
         {
             "edit": "patch",
-            "id": "unit-1"
+            "id": "unit--00000000001"
         },
         {
             "edit": "patch",
-            "id": "unit-1",
+            "id": "unit--00000000001",
             "next_id": { "type": "clear" },
             "translation": { "type": "clear" },
             "revision": { "type": "clear" }
         },
         {
             "edit": "patch",
-            "id": "unit-1",
-            "next_id": { "type": "assign", "value": "unit-2" },
+            "id": "unit--00000000001",
+            "next_id": { "type": "assign", "value": "unit--00000000002" },
             "translation": {
                 "type": "assign",
                 "value": { "translated_text": "translated" }
@@ -94,7 +94,7 @@ fn patch_fields_distinguish_missing_null_and_value() {
 
     assert!(matches!(
         next_id,
-        Patch::Assign { value: id } if id == "unit-2"
+        Patch::Assign { value: id } if id == "unit--00000000002"
     ));
 
     assert!(matches!(
@@ -205,7 +205,7 @@ fn transform_conversion_accepts_literal_pairs() {
     let instr = serde_json::from_value::<TransformChapterUnitsInstr>(json!({
         "part": "translated_text",
         "units": [{
-            "unit_id": "unit-1",
+            "unit_id": "unit--00000000001",
             "transforms": [
                 {"origin": "abc", "target": "def"},
                 {"origin": "def", "target": ""}
@@ -235,14 +235,14 @@ fn transform_conversion_rejects_duplicate_ids_origins_and_empty_origin() {
     //
     let duplicate_ids = vec![
         UnitTransformInstr {
-            unit_id: "unit-1".to_string(),
+            unit_id: "unit--00000000001".to_string(),
             transforms: vec![UnitTextTransformInstr {
                 origin: "abc".to_string(),
                 target: "def".to_string(),
             }],
         },
         UnitTransformInstr {
-            unit_id: "unit-1".to_string(),
+            unit_id: "unit--00000000001".to_string(),
             transforms: vec![UnitTextTransformInstr {
                 origin: "ghi".to_string(),
                 target: "jkl".to_string(),
@@ -253,7 +253,7 @@ fn transform_conversion_rejects_duplicate_ids_origins_and_empty_origin() {
     assert!(into_unit_transforms(duplicate_ids).is_err());
 
     let invalid_pairs = vec![UnitTransformInstr {
-        unit_id: "unit-1".to_string(),
+        unit_id: "unit--00000000001".to_string(),
         transforms: vec![
             UnitTextTransformInstr {
                 origin: "abc".to_string(),
@@ -269,7 +269,7 @@ fn transform_conversion_rejects_duplicate_ids_origins_and_empty_origin() {
     assert!(into_unit_transforms(invalid_pairs).is_err());
 
     let empty_origin = vec![UnitTransformInstr {
-        unit_id: "unit-1".to_string(),
+        unit_id: "unit--00000000001".to_string(),
         transforms: vec![UnitTextTransformInstr {
             origin: String::new(),
             target: "removed".to_string(),
@@ -340,11 +340,11 @@ fn flagged_transport_defaults_and_types() {
 #[test]
 fn patch_rejects_bare_values_and_preserves_null_or_explicit_skip() {
     for (field, value) in [
-        ("next_id", json!("unit-2")),
+        ("next_id", json!("unit--00000000002")),
         ("translation", json!({"translated_text": "text"})),
         ("revision", json!({"is_proofread": false})),
     ] {
-        let mut payload = json!({"edit": "patch", "id": "unit-1"});
+        let mut payload = json!({"edit": "patch", "id": "unit--00000000001"});
 
         payload.as_object_mut().unwrap().insert(field.into(), value);
 
@@ -353,7 +353,7 @@ fn patch_rejects_bare_values_and_preserves_null_or_explicit_skip() {
 
     for value in [json!(null), json!({"type": "skip"})] {
         let payload = json!({
-            "edit": "patch", "id": "unit-1",
+            "edit": "patch", "id": "unit--00000000001",
             "next_id": value, "translation": value, "revision": value,
         });
 

@@ -105,36 +105,42 @@ fn preloadable_paths_and_escape_hatches_compile_and_resolve() {
     let _ = populate_macro_test_incls;
 
     let mut macro_test_info = MacroTestInfo {
-        user_id: "user-direct".into(),
+        user_id: "user--64711583780".into(),
         user: None,
         nested: Some(MacroNestedInfo {
-            user_id: "user-nested".into(),
+            user_id: "user--71151777969".into(),
             user: None,
         }),
     };
 
-    assert_eq!(Direct::resolve_key(&macro_test_info), Some("user-direct"));
+    assert_eq!(
+        Direct::resolve_key(&macro_test_info),
+        Some("user--64711583780")
+    );
 
-    assert_eq!(Nested::resolve_key(&macro_test_info), Some("user-nested"));
+    assert_eq!(
+        Nested::resolve_key(&macro_test_info),
+        Some("user--71151777969")
+    );
 
     assert_eq!(
         Asymmetric::resolve_key(&macro_test_info),
-        Some("user-nested")
+        Some("user--71151777969")
     );
 
     assert_eq!(
         ResolveEscape::resolve_key(&macro_test_info),
-        Some("user-direct")
+        Some("user--64711583780")
     );
 
     assert_eq!(
         InjectEscape::resolve_key(&macro_test_info),
-        Some("user-direct")
+        Some("user--64711583780")
     );
 
     assert_eq!(
         BothEscapes::resolve_key(&macro_test_info),
-        Some("user-nested")
+        Some("user--71151777969")
     );
 
     Direct::inject(&mut macro_test_info, None);

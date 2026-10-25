@@ -23,7 +23,7 @@ use crate::util::Patch;
 pub struct UnitInfoRecord {
     pub f_id: String,
 
-    pub f_page_id: String,
+    pub f_page_source_id: String,
     pub f_next_id: Option<String>,
     pub f_hidden_at: Option<OffsetDateTime>,
 
@@ -51,7 +51,7 @@ impl From<UnitInfoRecord> for UnitInfo {
     fn from(record: UnitInfoRecord) -> Self {
         Self {
             id: record.f_id,
-            page_id: record.f_page_id,
+            page_source_id: record.f_page_source_id,
             next_id: record.f_next_id,
             is_bubble: record.f_is_bubble,
             is_flagged: record.f_is_flagged,
@@ -78,7 +78,7 @@ impl From<UnitInfoRecord> for UnitInfo {
 pub struct UnitItem<'a> {
     pub f_id: &'a str,
 
-    pub f_page_id: &'a str,
+    pub f_page_source_id: &'a str,
     pub f_next_id: Option<&'a str>,
     pub f_hidden_at: Option<OffsetDateTime>,
 
@@ -105,7 +105,7 @@ pub struct UnitItem<'a> {
 impl<'a> UnitItem<'a> {
     #[must_use]
     pub fn from_edit(
-        page_id: &'a str,
+        page_source_id: &'a str,
         edit: &'a UnitEdit,
         next_id: Option<&'a str>,
     ) -> Option<Self> {
@@ -148,7 +148,7 @@ impl<'a> UnitItem<'a> {
 
         Some(Self {
             f_id: id,
-            f_page_id: page_id,
+            f_page_source_id: page_source_id,
             f_next_id: next_id,
             f_hidden_at: None,
             f_is_bubble: *is_bubble,

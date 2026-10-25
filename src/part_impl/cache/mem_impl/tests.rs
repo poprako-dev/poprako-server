@@ -80,7 +80,10 @@ async fn cloned_handles_share_issue_exclusion_and_receipts() {
 
     drop(unit_guard);
 
-    guard.record([7; 32]);
+    guard.record(crate::value::issue_save::IssueSaveReceipt {
+        fingerprint: [7; 32],
+        created_issue_ids: Arc::from([]),
+    });
 
     drop(guard);
 
@@ -89,19 +92,16 @@ async fn cloned_handles_share_issue_exclusion_and_receipts() {
             .await
             .unwrap();
 
-    assert_eq!(replay.fingerprint(), Some([7; 32]));
+    assert_eq!(
+        replay.receipt().map(|receipt| receipt.fingerprint),
+        Some([7; 32])
+    );
 
     drop(replay);
 
     let restarted = MemCache::default();
 
-    assert!(
-        restarted
-            .lock_issue_save(save_id)
-            .await
-            .fingerprint()
-            .is_none()
-    );
+    assert!(restarted.lock_issue_save(save_id).await.receipt().is_none());
 }
 
 // cache_cancel(IssueSaveCache)(negative): cancelling a holder releases exclusion without recording success.
@@ -136,7 +136,7 @@ async fn cancelled_issue_holder_releases_exclusion_without_receipt() {
         .await
         .unwrap();
 
-    assert!(retry.fingerprint().is_none());
+    assert!(retry.receipt().is_none());
 
     drop(retry);
 }

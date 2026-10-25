@@ -34,7 +34,7 @@ where
         image_complex::ensure_byte_length(
             image_config,
             byte_len,
-            ImageKind::PageImage,
+            ImageKind::PageArtworkImage,
         )?;
     }
 
@@ -67,7 +67,7 @@ where
         image_complex::invalid_byte_length_rejection(
             image_config,
             0,
-            ImageKind::PageImage,
+            ImageKind::PageArtworkImage,
         )
     })?;
 

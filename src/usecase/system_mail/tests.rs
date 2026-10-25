@@ -68,15 +68,19 @@ async fn list_returns_current_user_unread_mails() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
-    mock.seed_system_mail(mail("sys_mail-2", "user-1", true, time)); // already read
+    mock.seed_system_mail(mail("sys_mail-2", "user--00000000001", true, time)); // already read
 
-    mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
+    mock.seed_system_mail(mail("sys_mail-3", "user--00000000002", false, time)); // other user
 
-    let mails = list_infos((&mock,), token("user-1"), list_unread_instr(0, 10))
-        .await
-        .unwrap();
+    let mails = list_infos(
+        (&mock,),
+        token("user--00000000001"),
+        list_unread_instr(0, 10),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(mails.len(), 1);
 
@@ -94,15 +98,19 @@ async fn list_applies_pagination_after_desc_sort() {
 
     let t3 = t2 + Duration::seconds(10);
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, t1));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, t1));
 
-    mock.seed_system_mail(mail("sys_mail-2", "user-1", false, t3));
+    mock.seed_system_mail(mail("sys_mail-2", "user--00000000001", false, t3));
 
-    mock.seed_system_mail(mail("sys_mail-3", "user-1", false, t2));
+    mock.seed_system_mail(mail("sys_mail-3", "user--00000000001", false, t2));
 
-    let mails = list_infos((&mock,), token("user-1"), list_unread_instr(0, 2))
-        .await
-        .unwrap();
+    let mails = list_infos(
+        (&mock,),
+        token("user--00000000001"),
+        list_unread_instr(0, 2),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(mails.len(), 2);
 
@@ -119,12 +127,15 @@ async fn list_returns_empty_for_missing_page() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
-    let mails =
-        list_infos((&mock,), token("user-1"), list_unread_instr(10, 10))
-            .await
-            .unwrap();
+    let mails = list_infos(
+        (&mock,),
+        token("user--00000000001"),
+        list_unread_instr(10, 10),
+    )
+    .await
+    .unwrap();
 
     assert!(mails.is_empty());
 }
@@ -136,13 +147,13 @@ async fn mark_read_marks_batch_of_mails() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
-    mock.seed_system_mail(mail("sys_mail-2", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-2", "user--00000000001", false, time));
 
     mark_read(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         vec!["sys_mail-1".into(), "sys_mail-2".into()],
     )
     .await
@@ -162,11 +173,11 @@ async fn mark_read_rejects_missing_id_without_mutation() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
     let error = mark_read(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         vec!["sys_mail-1".into(), "sys_mail-nonexistent".into()],
     )
     .await
@@ -187,11 +198,11 @@ async fn mark_read_accepts_duplicate_ids() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
     mark_read(
         (&mock,),
-        token("user-1"),
+        token("user--00000000001"),
         vec!["sys_mail-1".into(), "sys_mail-1".into()],
     )
     .await
@@ -207,12 +218,16 @@ async fn mark_read_rejects_other_user_mail() {
 
     let time = OffsetDateTime::now_utc();
 
-    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail("sys_mail-1", "user--00000000001", false, time));
 
-    let error = mark_read((&mock,), token("user-2"), vec!["sys_mail-1".into()])
-        .await
-        .err()
-        .unwrap();
+    let error = mark_read(
+        (&mock,),
+        token("user--00000000002"),
+        vec!["sys_mail-1".into()],
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(&error, ExpectedVariant::Perm);
 

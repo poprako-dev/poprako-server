@@ -10,7 +10,7 @@ use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     MemberInvitationInfo {
         id: id.into(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         invitor: None,
         invitor_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
@@ -31,7 +31,7 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
@@ -53,7 +53,10 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
 
     assert_eq!(snapshot.members.first().unwrap().user_nickname, "Target");
 
-    assert_eq!(snapshot.members.first().unwrap().team_id, "team-1");
+    assert_eq!(
+        snapshot.members.first().unwrap().team_id,
+        "team--00000000001"
+    );
 
     assert_eq!(
         snapshot.members.first().unwrap().roles,
@@ -68,7 +71,7 @@ async fn join_team_mismatched_qid_is_rejected() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
@@ -97,15 +100,15 @@ async fn join_team_duplicate_membership_is_rejected() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     mock.seed_member(member(
-        "member-target",
+        "member--79630565486",
         "target-user",
         "Target",
-        "team-1",
+        "team--00000000001",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 

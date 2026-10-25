@@ -15,13 +15,13 @@ async fn join_creates_assignment() {
 
     seed_scope(&mock);
 
-    mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
+    mock.seed_member(member("user--00000000001", role(RoleField::TRANSLATOR)));
 
     let joined = join(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         JoinChapterAssignmentInstr {
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             roles: role(RoleField::TRANSLATOR),
         },
     )
@@ -31,7 +31,7 @@ async fn join_creates_assignment() {
 
     let joined = joined.unwrap();
 
-    assert_eq!(joined.chapter_id, "chapter-1");
+    assert_eq!(joined.chapter_id, "chapter--00000000001");
 
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }
@@ -44,21 +44,21 @@ async fn join_unions_existing_assignment_roles() {
     seed_scope(&mock);
 
     mock.seed_member(member(
-        "user-1",
+        "user--00000000001",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
+        "chapter--00000000001",
+        "user--00000000001",
         role(RoleField::TRANSLATOR),
     ));
 
     let joined = join(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         JoinChapterAssignmentInstr {
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             roles: role(RoleField::PROOFREADER),
         },
     )
@@ -85,13 +85,13 @@ async fn join_rejects_role_outside_member_mask() {
 
     seed_scope(&mock);
 
-    mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
+    mock.seed_member(member("user--00000000001", role(RoleField::TRANSLATOR)));
 
     let error = join(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         JoinChapterAssignmentInstr {
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             roles: role(RoleField::PROOFREADER),
         },
     )
@@ -109,7 +109,7 @@ async fn join_rejects_published_chapter() {
 
     seed_scope(&mock);
 
-    mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
+    mock.seed_member(member("user--00000000001", role(RoleField::TRANSLATOR)));
 
     {
         let mut state = mock.state.lock().unwrap();
@@ -125,9 +125,9 @@ async fn join_rejects_published_chapter() {
 
     let result = join(
         (&mock, &mock),
-        token("user-1"),
+        token("user--00000000001"),
         JoinChapterAssignmentInstr {
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             roles: role(RoleField::TRANSLATOR),
         },
     )

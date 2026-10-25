@@ -28,7 +28,7 @@ fn sign_token() {
     let signed_token = TokenAuth::sign_token(
         &auth,
         &UserToken {
-            user_id: "user-1".into(),
+            user_id: "user--00000000001".into(),
         },
     );
 
@@ -43,9 +43,9 @@ fn sign_token() {
     )
     .unwrap();
 
-    assert_eq!(token_data.claims.sub, "user-1");
+    assert_eq!(token_data.claims.sub, "user--00000000001");
 
-    assert_eq!(token_data.claims.user_id, "user-1");
+    assert_eq!(token_data.claims.user_id, "user--00000000001");
 }
 
 #[test]

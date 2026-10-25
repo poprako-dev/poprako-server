@@ -49,13 +49,13 @@ fn comic(id: &str) -> ComicInfo {
 
     ComicInfo {
         id: id.into(),
-        workset_id: "workset-1".into(),
+        workset_id: "workset--00000000001".into(),
         index: 0,
         title: "Pop Comic".into(),
         author: "author".into(),
         description: None,
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -71,7 +71,7 @@ fn workset(id: &str) -> WorksetInfo {
 
     WorksetInfo {
         id: id.into(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         index: 0,
         name: "workset".into(),
         description: None,
@@ -87,16 +87,16 @@ fn chapter(id: &str) -> ChapterInfo {
     ChapterInfo {
         confirmed_artwork_ver: None,
         id: id.into(),
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         is_pinned: true,
         index: 3,
         subtitle: "Arrival".into(),
-        page_count: 2,
+        page_source_count: 2,
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         comic: None,
         creator: None,
         created_at: time,
@@ -131,7 +131,7 @@ fn member(user_id: &str) -> MemberInfo {
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         user: None,
         team: None,
@@ -143,15 +143,15 @@ fn member(user_id: &str) -> MemberInfo {
 fn seed(role: RoleField) -> Mock {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1"));
+    mock.seed_workset(workset("workset--00000000001"));
 
-    mock.seed_comic(comic("comic-1"));
+    mock.seed_comic(comic("comic--00000000001"));
 
-    mock.seed_chapter(chapter("chapter-1"));
+    mock.seed_chapter(chapter("chapter--00000000001"));
 
     match role {
         RoleField::ADMIN => {
-            let mut member_info = member("user-1");
+            let mut member_info = member("user--00000000001");
 
             member_info.roles = RoleMask::from(RoleField::ADMIN);
 
@@ -159,8 +159,8 @@ fn seed(role: RoleField) -> Mock {
         }
 
         _ => mock.seed_assignment(assignment(
-            "chapter-1",
-            "user-1",
+            "chapter--00000000001",
+            "user--00000000001",
             RoleMask::from(role),
         )),
     }
@@ -173,7 +173,8 @@ fn config() -> ImageConfig {
         user_avatar_limit_mib: 1,
         team_avatar_limit_mib: 1,
         comic_cover_limit_mib: 1,
-        page_image_limit_mib: 1,
+        page_source_image_limit_mib: 1,
+        page_artwork_image_limit_mib: 1,
     }
 }
 
@@ -195,8 +196,8 @@ async fn alloc(
 
     page_artwork_manifest_usecase::alloc_chapter_page_artworks(
         (mock, mock, mock, &config()),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         instr,
     )
     .await
@@ -207,7 +208,7 @@ async fn mark(mock: &Mock, id: &str, version: u32) -> BaseRest<()> {
 
     page_artwork_image_usecase::mark_image_uploaded(
         (mock, mock, mock),
-        token("user-1"),
+        token("user--00000000001"),
         id.into(),
         instr,
     )
@@ -229,8 +230,8 @@ async fn review(mock: &Mock, id: &str) {
 
     issue_usecase::import_issue(
         (mock, mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
         instr,
     )
     .await
@@ -257,8 +258,8 @@ async fn composite_identity_is_independent_and_reorder_preserves_issues() {
 
     let views = super::list_infos::<MockContext, _, _>(
         (&mock, &mock),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
     )
     .await
     .unwrap();
@@ -340,7 +341,7 @@ async fn composite_replacement_preserves_review_until_explicit_deletion() {
 
     let replacement = page_artwork_image_usecase::alloc_image(
         (&mock, &mock, &mock, &config()),
-        token("user-1"),
+        token("user--00000000001"),
         first.page_artwork_id.clone(),
         instr,
     )
@@ -488,8 +489,8 @@ async fn composite_manifest_failures_roll_back_all_state() {
     assert!(
         issue_usecase::import_issue(
             (&mock, &mock),
-            token("user-1"),
-            "chapter-1".into(),
+            token("user--00000000001"),
+            "chapter--00000000001".into(),
             instr
         )
         .await
@@ -497,7 +498,7 @@ async fn composite_manifest_failures_roll_back_all_state() {
     );
 }
 
-// composite_archive(archive)(positive,negative): composites without translation Pages are captured and cleaned atomically; failed archive persistence retains images and issues.
+// composite_archive(archive)(positive,negative): composites without translation PageSources are captured and cleaned atomically; failed archive persistence retains images and issues.
 #[tokio::test]
 async fn composite_archive_without_source_pages_is_atomic() {
     for fails in [false, true] {
@@ -508,8 +509,8 @@ async fn composite_archive_without_source_pages_is_atomic() {
         }
 
         mock.seed_assignment(assignment(
-            "chapter-1",
-            "user-1",
+            "chapter--00000000001",
+            "user--00000000001",
             RoleMask::from(RoleField::REVIEWER),
         ));
 
@@ -544,8 +545,8 @@ async fn composite_archive_without_source_pages_is_atomic() {
 
         let result = comic_archive_usecase::archive(
             (&mock, &mock, &mock),
-            token("user-1"),
-            "comic-1".into(),
+            token("user--00000000001"),
+            "comic--00000000001".into(),
         )
         .await;
 

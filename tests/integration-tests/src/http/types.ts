@@ -132,7 +132,7 @@ export interface ChapterInfoView {
     is_pinned: boolean;
     index: number;
     subtitle: string;
-    page_count: number;
+    page_source_count: number;
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;
@@ -180,7 +180,7 @@ export type ChapterWorkflowRecordEventView =
           kind: "translation_imported";
           data: {
               format: "label_plus" | "poprako";
-              imported_page_count: number;
+              imported_page_source_count: number;
               imported_unit_count: number;
           };
       }
@@ -223,7 +223,10 @@ export interface ChapterWorkflowRecordInfoView {
     created_at: number;
 }
 
-export interface PageInfoView {
+export interface PageSourceInfoView {
+    raw_ident: string | null;
+    image_version: number | null;
+    image_uploaded: boolean;
     id: string;
     chapter_id: string;
     index: number;
@@ -241,7 +244,7 @@ export interface PageInfoView {
 
 export interface UnitInfoView {
     id: string;
-    page_id: string;
+    page_source_id: string;
     is_bubble: boolean;
     is_flagged: boolean;
     is_proofread: boolean;
@@ -360,9 +363,9 @@ export interface ArchiveComicVal {
 
 export type ImageExtension = "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "avif" | "bmp" | "tif" | "tiff";
 
-export interface PageImageInput {
+export interface PageSourceImageInput {
     raw_ident?: string | null;
-    page_id: string | null;
+    page_source_id?: string | null;
     image_hash: string;
     new_byte_len?: number;
     ext: ImageExtension;
@@ -374,31 +377,32 @@ export interface UploadSlotVal {
     headers: Record<string, string>;
 }
 
-export interface ReservedPageVal {
-    page_id: string;
+export interface ReservedPageSourceVal {
+    image_version: number;
+    page_source_id: string;
     index: number;
     image_hash: string;
     ext: ImageExtension;
     slot: UploadSlotVal | null;
 }
 
-export interface ReserveChapterPagesVal {
-    pages: ReservedPageVal[];
+export interface ReserveChapterPageSourcesVal {
+    pages: ReservedPageSourceVal[];
 }
 
 export interface ReserveImageVal {
     slot: UploadSlotVal | null;
 }
 
-export interface ListPageUnitInfosVal {
+export interface ListPageSourceUnitInfosVal {
     unit_infos: UnitInfoView[];
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;
 }
 
-export interface PageUnitDiffStatsVal {
-    page_id: string;
+export interface PageSourceUnitDiffStatsVal {
+    page_source_id: string;
     index: number;
     translated_unit_count: number;
     editted_unit_count: number;
@@ -411,7 +415,7 @@ export interface LoginVal {
 }
 
 // PopRaKo JSON export/import shape (unenveloped). Field names mirror
-// `ChapterTranslationPortView`, `PageTranslationPortView`, and
+// `ChapterTranslationPortView`, `PageSourceTranslationPortView`, and
 // `UnitTranslationPortView` in the Rust data view modules.
 export interface UnitTranslationPortView {
     unit_id: string;
@@ -438,7 +442,7 @@ export interface UnitTranslationPortView {
     proofreader_id: string | null;
 }
 
-export interface PageTranslationPortView {
+export interface PageSourceTranslationPortView {
     page_id: string;
     page_index: number;
 
@@ -453,26 +457,26 @@ export interface ChapterTranslationPortView {
     comic_id: string;
     comic_title: string;
 
-    pages: PageTranslationPortView[];
+    pages: PageSourceTranslationPortView[];
 }
 
 export interface ExportChapterTranslationsVal {
     label_plus: string | null;
     poprako: ChapterTranslationPortView | null;
-    raw_idents: ChapterPageRawIdentVal[] | null;
+    raw_idents: ChapterPageSourceRawIdentVal[] | null;
 }
 
-export interface ChapterPageRawIdentVal {
-    page_id: string;
+export interface ChapterPageSourceRawIdentVal {
+    page_source_id: string;
     raw_ident: string;
 }
 
-export interface SavePageUnitEditsVal {
+export interface SavePageSourceUnitEditsVal {
     created_unit_ids: { local_id: string; unit_id: string }[];
 }
 
-export interface PageUnitFlaggedStatsVal {
-    page_id: string;
+export interface PageSourceUnitFlaggedStatsVal {
+    page_source_id: string;
     index: number;
     flagged_unit_count: number;
 }

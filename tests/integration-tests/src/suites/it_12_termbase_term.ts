@@ -345,11 +345,11 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     expectNoContent(await translator.api.delete<null>(`/api/v1/terms/${term.id}`));
     assert.deepEqual((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);
 
-    const cascadeWorkset = await createWorkset(ctx.sadmin, ctx.ids.defaultTeamId, titled("termbase-cascade-workset"));
+    const cascadeWorkset = await createWorkset(ctx.sadmin, ctx.ids.defaultTeamId, titled("termbase--23665180745"));
     const cascadeComic = await createComic(
         ctx.sadmin,
         cascadeWorkset.id,
-        titled("termbase-cascade-comic"),
+        titled("termbase--38742087177"),
         "integration",
     );
     const cascadeTermbase = await createTermbase(
@@ -365,7 +365,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     expectError(await translator.api.get<ErrorBody>(`/api/v1/terms/${cascadeTerm.id}`), 422, 2);
     await deleteWorkset(ctx.sadmin, cascadeWorkset.id);
 
-    const cascadeTeam = await createTeam(ctx.sadmin, titled("termbase-cascade-team"), "cascade");
+    const cascadeTeam = await createTeam(ctx.sadmin, titled("termbase--83502064315"), "cascade");
 
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/termbases", {

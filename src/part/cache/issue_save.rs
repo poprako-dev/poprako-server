@@ -2,12 +2,14 @@
 
 use uuid::Uuid;
 
+use crate::value::issue_save::IssueSaveReceipt;
+
 /// Exclusion spanning receipt lookup, transaction commit, and publication.
 pub trait IssueSaveGuard {
-    /// Fingerprint of the completed request, when still retained.
-    fn fingerprint(&self) -> Option<[u8; 32]>;
+    /// Completed request fingerprint and assigned identities, when retained.
+    fn receipt(&self) -> Option<IssueSaveReceipt>;
     /// Records successful completion after the database commit.
-    fn record(&self, fingerprint: [u8; 32]);
+    fn record(&self, receipt: IssueSaveReceipt);
 }
 
 /// Shared bounded receipt cache.

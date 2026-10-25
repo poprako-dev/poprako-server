@@ -21,7 +21,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
@@ -151,7 +151,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         is_pinned: true,
         index: 0,
         subtitle: "subtitle".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -171,7 +171,7 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: now(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles: role_mask,
@@ -201,12 +201,12 @@ fn assignment(
 }
 
 // Build a page fixture with stable image metadata.
-fn page(id: &str, chapter_id: &str, _image_key: &str) -> PageInfo {
+fn page(id: &str, chapter_id: &str, _image_key: &str) -> PageSourceInfo {
     //
     // Build a page fixture with image metadata for assignment page listings.
     let time = now();
 
-    PageInfo {
+    PageSourceInfo {
         id: id.into(),
         chapter_id: chapter_id.into(),
         index: 0,
@@ -258,25 +258,26 @@ fn update_roles_data(
 // Seed shared team/workset/comic/chapter fixtures.
 fn seed_scope(mock: &Mock) {
     //
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    mock.seed_chapter(chapter("chapter-1", "comic-1"));
+    mock.seed_chapter(chapter("chapter--00000000001", "comic--00000000001"));
 }
 
 // Seed a chapter that is frozen because publishing has completed.
 fn seed_published_scope(mock: &Mock) {
     //
-    mock.seed_team(team("team-1"));
+    mock.seed_team(team("team--00000000001"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_comic(comic("comic-1", "workset-1"));
+    mock.seed_comic(comic("comic--00000000001", "workset--00000000001"));
 
-    let mut chapter_info = chapter("chapter-1", "comic-1");
+    let mut chapter_info =
+        chapter("chapter--00000000001", "comic--00000000001");
 
     chapter_info.stages = chapter_info
         .stages

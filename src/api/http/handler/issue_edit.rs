@@ -16,6 +16,7 @@ use crate::data::instr::issue_edit::{
 };
 use crate::data::val::issue_edit::{
     IssueEditPageVal, IssueEditVariantsVal, RenameIssueEditVariantVal,
+    SavePageIssuesVal,
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -200,7 +201,7 @@ pub async fn rename_variant(
     responses(
         (status = 200,
          description = "Current review state",
-         body = HttpBody<IssueEditPageVal>),
+         body = HttpBody<SavePageIssuesVal>),
 
         (status = 403,
          description = "Insufficient review permissions"),
@@ -221,7 +222,7 @@ pub async fn save_infos(
     Extension(token): Extension<UserToken>,
     Query(query): Query<SaveQuery>,
     Json(instr): Json<SavePageIssuesInstr>,
-) -> HttpResult<IssueEditPageVal> {
+) -> HttpResult<SavePageIssuesVal> {
     //
     let save_id = Uuid::parse_str(&query.save_id)
         .map_err(|_| HttpError::unprocessable("save_id must be a UUID"))?;

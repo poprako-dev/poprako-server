@@ -16,9 +16,9 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part::repo::oper::page::DeletePages;
+use crate::part::repo::oper::page_source::DeletePageSources;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::usecase::comic_archive as comic_archive_usecase;
 use crate::value::chapter::mask::StageMask;
@@ -37,7 +37,7 @@ fn comic(id: &str) -> ComicInfo {
     ComicInfo {
         id: id.into(),
 
-        workset_id: "workset-1".into(),
+        workset_id: "workset--00000000001".into(),
 
         index: 0,
         title: "Pop Comic".into(),
@@ -45,7 +45,7 @@ fn comic(id: &str) -> ComicInfo {
         description: None,
         chapter_count: 1,
 
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
 
         workset: None,
         team: None,
@@ -65,7 +65,7 @@ fn workset(id: &str) -> WorksetInfo {
     WorksetInfo {
         id: id.into(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         index: 0,
         name: "workset".into(),
@@ -84,20 +84,20 @@ fn chapter(id: &str) -> ChapterInfo {
         confirmed_artwork_ver: None,
         id: id.into(),
 
-        comic_id: "comic-1".into(),
+        comic_id: "comic--00000000001".into(),
         is_pinned: true,
 
         index: 3,
         subtitle: "Arrival".into(),
 
-        page_count: 2,
+        page_source_count: 2,
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
 
         stages: StageMask::try_from(0u32).unwrap(),
 
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
 
         comic: None,
         creator: None,
@@ -139,7 +139,7 @@ fn member(user_id: &str) -> MemberInfo {
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
 
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
 
         user: None,
         team: None,
@@ -151,15 +151,15 @@ fn member(user_id: &str) -> MemberInfo {
 fn seed(role: RoleField) -> Mock {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1"));
+    mock.seed_workset(workset("workset--00000000001"));
 
-    mock.seed_comic(comic("comic-1"));
+    mock.seed_comic(comic("comic--00000000001"));
 
-    mock.seed_chapter(chapter("chapter-1"));
+    mock.seed_chapter(chapter("chapter--00000000001"));
 
     match role {
         RoleField::ADMIN => {
-            let mut member_info = member("user-1");
+            let mut member_info = member("user--00000000001");
 
             member_info.roles = RoleMask::from(RoleField::ADMIN);
 
@@ -167,8 +167,8 @@ fn seed(role: RoleField) -> Mock {
         }
 
         _ => mock.seed_assignment(assignment(
-            "chapter-1",
-            "user-1",
+            "chapter--00000000001",
+            "user--00000000001",
             RoleMask::from(role),
         )),
     }
@@ -184,8 +184,8 @@ fn review_mock(role: RoleField) -> Mock {
 
         mock.state.lock().unwrap().page_artworks.push(
             crate::model::read::proj::page_artwork::PageArtworkInfo {
-                id: format!("artwork-{index}"),
-                chapter_id: "chapter-1".into(),
+                id: format!("page_artwork--{index:011}"),
+                chapter_id: "chapter--00000000001".into(),
                 index: index + 3,
                 raw_ident: None,
                 created_at: now,
@@ -193,9 +193,9 @@ fn review_mock(role: RoleField) -> Mock {
             },
         );
 
-        mock.seed_page(PageInfo {
-            id: format!("page-{index}"),
-            chapter_id: "chapter-1".into(),
+        mock.seed_page(PageSourceInfo {
+            id: format!("page_source--{index:011}"),
+            chapter_id: "chapter--00000000001".into(),
             index,
             total_unit_count: 0,
             translated_unit_count: 0,
@@ -212,7 +212,7 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
     ImportChapterIssuesInstr {
         pages: vec![
             PageIssuesInstr {
-                page_artwork_id: "artwork-0".into(),
+                page_artwork_id: "page_artwork--00000000000".into(),
                 issues: vec![IssueInstr {
                     variant: "\u{2003}custom issue\u{2003}".into(),
                     layer_name: Some("  他们两个…  ".into()),
@@ -226,7 +226,7 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
                 }],
             },
             PageIssuesInstr {
-                page_artwork_id: "artwork-1".into(),
+                page_artwork_id: "page_artwork--00000000001".into(),
                 issues: vec![],
             },
         ],
@@ -237,7 +237,13 @@ async fn submit(
     mock: &Mock,
     instr: ImportChapterIssuesInstr,
 ) -> BaseRest<ImportChapterIssuesVal> {
-    import_issue((mock, mock), token("user-1"), "chapter-1".into(), instr).await
+    import_issue(
+        (mock, mock),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
+        instr,
+    )
+    .await
 }
 
 // review_replace(import_issue)(positive): Explicit composite IDs map each input, replacing the single review and renewing identities.
@@ -256,7 +262,7 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     let first = mock.snapshot().issues.first().unwrap().clone();
 
-    assert_eq!(first.page_artwork_id, "artwork-0");
+    assert_eq!(first.page_artwork_id, "page_artwork--00000000000");
 
     assert_eq!(first.index, 0);
 
@@ -268,8 +274,8 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     let issues = list_infos::<MockContext, _>(
         (&mock,),
-        token("user-1"),
-        "chapter-1".into(),
+        token("user--00000000001"),
+        "chapter--00000000001".into(),
     )
     .await
     .unwrap();
@@ -308,7 +314,7 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     assert_eq!(
         mock.snapshot().issues.first().unwrap().page_artwork_id,
-        "artwork-0"
+        "page_artwork--00000000000"
     );
 }
 
@@ -440,7 +446,7 @@ async fn review_permissions_and_published_freeze() {
         list_infos::<MockContext, _>(
             (&mock,),
             token("member"),
-            "chapter-1".into()
+            "chapter--00000000001".into()
         )
         .await
         .is_ok()
@@ -450,7 +456,7 @@ async fn review_permissions_and_published_freeze() {
         list_infos::<MockContext, _>(
             (&mock,),
             token("outsider"),
-            "chapter-1".into()
+            "chapter--00000000001".into()
         )
         .await
         .is_err()
@@ -459,7 +465,7 @@ async fn review_permissions_and_published_freeze() {
     assert!(
         list_infos::<MockContext, _>(
             (&mock,),
-            token("user-1"),
+            token("user--00000000001"),
             "missing".into()
         )
         .await
@@ -522,7 +528,7 @@ async fn concurrent_imports_keep_one_complete_review() {
     ));
 }
 
-// review_lifecycle(DeletePages, archive)(positive): Page deletion preserves details; successful archive preserves the current review and removes active issues.
+// review_lifecycle(DeletePageSources, archive)(positive): PageSource deletion preserves details; successful archive preserves the current review and removes active issues.
 #[tokio::test]
 async fn archive_snapshot_and_page_delete_include_review() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -530,8 +536,8 @@ async fn archive_snapshot_and_page_delete_include_review() {
     submit(&mock, input("archived note")).await.unwrap();
 
     mock.coord(async |context| {
-        DeletePages::Ids {
-            ids: &["page-0".into()],
+        DeletePageSources::Ids {
+            ids: &["page_source--00000000000".into()],
         }
         .step_on(&mock, context)
         .await
@@ -541,7 +547,7 @@ async fn archive_snapshot_and_page_delete_include_review() {
 
     assert_eq!(mock.snapshot().issues.len(), 1);
 
-    let mut admin = member("user-1");
+    let mut admin = member("user--00000000001");
 
     admin.roles = RoleMask::from(RoleField::ADMIN);
 
@@ -560,8 +566,8 @@ async fn archive_snapshot_and_page_delete_include_review() {
 
     comic_archive_usecase::archive(
         (&mock, &mock, &mock),
-        token("user-1"),
-        "comic-1".into(),
+        token("user--00000000001"),
+        "comic--00000000001".into(),
     )
     .await
     .unwrap();

@@ -13,15 +13,18 @@ use crate::complex::unit as unit_complex;
 use crate::model::shared::translation_document::ChapterTranslationDocument;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::translation_import::{
-    PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
+    PageSourceTranslationImport, UnitTranslationImport,
+    UnitTranslationImportSource,
 };
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
-use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
+use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Parses `PopRaKo` JSON text into chapter import pages.
-pub fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
+pub fn parse_poprako(
+    content: &str,
+) -> BaseRest<Vec<PageSourceTranslationImport>> {
     //
     let content = content.strip_prefix('\u{feff}').unwrap_or(content);
 
@@ -76,23 +79,25 @@ pub fn build_unit_create(
 }
 
 /// Parses `LabelPlus` text into chapter import pages.
-pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
+pub fn parse_label_plus(
+    content: &str,
+) -> BaseRest<Vec<PageSourceTranslationImport>> {
     label_plus::parse_label_plus(content)
 }
 
 /// Returns an error when imported pages do not match existing pages.
-pub fn validate_page_count(
-    imported_page_count: usize,
-    existing_page_count: usize,
+pub fn validate_page_source_count(
+    imported_page_source_count: usize,
+    existing_page_source_count: usize,
 ) -> BaseRest<()> {
     //
-    if imported_page_count != existing_page_count {
+    if imported_page_source_count != existing_page_source_count {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
             message: trl("error-chapter-import-page-count-mismatch");
-            imported_page_count = imported_page_count,
-            existing_page_count = existing_page_count,
+            imported_page_source_count = imported_page_source_count,
+            existing_page_source_count = existing_page_source_count,
             "chapter import page count mismatch",
         });
     }
@@ -103,27 +108,27 @@ pub fn validate_page_count(
 // Convert the shared PopRaKo document into normalized import pages.
 fn convert_poprako_document(
     project: ChapterTranslationDocument,
-) -> BaseRest<Vec<PageTranslationImport>> {
+) -> BaseRest<Vec<PageSourceTranslationImport>> {
     //
-    if project.pages.len() > MAX_CHAPTER_PAGE_COUNT {
+    if project.pages.len() > MAX_CHAPTER_PAGE_SOURCE_COUNT {
         //
         return Err(invalid_import_limit(
             "error-chapter-import-page-count",
-            MAX_CHAPTER_PAGE_COUNT,
+            MAX_CHAPTER_PAGE_SOURCE_COUNT,
             "PopRaKo document has too many pages",
         ));
     }
 
-    let page_count = project.pages.len();
+    let page_source_count = project.pages.len();
 
-    let mut page_indexes = HashSet::with_capacity(project.pages.len());
+    let mut page_source_indexes = HashSet::with_capacity(project.pages.len());
 
     let mut pages = Vec::with_capacity(project.pages.len());
 
     for page in project.pages {
         //
-        if page.page_index >= page_count
-            || !page_indexes.insert(page.page_index)
+        if page.page_source_index >= page_source_count
+            || !page_source_indexes.insert(page.page_source_index)
         {
             return Err(invalid_poprako_content("invalid PopRaKo page index"));
         }
@@ -183,18 +188,18 @@ fn convert_poprako_document(
 
         units.sort_by_key(|unit| unit.index);
 
-        pages.push(PageTranslationImport {
-            page_index: page.page_index,
+        pages.push(PageSourceTranslationImport {
+            page_source_index: page.page_source_index,
             units,
         });
     }
 
-    pages.sort_by_key(|page| page.page_index);
+    pages.sort_by_key(|page| page.page_source_index);
 
     if pages
         .iter()
         .enumerate()
-        .any(|(index, page)| page.page_index != index)
+        .any(|(index, page)| page.page_source_index != index)
     {
         return Err(invalid_poprako_content(
             "PopRaKo page indexes are incomplete",

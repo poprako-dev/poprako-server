@@ -48,7 +48,7 @@ interface Allocation {
     slot: unknown | null;
 }
 
-interface ArtworkPage {
+interface ArtworkPageSource {
     id: string;
     index: number;
     raw_ident: string | null;
@@ -61,7 +61,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     const workset = await createWorkset(ctx.sadmin, ctx.ids.defaultTeamId, "chapter review fixtures");
     const comic = await createComic(ctx.sadmin, workset.id, "review", "author", "review chapter");
     const chapterId = comic.chapter_id;
-    const sourcePageId = crypto.randomUUID();
+    const sourcePageSourceId = crypto.randomUUID();
     const base = `/api/v1/chapters/${chapterId}/issues/import`;
     const artifacts = `/api/v1/chapters/${chapterId}/page-artworks`;
     const guest = ctx.users.get("guest_01")!;
@@ -72,7 +72,8 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
             await ctx.sadmin.post<SuccessBody<{ pages: Allocation[] }>>(`${artifacts}/alloc`, { pages }),
             200,
         ).pages;
-    const readPages = async () => expectSuccessData(await ctx.sadmin.get<SuccessBody<ArtworkPage[]>>(artifacts), 200);
+    const readPageSources = async () =>
+        expectSuccessData(await ctx.sadmin.get<SuccessBody<ArtworkPageSource[]>>(artifacts), 200);
     const read = async () =>
         expectSuccessData(await ctx.sadmin.get<SuccessBody<Issue[]>>(`/api/v1/chapters/${chapterId}/issues`), 200);
     const markImage = async (page: Allocation) =>
@@ -83,18 +84,18 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
         );
 
     await withDatabaseClient(async (client) => {
-        await client.query("INSERT INTO t_page (f_id, f_chapter_id, f_index) VALUES ($1, $2, 0)", [
-            sourcePageId,
+        await client.query("INSERT INTO t_page_source (f_id, f_chapter_id, f_index) VALUES ($1, $2, 0)", [
+            sourcePageSourceId,
             chapterId,
         ]);
-        await client.query("UPDATE t_chapter SET f_page_count = 1 WHERE f_id = $1", [chapterId]);
+        await client.query("UPDATE t_chapter SET f_page_source_count = 1 WHERE f_id = $1", [chapterId]);
     });
 
     // IS1: administrators maintain composites, but review import requires REVIEWER assignment.
     const pages = await allocate([image, image, image]);
     assert.deepEqual(new Set(pages.map((page) => page.page_artwork_id)).size, 3);
     assert.deepEqual(
-        (await readPages()).map((page) => page.image_uploaded),
+        (await readPageSources()).map((page) => page.image_uploaded),
         [false, false, false],
     );
     for (const page of pages) await markImage(page);
@@ -153,7 +154,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
         { pages: [{ ...target, issues: [{ variant: " ", note: "" }] }] },
         { pages: [{ ...target, issues: [{ variant: "custom", layer_name: " ", note: "" }] }] },
         { pages: [target, target] },
-        { pages: [{ ...target, page_artwork_id: sourcePageId }] },
+        { pages: [{ ...target, page_artwork_id: sourcePageSourceId }] },
         ...[
             { ...rect, x_coord: -0.1 },
             { ...rect, width: 0 },
@@ -177,7 +178,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     );
     assert.deepEqual(await read(), []);
     expectSuccessData(await ctx.sadmin.post<SuccessBody<ImportResult>>(base, { pages: [] }), 200);
-    assert.deepEqual((await readPages()).length, 3);
+    assert.deepEqual((await readPageSources()).length, 3);
     expectSuccessData(await ctx.sadmin.post<SuccessBody<ImportResult>>(base, body), 200);
     await verifyReviewEditor(ctx.sadmin, chapterId, ids[0]!);
     const current = await read();
@@ -204,12 +205,12 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     // IS7: explicit IDs preserve identity; uploaded composites expose only raw and thumbnail URLs.
     const reordered = await allocate([...ids].reverse().map((id) => ({ ...image, page_artwork_id: id })));
     assert.ok(reordered.every((page) => page.slot === null));
-    const reorderedPages = await readPages();
+    const reorderedPageSources = await readPageSources();
     assert.deepEqual(
-        reorderedPages.map((page) => page.id),
+        reorderedPageSources.map((page) => page.id),
         [...ids].reverse(),
     );
-    for (const page of reorderedPages) {
+    for (const page of reorderedPageSources) {
         assert.deepEqual(typeof page.image_url, "string");
         assert.deepEqual(typeof page.image_thumbnail_url, "string");
         assert.ok(!Object.hasOwn(page, "image_optimized_url"));
@@ -237,7 +238,7 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     // IS8: unknown manifest identities reject atomically; removing a composite cascades only its issues.
     expectError(
         await ctx.sadmin.post<ErrorBody>(`${artifacts}/alloc`, {
-            pages: [{ ...image, page_artwork_id: sourcePageId }],
+            pages: [{ ...image, page_artwork_id: sourcePageSourceId }],
         }),
         422,
         2,
@@ -246,30 +247,33 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     await allocate([{ ...image, page_artwork_id: ids[2] }]);
     assert.deepEqual(await read(), []);
     await allocate([]);
-    assert.deepEqual(await readPages(), []);
+    assert.deepEqual(await readPageSources(), []);
 
     // IS6: source deletion is independent; published chapters reject all composite and review writes.
-    const finalPage = (await allocate([image]))[0]!;
-    const finalReview = { pages: [{ ...target, page_artwork_id: finalPage.page_artwork_id }] };
+    const finalPageSource = (await allocate([image]))[0]!;
+    const finalReview = { pages: [{ ...target, page_artwork_id: finalPageSource.page_artwork_id }] };
     expectSuccessData(await ctx.sadmin.post<SuccessBody<ImportResult>>(base, finalReview), 200);
     const finalIssues = await read();
     await withDatabaseClient(async (client) => {
-        await client.query("DELETE FROM t_page WHERE f_id = $1", [sourcePageId]);
+        await client.query("DELETE FROM t_page_source WHERE f_id = $1", [sourcePageSourceId]);
         await client.query("UPDATE t_chapter SET f_published_at = NOW() WHERE f_id = $1", [chapterId]);
     });
     expectError(await ctx.sadmin.post<ErrorBody>(base, finalReview), 422, 2);
     expectError(await ctx.sadmin.post<ErrorBody>(`${artifacts}/alloc`, { pages: [] }), 422, 2);
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/page-artworks/${finalPage.page_artwork_id}/image/alloc`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/page-artworks/${finalPageSource.page_artwork_id}/image/alloc`, {
             ...image,
         }),
         422,
         2,
     );
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/page-artworks/${finalPage.page_artwork_id}/image/mark-uploaded`, {
-            image_version: finalPage.image_version,
-        }),
+        await ctx.sadmin.post<ErrorBody>(
+            `/api/v1/page-artworks/${finalPageSource.page_artwork_id}/image/mark-uploaded`,
+            {
+                image_version: finalPageSource.image_version,
+            },
+        ),
         422,
         2,
     );

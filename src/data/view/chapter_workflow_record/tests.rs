@@ -99,14 +99,14 @@ fn delivery_event_cases()
         (
             ChapterWorkflowRecordPayload::TranslationImported {
                 format: TranslationFormat::PopRaKo,
-                imported_page_count: 2,
+                imported_page_source_count: 2,
                 imported_unit_count: 4,
             },
             json!({
                 "kind": "translation_imported",
                 "data": {
                     "format": "poprako",
-                    "imported_page_count": 2,
+                    "imported_page_source_count": 2,
                     "imported_unit_count": 4,
                 },
             }),
@@ -165,7 +165,7 @@ fn workflow_record_view_preserves_each_typed_event() {
     for (payload, expected_event) in cases {
         let workflow_record_info = ChapterWorkflowRecordInfo {
             id: "record-1".into(),
-            chapter_id: "chapter-1".into(),
+            chapter_id: "chapter--00000000001".into(),
             actor_user_id: Some("actor-user".into()),
             kind: payload.kind(),
             payload,

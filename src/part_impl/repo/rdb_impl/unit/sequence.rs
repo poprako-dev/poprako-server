@@ -18,11 +18,11 @@ use crate::complex::unit::sequence as unit_sequence_complex;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRecord;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id, f_index as page_index, t_page,
+use crate::part_impl::repo::rdb_impl::schema::t_page_source::dsl::{
+    f_chapter_id, f_index as page_source_index, t_page_source,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_id,
+    f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_source_id,
     f_proofread_text, f_translated_text, t_unit,
 };
 use crate::result::{BaseError, BaseRest};
@@ -39,10 +39,10 @@ extern "SQL" {
     ) -> Nullable<diesel::sql_types::Integer>;
 }
 
-// One selected Unit with its adapter-only Page order.
+// One selected Unit with its adapter-only PageSource order.
 struct RankedUnitInfo {
-    // Adapter-only Page order.
-    page_index: usize,
+    // Adapter-only PageSource order.
+    page_source_index: usize,
 
     // Selected Unit projection.
     unit_info: UnitInfo,
@@ -78,7 +78,7 @@ pub async fn search_chapter_ids(
     let fetch_count = search_fetch_count(fetch_count)?;
 
     let query = t_unit
-        .inner_join(t_page)
+        .inner_join(t_page_source)
         .filter(f_chapter_id.eq(chapter_id))
         .filter(f_hidden_at.is_null())
         .select(unit_id)
@@ -102,7 +102,7 @@ pub async fn search_chapter_ids(
         .map_err(diesel)
 }
 
-/// Lists selected Units in Chapter Page and linked-list order.
+/// Lists selected Units in Chapter source page and linked-list order.
 pub async fn list_infos_in_chapter_order(
     conn: &mut RdbConn,
     ids: &[&str],
@@ -113,10 +113,10 @@ pub async fn list_infos_in_chapter_order(
     }
 
     let records = t_unit
-        .inner_join(t_page)
+        .inner_join(t_page_source)
         .filter(unit_id.eq_any(ids))
         .filter(f_hidden_at.is_null())
-        .select((page_index, UnitInfoRecord::as_select()))
+        .select((page_source_index, UnitInfoRecord::as_select()))
         .load::<(i32, UnitInfoRecord)>(conn)
         .await
         .map_err(diesel)?;
@@ -127,12 +127,12 @@ pub async fn list_infos_in_chapter_order(
 
     let mut candidates = records
         .into_iter()
-        .map(|(persisted_page_index, record)| {
+        .map(|(persisted_page_source_index, record)| {
             //
             Ok(RankedUnitInfo {
-                page_index: usize_from_i32(
-                    persisted_page_index,
-                    "t_page.f_index",
+                page_source_index: usize_from_i32(
+                    persisted_page_source_index,
+                    "t_page_source.f_index",
                 )?,
                 unit_info: UnitInfo::from(record),
             })
@@ -151,7 +151,7 @@ pub async fn list_infos_in_chapter_order(
     candidates.sort_by_key(|cand| {
         //
         (
-            cand.page_index,
+            cand.page_source_index,
             rank_by_unit_id
                 .get(&cand.unit_info.id)
                 .copied()
@@ -162,55 +162,60 @@ pub async fn list_infos_in_chapter_order(
     accept!(candidates.into_iter().map(|cand| cand.unit_info).collect(),)
 }
 
-/// Lists Units for multiple Pages with one query and validates each linked list.
-pub async fn list_infos_by_page_ids(
+/// Lists Units for multiple source pages with one query and validates each linked list.
+pub async fn list_infos_by_page_source_ids(
     conn: &mut RdbConn,
-    page_ids: &[&str],
+    page_source_ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let records = t_unit
-        .filter(f_page_id.eq_any(page_ids))
+        .filter(f_page_source_id.eq_any(page_source_ids))
         .select(UnitInfoRecord::as_select())
         .load::<UnitInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut position_by_page_id = HashMap::with_capacity(page_ids.len());
+    let mut position_by_page_source_id =
+        HashMap::with_capacity(page_source_ids.len());
 
-    for (position, page_id) in page_ids.iter().enumerate() {
-        position_by_page_id.entry(*page_id).or_insert(position);
+    for (position, page_source_id) in page_source_ids.iter().enumerate() {
+        //
+        position_by_page_source_id
+            .entry(*page_source_id)
+            .or_insert(position);
     }
 
-    let mut unit_infos_by_position =
-        (0..page_ids.len()).map(|_| Vec::new()).collect::<Vec<_>>();
+    let mut unit_infos_by_position = (0..page_source_ids.len())
+        .map(|_| Vec::new())
+        .collect::<Vec<_>>();
 
     for record in records {
         //
         let unit_info = UnitInfo::from(record);
 
-        let position = position_by_page_id
-            .get(unit_info.page_id.as_str())
+        let position = position_by_page_source_id
+            .get(unit_info.page_source_id.as_str())
             .copied()
             .ok_or_else(corrupt_unit_chain_error)?;
 
-        let page_unit_infos = unit_infos_by_position
+        let page_source_unit_infos = unit_infos_by_position
             .get_mut(position)
             .ok_or_else(corrupt_unit_chain_error)?;
 
-        page_unit_infos.push(unit_info);
+        page_source_unit_infos.push(unit_info);
     }
 
     let mut unit_infos = Vec::new();
 
-    for mut page_unit_infos in unit_infos_by_position {
+    for mut page_source_unit_infos in unit_infos_by_position {
         //
         unit_sequence_complex::order_units(
-            &mut page_unit_infos,
+            &mut page_source_unit_infos,
             |unit_info| unit_info.id.as_str(),
             |unit_info| unit_info.next_id.as_deref(),
         )?;
 
-        unit_infos.extend(page_unit_infos);
+        unit_infos.extend(page_source_unit_infos);
     }
 
     accept!(unit_infos)
@@ -237,7 +242,7 @@ pub async fn list_infos_by_ids(
 #[instrument(level = "info", skip_all)]
 pub async fn list_orders(
     conn: &mut RdbConn,
-    page_id: &str,
+    page_source_id: &str,
     batch_size: std::num::NonZeroU32,
 ) -> BaseRest<Vec<UnitOrder>> {
     //
@@ -252,7 +257,7 @@ pub async fn list_orders(
             match records.last().map(|(id, _, _)| id.as_str()) {
                 //
                 Some(after_id) => t_unit
-                    .filter(f_page_id.eq(page_id))
+                    .filter(f_page_source_id.eq(page_source_id))
                     .filter(unit_id.gt(after_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
@@ -263,7 +268,7 @@ pub async fn list_orders(
                     .await,
 
                 None => t_unit
-                    .filter(f_page_id.eq(page_id))
+                    .filter(f_page_source_id.eq(page_source_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
                     .limit(sentinel_limit)
@@ -323,43 +328,45 @@ fn search_fetch_count(fetch_count: usize) -> BaseRest<i64> {
     })
 }
 
-// Loads and validates complete Unit links for the Pages containing matches.
+// Loads and validates complete Unit links for the PageSources containing matches.
 async fn load_unit_ranks(
     conn: &mut RdbConn,
     candidates: &[RankedUnitInfo],
 ) -> BaseRest<HashMap<String, usize>> {
     //
-    let mut page_ids = candidates
+    let mut page_source_ids = candidates
         .iter()
-        .map(|cand| cand.unit_info.page_id.as_str())
+        .map(|cand| cand.unit_info.page_source_id.as_str())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
-    page_ids.sort_unstable();
+    page_source_ids.sort_unstable();
 
     let records = t_unit
-        .filter(f_page_id.eq_any(&page_ids))
-        .select((f_page_id, unit_id, unit_next_id))
+        .filter(f_page_source_id.eq_any(&page_source_ids))
+        .select((f_page_source_id, unit_id, unit_next_id))
         .load::<(String, String, Option<String>)>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut links_by_page_id = HashMap::<String, Vec<UnitLink>>::new();
+    let mut links_by_page_source_id = HashMap::<String, Vec<UnitLink>>::new();
 
-    for (page_id, id, next_id) in records {
+    for (page_source_id, id, next_id) in records {
         //
-        links_by_page_id
-            .entry(page_id)
+        links_by_page_source_id
+            .entry(page_source_id)
             .or_default()
             .push(UnitLink { id, next_id });
     }
 
     let mut rank_by_unit_id = HashMap::new();
 
-    for page_id in page_ids {
+    for page_source_id in page_source_ids {
         //
-        let mut links = links_by_page_id.remove(page_id).unwrap_or_default();
+        let mut links = links_by_page_source_id
+            .remove(page_source_id)
+            .unwrap_or_default();
 
         unit_sequence_complex::order_units(
             &mut links,

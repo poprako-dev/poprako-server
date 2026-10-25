@@ -1,0 +1,101 @@
+//! Domain models for pages inside chapters — per-page unit tracking and
+//! image-storage metadata.
+//!
+//! Each page belongs to exactly one chapter and carries denormalised progress
+//! counters that aggregate to the parent chapter's overview totals.
+//!
+//! Convert to [`PageSourceInfoView`] for presentation.
+//!
+//! [`PageSourceInfoView`]: crate::data::view::page_source::PageSourceInfoView
+
+use time::OffsetDateTime;
+
+use crate::model::read::proj::unit::UnitCountMetrics;
+
+/// Current visible Unit text statistics for one source page.
+pub struct PageSourceUnitDiffStats {
+    /// Permanent source page identifier.
+    pub page_source_id: String,
+    /// Zero-based position in the Chapter.
+    pub index: usize,
+
+    /// Units with non-whitespace translation text or typesetting annotation.
+    pub translated_unit_count: usize,
+    /// Units with non-whitespace translation and revision texts that differ exactly.
+    pub editted_unit_count: usize,
+    /// Units with non-whitespace revision text and absent or whitespace-only translation.
+    pub proofreader_append_unit_count: usize,
+}
+
+/// Minimal persisted source page scope needed by Unit reads and edits.
+#[derive(Clone, PartialEq, Eq)]
+pub struct PageSourceUnitScope {
+    /// Permanent source page identifier.
+    pub id: String,
+
+    /// Owning Chapter identifier.
+    pub chapter_id: String,
+
+    /// Denormalized Unit counters stored on this source page.
+    pub count_metrics: UnitCountMetrics,
+}
+
+/// A pagerecord as stored in the database.
+///
+/// Progress is tracked via three denormalised counters (`total_unit_count`,
+/// `translated_unit_count`, `proofread_unit_count`) that roll up to the
+/// parent [`ChapterInfo`] totals.
+///
+/// The `image_key` and `image_uploaded` fields track the page image
+/// lifecycle: a key is reserved when the page is created, the client
+/// uploads the image, then the upload is confirmed.
+///
+/// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
+#[cfg_attr(test, derive(Clone))]
+pub struct PageSourceInfo {
+    /// The unique identifier for this page record.
+    pub id: String,
+
+    /// Foreign key to the parent chapter this page belongs to.
+    pub chapter_id: String,
+    /// Zero-based ordinal position of this page within the chapter.
+    pub index: usize,
+
+    /// Number of translation units (text blocks) on this page.
+    pub total_unit_count: usize,
+    /// Number of units on this page that have been translated.
+    pub translated_unit_count: usize,
+    /// Number of units on this page that have been proofread.
+    pub proofread_unit_count: usize,
+
+    /// Timestamp when this page record was first created.
+    pub created_at: OffsetDateTime,
+    /// Timestamp when this page record was last modified.
+    pub updated_at: OffsetDateTime,
+}
+
+/// One page's optional source filename record.
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
+pub struct PageSourceRawIdentInfo {
+    /// Stable page identifier.
+    pub page_source_id: String,
+    /// Complete original image filename.
+    pub raw_ident: String,
+
+    /// Time the association was created.
+    pub created_at: OffsetDateTime,
+    /// Time the association was last assigned.
+    pub updated_at: OffsetDateTime,
+}
+
+/// Visible flagged Unit count for one source page.
+pub struct PageSourceUnitFlaggedStats {
+    /// Permanent source page identifier.
+    pub page_source_id: String,
+    /// Original zero-based Chapter position.
+    pub index: usize,
+
+    /// Number of visible Units flagged for later review.
+    pub flagged_unit_count: usize,
+}

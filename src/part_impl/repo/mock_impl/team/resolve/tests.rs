@@ -18,8 +18,8 @@ fn seed_scope(mock: &Mock) {
     let time = OffsetDateTime::now_utc();
 
     mock.seed_workset(WorksetInfo {
-        id: "workset-1".into(),
-        team_id: "team-1".into(),
+        id: "workset--00000000001".into(),
+        team_id: "team--00000000001".into(),
         index: 0,
         name: "workset".into(),
         description: None,
@@ -29,14 +29,14 @@ fn seed_scope(mock: &Mock) {
     });
 
     mock.seed_comic(ComicInfo {
-        id: "comic-1".into(),
-        workset_id: "workset-1".into(),
+        id: "comic--00000000001".into(),
+        workset_id: "workset--00000000001".into(),
         index: 0,
         title: "comic".into(),
         author: "author".into(),
         description: None,
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -48,18 +48,18 @@ fn seed_scope(mock: &Mock) {
 
     mock.seed_chapter(ChapterInfo {
         confirmed_artwork_ver: None,
-        id: "chapter-1".into(),
-        comic_id: "comic-1".into(),
+        id: "chapter--00000000001".into(),
+        comic_id: "comic--00000000001".into(),
         comic: None,
         is_pinned: false,
         index: 0,
         subtitle: "chapter".into(),
-        page_count: 0,
+        page_source_count: 0,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
         stages: StageMask::try_from(0u32).unwrap(),
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         creator: None,
         created_at: time,
         updated_at: time,
@@ -88,18 +88,22 @@ async fn run_resolves_comic_and_reports_missing_root() {
     seed_scope(&mock);
 
     let team_id = mock
-        .run(&ResolveTeamId::Comic { id: "comic-1" })
+        .run(&ResolveTeamId::Comic {
+            id: "comic--00000000001",
+        })
         .await
         .unwrap();
 
-    assert_eq!(team_id, "team-1");
+    assert_eq!(team_id, "team--00000000001");
 
     let team_id = mock
-        .run(&ResolveTeamId::Chapter { id: "chapter-1" })
+        .run(&ResolveTeamId::Chapter {
+            id: "chapter--00000000001",
+        })
         .await
         .unwrap();
 
-    assert_eq!(team_id, "team-1");
+    assert_eq!(team_id, "team--00000000001");
 
     let error = mock
         .run(&ResolveTeamId::Comic {
@@ -134,16 +138,26 @@ async fn step_resolves_chapter_and_reports_missing_root() {
     mock.coord(async move |context| {
         //
         let team_id = repo
-            .step(context, &ResolveTeamId::Chapter { id: "chapter-1" })
+            .step(
+                context,
+                &ResolveTeamId::Chapter {
+                    id: "chapter--00000000001",
+                },
+            )
             .await?;
 
-        assert_eq!(team_id, "team-1");
+        assert_eq!(team_id, "team--00000000001");
 
         let team_id = repo
-            .step(context, &ResolveTeamId::Comic { id: "comic-1" })
+            .step(
+                context,
+                &ResolveTeamId::Comic {
+                    id: "comic--00000000001",
+                },
+            )
             .await?;
 
-        assert_eq!(team_id, "team-1");
+        assert_eq!(team_id, "team--00000000001");
 
         let error = repo
             .step(

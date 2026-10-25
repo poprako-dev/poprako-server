@@ -1,4 +1,5 @@
 //! Complex-domain opers for chapter entities — identity generation, workflow
+
 //! stage transitions, pagination helpers, and perm gates.
 //!
 //! ## perm model
@@ -28,7 +29,8 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::result::{BaseRest, ExpectedVariant};
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::chapter::stage::{
     Stage, StageOper, StagePhase, try_modify_stage,
 };
@@ -36,7 +38,7 @@ use crate::value::index::stored_index_to_user_index;
 
 /// Generate a unique, time-ordered chapter identifier backed by a snowflake value.
 pub fn gen_id() -> String {
-    next_snowflake_id()
+    next_business_id(BusinessIdKind::Chapter)
 }
 
 /// Moves the supplied subtitle when it contains non-whitespace text, or

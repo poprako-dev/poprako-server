@@ -6,9 +6,11 @@ use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
-use crate::part::obj_dept::{ChapterArtwork, PageArtworkImage, PageImage};
+use crate::part::obj_dept::{
+    ChapterArtwork, PageArtworkImage, PageSourceImage,
+};
 use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
-use crate::part::repo::oper::subtree_delete::ListSubtreePageIds;
+use crate::part::repo::oper::subtree_delete::ListSubtreePageSourceIds;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::result::{BaseError, BaseRest};
@@ -25,7 +27,7 @@ where
     R: SubtreeRepo<C> + PageArtworkRepo<C> + Sync,
     O: ObjDept<ChapterArtwork, C>
         + ObjDept<PageArtworkImage, C>
-        + ObjDept<PageImage, C>
+        + ObjDept<PageSourceImage, C>
         + Sync,
 {
     let SubtreeDeleteScope::Chapter { chapter_id, .. } = scope else {
@@ -56,11 +58,11 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let page_ids = ListSubtreePageIds { chapter_id }
+    let page_source_ids = ListSubtreePageSourceIds { chapter_id }
         .step_on(repo, context)
         .await?;
 
-    DeleteObjs::<PageImage>::new(&page_ids)
+    DeleteObjs::<PageSourceImage>::new(&page_source_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)

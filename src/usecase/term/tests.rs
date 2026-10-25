@@ -38,7 +38,7 @@ fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         user_last_active_at: OffsetDateTime::now_utc(),
-        team_id: "team-1".into(),
+        team_id: "team--00000000001".into(),
         user: None,
         team: None,
         roles,
@@ -51,13 +51,13 @@ fn termbase() -> TermbaseInfo {
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {
-        id: "termbase-1".into(),
-        team_id: Some("team-1".into()),
+        id: "termbase--00000000001".into(),
+        team_id: Some("team--00000000001".into()),
         comic_id: None,
         name: "Glossary".into(),
         description: None,
         term_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         created_at: time,
         updated_at: time,
     }
@@ -65,16 +65,16 @@ fn termbase() -> TermbaseInfo {
 
 fn seed_scope(mock: &Mock, role: RoleField) {
     //
-    mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_team(team("team--00000000001", "Team", "Desc"));
 
-    mock.seed_member(member("user-1", RoleMask::from(role)));
+    mock.seed_member(member("user--00000000001", RoleMask::from(role)));
 
     mock.seed_termbase(termbase());
 }
 
 fn create_instr() -> CreateTermInstr {
     CreateTermInstr {
-        termbase_id: "termbase-1".into(),
+        termbase_id: "termbase--00000000001".into(),
         source: "  Source  ".into(),
         targets: vec![" Target A ".into(), "Target B".into()],
         comment: Some("   ".into()),
@@ -88,9 +88,10 @@ async fn create_normalizes_and_increments_count() {
 
     seed_scope(&mock, RoleField::TRANSLATOR);
 
-    let val = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap();
+    let val =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -117,9 +118,10 @@ async fn create_rejects_admin_without_translation_role() {
 
     seed_scope(&mock, RoleField::ADMIN);
 
-    let error = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap_err();
+    let error =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap_err();
 
     assert_expected_message(
         error,
@@ -146,7 +148,7 @@ async fn create_rejects_duplicate_normalized_targets() {
         ..create_instr()
     };
 
-    let error = create((&mock, &mock), token("user-1"), instr)
+    let error = create((&mock, &mock), token("user--00000000001"), instr)
         .await
         .unwrap_err();
 
@@ -171,7 +173,7 @@ async fn create_rejects_empty_targets() {
         ..create_instr()
     };
 
-    let error = create((&mock, &mock), token("user-1"), instr)
+    let error = create((&mock, &mock), token("user--00000000001"), instr)
         .await
         .unwrap_err();
 
@@ -199,13 +201,14 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
         .unwrap()
         .term_count = 199;
 
-    create((&mock, &mock), token("user-1"), create_instr())
+    create((&mock, &mock), token("user--00000000001"), create_instr())
         .await
         .unwrap();
 
-    let error = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap_err();
+    let error =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap_err();
 
     assert!(matches!(
         error,
@@ -229,33 +232,35 @@ async fn list_infos_searches_only_source() {
 
     seed_scope(&mock, RoleField::PROOFREADER);
 
-    create((&mock, &mock), token("user-1"), create_instr())
+    create((&mock, &mock), token("user--00000000001"), create_instr())
         .await
         .unwrap();
 
     let target_instr = ListTermInfosInstr {
-        termbase_id: "termbase-1".into(),
+        termbase_id: "termbase--00000000001".into(),
         fuzzy_source: Some("target".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
-    let target_infos = list_infos((&mock,), token("user-1"), target_instr)
-        .await
-        .unwrap();
+    let target_infos =
+        list_infos((&mock,), token("user--00000000001"), target_instr)
+            .await
+            .unwrap();
 
     assert!(target_infos.is_empty());
 
     let source_instr = ListTermInfosInstr {
-        termbase_id: "termbase-1".into(),
+        termbase_id: "termbase--00000000001".into(),
         fuzzy_source: Some("source".into()),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
-    let source_infos = list_infos((&mock,), token("user-1"), source_instr)
-        .await
-        .unwrap();
+    let source_infos =
+        list_infos((&mock,), token("user--00000000001"), source_instr)
+            .await
+            .unwrap();
 
     assert_eq!(source_infos.len(), 1);
 }
@@ -267,9 +272,10 @@ async fn update_replaces_fields_and_touches_parent() {
 
     seed_scope(&mock, RoleField::TRANSLATOR);
 
-    let val = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap();
+    let val =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap();
 
     let before = mock.snapshot().termbases.first().unwrap().updated_at;
 
@@ -280,7 +286,7 @@ async fn update_replaces_fields_and_touches_parent() {
         comment: Some(" Comment ".into()),
     };
 
-    update_info((&mock, &mock), token("user-1"), instr)
+    update_info((&mock, &mock), token("user--00000000001"), instr)
         .await
         .unwrap();
 
@@ -305,11 +311,12 @@ async fn delete_removes_term_and_decrements_count() {
 
     seed_scope(&mock, RoleField::TRANSLATOR);
 
-    let val = create((&mock, &mock), token("user-1"), create_instr())
-        .await
-        .unwrap();
+    let val =
+        create((&mock, &mock), token("user--00000000001"), create_instr())
+            .await
+            .unwrap();
 
-    delete((&mock, &mock), token("user-1"), val.id)
+    delete((&mock, &mock), token("user--00000000001"), val.id)
         .await
         .unwrap();
 

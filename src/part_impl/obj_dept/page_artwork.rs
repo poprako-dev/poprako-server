@@ -4,6 +4,7 @@ use poprako_obj_dept::key::KeyMap;
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part::obj_dept::PageArtworkImage;
+use crate::value::business_id::BusinessIdKind;
 use crate::value::image::ImageExt;
 use crate::value::page_artwork::PageArtworkImageKey;
 
@@ -17,7 +18,7 @@ impl KeyMap for PageArtworkImage {
     fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
         //
         format!(
-            "page_artwork/chapter_{}/{}-{}.{}",
+            "page_artwork/{}/{}/{}.{}",
             value.chapter_id,
             value.page_artwork_id,
             ver,
@@ -30,13 +31,13 @@ impl KeyMap for PageArtworkImage {
         //
         let parse = || {
             //
-            let path = value.strip_prefix("page_artwork/chapter_")?;
+            let path = value.strip_prefix("page_artwork/")?;
 
-            let (chapter_id, filename) = path.split_once('/')?;
+            let (chapter_id, path) = path.split_once('/')?;
 
-            let (stem, ext) = filename.rsplit_once('.')?;
+            let (page_artwork_id, filename) = path.split_once('/')?;
 
-            let (page_artwork_id, ver) = stem.rsplit_once('-')?;
+            let (ver, ext) = filename.split_once('.')?;
 
             let dom = PageArtworkImageKey {
                 chapter_id: chapter_id.into(),
@@ -46,8 +47,8 @@ impl KeyMap for PageArtworkImage {
 
             let ver = ver.parse().ok()?;
 
-            (!chapter_id.is_empty()
-                && !page_artwork_id.is_empty()
+            (BusinessIdKind::Chapter.is_valid_id(chapter_id)
+                && BusinessIdKind::PageArtwork.is_valid_id(page_artwork_id)
                 && Self::forward(&dom, ver) == *value)
                 .then_some((dom, ver))
         };

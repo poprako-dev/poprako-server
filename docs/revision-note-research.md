@@ -6,10 +6,10 @@
 
 ## 调研时确认的范围
 
-用户确认：note 离散地按 Page 存储；目前只支持从 MangaProof 元数据
+用户确认：note 离散地按 PageSource 存储；目前只支持从 MangaProof 元数据
 文件解析并写入。每次提交整个 Chapter，没有单页写入接口。
 
-因此，“类似 Unit”只指 Page 归属与结构化数据。当前范围不需要 Unit 的
+因此，“类似 Unit”只指 PageSource 归属与结构化数据。当前范围不需要 Unit 的
 局部编辑批次、链式排序、tombstone 恢复、save receipt 或编辑草稿协议。
 
 分析使用当前工作区源码。Server HEAD 为
@@ -51,7 +51,7 @@ Ctrl+Enter 的默认分类为“其他”，自由文本写入 comment。
 | --- | --- | --- |
 | `issue_id` | `id` | 来源 UUID hex；重复导入应保持可识别的来源身份 |
 | `issue_no` | `number` | 任务内编号；不能用当前页数组下标覆盖 |
-| `file` | 加载上下文的 Page | 源文件相对路径须映射到目标 Chapter 的 Page ID |
+| `file` | 加载上下文的 PageSource | 源文件相对路径须映射到目标 Chapter 的 PageSource ID |
 | `layer_id` | `layerId` | PSD 树索引路径；不是 Unit ID |
 | `layer_name` | 无直接字段 | 可作为没有 PSD 图层树时的显示名快照 |
 | `type` | `type` | 保留开放字符串 |
@@ -98,12 +98,12 @@ reviews、issues 和时间。`files` 记录相对路径、文件名、字节大�
 1. **单靠 JSON 不能可靠地产生前端相对矩形。** 转换需要对应 PSD 的画布
    宽高 W/H：`xCoord=x/W`、`yCoord=y/H`、`width=w/W`、`height=h/H`。
    不能默认拿原稿图片尺寸代替成稿 PSD 画布尺寸。
-2. **文件路径不能直接当 Page ID。** file 是任务根目录下的 POSIX 相对
+2. **文件路径不能直接当 PageSource ID。** file 是任务根目录下的 POSIX 相对
    路径，可能含子目录。不能只按 basename、文件数组位置或问题出现顺序
    静默匹配；无问题的页仍应参与完整文件映射。
 
 第一个问题的最小方案是后端保留来源像素矩形，Web 在取得对应
-RevisionPage 的 width/height 后转换为现有 RevisionNote。这样上传仍只需要
+RevisionPageSource 的 width/height 后转换为现有 RevisionNote。这样上传仍只需要
 元数据文件，不要求后端解析 PSD。后端传输字段必须明确标注像素单位，不能
 把未归一化的数据直接塞进现有相对矩形契约。
 
@@ -140,12 +140,12 @@ clamp，因为会改变原标注；应验证有限数值和正宽高，显示裁
 
 ### 存储与写入
 
-使用独立的 revision_note 模型，按 page_id 存储。保留来源身份、原编号、
+使用独立的 revision_note 模型，按 page_source_id 存储。保留来源身份、原编号、
 分类、批注、像素矩形、图层路径；需要脱离 PSD 显示时再保留 layer_name
 快照。不引入 next_id、translation/revision 内容组或 Unit 进度计数。
 
 建议把一次整章提交定义为**完整替换该章已有导入结果**：先解析并验证整个
-文件与全部 Page 映射，再在一个 Chapter 范围的事务内替换该章所有 note。
+文件与全部 PageSource 映射，再在一个 Chapter 范围的事务内替换该章所有 note。
 不含 issues 的页自然清空旧 note；合法的空 issues 表示该章当前没有问题。
 这属于建议的替换语义，需在实现契约中明确，不能实现成不完整的按页 upsert。
 
@@ -160,17 +160,17 @@ issue_id 应在声明的 Chapter/任务作用域内校验重复，避免重复�
 ### 接口与前端接入
 
 接口可仅提供 Chapter 级 import 与 list：导入接受完整 MangaProof 元数据，
-读取返回带 page_id 的结构化 note。Web 将整章结果按 Page 分组，现有
+读取返回带 page_source_id 的结构化 note。Web 将整章结果按 PageSource 分组，现有
 `LoadRevisionNotes(pageId, signal)` 可以读本地分组缓存，并不要求单页 HTTP
 接口。具体路径与请求封装在实现时沿用仓库约定。
 
-解析器只负责来源协议；Chapter 用例拥有权限、Page 映射、事务及替换。
+解析器只负责来源协议；Chapter 用例拥有权限、PageSource 映射、事务及替换。
 Repository 只实现实际被该用例调用的批量操作，所有 Rust 查询使用 typed
 Diesel。在线编辑、逐条解决状态和返修 PDF 都不属于这一期。
 
 ### 成稿与文件关联
 
-现有 [PageRawIdentInfo](../src/model/read/proj/page.rs) 可以提供原文件名线索，
+现有 [PageSourceRawIdentInfo](../src/model/read/proj/page_source.rs) 可以提供原文件名线索，
 但需要先确认原稿名与 PSD 相对路径的映射规则。现有
 [artwork 导出](../src/usecase/chapter_port/artwork.rs) 提供版本与内容身份；
 PSD 树路径只在对应成稿内有意义。应明确导入对应的成稿，换版后不要默默

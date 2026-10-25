@@ -22,11 +22,13 @@ use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
-use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::part::repo::oper::page_source::ListFirstPageSourceInfos;
 use crate::result::{BaseError, BaseRest};
-use crate::usecase::internal::page::PinnedChapterSnapshot;
+use crate::usecase::internal::page_source::PinnedChapterSnapshot;
 use crate::usecase::internal::view::snapshot::{ObjViewIds, ObjViewSnapshot};
 
 /// Loaded Comic list models owned by one complete presentation request.
@@ -65,10 +67,10 @@ pub async fn comic_info_view<C, R, O>(
 where
     C: Context,
     R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-        + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+        + for<'a> Run<ListFirstPageSourceInfos<'a>, Error = BaseError>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -93,10 +95,10 @@ pub async fn chapter_info_views<C, R, O>(
 where
     C: Context,
     R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-        + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+        + for<'a> Run<ListFirstPageSourceInfos<'a>, Error = BaseError>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -149,10 +151,10 @@ pub async fn assignment_info_views<C, R, O>(
 where
     C: Context,
     R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-        + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+        + for<'a> Run<ListFirstPageSourceInfos<'a>, Error = BaseError>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -182,10 +184,10 @@ pub async fn comic_list_val<C, R, O>(
 where
     C: Context,
     R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-        + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+        + for<'a> Run<ListFirstPageSourceInfos<'a>, Error = BaseError>
         + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,

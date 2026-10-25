@@ -9,7 +9,8 @@ use poprako_util::i18n::trl;
 
 use crate::model::write::term::{TermEntry, TermImport, TermRepl};
 use crate::result::{BaseRest, ExpectedVariant};
-use crate::util::next_snowflake_id;
+use crate::util::next_business_id;
+use crate::value::business_id::BusinessIdKind;
 
 /// Borrows a trimmed terminology-entry source filter, omitting blank values.
 pub fn normalize_fuzzy_source(fuzzy_source: Option<&str>) -> Option<&str> {
@@ -33,7 +34,7 @@ pub fn build_entry(
     ensure_targets(&targets)?;
 
     accept!(TermEntry {
-        id: next_snowflake_id(),
+        id: next_business_id(BusinessIdKind::Term),
         termbase_id,
         source,
         targets,

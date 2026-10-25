@@ -15,11 +15,11 @@ use crate::complex::unit::perm as unit_perm_complex;
 use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::shared::user::UserToken;
 use crate::model::write::translation_import::{
-    PageTranslationImport, UnitTranslationImport,
+    PageSourceTranslationImport, UnitTranslationImport,
 };
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
@@ -29,15 +29,15 @@ use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCountMetrics,
+    GetChapterInfoExcluded, SetChapterPageSourceCountMetrics,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{
-    ListPageInfosExcluded, SetPageUnitCountMetrics,
+use crate::part::repo::oper::page_source::{
+    ListPageSourceInfosExcluded, SetPageSourceUnitCountMetrics,
 };
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
@@ -76,12 +76,12 @@ where
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + UnitRepo<C>
         + Send
         + Sync,
 {
-    let (edit_perm, format, mode, imported_pages, stages) =
+    let (edit_perm, format, mode, imported_page_sources, stages) =
         prepare_import(repo, &token, &instr, &chapter_id).await?;
 
     let val = nucl
@@ -96,15 +96,15 @@ where
 
             chapter_complex::ensure_chapter_writable(&chapter_info)?;
 
-            let page_scopes = ListPageInfosExcluded {
+            let page_source_scopes = ListPageSourceInfosExcluded {
                 chapter_id: &chapter_id,
             }
             .step_on(repo, context)
             .await?;
 
-            chapter_translation_import_complex::validate_page_count(
-                imported_pages.len(),
-                page_scopes.len(),
+            chapter_translation_import_complex::validate_page_source_count(
+                imported_page_sources.len(),
+                page_source_scopes.len(),
             )?;
 
             let import_settings = ImportSettings {
@@ -114,37 +114,38 @@ where
             };
 
             let (
-                final_page_count_metrics,
-                imported_page_count,
+                final_page_source_count_metrics,
+                imported_page_source_count,
                 imported_unit_count,
-            ) = import_pages(
+            ) = import_page_sources(
                 repo,
                 context,
-                &page_scopes,
-                &imported_pages,
+                &page_source_scopes,
+                &imported_page_sources,
                 &import_settings,
             )
             .await?;
 
             let chapter_count_metrics =
-                final_page_count_metrics.iter().copied().fold(
+                final_page_source_count_metrics.iter().copied().fold(
                     UnitCountMetrics::default(),
-                    |mut count_metrics, page_count_metrics| {
+                    |mut count_metrics, page_source_count_metrics| {
                         //
-                        count_metrics.total += page_count_metrics.total;
+                        count_metrics.total += page_source_count_metrics.total;
 
                         count_metrics.translated +=
-                            page_count_metrics.translated;
+                            page_source_count_metrics.translated;
 
-                        count_metrics.proofread += page_count_metrics.proofread;
+                        count_metrics.proofread +=
+                            page_source_count_metrics.proofread;
 
                         count_metrics
                     },
                 );
 
-            SetChapterPageCountMetrics {
+            SetChapterPageSourceCountMetrics {
                 id: &chapter_info.id,
-                page_count: page_scopes.len(),
+                page_source_count: page_source_scopes.len(),
                 total_unit_count: chapter_count_metrics.total,
                 translated_unit_count: chapter_count_metrics.translated,
                 proofread_unit_count: chapter_count_metrics.proofread,
@@ -159,7 +160,7 @@ where
             .await?;
 
             let import_val = ImportChapterTranslationVal {
-                imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             };
 
@@ -168,7 +169,8 @@ where
                 Some(token.user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
-                    imported_page_count: import_val.imported_page_count,
+                    imported_page_source_count: import_val
+                        .imported_page_source_count,
                     imported_unit_count: import_val.imported_unit_count,
                 },
             );
@@ -208,7 +210,7 @@ async fn prepare_import<C, R>(
     UnitEditPerm,
     TranslationFormat,
     ChapterTranslationImportMode,
-    Vec<PageTranslationImport>,
+    Vec<PageSourceTranslationImport>,
     Vec<Stage>,
 )>
 where
@@ -243,7 +245,7 @@ where
 
     let mode = ChapterTranslationImportMode::from(instr.mode);
 
-    let imported_pages = match format {
+    let imported_page_sources = match format {
         //
         TranslationFormat::LabelPlus => {
             //
@@ -260,7 +262,7 @@ where
     let mut stages = import_stages(edit_perm);
 
     if !stages.contains(&Stage::Translate)
-        && imported_pages
+        && imported_page_sources
             .iter()
             .flat_map(|page| &page.units)
             .any(|unit| {
@@ -273,7 +275,7 @@ where
         stages.insert(0, Stage::Translate);
     }
 
-    accept!((edit_perm, format, mode, imported_pages, stages))
+    accept!((edit_perm, format, mode, imported_page_sources, stages))
 }
 
 // Carries the actor and strategy through each page import.
@@ -287,28 +289,29 @@ struct ImportSettings<'a> {
 }
 
 // Applies imported pages and collects their counters and import totals.
-async fn import_pages<C, R>(
+async fn import_page_sources<C, R>(
     repo: &R,
     context: &mut C,
-    page_scopes: &[PageInfo],
-    imported_pages: &[PageTranslationImport],
+    page_source_scopes: &[PageSourceInfo],
+    imported_page_sources: &[PageSourceTranslationImport],
     import_settings: &ImportSettings<'_>,
 ) -> BaseRest<(Vec<UnitCountMetrics>, usize, usize)>
 where
     C: Context,
-    R: PageRepo<C> + UnitRepo<C> + Sync,
+    R: PageSourceRepo<C> + UnitRepo<C> + Sync,
 {
-    let mut imported_page_count = 0;
+    let mut imported_page_source_count = 0;
 
     let mut imported_unit_count = 0;
 
-    let mut final_page_count_metrics = Vec::with_capacity(page_scopes.len());
+    let mut final_page_source_count_metrics =
+        Vec::with_capacity(page_source_scopes.len());
 
-    for page_scope in page_scopes {
+    for page_source_scope in page_source_scopes {
         //
-        let imported_page = imported_pages
+        let imported_page = imported_page_sources
             .iter()
-            .find(|page| page.page_index == page_scope.index)
+            .find(|page| page.page_source_index == page_source_scope.index)
             .ok_or_else(|| {
                 //
                 expected_error! {
@@ -318,25 +321,27 @@ where
                 }
             })?;
 
-        let page_import_changes = apply_page_import(
+        let page_source_import_changes = apply_page_source_import(
             repo,
             context,
-            page_scope,
+            page_source_scope,
             imported_page,
             import_settings,
         )
         .await?;
 
-        final_page_count_metrics.push(page_import_changes.count_metrics);
+        final_page_source_count_metrics
+            .push(page_source_import_changes.count_metrics);
 
-        imported_page_count += page_import_changes.imported_page_count;
+        imported_page_source_count +=
+            page_source_import_changes.imported_page_source_count;
 
-        imported_unit_count += page_import_changes.imported_unit_count;
+        imported_unit_count += page_source_import_changes.imported_unit_count;
     }
 
     accept!((
-        final_page_count_metrics,
-        imported_page_count,
+        final_page_source_count_metrics,
+        imported_page_source_count,
         imported_unit_count,
     ))
 }
@@ -358,29 +363,29 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
 }
 
 // Captures the page-level results of one import application decision.
-struct PageImportChanges {
+struct PageSourceImportChanges {
     // Final visible Unit counters for the page.
     count_metrics: UnitCountMetrics,
     // Whether this page's visible content changed through the import.
-    imported_page_count: usize,
+    imported_page_source_count: usize,
     // Number of source Units created through the import.
     imported_unit_count: usize,
 }
 
 // Applies imported Units to one page according to the selected strategy.
-async fn apply_page_import<C, R>(
+async fn apply_page_source_import<C, R>(
     repo: &R,
     context: &mut C,
-    page_scope: &PageInfo,
-    imported_page: &PageTranslationImport,
+    page_source_scope: &PageSourceInfo,
+    imported_page: &PageSourceTranslationImport,
     import_settings: &ImportSettings<'_>,
-) -> BaseRest<PageImportChanges>
+) -> BaseRest<PageSourceImportChanges>
 where
     C: Context,
-    R: PageRepo<C> + UnitRepo<C> + Sync,
+    R: PageSourceRepo<C> + UnitRepo<C> + Sync,
 {
     let orders = ListUnitOrders {
-        page_id: &page_scope.id,
+        page_source_id: &page_source_scope.id,
     }
     .step_on(repo, context)
     .await?;
@@ -391,14 +396,15 @@ where
         .map(|order| order.id.clone())
         .collect::<Vec<_>>();
 
-    let current_count_metrics = page_unit_count_metrics(page_scope);
+    let current_count_metrics =
+        page_source_unit_count_metrics(page_source_scope);
 
     if (visible_unit_ids.is_empty(), imported_page.units.is_empty())
         == (true, true)
     {
-        return accept!(PageImportChanges {
+        return accept!(PageSourceImportChanges {
             count_metrics: current_count_metrics,
-            imported_page_count: 0,
+            imported_page_source_count: 0,
             imported_unit_count: 0,
         });
     }
@@ -407,9 +413,9 @@ where
         //
         ChapterTranslationImportMode::Keep if !visible_unit_ids.is_empty() => {
             //
-            return accept!(PageImportChanges {
+            return accept!(PageSourceImportChanges {
                 count_metrics: current_count_metrics,
-                imported_page_count: 0,
+                imported_page_source_count: 0,
                 imported_unit_count: 0,
             });
         }
@@ -425,7 +431,7 @@ where
             hide_visible_units(
                 repo,
                 context,
-                &page_scope.id,
+                &page_source_scope.id,
                 &orders,
                 &visible_unit_ids,
             )
@@ -449,31 +455,33 @@ where
     let final_count_metrics = apply_imported_units(
         repo,
         context,
-        (&page_scope.id, &orders, imported_page),
+        (&page_source_scope.id, &orders, imported_page),
         (import_settings.user_id, import_settings.edit_perm),
     )
     .await?;
 
-    SetPageUnitCountMetrics {
-        id: &page_scope.id,
+    SetPageSourceUnitCountMetrics {
+        id: &page_source_scope.id,
         count_metrics: final_count_metrics,
     }
     .step_on(repo, context)
     .await?;
 
-    accept!(PageImportChanges {
+    accept!(PageSourceImportChanges {
         count_metrics: final_count_metrics,
-        imported_page_count: 1,
+        imported_page_source_count: 1,
         imported_unit_count: imported_page.units.len(),
     })
 }
 
 // Returns the stored counters for a page whose visible Units are unchanged.
-const fn page_unit_count_metrics(page_info: &PageInfo) -> UnitCountMetrics {
+const fn page_source_unit_count_metrics(
+    page_source_info: &PageSourceInfo,
+) -> UnitCountMetrics {
     UnitCountMetrics {
-        total: page_info.total_unit_count,
-        translated: page_info.translated_unit_count,
-        proofread: page_info.proofread_unit_count,
+        total: page_source_info.total_unit_count,
+        translated: page_source_info.translated_unit_count,
+        proofread: page_source_info.proofread_unit_count,
     }
 }
 
@@ -481,7 +489,7 @@ const fn page_unit_count_metrics(page_info: &PageInfo) -> UnitCountMetrics {
 async fn hide_visible_units<C, R>(
     repo: &R,
     context: &mut C,
-    page_id: &str,
+    page_source_id: &str,
     orders: &[UnitOrder],
     visible_unit_ids: &[String],
 ) -> BaseRest<()>
@@ -502,7 +510,7 @@ where
     let delete_edits = unit_complex::normalize_edits(&base_ids, delete_edits)?;
 
     ApplyUnitEdits {
-        page_id,
+        page_source_id,
         orders,
         edits: &delete_edits,
     }
@@ -516,10 +524,10 @@ where
 async fn apply_imported_units<C, R>(
     repo: &R,
     context: &mut C,
-    (page_id, orders, imported_page): (
+    (page_source_id, orders, imported_page): (
         &str,
         &[UnitOrder],
-        &PageTranslationImport,
+        &PageSourceTranslationImport,
     ),
     (user_id, edit_perm): (&str, UnitEditPerm),
 ) -> BaseRest<UnitCountMetrics>
@@ -531,7 +539,8 @@ where
         return accept!(UnitCountMetrics::default());
     };
 
-    let edits = build_page_edits(&imported_page.units, user_id, edit_perm);
+    let edits =
+        build_page_source_edits(&imported_page.units, user_id, edit_perm);
 
     let base_ids = orders
         .iter()
@@ -541,7 +550,7 @@ where
     let edits = unit_complex::normalize_edits(&base_ids, edits)?;
 
     let final_count_metrics = ApplyUnitEdits {
-        page_id,
+        page_source_id,
         orders,
         edits: &edits,
     }
@@ -552,7 +561,7 @@ where
 }
 
 // Builds create edits for all imported units on one page.
-fn build_page_edits(
+fn build_page_source_edits(
     imported_units: &[UnitTranslationImport],
     user_id: &str,
     edit_perm: UnitEditPerm,

@@ -18,7 +18,7 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::{ChapterArtwork, PageImage};
+use crate::part::obj_dept::{ChapterArtwork, PageSourceImage};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -32,12 +32,14 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{ListPageInfos, UpdatePageRawIdents};
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::oper::page_source::{
+    ListPageSourceInfos, UpdatePageSourceRawIdents,
+};
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
-use crate::shape::write::page::PageRawIdentsReplShape;
+use crate::shape::write::page_source::PageSourceRawIdentsReplShape;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
@@ -70,10 +72,10 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Send
         + Sync,
-    V: ObjDeptView<PageImage, C> + Sync,
+    V: ObjDeptView<PageSourceImage, C> + Sync,
     D: Develop + Sync,
 {
     let is_advanced = nucl
@@ -89,30 +91,33 @@ where
             if !chapter_info
                 .stages
                 .has_phase(Stage::RawProvide, StagePhase::Pending)
-                || chapter_info.page_count == 0
+                || chapter_info.page_source_count == 0
             {
                 return accept!(Some(false));
             }
 
-            let page_infos =
-                ListPageInfos { chapter_id }.step_on(repo, context).await?;
+            let page_source_infos = ListPageSourceInfos { chapter_id }
+                .step_on(repo, context)
+                .await?;
 
-            let page_ids = page_infos
+            let page_source_ids = page_source_infos
                 .iter()
-                .map(|page_info| page_info.id.as_str())
+                .map(|page_source_info| page_source_info.id.as_str())
                 .collect::<Vec<_>>();
 
-            let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
-                .step_on(obj_dept_view, context)
-                .await
-                .map_err(BaseError::from)?;
+            let obj_metas =
+                ListObjMetas::<PageSourceImage>::new(&page_source_ids)
+                    .step_on(obj_dept_view, context)
+                    .await
+                    .map_err(BaseError::from)?;
 
-            let are_images_uploaded = page_infos.iter().all(|page_info| {
-                //
-                obj_metas
-                    .get(&page_info.id)
-                    .is_some_and(|obj_meta| obj_meta.is_avail)
-            });
+            let are_images_uploaded =
+                page_source_infos.iter().all(|page_source_info| {
+                    //
+                    obj_metas
+                        .get(&page_source_info.id)
+                        .is_some_and(|obj_meta| obj_meta.is_avail)
+                });
 
             if !are_images_uploaded {
                 return accept!(None);
@@ -191,10 +196,10 @@ where
         + AssignmentRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
-        + PageRepo<C>
+        + PageSourceRepo<C>
         + Send
         + Sync,
-    O: ObjDept<ChapterArtwork, C> + ObjDept<PageImage, C> + Send + Sync,
+    O: ObjDept<ChapterArtwork, C> + ObjDept<PageSourceImage, C> + Send + Sync,
     D: Develop + Send + Sync,
 {
     let stage = Stage::from(instr.stage);
@@ -378,35 +383,36 @@ async fn clear_chapter_files<C, R, O>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: PageRepo<C> + Sync,
-    O: ObjDept<ChapterArtwork, C> + ObjDept<PageImage, C> + Sync,
+    R: PageSourceRepo<C> + Sync,
+    O: ObjDept<ChapterArtwork, C> + ObjDept<PageSourceImage, C> + Sync,
 {
     ClearObjs::<ChapterArtwork>::new(&[chapter_id.to_owned()])
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
 
-    let page_infos =
-        ListPageInfos { chapter_id }.step_on(repo, context).await?;
+    let page_source_infos = ListPageSourceInfos { chapter_id }
+        .step_on(repo, context)
+        .await?;
 
-    let page_ids = page_infos
+    let page_source_ids = page_source_infos
         .into_iter()
-        .map(|page_info| page_info.id)
+        .map(|page_source_info| page_source_info.id)
         .collect::<Vec<_>>();
 
-    ClearObjs::<PageImage>::new(&page_ids)
+    ClearObjs::<PageSourceImage>::new(&page_source_ids)
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;
 
-    let raw_idents = page_ids
+    let raw_idents = page_source_ids
         .iter()
-        .map(|page_id| (page_id.as_str(), None))
+        .map(|page_source_id| (page_source_id.as_str(), None))
         .collect::<Vec<_>>();
 
-    let raw_ident_repl = PageRawIdentsReplShape { idents: raw_idents };
+    let raw_ident_repl = PageSourceRawIdentsReplShape { idents: raw_idents };
 
-    UpdatePageRawIdents {
+    UpdatePageSourceRawIdents {
         repl: &raw_ident_repl,
     }
     .step_on(repo, context)

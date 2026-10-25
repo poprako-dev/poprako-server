@@ -7,13 +7,13 @@ import {
     getChapter,
     importTranslations,
     joinChapterAssignment,
-    listPageUnits,
+    listPageSourceUnits,
     newBubbleUnit,
-    newPageManifest,
-    reserveChapterPages,
-    savePageUnits,
+    newPageSourceManifest,
+    reserveChapterPageSources,
+    savePageSourceUnits,
 } from "../http/fixtures.ts";
-import { assertPageUnitInvariant } from "../http/invariants.ts";
+import { assertPageSourceUnitInvariant } from "../http/invariants.ts";
 import { titled } from "../state/prefix.ts";
 import { ROLE } from "../state/roles.ts";
 import type { RunCtx } from "../state/runCtx.ts";
@@ -28,14 +28,14 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     await joinChapterAssignment(translator, chapter.id, ROLE.TRANSLATOR);
     await joinChapterAssignment(proofreader, chapter.id, ROLE.PROOFREADER);
 
-    const allocation = await reserveChapterPages(ctx.sadmin, chapter.id, newPageManifest(1, "png"));
-    const pageId = allocation.pages[0]!.page_id;
+    const allocation = await reserveChapterPageSources(ctx.sadmin, chapter.id, newPageSourceManifest(1, "png"));
+    const pageId = allocation.pages[0]!.page_source_id;
     const initial = newBubbleUnit("note", 0.1, 0.2);
 
     initial.translation_note = "uncertain phrase";
     initial.typography_note = " \t\u3000";
 
-    const created = await savePageUnits(translator, pageId, [initial]);
+    const created = await savePageSourceUnits(translator, pageId, [initial]);
     const id = created.unit_infos[0]!.id;
 
     assert.equal(created.translated_unit_count, 0);
@@ -43,7 +43,7 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     assert.equal(stagePhase((await getChapter(ctx.sadmin, chapter.id)).stages, "translate"), PHASE.PENDING);
 
     const note = " small text\n\nkeep parentheses ";
-    const saved = await savePageUnits(proofreader, pageId, [
+    const saved = await savePageSourceUnits(proofreader, pageId, [
         { edit: "patch", id, typography_note: { type: "assign", value: note } },
         { edit: "patch", id, translation_note: { type: "assign", value: "checked internally" } },
     ]);
@@ -57,15 +57,15 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     assert.equal(stagePhase((await getChapter(ctx.sadmin, chapter.id)).stages, "translate"), PHASE.ACTIVE);
     assert.equal(stagePhase((await getChapter(ctx.sadmin, chapter.id)).stages, "proofread"), PHASE.PENDING);
 
-    const skipped = await savePageUnits(translator, pageId, [
+    const skipped = await savePageSourceUnits(translator, pageId, [
         { edit: "patch", id, typography_note: null, translation_note: { type: "skip" } },
     ]);
 
     assert.equal(skipped.unit_infos[0]!.typography_note, note);
     assert.equal(skipped.unit_infos[0]!.updated_at, saved.unit_infos[0]!.updated_at);
 
-    await savePageUnits(translator, pageId, [{ edit: "delete", id }]);
-    const restored = await savePageUnits(proofreader, pageId, [{ edit: "patch", id }]);
+    await savePageSourceUnits(translator, pageId, [{ edit: "delete", id }]);
+    const restored = await savePageSourceUnits(proofreader, pageId, [{ edit: "patch", id }]);
 
     assert.equal(restored.translated_unit_count, 1);
     assert.equal(restored.unit_infos[0]!.typography_note, note);
@@ -80,7 +80,7 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     assert.ok(!exported.label_plus!.includes("checked internally"));
 
     await importTranslations(proofreader, chapter.id, "label_plus", "overwrite", exported.label_plus!);
-    const lpImported = await listPageUnits(translator, pageId);
+    const lpImported = await listPageSourceUnits(translator, pageId);
 
     assert.equal(lpImported.unit_infos[0]!.typography_note, note);
     assert.equal(lpImported.unit_infos[0]!.translation_note, undefined);
@@ -89,13 +89,13 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     assert.equal(lpImported.proofread_unit_count, 0);
 
     await importTranslations(translator, chapter.id, "poprako", "overwrite", JSON.stringify(native));
-    const nativeImported = await listPageUnits(proofreader, pageId);
+    const nativeImported = await listPageSourceUnits(proofreader, pageId);
     const importedId = nativeImported.unit_infos[0]!.id;
 
     assert.equal(nativeImported.unit_infos[0]!.typography_note, note);
     assert.equal(nativeImported.unit_infos[0]!.translation_note, "checked internally");
 
-    const cleared = await savePageUnits(proofreader, pageId, [
+    const cleared = await savePageSourceUnits(proofreader, pageId, [
         { edit: "patch", id: importedId, typography_note: { type: "assign", value: "\n\t\u3000" } },
         { edit: "patch", id: importedId, translation_note: { type: "clear" } },
     ]);
@@ -108,11 +108,11 @@ export async function verifyUnitNotes(ctx: RunCtx): Promise<void> {
     delete nativeUnit.translation_note;
     await importTranslations(translator, chapter.id, "poprako", "overwrite", JSON.stringify(native));
 
-    const legacy = await listPageUnits(translator, pageId);
+    const legacy = await listPageSourceUnits(translator, pageId);
 
     assert.equal(legacy.unit_infos[0]!.typography_note, undefined);
     assert.equal(legacy.unit_infos[0]!.translation_note, undefined);
     assert.equal(legacy.translated_unit_count, 0);
 
-    await assertPageUnitInvariant(translator, pageId);
+    await assertPageSourceUnitInvariant(translator, pageId);
 }

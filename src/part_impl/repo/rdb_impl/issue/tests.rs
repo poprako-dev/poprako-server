@@ -28,7 +28,7 @@ use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
-use crate::part::repo::oper::page::DeletePages;
+use crate::part::repo::oper::page_source::DeletePageSources;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::issue::IssueItem;
@@ -510,7 +510,7 @@ async fn issues_roundtrip_rollback_constraints_and_cleanup() {
     .unwrap();
 
     nucl.coord(async |context| {
-        DeletePages::Chapter { chapter_id }
+        DeletePageSources::Chapter { chapter_id }
             .step_on(&repo, context)
             .await
     })

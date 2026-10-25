@@ -336,7 +336,7 @@ pnpm run check
   - Default branch and merge methods.
   - Collaborators and permissions.
   - Branch protections or rulesets.
-  - Webhooks, deploy keys, Actions secrets, environments, and Pages settings.
+  - Webhooks, deploy keys, Actions secrets, environments, and PageSources settings.
 - [ ] Back up critical repository and deployment configuration.
 - [x] Confirm the target organization permits repository creation and accepts
   the final repository name.

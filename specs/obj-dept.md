@@ -11,8 +11,42 @@ have zero to many physical versions.
 key; callers treat `ObjKey` as opaque. This slice supports only durable Check
 and Delete work. Inventory scans and other recovery systems are out of scope.
 
-The registered object kinds are `PageImage`, `UserAvatar`, `TeamAvatar`, and
-`ComicCover`, and `ChapterArtwork`.
+The registered object kinds are `PageSourceImage`, `PageArtworkImage`,
+`UserAvatar`, `TeamAvatar`, `ComicCover`, and `ChapterArtwork`.
+
+Business IDs use `{snake_case_domain}--{11-character Base62 snowflake}`. Image
+rows reuse their owning business ID; task IDs and other technical identities
+keep their separate formats. The closed registry lives in
+`src/value/business_id.rs`.
+
+| Object kind | Physical key |
+| --- | --- |
+| PageSourceImage | `page_source/{chapter_id}/{page_source_id}/{version}.{ext}` |
+| PageArtworkImage | `page_artwork/{chapter_id}/{page_artwork_id}/{version}.{ext}` |
+| ChapterArtwork | `chapter_artwork/{chapter_id}/{version}.{ext}` |
+| ComicCover | `comic_cover/{comic_id}/{version}.{ext}` |
+| TeamAvatar | `team_avatar/{team_id}/{version}.{ext}` |
+| UserAvatar | `user_avatar/{user_id}/{version}.{ext}` |
+
+Every ID segment contains the complete prefixed ID. Reverse key parsing checks
+its expected domain and exact forward reconstruction. Old path formats are
+not accepted. Historical database and OSS conversion is a separate operation.
+
+Source and finished-page manifests retain identities only through explicit
+IDs. An omitted ID creates a new page even when content hashes match; pages
+omitted from the authoritative manifest are removed. Both allocations return
+image_version: identical available content retains its generation and returns
+no slot; identical pending content requires a byte length and re-signs the same
+generation; new or changed content requires a byte length and a new generation.
+Source views expose raw_ident, image_version, image_uploaded, original,
+optimized, and thumbnail URLs. Finished pages expose original and thumbnail
+URLs. Their independent image limits are page_source_image_limit_mib and
+page_artwork_image_limit_mib, both defaulting to 25 MiB.
+
+Source image allocation and confirmation require RAW_PROVIDER or REVIEWER.
+Both lock and validate the unpublished chapter, permissions, page identity,
+and generation within the transaction and update comic activity. Source
+allocation preserves its deferred raw-provide advancement and Unit counters.
 
 ## Dependency direction
 
@@ -35,10 +69,10 @@ The server declares every supported object in one manifest:
 
 ```rust
 objs_def! {
-    PageImage {
-        table: t_page_image,
-        topic: "page_image",
-        namespace: "page_image",
+    PageSourceImage {
+        table: t_page_source_image,
+        topic: "page_source_image",
+        namespace: "page_source_image",
     },
 }
 ```
@@ -184,7 +218,7 @@ of retry count.
 
 ## Business integration
 
-Page, User, Team, and Comic tables no longer carry OSS lifecycle fields. Their
+PageSource, User, Team, and Comic tables no longer carry OSS lifecycle fields. Their
 use cases select a logical object by business row id plus compile-time marker.
 Reserve flows validate policy, then run `GenObjSlot` or `GenObjSlots` in the
 owner transaction.
@@ -202,7 +236,7 @@ compare-and-set prevents that correction from changing a newer generation.
 
 Both page-image reservation paths defer the chapter raw-provide advancement
 task in the same transaction. That handler loads the chapter's complete page
-set and every `PageImage` metadata row. It advances the stage only when all
+set and every `PageSourceImage` metadata row. It advances the stage only when all
 images are available; unavailable images leave the task available for a later
 attempt without consuming a failure budget.
 
@@ -226,11 +260,11 @@ attempt without consuming a failure budget.
 
 Each chapter owns one `ChapterArtwork` slot in `t_chapter_artwork`, registered
 in the same typed manifest and served by the existing object actor. Artwork
-keys use `chapter_artwork/{chapter_id}-{version}.{ext}`. The frontend packs
+keys use `chapter_artwork/{chapter_id}/{version}.{ext}`. The frontend packs
 and uploads the complete file directly; the API never transfers or parses its
 bytes. Uploads accept safe file extensions and canonical Base64 SHA-256
 identities, with an exact signed byte length bounded by
-`[artwork].chapter_artwork_limit` (MiB, default 512).
+`[artwork].chapter_artwork_limit_mib` (MiB, default 512).
 
 `alloc_artwork` returns the current version even when deduplication produces
 no PUT slot. New content replaces the current version immediately. Export

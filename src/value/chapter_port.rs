@@ -4,7 +4,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-/// Page-content strategy selected for one chapter translation import.
+/// source page-content strategy selected for one chapter translation import.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChapterTranslationImportMode {
     /// Preserve pages that already contain visible Units.

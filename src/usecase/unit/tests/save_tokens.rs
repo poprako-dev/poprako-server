@@ -5,7 +5,7 @@ use super::*;
 use crate::config::cache::CacheConfig;
 use std::time::{Duration, Instant};
 
-fn batch(save_id: &str, text: &str) -> SavePageUnitEditsInstr {
+fn batch(save_id: &str, text: &str) -> SavePageSourceUnitEditsInstr {
     let mut instr = save_instr(vec![create("local-save", None, Some(text))]);
 
     instr.save_id = save_id.into();

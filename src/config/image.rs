@@ -19,7 +19,10 @@ pub struct ImageConfig {
     pub comic_cover_limit_mib: u64,
 
     /// Maximum MiB length for a chapter page image upload.
-    pub page_image_limit_mib: u64,
+    pub page_source_image_limit_mib: u64,
+
+    /// Maximum MiB length for a finished page image upload.
+    pub page_artwork_image_limit_mib: u64,
 }
 
 impl ImageConfig {
@@ -34,7 +37,14 @@ impl ImageConfig {
             ("user_avatar_limit_mib", self.user_avatar_limit_mib),
             ("team_avatar_limit_mib", self.team_avatar_limit_mib),
             ("comic_cover_limit_mib", self.comic_cover_limit_mib),
-            ("page_image_limit_mib", self.page_image_limit_mib),
+            (
+                "page_source_image_limit_mib",
+                self.page_source_image_limit_mib,
+            ),
+            (
+                "page_artwork_image_limit_mib",
+                self.page_artwork_image_limit_mib,
+            ),
         ] {
             //
             if mib_limit == 0 {
@@ -61,7 +71,9 @@ impl ImageConfig {
 
             ImageKind::ComicCover => self.comic_cover_limit_mib,
 
-            ImageKind::PageImage => self.page_image_limit_mib,
+            ImageKind::PageSourceImage => self.page_source_image_limit_mib,
+
+            ImageKind::PageArtworkImage => self.page_artwork_image_limit_mib,
         }
     }
 }
@@ -73,7 +85,8 @@ impl Default for ImageConfig {
             user_avatar_limit_mib: 1,
             team_avatar_limit_mib: 1,
             comic_cover_limit_mib: 2,
-            page_image_limit_mib: 25,
+            page_source_image_limit_mib: 25,
+            page_artwork_image_limit_mib: 25,
         }
     }
 }

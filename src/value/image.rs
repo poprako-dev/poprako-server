@@ -25,18 +25,21 @@ pub enum ImageKind {
     /// Cover image for a comic.
     ComicCover,
 
-    /// Page image for a chapter page.
-    PageImage,
+    /// source page image for a chapter page.
+    PageSourceImage,
+
+    /// Image for an independently ordered finished page.
+    PageArtworkImage,
 }
 
 /// Business identity required to locate one page image.
 #[derive(Clone, PartialEq, Eq)]
-pub struct PageImageKey {
+pub struct PageSourceImageKey {
     /// Owning chapter identifier encoded into the physical key.
     pub chapter_id: String,
 
     /// Stable page identifier used by the object table.
-    pub page_id: String,
+    pub page_source_id: String,
 
     /// Validated image suffix.
     pub ext: ImageExt,

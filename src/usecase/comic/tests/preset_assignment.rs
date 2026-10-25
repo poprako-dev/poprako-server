@@ -5,15 +5,15 @@ async fn create_rejects_preset_role_missing_from_membership() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    let mut instr = create_instr("workset-1");
+    let mut instr = create_instr("workset--00000000001");
 
     instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let error = create((&mock, &mock), token("user-1"), instr)
+    let error = create((&mock, &mock), token("user--00000000001"), instr)
         .await
         .err()
         .unwrap();
@@ -34,14 +34,17 @@ async fn create_rejects_preset_role_missing_from_membership() {
 async fn create_without_preset_preserves_creation_history() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_member(admin_member("user--00000000001", "team--00000000001"));
 
-    let created =
-        create((&mock, &mock), token("user-1"), create_instr("workset-1"))
-            .await
-            .unwrap();
+    let created = create(
+        (&mock, &mock),
+        token("user--00000000001"),
+        create_instr("workset--00000000001"),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -63,15 +66,18 @@ async fn create_preserves_first_chapter_title_and_history() {
     for subtitle in [None, Some("Opening chapter".to_owned())] {
         let mock = Mock::new();
 
-        mock.seed_workset(workset("workset-1", "team-1"));
+        mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-        mock.seed_member(admin_member("user-1", "team-1"));
+        mock.seed_member(admin_member(
+            "user--00000000001",
+            "team--00000000001",
+        ));
 
-        let mut instr = create_instr("workset-1");
+        let mut instr = create_instr("workset--00000000001");
 
         instr.first_chapter_subtitle = subtitle.clone();
 
-        let created = create((&mock, &mock), token("user-1"), instr)
+        let created = create((&mock, &mock), token("user--00000000001"), instr)
             .await
             .unwrap();
 
@@ -85,7 +91,7 @@ async fn create_preserves_first_chapter_title_and_history() {
 
         assert_eq!(chapter_info.comic_id, created.id);
 
-        assert_eq!(chapter_info.creator_id, "user-1");
+        assert_eq!(chapter_info.creator_id, "user--00000000001");
 
         assert_eq!(chapter_info.index, 0);
 
@@ -106,7 +112,7 @@ async fn create_preserves_first_chapter_title_and_history() {
 
         assert_eq!(record.chapter_id, created.chapter_id);
 
-        assert_eq!(record.actor_user_id.as_deref(), Some("user-1"));
+        assert_eq!(record.actor_user_id.as_deref(), Some("user--00000000001"));
 
         assert!(matches!(
             record.payload,
@@ -129,19 +135,20 @@ async fn create_rejects_non_admin_and_management_presets() {
     ] {
         let mock = Mock::new();
 
-        mock.seed_workset(workset("workset-1", "team-1"));
+        mock.seed_workset(workset("workset--00000000001", "team--00000000001"));
 
-        let mut member_info = admin_member("user-1", "team-1");
+        let mut member_info =
+            admin_member("user--00000000001", "team--00000000001");
 
         member_info.roles = RoleMask::from(membership);
 
         mock.seed_member(member_info);
 
-        let mut instr = create_instr("workset-1");
+        let mut instr = create_instr("workset--00000000001");
 
         instr.preset_assignment_roles = preset;
 
-        let error = create((&mock, &mock), token("user-1"), instr)
+        let error = create((&mock, &mock), token("user--00000000001"), instr)
             .await
             .err()
             .unwrap();

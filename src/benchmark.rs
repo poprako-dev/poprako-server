@@ -14,9 +14,10 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
+    ComicArchiveChapterSnapshot, ComicArchivePageSourceSnapshot,
+    ComicArchiveSnapshot,
 };
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
@@ -28,7 +29,7 @@ use crate::value::role::{RoleField, RoleMask};
 const CHAPTER_COUNT: usize = 8;
 
 // Number of pages included in each benchmark chapter snapshot.
-const PAGE_COUNT: u16 = 8;
+const PAGE_SOURCE_COUNT: u16 = 8;
 
 // Number of units included on each benchmark page.
 const UNIT_COUNT: u16 = 48;
@@ -71,10 +72,10 @@ pub fn parse_poprako() -> bool {
 
 /// Benchmarks `LabelPlus` rendering for a large page-and-unit collection.
 pub struct LabelPlusExportInput {
-    /// Pages of the exported chapter used in the benchmark.
-    pages: Vec<PageInfo>,
+    /// source pages of the exported chapter used in the benchmark.
+    pages: Vec<PageSourceInfo>,
     /// Translation units keyed by their parent page ID.
-    units_by_page_id: HashMap<String, Vec<UnitInfo>>,
+    units_by_page_source_id: HashMap<String, Vec<UnitInfo>>,
 }
 
 /// Builds one large `LabelPlus` export input outside the benchmark measurement.
@@ -89,14 +90,14 @@ pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
     //
     !chapter_translation_export_complex::make_label_plus(
         &label_plus_export_input.pages,
-        &label_plus_export_input.units_by_page_id,
+        &label_plus_export_input.units_by_page_source_id,
         &std::collections::HashMap::new(),
         &std::collections::HashMap::new(),
     )
     .is_empty()
 }
 
-/// Benchmarks linked-list reconstruction over one maximum-size Page.
+/// Benchmarks linked-list reconstruction over one maximum-size source page.
 pub struct UnitOrderInput(Vec<UnitOrder>);
 
 /// Builds an unordered maximum-size Unit chain.
@@ -178,7 +179,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
         let assignment_info = AssignmentInfo {
             id: ["assignment-", &chapter_index.to_string()].concat(),
             chapter_id: chapter_id.clone(),
-            user_id: "user-1".into(),
+            user_id: "user--00000000001".into(),
             user: Some(user_info),
             chapter: None,
             roles: RoleMask::from(RoleField::TRANSLATOR),
@@ -186,15 +187,16 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             updated_at: archived_at,
         };
 
-        let mut page_snapshots = Vec::with_capacity(usize::from(PAGE_COUNT));
+        let mut page_source_snapshots =
+            Vec::with_capacity(usize::from(PAGE_SOURCE_COUNT));
 
-        for page_index in 0..PAGE_COUNT {
+        for page_source_index in 0..PAGE_SOURCE_COUNT {
             //
-            let page_id = [
+            let page_source_id = [
                 "page-",
                 &chapter_index.to_string(),
                 "-",
-                &page_index.to_string(),
+                &page_source_index.to_string(),
             ]
             .concat();
 
@@ -203,19 +205,19 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             for unit_index in 0..UNIT_COUNT {
                 //
                 unit_infos.push(unit_info(
-                    &page_id,
+                    &page_source_id,
                     chapter_index,
-                    page_index,
+                    page_source_index,
                     unit_index,
                     archived_at,
                 ));
             }
 
-            page_snapshots.push(ComicArchivePageSnapshot {
-                page_info: PageInfo {
-                    id: page_id,
+            page_source_snapshots.push(ComicArchivePageSourceSnapshot {
+                page_source_info: PageSourceInfo {
+                    id: page_source_id,
                     chapter_id: chapter_id.clone(),
-                    index: usize::from(page_index),
+                    index: usize::from(page_source_index),
                     total_unit_count: usize::from(UNIT_COUNT),
                     translated_unit_count: usize::from(UNIT_COUNT),
                     proofread_unit_count: usize::from(UNIT_COUNT),
@@ -231,24 +233,28 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             chapter_info: ChapterInfo {
                 confirmed_artwork_ver: None,
                 id: chapter_id,
-                comic_id: "comic-1".into(),
+                comic_id: "comic--00000000001".into(),
                 comic: None,
                 is_pinned: chapter_index == 0,
                 index: chapter_index,
                 subtitle: ["Chapter ", &chapter_index.to_string()].concat(),
-                page_count: usize::from(PAGE_COUNT),
-                total_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
-                translated_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
-                proofread_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
+                page_source_count: usize::from(PAGE_SOURCE_COUNT),
+                total_unit_count: usize::from(PAGE_SOURCE_COUNT * UNIT_COUNT),
+                translated_unit_count: usize::from(
+                    PAGE_SOURCE_COUNT * UNIT_COUNT,
+                ),
+                proofread_unit_count: usize::from(
+                    PAGE_SOURCE_COUNT * UNIT_COUNT,
+                ),
                 stages,
-                creator_id: "user-1".into(),
+                creator_id: "user--00000000001".into(),
                 creator: None,
                 created_at: archived_at,
                 updated_at: archived_at,
             },
             assignment_infos: vec![assignment_info],
             workflow_record_infos: Vec::new(),
-            page_snapshots,
+            page_source_snapshots,
         });
     }
 
@@ -302,24 +308,31 @@ fn export_input() -> LabelPlusExportInput {
     //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
 
-    let mut pages = Vec::with_capacity(usize::from(PAGE_COUNT) * 8);
+    let mut pages = Vec::with_capacity(usize::from(PAGE_SOURCE_COUNT) * 8);
 
-    let mut units_by_page_id = HashMap::new();
+    let mut units_by_page_source_id = HashMap::new();
 
-    for page_index in 0..(PAGE_COUNT * 8) {
+    for page_source_index in 0..(PAGE_SOURCE_COUNT * 8) {
         //
-        let page_id = ["page-", &page_index.to_string()].concat();
+        let page_source_id = ["page-", &page_source_index.to_string()].concat();
 
         let unit_infos = (0..UNIT_COUNT)
             .map(|unit_index| {
-                unit_info(&page_id, 0, page_index, unit_index, archived_at)
+                //
+                unit_info(
+                    &page_source_id,
+                    0,
+                    page_source_index,
+                    unit_index,
+                    archived_at,
+                )
             })
             .collect();
 
-        pages.push(PageInfo {
-            id: page_id.clone(),
-            chapter_id: "chapter-1".into(),
-            index: usize::from(page_index),
+        pages.push(PageSourceInfo {
+            id: page_source_id.clone(),
+            chapter_id: "chapter--00000000001".into(),
+            index: usize::from(page_source_index),
             total_unit_count: usize::from(UNIT_COUNT),
             translated_unit_count: usize::from(UNIT_COUNT),
             proofread_unit_count: usize::from(UNIT_COUNT),
@@ -327,19 +340,19 @@ fn export_input() -> LabelPlusExportInput {
             updated_at: archived_at,
         });
 
-        units_by_page_id.insert(page_id, unit_infos);
+        units_by_page_source_id.insert(page_source_id, unit_infos);
     }
 
     LabelPlusExportInput {
         pages,
-        units_by_page_id,
+        units_by_page_source_id,
     }
 }
 
 // Builds a deterministic user profile used in generated archive fixtures.
 fn user_info(archived_at: OffsetDateTime) -> UserInfo {
     UserInfo {
-        id: "user-1".into(),
+        id: "user--00000000001".into(),
         qid: "benchmark-qid".into(),
         nickname: "benchmark-user".into(),
         is_sadmin: false,
@@ -351,9 +364,9 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
 
 // Builds one deterministic page unit used by both archive and export fixtures.
 fn unit_info(
-    page_id: &str,
+    page_source_id: &str,
     chapter_index: usize,
-    page_index: u16,
+    page_source_index: u16,
     unit_index: u16,
     archived_at: OffsetDateTime,
 ) -> UnitInfo {
@@ -362,21 +375,27 @@ fn unit_info(
             "unit-",
             &chapter_index.to_string(),
             "-",
-            &page_index.to_string(),
+            &page_source_index.to_string(),
             "-",
             &unit_index.to_string(),
         ]
         .concat(),
-        page_id: page_id.into(),
+        page_source_id: page_source_id.into(),
         next_id: (unit_index + 1 < UNIT_COUNT).then(|| {
-            format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1)
+            //
+            format!(
+                "unit-{}-{}-{}",
+                chapter_index,
+                page_source_index,
+                unit_index + 1
+            )
         }),
         is_bubble: unit_index.is_multiple_of(2),
         is_flagged: false,
         is_proofread: true,
         coord: UnitCoord {
             x_coord: f64::from(unit_index),
-            y_coord: f64::from(page_index),
+            y_coord: f64::from(page_source_index),
         },
         typography_note: None,
         translation_note: None,
@@ -385,27 +404,27 @@ fn unit_info(
                 "Translated text for chapter ",
                 &chapter_index.to_string(),
                 ", page ",
-                &page_index.to_string(),
+                &page_source_index.to_string(),
                 ", unit ",
                 &unit_index.to_string(),
                 ".",
             ]
             .concat(),
         ),
-        last_translator_id: Some("user-1".into()),
+        last_translator_id: Some("user--00000000001".into()),
         proofread_text: Some(
             [
                 "Proofread text for chapter ",
                 &chapter_index.to_string(),
                 ", page ",
-                &page_index.to_string(),
+                &page_source_index.to_string(),
                 ", unit ",
                 &unit_index.to_string(),
                 ".",
             ]
             .concat(),
         ),
-        last_proofreader_id: Some("user-1".into()),
+        last_proofreader_id: Some("user--00000000001".into()),
         hidden_at: None,
         created_at: archived_at,
         updated_at: archived_at,
@@ -419,14 +438,14 @@ fn comic_archive_snapshot(
 ) -> ComicArchiveSnapshot {
     ComicArchiveSnapshot {
         comic_info: ComicInfo {
-            id: "comic-1".into(),
-            workset_id: "workset-1".into(),
+            id: "comic--00000000001".into(),
+            workset_id: "workset--00000000001".into(),
             index: 0,
             title: "Benchmark Comic".into(),
             author: "Benchmark Author".into(),
             description: Some("Benchmark archive payload".into()),
             chapter_count: CHAPTER_COUNT,
-            creator_id: "user-1".into(),
+            creator_id: "user--00000000001".into(),
             workset: None,
             team: None,
             creator: None,
@@ -436,8 +455,8 @@ fn comic_archive_snapshot(
             updated_at: archived_at,
         },
         workset_info: WorksetInfo {
-            id: "workset-1".into(),
-            team_id: "team-1".into(),
+            id: "workset--00000000001".into(),
+            team_id: "team--00000000001".into(),
             index: 0,
             name: "Benchmark Workset".into(),
             description: None,

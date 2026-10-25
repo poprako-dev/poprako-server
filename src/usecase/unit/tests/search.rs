@@ -9,15 +9,30 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
 
 #[tokio::test]
-async fn single_character_search_preserves_page_and_unit_order() {
+async fn single_character_search_preserves_page_source_and_unit_order() {
     //
     let mock = search_scope(2);
 
-    mock.seed_unit(unit_info("unit-b", "page-1", None, "日 second"));
+    mock.seed_unit(unit_info(
+        "unit--35727087946",
+        "page_source--00000000001",
+        None,
+        "日 second",
+    ));
 
-    mock.seed_unit(unit_info("unit-a", "page-1", Some("unit-b"), "first 日"));
+    mock.seed_unit(unit_info(
+        "unit--34844962250",
+        "page_source--00000000001",
+        Some("unit--35727087946"),
+        "first 日",
+    ));
 
-    mock.seed_unit(unit_info("unit-c", "page-2", None, "third 日"));
+    mock.seed_unit(unit_info(
+        "unit--92070664930",
+        "page_source--00000000002",
+        None,
+        "third 日",
+    ));
 
     let found_infos =
         search_infos((&mock, &mock), token("translator-1"), search_instr("日"))
@@ -29,7 +44,11 @@ async fn single_character_search_preserves_page_and_unit_order() {
             .into_iter()
             .map(|unit_info| unit_info.id)
             .collect::<Vec<_>>(),
-        ["unit-a", "unit-b", "unit-c"]
+        [
+            "unit--34844962250",
+            "unit--35727087946",
+            "unit--92070664930"
+        ]
     );
 }
 
@@ -38,7 +57,7 @@ async fn exactly_one_hundred_matches_succeed() {
     //
     let mock = search_scope(1);
 
-    seed_matching_chain(&mock, "page-1", 100);
+    seed_matching_chain(&mock, "page_source--00000000001", 100);
 
     let found_infos =
         search_infos((&mock, &mock), token("translator-1"), search_instr("日"))
@@ -47,9 +66,9 @@ async fn exactly_one_hundred_matches_succeed() {
 
     assert_eq!(found_infos.len(), 100);
 
-    assert_eq!(found_infos.first().unwrap().id, "page-1-unit-000");
+    assert_eq!(found_infos.first().unwrap().id, "unit--00000001000");
 
-    assert_eq!(found_infos.get(99).unwrap().id, "page-1-unit-099");
+    assert_eq!(found_infos.get(99).unwrap().id, "unit--00000001099");
 }
 
 #[tokio::test]
@@ -57,9 +76,9 @@ async fn one_hundred_and_first_match_returns_args_message() {
     //
     let mock = search_scope(2);
 
-    seed_matching_chain(&mock, "page-1", 100);
+    seed_matching_chain(&mock, "page_source--00000000001", 100);
 
-    seed_matching_chain(&mock, "page-2", 1);
+    seed_matching_chain(&mock, "page_source--00000000002", 1);
 
     let error =
         search_infos((&mock, &mock), token("translator-1"), search_instr("日"))
@@ -83,17 +102,27 @@ async fn one_hundred_and_first_match_returns_args_message() {
 }
 
 #[tokio::test]
-async fn excess_in_first_batch_does_not_read_later_page_batch() {
+async fn excess_in_first_batch_does_not_read_later_page_source_batch() {
     //
     let mock = search_scope(21);
 
-    seed_matching_chain(&mock, "page-1", 100);
+    seed_matching_chain(&mock, "page_source--00000000001", 100);
 
-    seed_matching_chain(&mock, "page-2", 1);
+    seed_matching_chain(&mock, "page_source--00000000002", 1);
 
-    mock.seed_unit(unit_info("broken-a", "page-21", None, "sentinel"));
+    mock.seed_unit(unit_info(
+        "broken-a",
+        "page_source--00000000021",
+        None,
+        "sentinel",
+    ));
 
-    mock.seed_unit(unit_info("broken-b", "page-21", None, "sentinel"));
+    mock.seed_unit(unit_info(
+        "broken-b",
+        "page_source--00000000021",
+        None,
+        "sentinel",
+    ));
 
     let error =
         search_infos((&mock, &mock), token("translator-1"), search_instr("日"))
@@ -120,8 +149,12 @@ async fn excess_in_first_batch_does_not_read_later_page_batch() {
 async fn search_is_literal_case_sensitive_and_field_specific() {
     let mock = search_scope(1);
 
-    let mut unit_info =
-        unit_info("unit-a", "page-1", None, r"Case-sensitive %_\\ marker");
+    let mut unit_info = unit_info(
+        "unit--34844962250",
+        "page_source--00000000001",
+        None,
+        r"Case-sensitive %_\\ marker",
+    );
 
     unit_info.proofread_text = Some("proofread marker".to_string());
 
@@ -165,23 +198,37 @@ async fn search_is_literal_case_sensitive_and_field_specific() {
     .await
     .unwrap();
 
-    assert_eq!(proofread_infos.first().unwrap().id, "unit-a");
+    assert_eq!(proofread_infos.first().unwrap().id, "unit--34844962250");
 }
 
 #[tokio::test]
 async fn hidden_link_is_excluded_without_changing_visible_order() {
     let mock = search_scope(1);
 
-    mock.seed_unit(unit_info("unit-b", "page-1", None, "match"));
+    mock.seed_unit(unit_info(
+        "unit--35727087946",
+        "page_source--00000000001",
+        None,
+        "match",
+    ));
 
-    let mut hidden_info =
-        unit_info("unit-hidden", "page-1", Some("unit-b"), "match");
+    let mut hidden_info = unit_info(
+        "unit--79303876260",
+        "page_source--00000000001",
+        Some("unit--35727087946"),
+        "match",
+    );
 
     hidden_info.hidden_at = Some(OffsetDateTime::now_utc());
 
     mock.seed_unit(hidden_info);
 
-    mock.seed_unit(unit_info("unit-a", "page-1", Some("unit-hidden"), "match"));
+    mock.seed_unit(unit_info(
+        "unit--34844962250",
+        "page_source--00000000001",
+        Some("unit--79303876260"),
+        "match",
+    ));
 
     let found_infos = search_infos(
         (&mock, &mock),
@@ -196,7 +243,7 @@ async fn hidden_link_is_excluded_without_changing_visible_order() {
             .into_iter()
             .map(|unit_info| unit_info.id)
             .collect::<Vec<_>>(),
-        ["unit-a", "unit-b"]
+        ["unit--34844962250", "unit--35727087946"]
     );
 }
 
@@ -204,7 +251,12 @@ async fn hidden_link_is_excluded_without_changing_visible_order() {
 async fn nul_phrase_returns_no_match_after_authorization() {
     let mock = search_scope(1);
 
-    mock.seed_unit(unit_info("unit-a", "page-1", None, "match"));
+    mock.seed_unit(unit_info(
+        "unit--34844962250",
+        "page_source--00000000001",
+        None,
+        "match",
+    ));
 
     let found_infos =
         search_infos((&mock, &mock), token("translator-1"), search_instr("\0"))
@@ -225,61 +277,65 @@ fn search_instr_for(
     phrase: &str,
 ) -> SearchChapterUnitInfosInstr {
     SearchChapterUnitInfosInstr {
-        chapter_id: "chapter-1".to_string(),
+        chapter_id: "chapter--00000000001".to_string(),
         part,
         phrase: phrase.to_string(),
     }
 }
 
-// Build the standard Unit scope with the requested number of ordered Pages.
-fn search_scope(page_count: usize) -> Mock {
+// Build the standard Unit scope with the requested number of ordered PageSources.
+fn search_scope(page_source_count: usize) -> Mock {
     //
     let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    for page_index in 1..page_count {
+    for page_source_index in 1..page_source_count {
         //
-        let mut page_info = page();
+        let mut page_source_info = page();
 
-        page_info.id = format!("page-{}", page_index + 1);
+        page_source_info.id =
+            format!("page_source--{:011}", page_source_index + 1);
 
-        page_info.index = page_index;
+        page_source_info.index = page_source_index;
 
-        mock.seed_page(page_info);
+        mock.seed_page(page_source_info);
     }
 
     mock
 }
 
 // Seed one valid matching linked Unit chain in storage order.
-fn seed_matching_chain(mock: &Mock, page_id: &str, unit_count: usize) {
+fn seed_matching_chain(mock: &Mock, page_source_id: &str, unit_count: usize) {
     //
     for unit_index in 0..unit_count {
         //
-        let unit_id = matching_unit_id(page_id, unit_index);
+        let unit_id = matching_unit_id(page_source_id, unit_index);
 
         let next_id = (unit_index + 1 < unit_count)
-            .then(|| matching_unit_id(page_id, unit_index + 1));
+            .then(|| matching_unit_id(page_source_id, unit_index + 1));
 
-        let unit_info = unit_info(&unit_id, page_id, next_id.as_deref(), "日");
+        let unit_info =
+            unit_info(&unit_id, page_source_id, next_id.as_deref(), "日");
 
         mock.seed_unit(unit_info);
     }
 }
 
 // Builds a stable chain identifier with a minimum three-digit sequence.
-fn matching_unit_id(page_id: &str, unit_index: usize) -> String {
+fn matching_unit_id(page_source_id: &str, unit_index: usize) -> String {
     //
-    let digits = unit_index.to_string();
+    let page_number = page_source_id
+        .strip_prefix("page_source--")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
 
-    let padding = "0".repeat(3_usize.saturating_sub(digits.len()));
-
-    [page_id, "-unit-", &padding, &digits].concat()
+    format!("unit--{:011}", page_number * 1000 + unit_index)
 }
 
 // Build one visible persisted Unit fixture.
 fn unit_info(
     id: &str,
-    page_id: &str,
+    page_source_id: &str,
     next_id: Option<&str>,
     translated_text: &str,
 ) -> UnitInfo {
@@ -288,7 +344,7 @@ fn unit_info(
 
     UnitInfo {
         id: id.to_string(),
-        page_id: page_id.to_string(),
+        page_source_id: page_source_id.to_string(),
         next_id: next_id.map(str::to_string),
         is_bubble: true,
         is_flagged: false,

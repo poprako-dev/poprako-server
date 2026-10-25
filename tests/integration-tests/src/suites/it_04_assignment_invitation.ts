@@ -202,7 +202,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     // E1.5: join with non-existent chapter_id -> 422/2.
     expectError(
         await trans01.api.post<ErrorBody>("/api/v1/assignments/join", {
-            chapter_id: "chapter-does-not-exist",
+            chapter_id: "chapter--98148379086",
             roles: ROLE.TRANSLATOR,
         }),
         422,
@@ -457,11 +457,11 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     // save a unit on a main page -> 403/4. Requires it_03 to have reserved
     // pages (ctx.main.pageIds non-empty).
     if (ctx.main.pageIds.length > 0) {
-        const aMainPageId = ctx.main.pageIds[0]!;
+        const aMainPageSourceId = ctx.main.pageIds[0]!;
 
         expectError(
             await trans03.api.post<ErrorBody>(
-                `/api/v1/pages/${aMainPageId}/units/save?save_id=${crypto.randomUUID()}`,
+                `/api/v1/page-sources/${aMainPageSourceId}/units/save?save_id=${crypto.randomUUID()}`,
                 [
                     {
                         edit: "create",

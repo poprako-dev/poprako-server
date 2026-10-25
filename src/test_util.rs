@@ -18,7 +18,8 @@ pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
     user_avatar_limit_mib: 1,
     team_avatar_limit_mib: 1,
     comic_cover_limit_mib: 2,
-    page_image_limit_mib: 25,
+    page_source_image_limit_mib: 25,
+    page_artwork_image_limit_mib: 25,
 };
 
 /// Asserts that `error` is a [`BaseError::Expected`] whose variant matches `expected`.

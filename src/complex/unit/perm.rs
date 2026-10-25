@@ -67,7 +67,7 @@ pub fn ensure_user_can_transform(
     })
 }
 
-/// Verifies that the caller may list Units on a Chapter Page.
+/// Verifies that the caller may list Units on a Chapter source page.
 pub fn ensure_user_can_list_infos(access: &UnitListAccess<'_>) -> BaseRest<()> {
     //
     let access_check = match access {

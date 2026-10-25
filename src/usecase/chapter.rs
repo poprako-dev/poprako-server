@@ -26,7 +26,9 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{
+    ComicCover, PageSourceImage, TeamAvatar, UserAvatar,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -40,7 +42,7 @@ use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecor
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, TouchComicLastActive,
 };
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest};
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
@@ -63,9 +65,9 @@ pub async fn list_infos<C, R, O>(
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
     C: Context,
-    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageSourceRepo<C> + Sync,
     O: ObjDeptView<ComicCover, C>
-        + ObjDeptView<PageImage, C>
+        + ObjDeptView<PageSourceImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,

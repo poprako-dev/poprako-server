@@ -14,7 +14,8 @@ use crate::model::read::proj::subtree_delete::{
 use crate::part_impl::repo::rdb_impl::schema::{
     t_announcement, t_assignment, t_assignment_invitation, t_chapter,
     t_chapter_workflow_record, t_comic, t_comic_archive, t_comment, t_member,
-    t_member_invitation, t_page, t_team, t_term, t_termbase, t_unit, t_workset,
+    t_member_invitation, t_page_source, t_team, t_term, t_termbase, t_unit,
+    t_workset,
 };
 use crate::result::BaseRest;
 use crate::shared::result::diesel;
@@ -26,9 +27,9 @@ pub async fn delete_chapter_rows(
     chapter_id: &str,
 ) -> BaseRest<()> {
     //
-    let page_ids = t_page::table
-        .filter(t_page::f_chapter_id.eq(chapter_id))
-        .select(t_page::f_id);
+    let page_source_ids = t_page_source::table
+        .filter(t_page_source::f_chapter_id.eq(chapter_id))
+        .select(t_page_source::f_id);
 
     diesel::delete(
         t_assignment_invitation::table
@@ -53,15 +54,19 @@ pub async fn delete_chapter_rows(
     .await
     .map_err(diesel)?;
 
-    diesel::delete(t_unit::table.filter(t_unit::f_page_id.eq_any(page_ids)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::delete(
+        t_unit::table.filter(t_unit::f_page_source_id.eq_any(page_source_ids)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
-    diesel::delete(t_page::table.filter(t_page::f_chapter_id.eq(chapter_id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::delete(
+        t_page_source::table.filter(t_page_source::f_chapter_id.eq(chapter_id)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     diesel::delete(t_chapter::table.filter(t_chapter::f_id.eq(chapter_id)))
         .execute(conn)
@@ -200,15 +205,15 @@ pub async fn claim(
 }
 
 /// Lists only the object identifiers needed before deleting one chapter.
-pub async fn list_page_ids(
+pub async fn list_page_source_ids(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> BaseRest<Vec<String>> {
     //
-    let ids = t_page::table
-        .filter(t_page::f_chapter_id.eq(chapter_id))
-        .select(t_page::f_id)
-        .order(t_page::f_id.asc())
+    let ids = t_page_source::table
+        .filter(t_page_source::f_chapter_id.eq(chapter_id))
+        .select(t_page_source::f_id)
+        .order(t_page_source::f_id.asc())
         .load::<String>(conn)
         .await
         .map_err(diesel)?;

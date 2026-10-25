@@ -25,8 +25,10 @@ pub struct IssueEditRectInstr {
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueEditEntryInstr {
-    /// Stable client UUID or existing imported identity.
-    pub id: String,
+    /// Existing server-assigned identity; exclusive with `local_id`.
+    pub id: Option<String>,
+    /// Temporary identity for a new annotation; exclusive with id.
+    pub local_id: Option<String>,
 
     /// Nonblank category name.
     pub variant: String,

@@ -29,9 +29,9 @@ use crate::part::repo::oper::page_artwork::ListPageArtworkInfos;
 use crate::part::repo::page_artwork::PageArtworkRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest};
-use crate::usecase::page::list as page_list_usecase;
+use crate::usecase::page_source::list as page_list_usecase;
 
-/// Reads ordered composite pages independently of source Pages.
+/// Reads ordered composite pages independently of source pages.
 #[instrument(
     level = "info",
     skip(repo, obj_dept, token),

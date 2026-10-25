@@ -20,26 +20,29 @@ async fn list_infos_team_member_lists_chapter_assignments() {
 
     seed_scope(&mock);
 
-    seed_user(&mock, "member-user", false);
+    seed_user(&mock, "member--66614769577", false);
 
-    mock.seed_member(member("member-user", role(RoleField::TRANSLATOR)));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "member-user",
+    mock.seed_member(member(
+        "member--66614769577",
         role(RoleField::TRANSLATOR),
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
+        "member--66614769577",
+        role(RoleField::TRANSLATOR),
+    ));
+
+    mock.seed_assignment(assignment(
+        "chapter--00000000001",
         "reviewer-user",
         role(RoleField::REVIEWER),
     ));
 
     let assignment_info_vals = list_infos(
         (&mock, &mock),
-        token("member-user"),
-        list_by_chapter_data("chapter-1"),
+        token("member--66614769577"),
+        list_by_chapter_data("chapter--00000000001"),
     )
     .await;
 
@@ -57,24 +60,31 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
 
     seed_scope(&mock);
 
-    seed_user(&mock, "member-user", false);
+    seed_user(&mock, "member--66614769577", false);
 
-    mock.seed_member(member("member-user", role(RoleField::TRANSLATOR)));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "member-user",
+    mock.seed_member(member(
+        "member--66614769577",
         role(RoleField::TRANSLATOR),
     ));
 
-    mock.seed_page(page("page-1", "chapter-1", "page.png"));
+    mock.seed_assignment(assignment(
+        "chapter--00000000001",
+        "member--66614769577",
+        role(RoleField::TRANSLATOR),
+    ));
 
-    let mut list_data = list_by_chapter_data("chapter-1");
+    mock.seed_page(page(
+        "page_source--00000000001",
+        "chapter--00000000001",
+        "page.png",
+    ));
+
+    let mut list_data = list_by_chapter_data("chapter--00000000001");
 
     list_data.incl_opt = vec![AssignmentInclOpt::ChapterComicWorksetTeam];
 
     let assignment_info_vals =
-        list_infos((&mock, &mock), token("member-user"), list_data)
+        list_infos((&mock, &mock), token("member--66614769577"), list_data)
             .await
             .unwrap();
 
@@ -87,13 +97,19 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
 
     let comic_info_val = chapter_info_val.comic.as_ref().unwrap();
 
-    assert_eq!(chapter_info_val.id, "chapter-1");
+    assert_eq!(chapter_info_val.id, "chapter--00000000001");
 
-    assert_eq!(comic_info_val.id, "comic-1");
+    assert_eq!(comic_info_val.id, "comic--00000000001");
 
-    assert_eq!(comic_info_val.workset.as_ref().unwrap().id, "workset-1");
+    assert_eq!(
+        comic_info_val.workset.as_ref().unwrap().id,
+        "workset--00000000001"
+    );
 
-    assert_eq!(comic_info_val.team.as_ref().unwrap().id, "team-1");
+    assert_eq!(
+        comic_info_val.team.as_ref().unwrap().id,
+        "team--00000000001"
+    );
 
     assert!(comic_info_val.cover_url.is_none());
 }
@@ -108,7 +124,7 @@ async fn list_infos_assignment_fallback_lists_chapter_assignments() {
     seed_user(&mock, "assigned-user", false);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "assigned-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -116,7 +132,7 @@ async fn list_infos_assignment_fallback_lists_chapter_assignments() {
     let assignment_info_vals = list_infos(
         (&mock, &mock),
         token("assigned-user"),
-        list_by_chapter_data("chapter-1"),
+        list_by_chapter_data("chapter--00000000001"),
     )
     .await;
 
@@ -133,13 +149,13 @@ async fn list_infos_owner_lists_own_assignments() {
     seed_user(&mock, "owner-user", false);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "owner-user",
         role(RoleField::TRANSLATOR),
     ));
 
     mock.seed_assignment(assignment(
-        "chapter-2",
+        "chapter--00000000002",
         "other-user",
         role(RoleField::REVIEWER),
     ));
@@ -170,7 +186,7 @@ async fn list_infos_super_admin_lists_other_user_assignments() {
     seed_user(&mock, "target-user", false);
 
     mock.seed_assignment(assignment(
-        "chapter-1",
+        "chapter--00000000001",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
@@ -199,7 +215,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
     let error = list_infos(
         (&mock, &mock),
         token("outsider-user"),
-        list_by_chapter_data("chapter-1"),
+        list_by_chapter_data("chapter--00000000001"),
     )
     .await
     .err()
@@ -241,7 +257,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
         token("viewer-user"),
         ListAssignmentInfosInstr {
             incl_opt: Vec::new(),
-            chapter_id: Some("chapter-1".into()),
+            chapter_id: Some("chapter--00000000001".into()),
             owner_id: Some("owner-user".into()),
             role: None,
             offset: 0,
@@ -261,7 +277,7 @@ async fn list_infos_rejects_admin_and_bot_filters() {
     let mock = Mock::new();
 
     for role in [RoleField::ADMIN, RoleField::BOT] {
-        let mut instr = list_by_chapter_data("chapter-1");
+        let mut instr = list_by_chapter_data("chapter--00000000001");
 
         instr.role = Some(role);
 

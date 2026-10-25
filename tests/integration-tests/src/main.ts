@@ -5,7 +5,7 @@ import { ApiClient } from "./http/apiClient.ts";
 import { IMPLEMENTED as IT00_IMPLEMENTED, runIt00Module } from "./suites/it_00_bootstrap_auth_default_seed.ts";
 import { IMPLEMENTED as IT01_IMPLEMENTED, runIt01Module } from "./suites/it_01_member_invitation_register_roles.ts";
 import { IMPLEMENTED as IT02_IMPLEMENTED, runIt02Module } from "./suites/it_02_workset_comic_chapter_index.ts";
-import { IMPLEMENTED as IT03_IMPLEMENTED, runIt03Module } from "./suites/it_03_page_reserve_image.ts";
+import { IMPLEMENTED as IT03_IMPLEMENTED, runIt03Module } from "./suites/it_03_page_source_reserve_image.ts";
 import { IMPLEMENTED as IT04_IMPLEMENTED, runIt04Module } from "./suites/it_04_assignment_invitation.ts";
 import { IMPLEMENTED as IT05_IMPLEMENTED, runIt05Module } from "./suites/it_05_unit_save_order_count.ts";
 import { IMPLEMENTED as IT06_IMPLEMENTED, runIt06Module } from "./suites/it_06_unit_concurrency.ts";
@@ -46,7 +46,7 @@ import type { RunCtx } from "./state/runCtx.ts";
 //   it_11 immutable comic archive and image cleanup records
 //   it_12 termbase / term lifecycle, perms, search, and cascades
 //   it_13 chapter artwork allocation, completion, export, and cleanup
-//   it_14 whole-chapter review replacement and read-only Page queries
+//   it_14 whole-chapter review replacement and read-only PageSource queries
 //
 // Cleanup: `cleanupToSeed()` runs in the `afterAll` hook BEFORE
 // `assertDatabaseIsSeedOnly()` so the assert verifies the suite self-cleans

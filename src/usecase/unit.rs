@@ -1,7 +1,7 @@
 //! Unit use cases for listing, searching, saving, and transforming text.
 
-// Shared transactional Unit edits and Page counter maintenance.
-mod page_edit;
+// Shared transactional Unit edits and PageSource counter maintenance.
+mod page_source_edit;
 
 /// Chapter-scoped Unit text transformation.
 pub mod transform;
@@ -25,10 +25,12 @@ use crate::complex::{
     unit_save as unit_save_complex,
 };
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr,
+    ListPageSourceUnitInfosInstr, SavePageSourceUnitEditsInstr,
     SearchChapterUnitInfosInstr, into_unit_edits,
 };
-use crate::data::val::unit::{ListPageUnitInfosVal, SavePageUnitEditsVal};
+use crate::data::val::unit::{
+    ListPageSourceUnitInfosVal, SavePageSourceUnitEditsVal,
+};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::shared::user::UserToken;
@@ -45,25 +47,25 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCountDelta, GetChapterUnitEditScopeExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{
-    GetPageUnitScope, GetPageUnitScopeExcluded,
+use crate::part::repo::oper::page_source::{
+    GetPageSourceUnitScope, GetPageSourceUnitScopeExcluded,
 };
 use crate::part::repo::oper::unit::{
     ListUnitInfosByIds, ListUnitInfosInChapterOrder, ListUnitOrders,
     SearchChapterUnitIds,
 };
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::page_source::PageSourceRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage as stage_usecase;
-use crate::usecase::unit::page_edit as unit_page_edit_usecase;
+use crate::usecase::unit::page_source_edit as unit_page_source_edit_usecase;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::unit::{MAX_PAGE_UNIT_COUNT, MAX_UNIT_SEARCH_MATCH_COUNT};
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 
-/// Lists visible Units for one Page in final linked-list order.
+/// Lists visible Units for one source page in final linked-list order.
 #[instrument(
     level = "info",
     skip(nucl, repo, token),
@@ -74,73 +76,79 @@ use crate::value::unit_save::UnitSaveCreatedUnitId;
 pub async fn list_infos<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    instr: ListPageUnitInfosInstr,
-) -> BaseRest<ListPageUnitInfosVal>
+    instr: ListPageSourceUnitInfosInstr,
+) -> BaseRest<ListPageSourceUnitInfosVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
-    R: PageRepo<C>
+    R: PageSourceRepo<C>
         + UnitRepo<C>
         + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + Sync,
 {
-    let page_scope =
-        GetPageUnitScope { id: &instr.page_id }.run_on(repo).await?;
+    let page_source_scope = GetPageSourceUnitScope {
+        id: &instr.page_source_id,
+    }
+    .run_on(repo)
+    .await?;
 
     let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
         repo,
         &token.user_id,
-        &page_scope.chapter_id,
+        &page_source_scope.chapter_id,
     )
     .await?;
 
     unit_perm_complex::ensure_user_can_list_infos(&access_info.as_access())?;
 
-    let authorized_chapter_id = page_scope.chapter_id;
+    let authorized_chapter_id = page_source_scope.chapter_id;
 
     let (unit_infos, count_metrics) = nucl
         .coord(async move |context| {
             //
-            let page_scope = GetPageUnitScope { id: &instr.page_id }
+            let page_source_scope = GetPageSourceUnitScope { id: &instr.page_source_id }
                 .step_on(repo, context)
                 .await?;
 
-            if page_scope.chapter_id != authorized_chapter_id {
+            if page_source_scope.chapter_id != authorized_chapter_id {
                 //
                 return Err(unit_list_invariant(
-                    &page_scope.id,
-                    "Page ownership changed during Unit list authorization",
+                    &page_source_scope.id,
+                    "PageSource ownership changed during Unit list authorization",
                 ));
             }
 
             let orders = ListUnitOrders {
-                page_id: &page_scope.id,
+                page_source_id: &page_source_scope.id,
             }
             .step_on(repo, context)
             .await?;
 
             let unit_infos =
-                load_visible_unit_infos(repo, context, &page_scope.id, &orders)
+                load_visible_unit_infos(repo, context, &page_source_scope.id, &orders)
                     .await?;
 
             let actual_count_metrics = count_unit_infos(&unit_infos);
 
-            if actual_count_metrics != page_scope.count_metrics {
+            if actual_count_metrics != page_source_scope.count_metrics {
                 //
                 return Err(unit_list_invariant(
-                    &page_scope.id,
-                    "Page Unit counters do not match visible Units",
+                    &page_source_scope.id,
+                    "PageSource Unit counters do not match visible Units",
                 ));
             }
 
-            accept!((unit_infos, page_scope.count_metrics))
+            accept!((unit_infos, page_source_scope.count_metrics))
         })
         .await?;
 
-    accept!(ListPageUnitInfosVal::from_models(unit_infos, count_metrics))
+    accept!(ListPageSourceUnitInfosVal::from_models(
+        unit_infos,
+        count_metrics
+    ))
 }
 
 #[instrument(
@@ -237,20 +245,20 @@ where
     fields(
         actor_user_id = %token.user_id,
         save_id = %instr.save_id,
-        page_id = %instr.page_id,
+        page_source_id = %instr.page_source_id,
         edit_count = instr.edits.len(),
     ),
 )]
 pub async fn save_edits<N, C, R, K>(
     (nucl, repo, cache): (&N, &R, &K),
     token: UserToken,
-    instr: SavePageUnitEditsInstr,
-) -> BaseRest<SavePageUnitEditsVal>
+    instr: SavePageSourceUnitEditsInstr,
+) -> BaseRest<SavePageSourceUnitEditsVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
-    R: PageRepo<C>
+    R: PageSourceRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -261,7 +269,7 @@ where
     K: UnitSaveCache + Sync,
     for<'save> K::Guard<'save>: Send + Sync,
 {
-    let page_id = instr.page_id.clone();
+    let page_source_id = instr.page_source_id.clone();
 
     let (edits, save_id, created_unit_ids) =
         prepare_save(instr, &token.user_id)?;
@@ -275,10 +283,11 @@ where
     let (created_unit_ids, saved) = nucl
         .coord(async move |context| {
             //
-            let chapter_scope =
-                GetChapterUnitEditScopeExcluded { page_id: &page_id }
-                    .step_on(repo, context)
-                    .await?;
+            let chapter_scope = GetChapterUnitEditScopeExcluded {
+                page_source_id: &page_source_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             chapter_complex::ensure_writable_state(
                 &chapter_scope.id,
@@ -296,19 +305,22 @@ where
 
             unit_perm_complex::ensure_user_can_edit_fields(edit_perm, &edits)?;
 
-            let page_scope = GetPageUnitScopeExcluded { id: &page_id }
-                .step_on(repo, context)
-                .await?;
+            let page_source_scope = GetPageSourceUnitScopeExcluded {
+                id: &page_source_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            if page_scope.chapter_id != chapter_scope.id {
+            if page_source_scope.chapter_id != chapter_scope.id {
                 //
                 return Err(unrecoverable_error! {
-                    message: "locked Page does not belong to locked Chapter"
+                    message: "locked PageSource does not belong to \
+                        locked Chapter"
                         .into();
-                    page_id = %page_id,
-                    page_chapter_id = %page_scope.chapter_id,
+                    page_source_id = %page_source_id,
+                    page_source_chapter_id = %page_source_scope.chapter_id,
                     locked_chapter_id = %chapter_scope.id,
-                    "locked Page does not belong to locked Chapter",
+                    "locked PageSource does not belong to locked Chapter",
                 });
             }
 
@@ -316,17 +328,17 @@ where
                 return accept!((created_unit_ids, false));
             }
 
-            let page_edit = unit_page_edit_usecase::apply_edits(
+            let page_source_edit = unit_page_source_edit_usecase::apply_edits(
                 repo,
                 context,
-                &page_scope,
+                &page_source_scope,
                 edits,
             )
             .await?;
 
             AdjustChapterUnitCountDelta {
                 id: &chapter_scope.id,
-                delta: page_edit.count_delta(),
+                delta: page_source_edit.count_delta(),
             }
             .step_on(repo, context)
             .await?;
@@ -359,16 +371,19 @@ where
         save_guard.record(created_unit_ids.clone());
     }
 
-    accept!(SavePageUnitEditsVal::from(created_unit_ids.as_ref()))
+    accept!(SavePageSourceUnitEditsVal::from(created_unit_ids.as_ref()))
 }
 
 // Builds an unrecoverable error for an inconsistent persisted Unit list.
-fn unit_list_invariant(page_id: &str, message: &'static str) -> BaseError {
+fn unit_list_invariant(
+    page_source_id: &str,
+    message: &'static str,
+) -> BaseError {
     //
     unrecoverable_error! {
         message: message.into();
-        page_id,
-        "invalid persisted Page Unit state",
+        page_source_id,
+        "invalid persisted PageSource Unit state",
     }
 }
 
@@ -376,7 +391,7 @@ fn unit_list_invariant(page_id: &str, message: &'static str) -> BaseError {
 async fn load_visible_unit_infos<C, R>(
     repo: &R,
     context: &mut C,
-    page_id: &str,
+    page_source_id: &str,
     orders: &[UnitOrder],
 ) -> BaseRest<Vec<UnitInfo>>
 where
@@ -393,8 +408,8 @@ where
     if visible_orders.len() > MAX_PAGE_UNIT_COUNT {
         //
         return Err(unit_list_invariant(
-            page_id,
-            "persisted Page Unit count exceeds the business maximum",
+            page_source_id,
+            "persisted PageSource Unit count exceeds the business maximum",
         ));
     }
 
@@ -418,7 +433,7 @@ where
     if expected_next_by_id.len() != visible_orders.len() {
         //
         return Err(unit_list_invariant(
-            page_id,
+            page_source_id,
             "persisted Unit chain contains duplicate IDs",
         ));
     }
@@ -432,18 +447,18 @@ where
         else {
             //
             return Err(unit_list_invariant(
-                page_id,
+                page_source_id,
                 "Unit detail query returned an unexpected ID",
             ));
         };
 
-        if unit_info.page_id != page_id
+        if unit_info.page_source_id != page_source_id
             || unit_info.hidden_at.is_some()
             || unit_info.next_id.as_deref() != expected_next_id
         {
             //
             return Err(unit_list_invariant(
-                page_id,
+                page_source_id,
                 "Unit detail query disagrees with the verified chain",
             ));
         }
@@ -453,7 +468,7 @@ where
         if info_by_id.insert(unit_id, unit_info).is_some() {
             //
             return Err(unit_list_invariant(
-                page_id,
+                page_source_id,
                 "Unit detail query returned duplicate rows",
             ));
         }
@@ -466,7 +481,7 @@ where
         let Some(unit_info) = info_by_id.remove(&order.id) else {
             //
             return Err(unit_list_invariant(
-                page_id,
+                page_source_id,
                 "Unit detail query omitted a visible Unit",
             ));
         };
@@ -494,7 +509,7 @@ fn count_unit_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
 
 // Validates the save token and assigns permanent identities to new Units.
 fn prepare_save(
-    instr: SavePageUnitEditsInstr,
+    instr: SavePageSourceUnitEditsInstr,
     user_id: &str,
 ) -> BaseRest<(Vec<UnitEdit>, Uuid, Arc<[UnitSaveCreatedUnitId]>)> {
     //

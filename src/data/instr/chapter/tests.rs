@@ -11,7 +11,7 @@ use serde_json::json;
 #[test]
 fn update_chapter_stage_instr_uses_snake_case_stage() {
     let instr = serde_json::from_value::<UpdateChapterStageInstr>(json!({
-        "id": "chapter-1",
+        "id": "chapter--00000000001",
         "stage": "raw_provide",
         "oper": "advance",
     }))
@@ -24,7 +24,7 @@ fn update_chapter_stage_instr_uses_snake_case_stage() {
 #[test]
 fn update_chapter_stage_instr_rejects_kebab_case_stage() {
     let result = serde_json::from_value::<UpdateChapterStageInstr>(json!({
-        "id": "chapter-1",
+        "id": "chapter--00000000001",
         "stage": "raw-provide",
         "oper": "advance",
     }));

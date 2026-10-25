@@ -15,35 +15,35 @@ fn expand_error(input: TokenStream) -> String {
 fn object_manifest_rejects_every_duplicate_identity() {
     //
     let duplicate_marker = expand_error(quote! {
-        PageImage {
-            table: t_page_image,
-            topic: "page_image",
+        PageSourceImage {
+            table: t_page_source_image,
+            topic: "page_source_image",
         },
-        PageImage {
-            table: t_page_image_2,
-            topic: "page_image_2",
+        PageSourceImage {
+            table: t_page_source_image_2,
+            topic: "page_source_image_2",
         },
     });
 
     let duplicate_table = expand_error(quote! {
-        PageImage {
-            table: t_page_image,
-            topic: "page_image",
+        PageSourceImage {
+            table: t_page_source_image,
+            topic: "page_source_image",
         },
         ComicCover {
-            table: t_page_image,
+            table: t_page_source_image,
             topic: "comic_cover",
         },
     });
 
     let duplicate_topic = expand_error(quote! {
-        PageImage {
-            table: t_page_image,
-            topic: "page_image",
+        PageSourceImage {
+            table: t_page_source_image,
+            topic: "page_source_image",
         },
         ComicCover {
             table: t_comic_cover,
-            topic: "page_image",
+            topic: "page_source_image",
         },
     });
 
@@ -58,9 +58,9 @@ fn object_manifest_rejects_every_duplicate_identity() {
 fn generated_names_are_readable_and_read_views_cover_every_marker()
 -> syn::Result<()> {
     let manifest = object::expand(quote! {
-        PageImage {
-            table: t_page_image,
-            topic: "page_image",
+        PageSourceImage {
+            table: t_page_source_image,
+            topic: "page_source_image",
         },
         FontFile {
             table: t_font_file,
@@ -71,12 +71,12 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
     let implementations = impl_obj_dept::expand_items(quote! {
         dept: NormObjDept,
         view: NormObjDeptView;
-        (PageImage, page_image_rdb_impl, "page_image"),
+        (PageSourceImage, page_source_image_rdb_impl, "page_source_image"),
         (FontFile, font_file_rdb_impl, "font_file"),
     })?
     .to_string();
 
-    assert!(manifest.contains("page_image_rdb_impl"));
+    assert!(manifest.contains("page_source_image_rdb_impl"));
 
     assert!(manifest.contains("font_file_rdb_impl"));
 
@@ -86,7 +86,7 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
 
     assert!(implementations.contains("NormObjDeptView"));
 
-    assert!(implementations.contains("PageImage"));
+    assert!(implementations.contains("PageSourceImage"));
 
     assert!(implementations.contains("FontFile"));
 

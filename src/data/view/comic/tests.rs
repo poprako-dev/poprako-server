@@ -15,8 +15,8 @@ use crate::data::instr::comic::CreateComicInstr;
 fn comic_info_view_omits_none_fields() {
     //
     let comic_info_view = ComicInfoView {
-        id: "comic-1".into(),
-        workset_id: "workset-1".into(),
+        id: "comic--00000000001".into(),
+        workset_id: "workset--00000000001".into(),
         index: 1,
         title: "Comic".into(),
         author: "Author".into(),
@@ -24,7 +24,7 @@ fn comic_info_view_omits_none_fields() {
         cover_url: None,
         cover_thumbnail_url: None,
         chapter_count: 0,
-        creator_id: "user-1".into(),
+        creator_id: "user--00000000001".into(),
         workset: None,
         team: None,
         creator: None,
@@ -58,7 +58,7 @@ fn create_comic_instr_deserializes_missing_optional_fields_as_none() {
     //
     let create_comic_instr =
         serde_json::from_value::<CreateComicInstr>(serde_json::json!({
-            "workset_id": "workset-1",
+            "workset_id": "workset--00000000001",
             "title": "Comic",
             "author": "Author",
         }))

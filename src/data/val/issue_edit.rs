@@ -49,3 +49,23 @@ pub struct RenameIssueEditVariantVal {
     /// Fresh documents for every changed page.
     pub pages: Vec<IssueEditPageVal>,
 }
+
+/// One new annotation's client-to-server identity mapping.
+#[derive(Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct CreatedIssueIdVal {
+    /// Temporary identity submitted by the client.
+    pub local_id: String,
+    /// Persistent identity allocated by the server.
+    pub issue_id: String,
+}
+
+/// Committed annotation document and identities assigned by the save batch.
+#[derive(Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct SavePageIssuesVal {
+    /// Latest document under the same review and image context.
+    pub page: IssueEditPageVal,
+    /// Stable mappings retained for retries of this batch.
+    pub created_issue_ids: Vec<CreatedIssueIdVal>,
+}

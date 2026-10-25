@@ -185,7 +185,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             return accept!(false);
         }
 
-        if state.chapters.get(chapter_index).unwrap().page_count == 0 {
+        if state.chapters.get(chapter_index).unwrap().page_source_count == 0 {
             return accept!(false);
         }
 

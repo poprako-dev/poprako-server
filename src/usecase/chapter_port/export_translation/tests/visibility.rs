@@ -1,5 +1,10 @@
 use super::*;
 
+const USER_ID: &str = "user--00000000001";
+const CHAPTER_ID: &str = "chapter--00000000001";
+const SOURCE_ID: &str = "page_source--00000000001";
+const SOURCE_2_ID: &str = "page_source--00000000002";
+
 // export_visibility(export_translation)(positive): every format preserves visible chain order and contiguous indexes across hidden history.
 #[tokio::test]
 async fn export_formats_share_visible_units_and_contiguous_indexes() {
@@ -14,12 +19,18 @@ async fn export_formats_share_visible_units_and_contiguous_indexes() {
 
         mock.state.lock().unwrap().objs.clear();
 
-        mock.seed_unit(unit("unit-b", "page-1", None, " beta ", Some("")));
+        mock.seed_unit(unit(
+            "unit--35727087946",
+            SOURCE_ID,
+            None,
+            " beta ",
+            Some(""),
+        ));
 
         let mut hidden_unit_info = unit(
-            "unit-hidden",
-            "page-1",
-            Some("unit-b"),
+            "unit--79303876260",
+            SOURCE_ID,
+            Some("unit--35727087946"),
             "hidden translation",
             Some("hidden proofread"),
         );
@@ -29,17 +40,17 @@ async fn export_formats_share_visible_units_and_contiguous_indexes() {
         mock.seed_unit(hidden_unit_info);
 
         mock.seed_unit(unit(
-            "unit-a",
-            "page-1",
-            Some("unit-hidden"),
+            "unit--34844962250",
+            SOURCE_ID,
+            Some("unit--79303876260"),
             "alpha",
             Some(" alpha proof "),
         ));
 
         let exported = export_translation(
             (&mock, &mock, &mock),
-            token("user-1"),
-            "chapter-1".into(),
+            token(USER_ID),
+            CHAPTER_ID.into(),
             formats,
             false,
         )
@@ -56,53 +67,7 @@ async fn export_formats_share_visible_units_and_contiguous_indexes() {
         );
 
         if let Some(poprako) = exported.poprako {
-            assert_eq!(poprako.pages.len(), 2);
-
-            assert_eq!(poprako.pages.first().unwrap().page_id, "page-1");
-
-            assert_eq!(poprako.pages.get(1).unwrap().page_id, "page-2");
-
-            assert!(poprako.pages.get(1).unwrap().units.is_empty());
-
-            let units = &poprako.pages.first().unwrap().units;
-
-            assert_eq!(units.len(), 2);
-
-            assert_eq!(
-                (
-                    units.first().unwrap().unit_id.as_str(),
-                    units.first().unwrap().unit_index
-                ),
-                ("unit-a", 0)
-            );
-
-            assert_eq!(
-                (
-                    units.get(1).unwrap().unit_id.as_str(),
-                    units.get(1).unwrap().unit_index
-                ),
-                ("unit-b", 1)
-            );
-
-            assert_eq!(
-                units.first().unwrap().translated_text.as_deref(),
-                Some("alpha")
-            );
-
-            assert_eq!(
-                units.first().unwrap().proofread_text.as_deref(),
-                Some(" alpha proof ")
-            );
-
-            assert_eq!(
-                units.get(1).unwrap().translated_text.as_deref(),
-                Some(" beta ")
-            );
-
-            assert_eq!(
-                units.get(1).unwrap().proofread_text.as_deref(),
-                Some("")
-            );
+            assert_visible_poprako(&poprako);
         }
 
         if let Some(label_plus) = exported.label_plus {
@@ -120,4 +85,58 @@ async fn export_formats_share_visible_units_and_contiguous_indexes() {
             );
         }
     }
+}
+
+fn assert_visible_poprako(
+    poprako: &crate::data::view::chapter_port::ChapterTranslationPortView,
+) {
+    assert_eq!(poprako.pages.len(), 2);
+
+    assert_eq!(
+        poprako
+            .pages
+            .iter()
+            .map(|page| page.page_source_id.as_str())
+            .collect::<Vec<_>>(),
+        [SOURCE_ID, SOURCE_2_ID]
+    );
+
+    assert!(poprako.pages.get(1).unwrap().units.is_empty());
+
+    let units = &poprako.pages.first().unwrap().units;
+
+    assert_eq!(units.len(), 2);
+
+    assert_eq!(
+        (
+            units.first().unwrap().unit_id.as_str(),
+            units.first().unwrap().unit_index
+        ),
+        ("unit--34844962250", 0)
+    );
+
+    assert_eq!(
+        (
+            units.get(1).unwrap().unit_id.as_str(),
+            units.get(1).unwrap().unit_index
+        ),
+        ("unit--35727087946", 1)
+    );
+
+    assert_eq!(
+        units.first().unwrap().translated_text.as_deref(),
+        Some("alpha")
+    );
+
+    assert_eq!(
+        units.first().unwrap().proofread_text.as_deref(),
+        Some(" alpha proof ")
+    );
+
+    assert_eq!(
+        units.get(1).unwrap().translated_text.as_deref(),
+        Some(" beta ")
+    );
+
+    assert_eq!(units.get(1).unwrap().proofread_text.as_deref(), Some(""));
 }
