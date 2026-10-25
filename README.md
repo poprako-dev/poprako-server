@@ -136,4 +136,7 @@ at a database containing data that must be preserved.
 
 ## License
 
-[MIT](LICENSE)
+Copyright (c) 2026 PopRaKo contributors.
+
+Licensed under the GNU Affero General Public License, version 3 only
+(`AGPL-3.0-only`). See [LICENSE](LICENSE) for the full license text.

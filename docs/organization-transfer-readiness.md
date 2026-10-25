@@ -16,8 +16,9 @@ immediately after it.
   - Document prerequisites, local configuration, database setup, migrations,
     development commands, tests, and production build commands.
   - Link to the API specification and contribution guide.
-- [x] Add the full MIT license text as root `LICENSE`.
-  - Keep `license = "MIT"` in Cargo package metadata.
+- [x] Historical: added the MIT license as root `LICENSE` and Cargo metadata.
+  - Superseded on 2026-10-26: the 1.0.0 snapshot uses `AGPL-3.0-only` in
+    `LICENSE`, README and inherited workspace package metadata.
 - [ ] Add a repository description, website, and topics on GitHub.
 - [x] Use protected `main` as the sole long-lived integration branch.
   - Create short-lived feature and fix branches from `main` and open their pull
