@@ -1,12 +1,19 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
+// Complete archive artifact response streaming.
+mod export;
+
 #[cfg(test)]
 mod tests;
 
+use std::sync::Arc;
+
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
+use axum::response::Response;
 use axum_extra::extract::Query;
 use serde::Deserialize;
+use tokio::sync::Semaphore;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
@@ -18,7 +25,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::HttpBody;
 
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpError, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::comic::{
@@ -27,9 +34,11 @@ use crate::data::instr::comic::{
 };
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
 use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
-use crate::data::val::comic_archive::{
-    ArchiveComicVal, ExportComicArchivesVal,
-};
+use crate::data::val::comic_archive::ArchiveComicVal;
+
+#[cfg(feature = "swagger")]
+use crate::data::val::comic_archive::ExportComicArchivesVal;
+
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
@@ -61,6 +70,8 @@ use crate::value::pagination::PubListLimit;
             body = HttpBody<ExportComicArchivesVal>),
         (status = 403, description = "No perm to export this team's archives"),
         (status = 422, description = "Invalid month selection"),
+        (status = 503, description = "Export capacity or configured \
+            resource budget unavailable"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -68,19 +79,25 @@ pub async fn export_archives(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
+    Extension(admission): Extension<Arc<Semaphore>>,
     Query(instr): Query<ExportComicArchivesInstr>,
-) -> HttpResult<ExportComicArchivesVal> {
+) -> Result<Response, HttpError> {
     //
-    Ok(
-        comic_archive_usecase::export::<RdbContext<ReptRead>, RdbRepo>(
-            (harn.repo(),),
+    let artifact =
+        comic_archive_usecase::export::<_, RdbContext<ReptRead>, RdbRepo>(
+            (
+                harn.nucl().rept_read(),
+                harn.repo(),
+                &harn.config().comic_archive_export,
+                &admission,
+            ),
             user_token,
             team_id,
             instr,
         )
-        .await?
-        .accept(StatusCode::OK),
-    )
+        .await?;
+
+    Ok(export::response(artifact))
 }
 
 /// Query for listing comics within a workset.

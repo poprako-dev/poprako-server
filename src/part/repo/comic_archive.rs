@@ -12,10 +12,8 @@ use crate::result::BaseError;
 #[drive(
     context = C,
     error = BaseError,
-    run(
-        for<'a> ListComicArchivePayloads<'a>,
-    ),
     step(
+        for<'a> ListComicArchivePayloads<'a>,
         for<'a> GetComicArchiveSnapshotExcluded<'a>,
         for<'a> CommitComicArchive<'a>,
     ),

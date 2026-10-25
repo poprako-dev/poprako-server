@@ -58,6 +58,11 @@ async fn repo_rdb_impls_use_testcontainer() {
     comic_archive::tests::tombstoned_comic_rejects_archive(shared.clone())
         .await;
 
+    comic_archive::tests::export_payload::bounded_export_payloads(
+        shared.clone(),
+    )
+    .await;
+
     comment::tests::comment_roundtrip_uses_testcontainer(shared.clone()).await;
 
     member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;

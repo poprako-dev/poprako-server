@@ -83,6 +83,14 @@ control cleanup delays for newly created pending invitations. Changing them
 does not reschedule existing tasks; cleanup may run later according to worker
 availability. All these budgets, batch sizes, and durations must be positive.
 
+`comic_archive_export` defaults to an 8 MiB stored-payload batch budget, a
+256 MiB serialized month-map temporary file, and one active export. The slot
+remains occupied until transfer finishes or the response is dropped. Selected
+months and stored JSON strings are exported completely; exhausted capacity or
+budgets return 503. The file is completed before HTTP transmission, so slow
+clients do not hold database connections. These are application budgets rather
+than an exact process RSS bound.
+
 User profiles support reads, updates and avatar operations. Account deletion
 is outside the 1.0.0 interface; `DELETE /api/v1/users/{user_id}` returns 405.
 

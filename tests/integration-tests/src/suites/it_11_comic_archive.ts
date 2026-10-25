@@ -129,13 +129,23 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
     const archive_month = new Date().toISOString().slice(0, 7);
     const export_response = await ctx.sadmin.get<SuccessBody<Record<string, string[]>>>(
-        `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}`,
+        `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}&month=2000-01`,
     );
     const exported_months = expectSuccessData<Record<string, string[]>>(export_response, 200);
     const exported_comics = exported_months[archive_month]!;
 
     assert.deepEqual(exported_comics.length, 1);
     assert.deepEqual(JSON.parse(exported_comics[0]!).source_comic_id, comic.id);
+    assert.deepEqual(Object.keys(exported_months), ["2000-01", archive_month]);
+    assert.deepEqual(exported_months["2000-01"], []);
+
+    expectError(
+        await guest.api.get<ErrorBody>(
+            `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}`,
+        ),
+        403,
+        4,
+    );
 
     // ---------- archived comic header remains available; children are removed ----------
 

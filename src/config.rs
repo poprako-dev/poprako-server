@@ -7,6 +7,8 @@ mod duration;
 pub mod artwork;
 /// Process-local cache retention policies.
 pub mod cache;
+/// Complete comic archive export resource budgets.
+pub mod comic_archive_export;
 /// Best-effort event queue configuration.
 pub mod effect;
 /// HTTP server configuration.
@@ -33,6 +35,7 @@ use serde::Deserialize;
 
 use crate::config::artwork::ArtworkConfig;
 use crate::config::cache::CacheConfig;
+use crate::config::comic_archive_export::ComicArchiveExportConfig;
 use crate::config::effect::EffectConfig;
 use crate::config::http::HttpConfig;
 use crate::config::image::ImageConfig;
@@ -59,6 +62,8 @@ pub struct AppConfig {
 
     /// Process-local cache memory and lease budgets.
     pub cache: CacheConfig,
+    /// Complete comic archive export memory, disk, and admission budgets.
+    pub comic_archive_export: ComicArchiveExportConfig,
     /// Database query and cleanup batch sizes.
     pub repo: RepoConfig,
 
@@ -132,6 +137,8 @@ impl AppConfig {
         config.artwork.validate()?;
 
         config.cache.validate()?;
+
+        config.comic_archive_export.validate()?;
 
         config.invitation.validate()?;
 

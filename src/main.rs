@@ -1,8 +1,10 @@
 #![recursion_limit = "512"]
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::sync::Arc;
 
 use anyhow::Context as _;
+use tokio::sync::Semaphore;
 use tokio::task::JoinError;
 
 use poprako_obj_dept::actor::{ObjDeptActor, ObjDeptActorDesc};
@@ -15,7 +17,7 @@ use poprako_server::{
     AppConfig, AsyncEffectDevelop, EffectActor, EffectActorDesc, Harn, HybNucl,
     JwtAuth, MemCache, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore,
     RdbNucl, RdbObjDeptProm, RdbRepo, ReptRead, Sched, SchedDesc, Serial,
-    SubtreeDeleteTask, dispatch_prom,
+    SubtreeDeleteTask, dispatch_prom, serve,
 };
 
 // Report every failed supervisor after all joins have completed.
@@ -76,6 +78,18 @@ fn http_addr(config: &AppConfig) -> anyhow::Result<SocketAddr> {
     .into_iter()
     .find_map(|mut addrs| addrs.next())
     .context("no address resolved for HTTP listen address")
+}
+
+// Construct process-wide archive admission from the validated runtime policy.
+fn archive_export_admission(
+    config: &AppConfig,
+) -> anyhow::Result<Arc<Semaphore>> {
+    //
+    let capacity =
+        usize::try_from(config.comic_archive_export.concurrency.get())
+            .context("archive export concurrency exceeds platform capacity")?;
+
+    Ok(Arc::new(Semaphore::new(capacity)))
 }
 
 // Join every startup-owned descriptor and report all supervisor failures.
@@ -142,13 +156,14 @@ async fn main() -> anyhow::Result<()> {
         RdbObjDeptProm::new(rdb_core.clone()),
     );
 
-    let (obj_dept, nucl) = (
+    let (obj_dept, nucl, archive_exports) = (
         NormObjDept::new(
             rdb_core.clone(),
             obj_dept_pool.clone(),
             obj_dept_prom.clone(),
         ),
         HybNucl::new(rept_read_nucl.clone(), serial_nucl),
+        archive_export_admission(&config)?,
     );
 
     let (prom_actor, effect_actor, obj_dept_actor, sched) = (
@@ -211,7 +226,7 @@ async fn main() -> anyhow::Result<()> {
         sched.run_detached(),
     );
 
-    let serve_rest = poprako_server::serve(harn, http_addr).await;
+    let serve_rest = serve(harn, http_addr, archive_exports).await;
 
     let shutdown_rest = join_background(
         sched_desc,

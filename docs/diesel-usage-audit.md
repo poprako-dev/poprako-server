@@ -227,19 +227,23 @@ orders it, and loads full fields only for the at-most-100 visible IDs. A 101st
 visible Unit, a counter mismatch, or a corrupt chain is an unrecoverable
 invariant failure rather than a partial response.
 
-Archive export remains complete. Push the exact selected month intervals into
-one typed SQL predicate, order by `(created_at, id)`, and stream rows into a
-temporary export artifact with bounded buffering before the HTTP adapter sends
-it. This preserves the current JSON envelope and month grouping without
-holding all payloads in memory or holding a database connection for the
-client's transfer time. Limit concurrent export artifact creation separately;
-resource exhaustion is an infrastructure error, not permission to return a
-partial archive.
+Archive export now uses exact typed month predicates and deterministic
+`(created_at, id)` keysets in one repeatable-read transaction. Each query first
+loads at most 64 identity/byte-length metadata records, then materializes only
+the prefix within the payload byte budget. An oversized next payload fails
+before its text is loaded; no selected row is silently discarded.
 
-Opaque cursor pagination and archive streaming are intentionally deferred and
-recorded as actionable TODOs in their shared implementation boundaries. The
-current bounded list limit and complete archive response semantics remain in
-force until those TODOs are implemented.
+The complete month map is generated into an anonymous temporary file using
+32 KiB buffers and UTF-8-aligned 4 KiB escaping fragments. The transaction ends
+before HTTP transfer begins. A process-wide admission permit remains owned by
+the response body until completion or cancellation, bounding simultaneous disk
+artifacts as well as generation. Defaults are 8 MiB per payload batch, 256 MiB
+serialized month-map artifact and one active export, configurable through
+`comic_archive_export`. Capacity or budget exhaustion returns HTTP 503/code 9;
+selected empty months and the existing JSON string payload envelope remain.
+
+Opaque cursor pagination remains a separate public API design. Offset limits
+and complete archive response semantics remain in force.
 
 Implementation order:
 

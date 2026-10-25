@@ -71,3 +71,15 @@ pub struct ComicArchivePageArtworkSnapshot {
     /// Current review issues on this page.
     pub issue_infos: Vec<IssueInfo>,
 }
+
+/// One immutable archive payload in deterministic export order.
+pub struct ComicArchivePayload {
+    /// Unique archive identity used as the timestamp tie-breaker.
+    pub id: String,
+
+    /// Stored JSON text, preserved verbatim as an exported string.
+    pub payload: String,
+
+    /// UTC timestamp when the archive was created.
+    pub created_at: OffsetDateTime,
+}

@@ -20,8 +20,7 @@ use diesel::prelude::{
     SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{AtLeast, Level, Run, Step};
-use time::OffsetDateTime;
+use poprako_orchestra::{AtLeast, Level, Step};
 use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
@@ -32,7 +31,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchiveSnapshot};
+use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchivePayload, ComicArchiveSnapshot};
 use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -423,24 +422,24 @@ where
     }
 }
 
-impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+impl<L> Step<ListComicArchivePayloads<'_>, RdbContext<L>> for RdbRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Keep metadata and payload reads in one repeatable-read snapshot.
+    type Level = ReptRead;
     // Use base errors for payload-list operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Route to shared payload query with team-month filters.
-    async fn run(
+    async fn step(
         &self,
+        context: &mut RdbContext<L>,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-        //
-        submit_query!(
-            self.rdb_core,
-            payload::list_payloads,
-            oper.team_id,
-            oper.months
-        )
+    ) -> BaseRest<Vec<ComicArchivePayload>> {
+        payload::list_payloads(context.conn(), oper).await
     }
 }
 

@@ -42,6 +42,12 @@ fn assert_defaults(config: &AppConfig) {
 
     assert_eq!(config.repo.unit_order_query_batch_size.get(), 512);
 
+    assert_eq!(config.comic_archive_export.payload_batch_mib.get(), 8);
+
+    assert_eq!(config.comic_archive_export.artifact_limit_mib.get(), 256);
+
+    assert_eq!(config.comic_archive_export.concurrency.get(), 1);
+
     assert_eq!(config.invitation.member_ttl, Duration::from_hours(120));
 
     assert_eq!(config.invitation.assignment_ttl, Duration::from_hours(72));
@@ -168,6 +174,10 @@ fn invalid_runtime_settings_are_rejected() {
         "[repo]\nunit_order_query_batch_size = 0",
         "[repo]\nsubtree_sweep_batch_size = 4294967296",
         "[repo]\nunit_order_query_batch_size = 4294967296",
+        "[comic_archive_export]\npayload_batch_mib = 0",
+        "[comic_archive_export]\nartifact_limit_mib = 0",
+        "[comic_archive_export]\nconcurrency = 0",
+        "[comic_archive_export]\npayload_limit_mib = 8",
         "[invitation]\nmember_ttl_secs = 0",
         "[invitation]\nassignment_ttl_secs = 0",
         "[invitation]\nmember_ttl_secs = 1000000000000",

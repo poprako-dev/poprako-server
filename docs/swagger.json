@@ -3642,6 +3642,9 @@
           },
           "422": {
             "description": "Invalid month selection"
+          },
+          "503": {
+            "description": "Export capacity or configured resource budget unavailable"
           }
         }
       }
