@@ -24,7 +24,7 @@ pub struct IssueRecord {
     pub f_index: i32,
 
     pub f_variant: String,
-    pub f_layer_name: Option<String>,
+
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
     pub f_width: Option<f64>,
@@ -73,7 +73,7 @@ impl TryFrom<IssueRecord> for IssueInfo {
             page_artwork_id: record.f_page_artwork_id,
             index: usize_from_i32(record.f_index, "t_issue.f_index")?,
             variant: record.f_variant,
-            layer_name: record.f_layer_name,
+
             rect,
             note: record.f_note,
         })
@@ -90,7 +90,7 @@ pub struct IssueItem<'a> {
     pub f_index: i32,
 
     pub f_variant: &'a str,
-    pub f_layer_name: Option<&'a str>,
+
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
     pub f_width: Option<f64>,
@@ -109,7 +109,6 @@ impl<'a> TryFrom<&'a IssueEntry> for IssueItem<'a> {
             f_page_artwork_id: &entry.page_artwork_id,
             f_index: i32_from_usize(entry.index, "t_issue.f_index")?,
             f_variant: entry.trimmed_variant(),
-            f_layer_name: entry.layer_name.as_deref(),
             f_x_coord: entry.rect.map(|rect| rect.x_coord),
             f_y_coord: entry.rect.map(|rect| rect.y_coord),
             f_width: entry.rect.map(|rect| rect.width),

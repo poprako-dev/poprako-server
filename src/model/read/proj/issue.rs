@@ -15,8 +15,6 @@ pub struct IssueInfo {
 
     /// Open, nonblank issue category.
     pub variant: String,
-    /// Optional human-readable layer name; absence targets the composite page.
-    pub layer_name: Option<String>,
     /// Optional normalized rectangle in whole-page coordinates.
     pub rect: Option<IssueRect>,
 

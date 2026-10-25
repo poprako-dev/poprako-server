@@ -48,8 +48,6 @@ pub struct ArchivedIssuePayload<'a> {
 
     /// Open category.
     pub variant: &'a str,
-    /// Optional human-readable layer name, preserved verbatim.
-    pub layer_name: Option<&'a str>,
     /// Optional whole-page rectangle.
     pub rect: Option<ArchivedIssueRectPayload>,
 

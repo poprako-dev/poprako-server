@@ -15,8 +15,6 @@ pub struct IssueEntry {
 
     /// Open issue category.
     pub variant: String,
-    /// Optional human-readable layer name, preserved verbatim.
-    pub layer_name: Option<String>,
     /// Optional whole-page rectangle.
     pub rect: Option<IssueRect>,
 

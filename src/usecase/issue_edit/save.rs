@@ -120,13 +120,13 @@ where
                 return Err(issue_edit_complex::conflict());
             }
 
-            let (mut replacement, created_issue_ids) =
+            let (replacement, created_issue_ids) =
                 into_replacement(chapter_info.id, page_id, instr)?;
 
-            preserve_and_validate(
+            validate_identities(
                 repo,
                 context,
-                &mut replacement,
+                &replacement,
                 &created_issue_ids,
             )
             .await?;
@@ -244,7 +244,6 @@ fn into_replacement(
             page_artwork_id: page_artwork_id.clone(),
             index,
             variant: issue.variant,
-            layer_name: None,
             rect: issue.rect.map(|rect| IssueRect {
                 x_coord: rect.x_coord,
                 y_coord: rect.y_coord,
@@ -265,11 +264,11 @@ fn into_replacement(
     ))
 }
 
-// Validates identities and preserves existing legacy metadata.
-async fn preserve_and_validate<C, R>(
+// Validates existing and newly allocated annotation identities.
+async fn validate_identities<C, R>(
     repo: &R,
     context: &mut C,
-    replacement: &mut IssueEditPageRepl,
+    replacement: &IssueEditPageRepl,
     created_issue_ids: &[IssueSaveCreatedIssueId],
 ) -> BaseRest<()>
 where
@@ -292,7 +291,7 @@ where
         &existing,
     )?;
 
-    for entry in &mut replacement.entries {
+    for entry in &replacement.entries {
         //
         if !created_issue_ids
             .iter()
@@ -304,12 +303,6 @@ where
                 "error-issue-input",
             ));
         }
-
-        //
-        entry.layer_name = existing
-            .iter()
-            .find(|info| info.id == entry.id)
-            .and_then(|info| info.layer_name.clone());
     }
 
     accept!(())

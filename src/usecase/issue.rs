@@ -111,7 +111,6 @@ where
                         page_artwork_id: page.page_artwork_id.clone(),
                         index,
                         variant: issue.variant,
-                        layer_name: issue.layer_name,
                         rect: issue.rect,
                         note: issue.note,
                     };

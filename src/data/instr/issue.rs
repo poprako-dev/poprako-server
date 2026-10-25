@@ -44,9 +44,7 @@ impl From<IssueRectInstr> for IssueRect {
 pub struct IssueInstr {
     /// Open category, required to contain non-whitespace text.
     pub variant: String,
-    /// Optional human-readable, nonblank layer name, preserved verbatim.
-    pub layer_name: Option<String>,
-    /// Optional normalized whole-page rectangle, independent of layer selection.
+    /// Optional normalized whole-page rectangle.
     pub rect: Option<IssueRectInstr>,
 
     /// Original text, preserved verbatim including empty strings and newlines.
@@ -58,7 +56,6 @@ impl From<IssueInstr> for IssueImport {
     fn from(instr: IssueInstr) -> Self {
         Self {
             variant: instr.variant,
-            layer_name: instr.layer_name,
             rect: instr.rect.map(Into::into),
             note: instr.note,
         }

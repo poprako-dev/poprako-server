@@ -8512,7 +8512,7 @@
                 "items": {
                   "$ref": "#/components/schemas/IssueEditView"
                 },
-                "description": "Ordered annotations, excluding legacy layer metadata."
+                "description": "Ordered annotations."
               },
               "page_artwork_id": {
                 "type": "string",
@@ -10002,13 +10002,6 @@
                   "description": "Zero-based position within the review page.",
                   "minimum": 0
                 },
-                "layer_name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Optional human-readable layer name, preserved verbatim."
-                },
                 "note": {
                   "type": "string",
                   "description": "Original note text."
@@ -11421,7 +11414,7 @@
             "items": {
               "$ref": "#/components/schemas/IssueEditView"
             },
-            "description": "Ordered annotations, excluding legacy layer metadata."
+            "description": "Ordered annotations."
           },
           "page_artwork_id": {
             "type": "string",
@@ -11580,13 +11573,6 @@
             "description": "Zero-based position within the review page.",
             "minimum": 0
           },
-          "layer_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional human-readable layer name, preserved verbatim."
-          },
           "note": {
             "type": "string",
             "description": "Original note text."
@@ -11620,13 +11606,6 @@
           "note"
         ],
         "properties": {
-          "layer_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional human-readable, nonblank layer name, preserved verbatim."
-          },
           "note": {
             "type": "string",
             "description": "Original text, preserved verbatim including empty strings and newlines."
@@ -11638,7 +11617,7 @@
               },
               {
                 "$ref": "#/components/schemas/IssueRectInstr",
-                "description": "Optional normalized whole-page rectangle, independent of layer selection."
+                "description": "Optional normalized whole-page rectangle."
               }
             ]
           },

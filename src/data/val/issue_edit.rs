@@ -24,7 +24,7 @@ pub struct IssueEditPageVal {
     #[serde(rename = "image_version")]
     pub image_ver: Option<u32>,
 
-    /// Ordered annotations, excluding legacy layer metadata.
+    /// Ordered annotations.
     pub issues: Vec<IssueEditView>,
 }
 

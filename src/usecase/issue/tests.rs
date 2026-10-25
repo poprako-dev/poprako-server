@@ -215,7 +215,6 @@ fn input(note: &str) -> ImportChapterIssuesInstr {
                 page_artwork_id: "page_artwork--00000000000".into(),
                 issues: vec![IssueInstr {
                     variant: "\u{2003}custom issue\u{2003}".into(),
-                    layer_name: Some("  他们两个…  ".into()),
                     rect: Some(IssueRectInstr {
                         x_coord: 0.1,
                         y_coord: 0.2,
@@ -270,8 +269,6 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
 
     assert_eq!(first.note, "  line one\nline two  ");
 
-    assert_eq!(first.layer_name.as_deref(), Some("  他们两个…  "));
-
     let issues = list_infos::<MockContext, _>(
         (&mock,),
         token("user--00000000001"),
@@ -281,8 +278,6 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     .unwrap();
 
     assert_eq!(issues.len(), 1);
-
-    assert_eq!(issues.first().unwrap().layer_name, first.layer_name);
 
     submit(&mock, input("")).await.unwrap();
 
@@ -318,7 +313,7 @@ async fn import_replaces_whole_chapter_and_preserves_text() {
     );
 }
 
-// review_geometry(import_issue)(positive): layers and normalized whole-page rectangles are independent optional values.
+// review_geometry(import_issue)(positive): normalized whole-page rectangles are optional.
 #[tokio::test]
 async fn import_accepts_all_optional_geometry_combinations() {
     let mock = review_mock(RoleField::REVIEWER);
@@ -329,20 +324,17 @@ async fn import_accepts_all_optional_geometry_combinations() {
 
     page.issues.clear();
 
-    for layer in [None, Some("他们两个…".to_owned())] {
-        for has_rect in [false, true] {
-            page.issues.push(IssueInstr {
-                variant: "open category".into(),
-                layer_name: layer.clone(),
-                rect: has_rect.then_some(IssueRectInstr {
-                    x_coord: 0.0,
-                    y_coord: 0.0,
-                    width: 1.0,
-                    height: 1.0,
-                }),
-                note: String::new(),
-            });
-        }
+    for has_rect in [false, true] {
+        page.issues.push(IssueInstr {
+            variant: "open category".into(),
+            rect: has_rect.then_some(IssueRectInstr {
+                x_coord: 0.0,
+                y_coord: 0.0,
+                width: 1.0,
+                height: 1.0,
+            }),
+            note: String::new(),
+        });
     }
 
     submit(&mock, instr).await.unwrap();
@@ -355,7 +347,7 @@ async fn import_accepts_all_optional_geometry_combinations() {
             .iter()
             .map(|issue| issue.index)
             .collect::<Vec<_>>(),
-        vec![0, 1, 2, 3]
+        vec![0, 1]
     );
 }
 
@@ -399,19 +391,18 @@ async fn rejected_input_preserves_current_review() {
         assert_eq!(mock.snapshot().issues, baseline);
     }
 
-    for field in ["variant", "layer"] {
-        let mut instr = input("invalid");
+    let mut instr = input("invalid");
 
-        let issue =
-            instr.pages.first_mut().unwrap().issues.first_mut().unwrap();
+    instr
+        .pages
+        .first_mut()
+        .unwrap()
+        .issues
+        .first_mut()
+        .unwrap()
+        .variant = "\u{2003}\n\t".into();
 
-        match field {
-            "variant" => issue.variant = "\u{2003}\n\t".into(),
-            _ => issue.layer_name = Some(" \n\t".into()),
-        }
-
-        assert!(submit(&mock, instr).await.is_err());
-    }
+    assert!(submit(&mock, instr).await.is_err());
 
     assert_eq!(mock.snapshot().issues, baseline);
 }

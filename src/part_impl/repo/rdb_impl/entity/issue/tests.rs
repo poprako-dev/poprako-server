@@ -16,7 +16,6 @@ fn entry(index: usize) -> IssueEntry {
         page_artwork_id: "artwork".into(),
         index,
         variant: "text".into(),
-        layer_name: None,
         rect: None,
         note: String::new(),
     }
@@ -29,7 +28,6 @@ fn stored_record(index: i32) -> IssueRecord {
         f_page_artwork_id: "artwork".into(),
         f_index: index,
         f_variant: "text".into(),
-        f_layer_name: None,
         f_x_coord: None,
         f_y_coord: None,
         f_width: None,

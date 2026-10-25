@@ -57,7 +57,7 @@ activity updates commit together or roll back together.
 `POST /api/v1/chapters/{chapter_id}/issues/import`
 
 ```json
-{"pages":[{"page_artwork_id":"existing-id","issues":[{"variant":"文字位置","layer_name":"他们两个…","rect":{"x_coord":0.1,"y_coord":0.2,"width":0.3,"height":0.1},"note":"向左移动"}]}]}
+{"pages":[{"page_artwork_id":"existing-id","issues":[{"variant":"文字位置","rect":{"x_coord":0.1,"y_coord":0.2,"width":0.3,"height":0.1},"note":"向左移动"}]}]}
 ```
 
 Each target ID must identify a composite page in this Chapter and appear once.
@@ -73,12 +73,8 @@ Published Chapters reject imports. Import does not advance Review or change Unit
 The response includes `imported_page_count` (explicit targets including empty ones)
 and `imported_issue_count`.
 
-`variant` is any nonblank string. `layer_name` is an optional human-readable
-nonblank name copied from the reviewed PSD layer and preserved verbatim; absent
-or null refers to the composite as a whole. It is display metadata, not an
-identity or a qualified path; duplicate layer names are valid. Obsolete or unknown
-issue fields are rejected rather than silently discarded. Import files must carry
-the readable name, not a numeric PSD tree index.
+`variant` is any nonblank string. Obsolete or unknown issue fields, including
+`layer_name` and `layer_path`, are rejected rather than silently discarded.
 
 `rect` is independently optional, normalized to the entire composite with top-left
 origin, finite values, positive size and all edges in `[0, 1]`. No category
@@ -88,7 +84,7 @@ enumeration is imposed. `note` preserves text, newlines and emptiness.
 
 `GET /api/v1/chapters/{chapter_id}/issues` returns a flat `IssueInfoView[]`, ordered
 by composite page index then Issue index. Each entry contains `id`,
-`page_artwork_id`, `index`, `variant`, nullable `layer_name`/`rect` and `note`.
+`page_artwork_id`, `index`, `variant`, nullable `rect` and `note`.
 Access follows PageSource read permissions. Empty reviews return an empty array.
 
 Replacing or confirming either a composite image or ChapterArtwork ZIP preserves
@@ -111,8 +107,8 @@ idempotent ZIP confirmation and typesetting workflow, independently of Issues.
 
 ## Versioned reviewer editing
 
-The editor uses separate contracts without layer fields or per-annotation workflow
-flags. The existing import, export and archive contracts retain legacy metadata.
+The editor uses versioned contracts without per-annotation workflow flags.
+Import, export, editing, and newly generated archives contain no layer metadata.
 
 - `GET /api/v1/page-artworks/{id}/issues` returns `page_artwork_id`, `review_key`,
   `revision`, `chapter_revision`, nullable `image_version` and ordered `issues`.
@@ -123,7 +119,7 @@ flags. The existing import, export and archive contracts retain legacy metadata.
   Local IDs must be nonempty and unique within the batch. The server generates
   `issue--{11-character Base62 snowflake}` IDs and returns `{ page, created_issue_ids }`,
   where each mapping contains `local_id` and `issue_id`. Empty arrays clear the page.
-  Other pages and existing legacy layer metadata remain intact.
+  Other pages remain intact.
 - `GET /api/v1/chapters/{id}/issues/variants` returns `review_key`, chapter
   `revision`, and actual `variants` usage counts across all composite pages.
 - `POST /api/v1/chapters/{id}/issues/variants/rename` accepts that summary's

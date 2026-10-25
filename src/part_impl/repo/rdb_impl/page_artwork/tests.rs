@@ -318,7 +318,6 @@ async fn composite_manifest_reorders_and_deletes_with_transactional_objects() {
             page_artwork_id: "page_artwork--00000000004".into(),
             index: 0,
             variant: "custom".into(),
-            layer_name: None,
             rect: None,
             note: "review".into(),
         }];

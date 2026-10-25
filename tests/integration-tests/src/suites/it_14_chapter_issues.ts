@@ -23,7 +23,6 @@ interface Issue {
     page_artwork_id: string;
     index: number;
     variant: string;
-    layer_name: string | null;
     rect: Rect | null;
     note: string;
 }
@@ -108,13 +107,12 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
                 issues: [
                     {
                         variant: "\u2003custom category\u2003",
-                        layer_name: "  他们两个…  ",
                         rect,
                         note: " first line\nsecond line ",
                     },
                     { variant: "whole composite", note: "" },
-                    { variant: "layer without rectangle", layer_name: "帮忙跟 两位后辈 道个谢", rect: null, note: "" },
-                    { variant: "composite rectangle", layer_name: null, rect, note: "" },
+                    { variant: "whole-page note", rect: null, note: "" },
+                    { variant: "composite rectangle", rect, note: "" },
                 ],
             },
             { page_artwork_id: ids[2]!, issues: [] },
@@ -143,16 +141,20 @@ export async function runIt14Module(ctx: RunCtx): Promise<void> {
     assert.deepEqual(first[0]!.page_artwork_id, ids[0]);
     assert.deepEqual(first[0]!.variant, "custom category");
     assert.deepEqual(first[0]!.note, " first line\nsecond line ");
-    assert.deepEqual(first[0]!.layer_name, "  他们两个…  ");
+    assert.ok(!Object.hasOwn(first[0]!, "layer_name"));
     assert.deepEqual(first[0]!.rect, rect);
-    assert.deepEqual(first[1]!.layer_name, null);
     assert.deepEqual(first[1]!.rect, null);
+
+    const retiredField = await ctx.sadmin.post(base, {
+        pages: [{ page_artwork_id: ids[0]!, issues: [{ variant: "custom", layer_name: "retired", note: "" }] }],
+    });
+    assert.equal(retiredField.status, 422);
+    assert.deepEqual(await read(), first);
 
     // IS3: rejected imports preserve the full review, including duplicate or unknown targets.
     const target = body.pages[0]!;
     const invalidBodies = [
         { pages: [{ ...target, issues: [{ variant: " ", note: "" }] }] },
-        { pages: [{ ...target, issues: [{ variant: "custom", layer_name: " ", note: "" }] }] },
         { pages: [target, target] },
         { pages: [{ ...target, page_artwork_id: sourcePageSourceId }] },
         ...[

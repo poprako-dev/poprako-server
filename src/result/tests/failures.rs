@@ -21,7 +21,6 @@ fn issue_record(index: i32) -> IssueRecord {
         f_page_artwork_id: "page_artwork--00000000001".into(),
         f_index: index,
         f_variant: "review".into(),
-        f_layer_name: Some("private-layer-sentinel".into()),
         f_x_coord: None,
         f_y_coord: None,
         f_width: None,

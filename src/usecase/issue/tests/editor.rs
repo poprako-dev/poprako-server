@@ -190,8 +190,6 @@ async fn invalid_save_context_does_not_modify_pages() {
         "changed"
     );
 
-    assert!(mock.snapshot().issues.first().unwrap().layer_name.is_some());
-
     submit(&mock, input("imported")).await.unwrap();
 
     assert!(

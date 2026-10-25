@@ -3,43 +3,34 @@
     reason = "Transport fixture assertions fail immediately on violated contracts"
 )]
 
-//! Issue input decoding preserves readable names and rejects obsolete fields.
+//! Issue input decoding rejects retired layer fields.
 
 use super::IssueInstr;
 
-// issue_input(IssueInstr)(positive): readable names remain verbatim and are optional for whole-page issues.
+// issue_input(IssueInstr)(positive): whole-page issues need only a category and note.
 #[test]
-fn readable_layer_name_is_preserved() {
-    for layer_name in [None, Some("  他们两个…  ")] {
-        let value = serde_json::json!({
-            "variant": "字号错误",
-            "layer_name": layer_name,
-            "note": "eg2"
-        });
+fn whole_page_issue_decodes() {
+    let value = serde_json::json!({ "variant": "其他", "note": "整页说明" });
 
-        let instr = serde_json::from_value::<IssueInstr>(value).unwrap();
+    let instr = serde_json::from_value::<IssueInstr>(value).unwrap();
 
-        assert_eq!(instr.layer_name.as_deref(), layer_name);
-    }
+    assert_eq!(instr.variant, "其他");
 
-    let unnamed = serde_json::json!({ "variant": "其他", "note": "整页说明" });
-
-    assert!(
-        serde_json::from_value::<IssueInstr>(unnamed)
-            .unwrap()
-            .layer_name
-            .is_none()
-    );
+    assert!(instr.rect.is_none());
 }
 
-// issue_input(IssueInstr)(negative): obsolete layer paths cannot silently become unnamed issues.
+// issue_input(IssueInstr)(negative): retired layer fields cannot be silently ignored.
 #[test]
-fn obsolete_layer_field_is_rejected() {
-    let legacy = serde_json::json!({
-        "variant": "字号错误",
-        "layer_path": "0.2.5",
-        "note": "eg2"
-    });
+fn retired_layer_fields_are_rejected() {
+    for field in ["layer_name", "layer_path"] {
+        let mut value =
+            serde_json::json!({ "variant": "字号错误", "note": "eg2" });
 
-    assert!(serde_json::from_value::<IssueInstr>(legacy).is_err());
+        value
+            .as_object_mut()
+            .unwrap()
+            .insert(field.into(), serde_json::json!("retired"));
+
+        assert!(serde_json::from_value::<IssueInstr>(value).is_err());
+    }
 }

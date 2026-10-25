@@ -6,8 +6,6 @@ use crate::model::shared::issue::IssueRect;
 pub struct IssueImport {
     /// Open issue category.
     pub variant: String,
-    /// Optional human-readable layer name, preserved verbatim.
-    pub layer_name: Option<String>,
     /// Optional normalized whole-page rectangle.
     pub rect: Option<IssueRect>,
     /// Original note text, preserved verbatim.
