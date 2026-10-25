@@ -58,18 +58,10 @@ pub enum UpdateUser<'a> {
     },
 }
 
-/// Looks up a user by identifier, matching deleted rows as well.
+/// Locks a user by identifier for an exclusive transactional read.
 #[derive(Oper)]
 #[oper(output = UserInfo)]
 pub struct GetUserInfoExcluded<'a> {
     /// The unique user identifier.
-    pub id: &'a str,
-}
-
-/// Deletes a user.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteUser<'a> {
-    /// The user id.
     pub id: &'a str,
 }

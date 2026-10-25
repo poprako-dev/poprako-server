@@ -21,7 +21,7 @@
 //   - chapter/comic/workset delete: team ADMIN (sadmin).
 //   - Concurrent member admin removals leave one admin; a serialization
 //     failure returns 409/code 8 without server-side retry.
-//   - Member and user deletion cannot remove a team's last admin.
+//   - Member deletion cannot remove a team's last admin.
 //   - Team delete: team admin (the surviving second-team admin). Team delete
 //     cascades through worksets/comics/chapters/page-sources/units/members.
 //   - Deleting a chapter decreases comic.chapter_count by 1.
@@ -210,8 +210,8 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
             "concurrent role removals must retain exactly one admin",
         );
 
-        // Normalize the outsider as the sole admin so both member deletion and
-        // user deletion can exercise last-admin retention without touching the
+        // Normalize the outsider as the sole admin so member deletion can
+        // exercise last-admin retention without touching the
         // default seed account.
         if (adminMembersAfterConcurrentRemoval[0]!.user_id === ctx.ids.defaultUserId) {
             await updateMemberRoles(ctx.sadmin, outsiderMember.id, ROLE.RAW_PROVIDER | ROLE.ADMIN);
@@ -226,8 +226,6 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
             [outsider.userId],
             "outsider must be the sole admin before retention checks",
         );
-
-        expectError(await outsider.api.delete<ErrorBody>(`/api/v1/users/${outsider.userId}`), 403, 4);
 
         expectError(await outsider.api.delete<ErrorBody>(`/api/v1/members/${outsiderMember.id}`), 403, 4);
 

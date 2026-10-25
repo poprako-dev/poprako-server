@@ -153,9 +153,8 @@ business-domain use cases; their actors only provide queueing, dispatch, and
 retry lifecycles. This caller-independent boundary is codified in
 [`usecase-boundaries`](../.agents/skills/usecase-boundaries/SKILL.md).
 
-Tombstone follow-up guards cover adjacent lifecycle paths: user deletion
-batch-removes memberships even when their teams are already hidden; archive
-snapshot and commit both require an active Comic; and normal PageSource identity
+Tombstone follow-up guards cover adjacent lifecycle paths: archive
+snapshot and commit both require an active Comic; normal PageSource identity
 reads reject PageSources whose Chapter is tombstoned, preventing late upload
 confirmation.
 
@@ -323,15 +322,14 @@ Term import now bulk-inserts new Terms and applies all replacements in one typed
 insert scope, and unexpected insert or update affected-row counts are
 unrecoverable invariants that roll back the import transaction.
 
-Administrator-retention work remains deferred P1: User deletion still loads
-and locks the complete roster of every Team the user belongs to, while
-Assignment and Member role changes load full collections to evaluate
-administrator retention.
+Administrator-retention optimization remains deferred P1 for Assignment and
+Member role changes that load full collections. User account deletion is not
+a supported business capability: its route, use case and exclusive repository
+operations were removed by the 1.0.0 scope decision.
 
 Evidence:
 
 - [`src/part_impl/repo/rdb_impl/term.rs`](../src/part_impl/repo/rdb_impl/term.rs#L375)
-- [`src/usecase/user/delete.rs`](../src/usecase/user/delete.rs#L72)
 - [`src/usecase/assignment/update_roles.rs`](../src/usecase/assignment/update_roles.rs#L58)
 - [`src/usecase/member.rs`](../src/usecase/member.rs#L340)
 

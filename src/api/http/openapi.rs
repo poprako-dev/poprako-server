@@ -151,7 +151,6 @@ use crate::value::unit::UnitTextPart;
         handler::user::get_info,
         handler::user::update_info,
         handler::user::update_password,
-        handler::user::delete,
         handler::user::alloc_avatar,
         handler::user::mark_avatar_uploaded,
         handler::team::create,

@@ -4629,38 +4629,6 @@
             "description": "Path id does not match body id"
           }
         }
-      },
-      "delete": {
-        "tags": [
-          "users"
-        ],
-        "summary": "`DELETE /api/v1/users/{user_id}` — delete a user account.",
-        "operationId": "delete",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "Target user ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "User deleted"
-          },
-          "403": {
-            "description": "Cannot delete another user or the last admin of a team"
-          },
-          "404": {
-            "description": "User not found"
-          },
-          "409": {
-            "description": "Serializable conflict; retry the complete request"
-          }
-        }
       }
     },
     "/api/v1/users/{user_id}/avatar/alloc": {

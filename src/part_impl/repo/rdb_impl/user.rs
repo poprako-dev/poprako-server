@@ -1,6 +1,6 @@
 //! RDB-backed user repository.
 
-// Account creation, credentials, activity, and deletion.
+// Account creation, credentials, and activity.
 mod account;
 // Profile reads, locks, and updates.
 mod info;
@@ -15,13 +15,12 @@ use tracing::instrument;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::user::{
-    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    CreateUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, UpdateUser,
 };
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::user::account::{
-    create, delete, get_credential_by_qid, touch_last_active,
-    update_password_hash,
+    create, get_credential_by_qid, touch_last_active, update_password_hash,
 };
 use crate::part_impl::repo::rdb_impl::user::info::{
     find_info_by_qid, get_info_by_id, get_info_by_id_excluded, update_info,
@@ -195,26 +194,5 @@ where
         oper: &GetUserInfoExcluded<'_>,
     ) -> BaseRest<UserInfo> {
         get_info_by_id_excluded(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<DeleteUser<'_>, RdbContext<L>> for RdbRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Keep transaction-scoped deletion on one repository error type.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Execute user deletion as part of ongoing transaction flow.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteUser<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }

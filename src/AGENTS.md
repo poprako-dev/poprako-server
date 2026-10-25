@@ -38,8 +38,8 @@ local. This interface convention does not change layer or transaction ownership.
 
 Import use-case modules with descriptive `*_usecase` aliases and invoke their
 functions through those aliases, such as `user_usecase::get_info`. Import
-nested operation modules directly, for example `user::delete` as
-`user_delete_usecase` and `chapter::stage` as `chapter_stage_usecase`.
+nested operation modules directly, for example `chapter::stage` as
+`chapter_stage_usecase`.
 Do not import use-case functions directly or call them through `usecase::...`
 paths. Data types, view construction helpers, and private implementation helpers
 keep their existing import conventions; local calls and module-local tests may

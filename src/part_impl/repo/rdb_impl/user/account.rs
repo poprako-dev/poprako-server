@@ -1,4 +1,4 @@
-//! Account lifecycle, credentials, and activity persistence.
+//! Account creation, credentials, and activity persistence.
 
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
@@ -26,18 +26,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
 };
 use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
-
-/// Remove a user record from persistence.
-#[instrument(level = "info", skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
-    //
-    diesel::delete(t_user.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept!(())
-}
 
 /// Insert a new user record from an entry.
 #[instrument(level = "info", skip_all)]

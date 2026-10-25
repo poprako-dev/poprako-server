@@ -7,7 +7,7 @@ use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::user::UserEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::user::{
-    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    CreateUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, UpdateUser,
 };
 use crate::part_impl::repo::mock_impl::{
@@ -300,54 +300,5 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
         oper: &GetUserInfoExcluded<'a>,
     ) -> BaseRest<UserInfo> {
         get_user_info(&context.state, oper.id)
-    }
-}
-
-impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
-    // Keep step errors as `BaseError` in mocked transactions.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Delete user and cleanup dependent mock artifacts.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteUser<'a>,
-    ) -> BaseRest<()> {
-        //
-        // Remove user row and all related linked state for the same user id.
-        let position = context
-            .state
-            .users
-            .iter()
-            .position(|user_info| user_info.id == oper.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        context.state.users.remove(position);
-
-        context
-            .state
-            .credentials
-            .retain(|credential| credential.user_id != oper.id);
-
-        context
-            .state
-            .members
-            .retain(|member_info| member_info.user_id != oper.id);
-
-        context
-            .state
-            .member_invitations
-            .retain(|info| info.invitor_id != oper.id);
-
-        context
-            .state
-            .system_mails
-            .retain(|mail| mail.receiver_id != oper.id);
-
-        accept!(())
     }
 }

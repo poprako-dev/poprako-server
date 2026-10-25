@@ -3,7 +3,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::user::{
-    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    CreateUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, UpdateUser,
 };
 use crate::result::BaseError;
@@ -26,7 +26,6 @@ use crate::result::BaseError;
         for<'a> FindUserInfo<'a>,
         for<'a> UpdateUser<'a>,
         for<'a> GetUserInfoExcluded<'a>,
-        for<'a> DeleteUser<'a>,
     ),
 )]
 pub trait UserRepo<C> {}

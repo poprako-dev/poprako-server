@@ -83,6 +83,9 @@ control cleanup delays for newly created pending invitations. Changing them
 does not reschedule existing tasks; cleanup may run later according to worker
 availability. All these budgets, batch sizes, and durations must be positive.
 
+User profiles support reads, updates and avatar operations. Account deletion
+is outside the 1.0.0 interface; `DELETE /api/v1/users/{user_id}` returns 405.
+
 ## Common commands
 
 ```sh

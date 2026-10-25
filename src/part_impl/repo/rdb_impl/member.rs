@@ -13,14 +13,14 @@ use tracing::instrument;
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
-    GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    LockTeamMemberInfos, UpdateMember,
 };
 use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::member::step_impl::{
-    create, delete, delete_user_memberships, find_info_by_user_id_and_team_id,
-    get_info_by_id, list_infos, list_infos_by_team_id_excluded,
-    list_infos_by_user_id, update_role, update_user_nickname,
+    create, delete, find_info_by_user_id_and_team_id, get_info_by_id,
+    list_infos, list_infos_by_team_id_excluded, update_role,
+    update_user_nickname,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -60,16 +60,9 @@ impl Run<ListMemberInfos<'_>> for RdbRepo {
         oper: &ListMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        match oper {
-            //
-            ListMemberInfos::Spec { spec } => {
-                submit_query!(self.rdb_core, list_infos, spec)
-            }
+        let ListMemberInfos::Spec { spec } = oper;
 
-            ListMemberInfos::User { user_id } => {
-                submit_query!(self.rdb_core, list_infos_by_user_id, user_id)
-            }
-        }
+        submit_query!(self.rdb_core, list_infos, spec)
     }
 }
 
@@ -166,16 +159,9 @@ where
         oper: &ListMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        match oper {
-            //
-            ListMemberInfos::Spec { spec } => {
-                list_infos(context.conn(), spec).await
-            }
+        let ListMemberInfos::Spec { spec } = oper;
 
-            ListMemberInfos::User { user_id } => {
-                list_infos_by_user_id(context.conn(), user_id).await
-            }
-        }
+        list_infos(context.conn(), spec).await
     }
 }
 
@@ -268,26 +254,5 @@ where
         oper: &DeleteMember<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<DeleteUserMemberships<'_>, RdbContext<L>> for RdbRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Required Orchestra execution level.
-    type Level = ReptRead;
-
-    // Shared repository error type.
-    type Error = BaseError;
-
-    // Execute the repository operation.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteUserMemberships<'_>,
-    ) -> BaseRest<()> {
-        delete_user_memberships(context.conn(), oper.user_id).await
     }
 }

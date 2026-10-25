@@ -32,7 +32,7 @@ pub enum UpdateMember<'a> {
     },
 }
 
-/// Lists member infos by query spec or by user ID.
+/// Lists member infos by query specification.
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfos<'a> {
@@ -40,12 +40,6 @@ pub enum ListMemberInfos<'a> {
     Spec {
         /// The filter and pagination specification.
         spec: &'a MemberListSpec,
-    },
-
-    /// Lists all memberships for a user.
-    User {
-        /// The user ID.
-        user_id: &'a str,
     },
 }
 
@@ -83,12 +77,4 @@ pub struct LockTeamMemberInfos<'a> {
 pub struct DeleteMember<'a> {
     /// The member ID to delete.
     pub id: &'a str,
-}
-
-/// Deletes every membership owned by one user, including tombstoned teams.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteUserMemberships<'a> {
-    /// User whose memberships must be removed.
-    pub user_id: &'a str,
 }

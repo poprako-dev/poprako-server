@@ -140,7 +140,6 @@ forward_steps!(
     member::GetMemberInfo<'_, '_>,
     member::LockTeamMemberInfos<'_>,
     member::DeleteMember<'_>,
-    member::DeleteUserMemberships<'_>,
     team::CreateTeam<'_>,
     team::UpdateTeam<'_>,
     team::GetTeamInfoExcluded<'_>,

@@ -10,7 +10,7 @@
 //     non-null).
 //   - announcement(s) + comments created on default team; ids recorded in
 //     ctx.leftoverAnnouncementIds / ctx.leftoverCommentIds.
-//   - throwaway user self-deleted (cascade member).
+//   - user DELETE returns 405 and preserves the profile.
 //
 // Covers test-plan: C8, H1, H2, H3.
 //
@@ -19,8 +19,7 @@
 //   - comment create/list: team member.
 //   - user profile update: SELF only (token.user_id == data.id) -> 403/4
 //     otherwise. (sadmin cannot edit another user's profile.)
-//   - user delete: SELF only (token.user_id == id). The plan's "sadmin
-//     deletes a throwaway user" is WRONG; adjusted to self-delete.
+//   - user deletion is unavailable in 1.0.0; DELETE returns 405.
 //   - qid conflict on user update -> 422/2 (`error-already-exists` via
 //     unique index on t_user.f_qid), NOT 409.
 //   - team/workset/comic profile update perms: team ADMIN (sadmin only).
@@ -32,35 +31,27 @@
 
 import assert from "node:assert/strict";
 
-import { testEnv } from "../config/env.ts";
 import { expectError, expectStatus } from "../http/assertions.ts";
 import type { ErrorBody } from "../http/apiClient.ts";
-import { ApiClient } from "../http/apiClient.ts";
 import {
     createAnnouncement,
     createComment,
-    createMemberInvitation,
     deleteAnnouncement,
     getComic,
     getTeam,
     getUserInfo,
-    listMyMembers,
     listTeamAnnouncements,
     listTeamAnnouncementsPageSourced,
     listTeamComments,
-    listTeamMembers,
-    login,
     markComicCoverUploaded,
     markTeamAvatarUploaded,
     markUserAvatarUploaded,
-    registerInvitee,
     reserveComicCover,
     reserveTeamAvatar,
     reserveUserAvatar,
     updateAnnouncement,
 } from "../http/fixtures.ts";
-import { nickname, password, qid, titled } from "../state/prefix.ts";
-import { ROLE } from "../state/roles.ts";
+import { nickname, titled } from "../state/prefix.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 
 export const IMPLEMENTED = true as const;
@@ -421,54 +412,11 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         7,
     );
 
-    // ---------- H3.5 self-delete a throwaway user ----------
+    // ---------- H3.5 user deletion is unavailable ----------
 
-    // create a throwaway invitation + register
-    const throwawayQid = qid("throwaway_01");
-    const throwawayInv = await createMemberInvitation(ctx.sadmin, teamId, throwawayQid, ROLE.RAW_PROVIDER);
+    const retainedProfile = await getUserInfo(trans01.api, trans01.userId);
 
-    const throwawayClient = await registerInvitee(
-        throwawayInv.code,
-        throwawayQid,
-        nickname("throwaway_01"),
-        password("throwaway_01"),
-    );
+    expectStatus(await trans01.api.delete<null>(`/api/v1/users/${trans01.userId}`), 405);
 
-    // throwaway is a default-team member
-    const throwawayMembers = await listMyMembers(throwawayClient.api);
-
-    assert.ok(
-        throwawayMembers.find((m) => m.team_id === teamId),
-        "throwaway must be a default-team member",
-    );
-
-    // sadmin tries to delete throwaway -> 403/4 (only self can delete)
-    expectError(await ctx.sadmin.delete<ErrorBody>(`/api/v1/users/${throwawayClient.userId}`), 403, 4);
-
-    // throwaway self-deletes -> 204
-    expectStatus(await throwawayClient.api.delete<null>(`/api/v1/users/${throwawayClient.userId}`), 204);
-
-    // deleted user login -> 422/2 (qid lookup returns NotFound → Args)
-    const loginClient = new ApiClient(testEnv.apiBaseUrl);
-
-    expectError(
-        await loginClient.post<ErrorBody>("/api/v1/auth/login", {
-            password: password("throwaway_01"),
-            qid: throwawayQid,
-        }),
-        422,
-        2,
-    );
-
-    // deleted user's member row gone from default-team member list
-    const teamMembersAfterDelete = await listTeamMembers(ctx.sadmin, teamId);
-
-    assert.ok(
-        !teamMembersAfterDelete.find((m) => m.user_id === throwawayClient.userId),
-        "deleted user's membership must be gone",
-    );
-
-    // re-login trans_01 to confirm the suite's trans_01 client is still valid
-    // (we did not touch trans_01's credentials).
-    await login(trans01.api, trans01.qid, password("trans_01"));
+    assert.deepEqual(await getUserInfo(trans01.api, trans01.userId), retainedProfile);
 }
