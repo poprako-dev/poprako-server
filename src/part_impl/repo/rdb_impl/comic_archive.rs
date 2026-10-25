@@ -51,7 +51,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as cha
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, f_created_at as workflow_record_created_at, f_id as workflow_record_id, t_chapter_workflow_record};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_deleted_at as workset_deleted_at, f_id as workset_id, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
@@ -66,7 +66,6 @@ async fn load_archive_root(
         .filter(comic_id.eq(source_comic_id))
         .filter(comic_deleted_at.is_null())
         .select(ComicInfoRecord::as_select())
-        .for_update()
         .get_result::<ComicInfoRecord>(conn)
         .await
         .optional()
@@ -88,6 +87,7 @@ async fn load_archive_root(
 
     let workset_record = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
+        .filter(workset_deleted_at.is_null())
         .select(WorksetInfoRecord::as_select())
         .for_update()
         .get_result::<WorksetInfoRecord>(conn)
@@ -109,6 +109,37 @@ async fn load_archive_root(
     };
 
     let workset_info = WorksetInfo::try_from(workset_record)?;
+
+    // Shared Chapter edits acquire their Chapter before Comic activity.
+    t_chapter
+        .filter(chapter_comic_id.eq(source_comic_id))
+        .select(chapter_id)
+        .order_by(chapter_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let comic_record = t_comic
+        .filter(comic_id.eq(source_comic_id))
+        .filter(comic_deleted_at.is_null())
+        .select(ComicInfoRecord::as_select())
+        .for_update()
+        .get_result::<ComicInfoRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| {
+            //
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-comic-not-found");
+                comic_id = %source_comic_id,
+                "active archive comic not found after locking chapters",
+            }
+        })?;
+
+    let comic_info = ComicInfo::try_from(comic_record)?;
 
     accept!((comic_info, workset_info))
 }

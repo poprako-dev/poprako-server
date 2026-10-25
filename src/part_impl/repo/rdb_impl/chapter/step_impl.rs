@@ -1,5 +1,7 @@
 //! RDB-backed chapter repository step implementations.
 
+use std::cmp::Reverse;
+
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,
@@ -201,13 +203,17 @@ pub async fn list_infos_excluded(
         .filter(f_comic_id.eq(comic_id))
         .filter(f_deleted_at.is_null())
         .select(ChapterInfoRecord::as_select())
-        .order_by(f_index.desc())
+        .order_by(f_id.asc())
         .for_update()
         .load::<ChapterInfoRecord>(conn)
         .await
         .map_err(diesel)?;
 
-    records_into_infos(records)
+    let mut infos = records_into_infos(records)?;
+
+    infos.sort_by_key(|info| Reverse(info.index));
+
+    accept!(infos)
 }
 
 /// Locks all chapter records belonging to a comic.
@@ -218,6 +224,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
         .filter(f_comic_id.eq(comic_id))
         .filter(f_deleted_at.is_null())
         .select(f_id)
+        .order_by(f_id.asc())
         .for_update()
         .load::<String>(conn)
         .await

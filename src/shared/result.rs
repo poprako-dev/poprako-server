@@ -9,9 +9,10 @@ use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, ExpectedVariant};
 
-/// Converts a Diesel error into the appropriate `RegularError` variant.
+/// Converts a Diesel error into the appropriate `BaseError` variant.
 ///
-/// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
+/// Unique violations and `NotFound` map to `Expected`, serialization failures
+/// are retryable, and unclassified database failures remain unrecoverable.
 pub fn diesel(source: DieselError) -> BaseError {
     //
     match source {

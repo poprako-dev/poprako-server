@@ -207,6 +207,12 @@ where
     let chapter_id = nucl
         .coord(async move |context| {
             //
+            LockChapters {
+                comic_id: &instr.comic_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
             let comic_info = GetComicInfoExcluded {
                 id: &instr.comic_id,
                 incls: &[],
@@ -215,12 +221,6 @@ where
             .await?;
 
             comic_complex::ensure_comic_writable(&comic_info)?;
-
-            LockChapters {
-                comic_id: &instr.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
 
             let prev_pinned_chapter = FindPinnedChapterInfo {
                 comic_id: &instr.comic_id,

@@ -43,6 +43,7 @@ pub async fn lock_comic_scope(
         .inner_join(t_workset::table)
         .filter(t_comic::f_id.eq(id))
         .filter(t_comic::f_deleted_at.is_null())
+        .filter(t_workset::f_deleted_at.is_null())
         .select((t_comic::f_workset_id, t_workset::f_team_id))
         .get_result::<(String, String)>(conn)
         .await
@@ -52,11 +53,14 @@ pub async fn lock_comic_scope(
 
     t_workset::table
         .filter(t_workset::f_id.eq(&workset_id))
+        .filter(t_workset::f_deleted_at.is_null())
         .select(t_workset::f_id)
         .for_update()
         .get_result::<String>(conn)
         .await
         .map_err(diesel)?;
+
+    lock_comic_chapters(conn, id).await?;
 
     let comic_id = t_comic::table
         .filter(t_comic::f_id.eq(id))
@@ -86,6 +90,8 @@ pub async fn lock_chapter_scope(
         .inner_join(t_comic::table.inner_join(t_workset::table))
         .filter(t_chapter::f_id.eq(id))
         .filter(t_chapter::f_deleted_at.is_null())
+        .filter(t_comic::f_deleted_at.is_null())
+        .filter(t_workset::f_deleted_at.is_null())
         .select((
             t_chapter::f_comic_id,
             t_comic::f_workset_id,
@@ -99,14 +105,19 @@ pub async fn lock_chapter_scope(
 
     t_workset::table
         .filter(t_workset::f_id.eq(&workset_id))
+        .filter(t_workset::f_deleted_at.is_null())
         .select(t_workset::f_id)
         .for_update()
         .get_result::<String>(conn)
         .await
         .map_err(diesel)?;
 
+    // Repinning after deletion may update any surviving sibling.
+    lock_comic_chapters(conn, &comic_id).await?;
+
     t_comic::table
         .filter(t_comic::f_id.eq(&comic_id))
+        .filter(t_comic::f_deleted_at.is_null())
         .select(t_comic::f_id)
         .for_update()
         .get_result::<String>(conn)
@@ -220,6 +231,25 @@ pub async fn mark_scope(
     accept!(())
 }
 
+// Acquire sibling locks before touching their shared Comic activity row.
+async fn lock_comic_chapters(
+    conn: &mut RdbConn,
+    comic_id: &str,
+) -> BaseRest<()> {
+    //
+    t_chapter::table
+        .filter(t_chapter::f_comic_id.eq(comic_id))
+        .filter(t_chapter::f_deleted_at.is_null())
+        .select(t_chapter::f_id)
+        .order_by(t_chapter::f_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept!(())
+}
+
 // Tombstone the team hierarchy in parent-to-child order.
 async fn mark_team(
     conn: &mut RdbConn,
@@ -250,6 +280,21 @@ async fn mark_team(
     let workset_ids = t_workset::table
         .filter(t_workset::f_team_id.eq(team_id))
         .select(t_workset::f_id);
+
+    let chapter_comic_ids = t_comic::table
+        .inner_join(t_workset::table)
+        .filter(t_workset::f_team_id.eq(team_id))
+        .select(t_comic::f_id);
+
+    t_chapter::table
+        .filter(t_chapter::f_comic_id.eq_any(chapter_comic_ids))
+        .filter(t_chapter::f_deleted_at.is_null())
+        .select(t_chapter::f_id)
+        .order_by(t_chapter::f_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
 
     diesel::update(
         t_comic::table
@@ -295,6 +340,20 @@ async fn mark_workset(
     .execute(conn)
     .await
     .map_err(diesel)?;
+
+    let chapter_comic_ids = t_comic::table
+        .filter(t_comic::f_workset_id.eq(workset_id))
+        .select(t_comic::f_id);
+
+    t_chapter::table
+        .filter(t_chapter::f_comic_id.eq_any(chapter_comic_ids))
+        .filter(t_chapter::f_deleted_at.is_null())
+        .select(t_chapter::f_id)
+        .order_by(t_chapter::f_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
 
     diesel::update(
         t_comic::table

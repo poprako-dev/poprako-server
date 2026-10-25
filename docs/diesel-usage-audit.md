@@ -56,18 +56,34 @@ until the history keyset query demonstrates an explicit sort or substantial
 cross-PageSource filtering; that evidence would justify replacing it with
 `(f_page_source_id, f_id)`. A visible partial index remains a separate measurement.
 
-### P0 pinned: Chapter and Comic lock order is globally inconsistent
+### Resolved lock order and deferred driver classification
 
-Unit and stage paths acquire Chapter before updating Comic activity, while
-some Chapter creation and subtree-deletion paths acquire Comic before Chapter.
-That inverse order can deadlock across otherwise valid transactions. PostgreSQL
-`40P01` currently reaches Diesel as an unknown database error and is therefore
-classified as unrecoverable instead of the public retryable conflict.
+Chapter creation now acquires existing Chapters in stable ID order before the
+Comic row. Chapter deletion prelocks every potentially repinned sibling before
+Comic; hierarchy tombstoning prelocks affected Chapters before Comic updates.
+Archive snapshots acquire Workset, ordered Chapters, then Comic and revalidate
+the active roots. Locked Chapter projections preserve their previous descending
+index response order after acquisition. Single-Chapter editor/stage prefixes
+remain unchanged, so unrelated Chapter saves gain no early shared Comic lock.
 
-This is pinned for a separate cross-domain correction. Moving the Comic lock
-into the Unit transaction prefix would serialize every Chapter save belonging
-to that Comic and is not an acceptable local optimization without a broader
-business and contention review.
+Bounded PostgreSQL query-order regressions cover deletion scopes, hierarchy
+marking and archive snapshots. Existing creation, rollback, pinning and stage
+regressions remain required. These checks establish the corrected acquisition
+paths, not a claim that every possible database deadlock has been eliminated.
+
+On 2026-10-26, the maintainer deferred deadlock error classification to an
+existing issue and explicitly removed it from the 1.0.0 release blockers.
+This is a scope decision; the driver limitation remains unresolved. Locked
+`diesel-async 0.9.2` maps `40001` to `SerializationFailure` but discards the
+`40P01` SQLSTATE into `Unknown`; its private error wrapper does not expose the
+code through Diesel's public error information. The current upstream conversion
+has the same limitation. Do not match localized messages or make every Unknown
+error retryable. The existing server mapper correctly returns HTTP 409/code 8
+for typed serialization conflicts and keeps unknown errors unrecoverable.
+
+Follow-up completion criterion: a maintained driver change preserves or classifies `40P01`,
+with typed classification regressions and normal business transaction coverage.
+[Locked driver conversion](https://github.com/diesel-rs/diesel_async/blob/v0.9.2/src/pg/error_helper.rs).
 
 ### Resolved: Chapter Unit search no longer fans out by PageSource
 

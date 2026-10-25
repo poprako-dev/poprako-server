@@ -12,7 +12,7 @@ use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, t_assignment_invitation};
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_id as chapter_id, t_chapter};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, t_chapter_workflow_record};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_archived_at as comic_archived_at, f_deleted_at as comic_deleted_at, f_id as comic_id, f_updated_at as comic_updated_at, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
@@ -32,6 +32,16 @@ pub async fn commit(
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
+
+    // Keep standalone commits in the same Chapter-before-Comic order as snapshots.
+    t_chapter
+        .filter(chapter_comic_id.eq(&entry.record.source_comic_id))
+        .select(chapter_id)
+        .order_by(chapter_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
 
     let updated_comic_count = diesel::update(
         t_comic
