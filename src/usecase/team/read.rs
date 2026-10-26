@@ -62,7 +62,6 @@ where
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
-    // FIXME: use try_into()?
     instr: ListTeamInfosInstr,
 ) -> BaseRest<Vec<TeamInfoView>>
 where

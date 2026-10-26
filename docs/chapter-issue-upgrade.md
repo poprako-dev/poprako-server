@@ -1,5 +1,7 @@
 # ChapterArtwork confirmation baseline upgrade
 
+> Historical upgrade only. This script reads retired `f_key` columns and adds a business CHECK absent from the current baseline. Do not execute it against current databases. See [upgrade support](database-upgrade-support.md) for status and release acceptance.
+
 The confirmation baseline makes ChapterArtwork ZIP confirmation and typesetting
 completion idempotent. It does not clear Issues or manage composite artwork pages.
 

@@ -1,5 +1,7 @@
 # Organization Transfer Readiness Checklist
 
+> Historical organization-transfer checklist. Current release work and external setting verification are tracked in [1.0.0 preparation](1.0.0-release-preparation.md). Checked items below are historical observations and must not substitute for current verification.
+
 This checklist tracks the work required before moving `poprako-server` from
 the personal repository into the official PopRaKo organization. Complete the
 blocking items before the transfer, then verify the organization-side settings

@@ -1,5 +1,7 @@
 # Spec: Shared Unit sequence reconstruction
 
+> Historical design record from September 2026. Current reconstruction lives in [the shared sequence module](../src/complex/unit/sequence.rs). Prior execution and authorization notes below describe that task only.
+
 Status: Implementation authorized on 2026-09-23; not published to an issue tracker.
 
 Execution: The user explicitly authorized implementation and sub-agent dispatch

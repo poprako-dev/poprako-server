@@ -2,8 +2,15 @@
 
 状态：已实施并通过验证。2026-09-13。
 
+Historical implementation record. The baseline-reset commands and old source
+paths below are not current upgrade instructions. Existing database support is
+defined by [the upgrade matrix](../../database-upgrade-support.md) and
+[the manual Prom procedure](../../prom-manual-upgrade.md). Retain this record's UUID
+fencing and regression evidence across Git history replacement; disposition is
+tracked in [the maintenance backlog](../../todo.md).
+
 后续生产升级：用户已明确允许停服后的手工 schema 更新。现有库应使用
-[Prom 手工升级说明](prom-manual-upgrade.md)中的独立脚本保留未完成任务，
+[Prom 手工升级说明](../../prom-manual-upgrade.md)中的独立脚本保留未完成任务，
 不再采用本计划实施阶段所述的基线回滚重建。下文保留当时的实施记录。
 
 ## 目标和范围

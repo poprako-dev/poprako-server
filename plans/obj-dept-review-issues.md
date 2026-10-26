@@ -1,5 +1,7 @@
 # ObjDept Review Issue Ledger
 
+> Historical review ledger from August 2026. Statuses below describe that remediation snapshot, not current release readiness. Current contracts: [ObjDept spec](../specs/obj-dept.md). Current release disposition: [1.0.0 preparation](../docs/1.0.0-release-preparation.md). Later code has independent maintenance, atomic claims with SKIP LOCKED, and deletion on success; OBJ-P-008/009/013 are historical findings.
+
 ## Purpose
 
 This file is the durable inventory for every issue found by the 2026-08-30

@@ -12,7 +12,7 @@
 因此，“类似 Unit”只指 PageSource 归属与结构化数据。当前范围不需要 Unit 的
 局部编辑批次、链式排序、tombstone 恢复、save receipt 或编辑草稿协议。
 
-分析使用当前工作区源码。Server HEAD 为
+以下前端路径仅记录当时尚未提交的本地源码位置，不能作为当前可复现的跨仓库链接。分析使用调研时工作区源码。Server HEAD 为
 `5c3299671fc92595ab632fb2f79e4779af3f57de`；Web HEAD 为
 `e854c3e8d36efaf4571c24b7ba7207afaf0f2663`，但 reviewer 位于用户尚未提交的
 工作区改动中，不能只依据该 HEAD 复现当前前端。
@@ -64,7 +64,7 @@ Ctrl+Enter 的默认分类为“其他”，自由文本写入 comment。
 图层如 `0.1.0`。索引来自 PSD 树，不能先过滤隐藏层再重新编号；同名图层
 也不能按名字匹配。依据：
 [MangaProof 图层建树](https://github.com/gunfub/MangaProof/blob/b4515fd1184ce6a6e77f89c4a4b42b564f30930e/mangaproof/psd/document.py#L188-L246)、
-[Web 图层建树](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/psd-layer.ts)。
+Web 图层建树（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/psd-layer.ts`）。
 
 ### 编号和状态不要混用
 
@@ -118,9 +118,9 @@ clamp，因为会改变原标注；应验证有限数值和正宽高，显示裁
 
 ## 当前 poprako-web 的实际契约
 
-[RevisionNote](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-note.ts)
+RevisionNote（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-note.ts`）
 只有 id、number、type、content、可选 rect、可选 layerId；pageId 由加载上下文
-提供。[CONTEXT.md](../../poprako-web/CONTEXT.md) 已明确它不关联翻译 Unit。
+提供。CONTEXT.md（历史工作区路径 `poprako-web/CONTEXT.md`） 已明确它不关联翻译 Unit。
 
 - type 是字符串，样例包含“断行”和“自定义：叠字节奏”；颜色由类型字符串
   稳定散列产生，不能从颜色反推类别。
@@ -129,12 +129,12 @@ clamp，因为会改变原标注；应验证有限数值和正宽高，显示裁
 - 加载控制器按 number 排序；图层筛选保留原编号，选择组时也能包含后代。
 - 当前 UI 是只读展示，生产 WebReviewer 的两个资源加载器仍为 null。
 
-依据：[样例](../../poprako-web/src/route/_authenticated/reviewer/business/test/revision-note-story-fixture.ts)、
-[外观](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-note-appearance.ts)、
-[加载控制器](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-page-controller.ts)、
-[筛选](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-page.ts)、
-[只读项](../../poprako-web/src/route/_authenticated/reviewer/business/revision-note/RevisionNoteItem.tsx)、
-[生产入口](../../poprako-web/src/route/_authenticated/reviewer/business/WebReviewer.tsx)。
+依据：样例（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/test/revision-note-story-fixture.ts`）、
+外观（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-note-appearance.ts`）、
+加载控制器（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-page-controller.ts`）、
+筛选（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/revision-page.ts`）、
+只读项（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/revision-note/RevisionNoteItem.tsx`）、
+生产入口（历史工作区路径 `poprako-web/src/route/_authenticated/reviewer/business/WebReviewer.tsx`）。
 
 ## 最小实现建议
 

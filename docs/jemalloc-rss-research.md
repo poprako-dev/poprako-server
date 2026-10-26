@@ -26,8 +26,8 @@ jemalloc 文档中的 `stats.allocated`、`stats.active`、`stats.resident` 分�
 
 “暂时没有请求”与“刚启动、没有业务数据”不同。当前代码存在会保留业务数据的结构，不能把长期空闲阶段解释为几乎没有业务层内存。
 
-- [UnitSaveCache](../src/part_impl/repo/mem_impl/unit_save.rs) 第 25 行起设置 256 MiB 的加权缓存预算与 500,000 个 token 的计数设计，第 94 行起构造 16 段缓存，没有 TTL。它保存成功提交的单元 ID 映射。256 MiB 是估算权重预算，既不是启动时预分配，也不是精确 RSS 上限。缓存条目在没有请求后仍可以留存。
-- [OnlineUserCache](../src/part_impl/repo/mem_impl/online_user.rs) 第 20 行设置十分钟租期，第 66 行只在列出对应团队时删除过期记录。租期到期不等于立即释放内存；长期没有再次查询的团队仍可留有记录。
+- [UnitSaveCache](../src/part_impl/cache/mem_impl/unit_save.rs) 使用 16 段缓存，默认有 256 MiB 估算权重预算、500,000 个 token 预算和 30 天 TTL；成功重试不延长 TTL。它保存成功提交的单元 ID 映射。过期条目无法命中，但空闲缓存可能直到后续维护才释放分配。估算权重不是预分配或精确 RSS 上限。当前契约见 [Unit Save API](unit-save-api.md)。
+- [OnlineUserCache](../src/part_impl/cache/mem_impl/online_user.rs) 第 20 行设置十分钟租期，第 66 行只在列出对应团队时删除过期记录。租期到期不等于立即释放内存；长期没有再次查询的团队仍可留有记录。
 - [密码计算](../src/complex/user.rs) 第 32、58 行通过 `spawn_blocking` 执行，第 95 行使用默认 Argon2 参数。Argon2 0.5.3 的默认内存参数为 `19 * 1024` KiB，即每个运行中的默认参数计算约 19 MiB 工作区；验证历史 hash 时参数取决于该 hash。32 个这样的计算仅工作区就约 608 MiB，这是并发估算，不是测量结果。[Argon2 参数源码](https://docs.rs/argon2/0.5.3/src/argon2/params.rs.html)。
 
 Tokio 的 blocking 线程上限默认是 512，按需创建，不能当成启动后已有 512 个线程，也不能当成适合密码计算的并发预算。密码计算需要独立的在途工作上限；整体请求速率限制不能直接给出密码工作区上限。[Tokio Builder](https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html#method.max_blocking_threads)。

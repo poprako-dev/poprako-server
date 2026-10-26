@@ -1,5 +1,10 @@
 # ObjDept Review Record
 
+Historical validation snapshot only. The checked boxes below do not establish
+current branch readiness. Use [current feedback reconciliation](../../to-fix.md)
+for unresolved original requests; retention is tracked in
+[the maintenance backlog](../../todo.md).
+
 > Superseded: this review covers the earlier PageImage-only slice and its
 > passing checklist is not evidence for the current branch. The active issue
 > inventory is `plans/obj-dept-review-issues.md`.

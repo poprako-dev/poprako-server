@@ -165,7 +165,7 @@ Evidence:
 - [`src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs)
 - [`src/usecase/subtree_delete.rs`](../src/usecase/subtree_delete.rs)
 - [`src/usecase/internal/subtree_delete.rs`](../src/usecase/internal/subtree_delete.rs)
-- [`src/extra/sched/subtree_delete.rs`](../src/extra/sched/subtree_delete.rs)
+- [`src/extra/sched/task.rs`](../src/extra/sched/task.rs)
 - [`src/part_impl/repo/rdb_impl/subtree_delete/tests.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/tests.rs)
 
 ### P0 plan: Bound ordinary lists without truncating complete aggregates
@@ -384,7 +384,7 @@ administrator must remain transactionally safe.
 - Chapter translation export fetches all Units for all PageSource IDs in one query:
   [`src/usecase/chapter_port/export_translation.rs`](../src/usecase/chapter_port/export_translation.rs#L96).
 - Edited-diff PageSource detection uses a correlated `EXISTS` predicate:
-  [`src/part_impl/repo/rdb_impl/page/step_impl.rs`](../src/part_impl/repo/rdb_impl/page/step_impl.rs#L141).
+  [`src/part_impl/repo/rdb_impl/page_source/step_impl.rs`](../src/part_impl/repo/rdb_impl/page_source/step_impl.rs#L141).
 - System-mail read marking validates a projected batch and updates the batch in
   one statement:
   [`src/part_impl/repo/rdb_impl/system_mail.rs`](../src/part_impl/repo/rdb_impl/system_mail.rs#L103).
