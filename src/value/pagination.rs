@@ -16,24 +16,6 @@ pub const MAX_PUB_LIST_LIMIT: u32 = 200;
 // the unique ID as the final ordering key, and hydrate includes only after the
 // returned page has been selected.
 
-// Serde-facing error for a limit outside its compile-time range.
-struct InvalidListLimit<const N: u32> {
-    // The rejected raw limit value.
-    limit: u32,
-}
-
-impl<const N: u32> Display for InvalidListLimit<N> {
-    // Format the rejected limit error.
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        //
-        write!(
-            formatter,
-            "list limit {} is outside the inclusive range 1..={}",
-            self.limit, N,
-        )
-    }
-}
-
 /// A list limit proven to be inside its compile-time maximum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ListLimit<const N: u32 = 20>(u32);
@@ -63,10 +45,31 @@ impl<'de, const N: u32> Deserialize<'de> for ListLimit<N> {
     where
         D: serde::Deserializer<'de>,
     {
+        // Serde-facing error for a limit outside its compile-time range.
+        struct InvalidListLimitError<const N: u32> {
+            // The rejected raw limit value.
+            limit: u32,
+        }
+
+        // NOTE: To avoid a unnecessary memory allocation(using format! manully),
+        // implement Display via a new type.
+        impl<const N: u32> Display for InvalidListLimitError<N> {
+            // Format the rejected limit error.
+            fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+                //
+                write!(
+                    formatter,
+                    "list limit {} is outside the inclusive range 1..={}",
+                    self.limit, N,
+                )
+            }
+        }
+
         let limit = u32::deserialize(deserializer)?;
 
-        Self::new(limit)
-            .ok_or_else(|| D::Error::custom(InvalidListLimit::<N> { limit }))
+        Self::new(limit).ok_or_else(|| {
+            D::Error::custom(InvalidListLimitError::<N> { limit })
+        })
     }
 }
 
