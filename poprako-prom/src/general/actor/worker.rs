@@ -14,7 +14,7 @@ use tokio::time::{Instant, timeout, timeout_at};
 /// One worker's delivery with capacity reserved through the entire attempt.
 pub struct WorkerSlot<T> {
     /// Topic serviced by this worker.
-    work_send: mpsc::UnboundedSender<(T, Instant, OwnedSemaphorePermit)>,
+    work_sink: mpsc::UnboundedSender<(T, Instant, OwnedSemaphorePermit)>,
     /// Single execution slot, held before claiming a persisted task.
     capacity: Arc<Semaphore>,
 }
@@ -26,20 +26,20 @@ impl<T> WorkerSlot<T> {
         mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
     ) {
         //
-        let (work_send, work_recv) = mpsc::unbounded_channel();
+        let (work_sink, work_stream) = mpsc::unbounded_channel();
 
         let slot = Self {
-            work_send,
+            work_sink,
             capacity: Arc::new(Semaphore::new(1)),
         };
 
-        (slot, work_recv)
+        (slot, work_stream)
     }
 
     /// Acquires an idle worker before delivery rows are claimed.
     pub fn acquire(&self) -> Option<OwnedSemaphorePermit> {
         //
-        if self.work_send.is_closed() {
+        if self.work_sink.is_closed() {
             return None;
         }
 
@@ -53,14 +53,18 @@ impl<T> WorkerSlot<T> {
         deadline: Instant,
         permit: OwnedSemaphorePermit,
     ) -> bool {
-        self.work_send.send((item, deadline, permit)).is_ok()
+        self.work_sink.send((item, deadline, permit)).is_ok()
     }
 }
 
 /// Executes each queued attempt within its claim deadline and isolates panics.
 /// Abandoned attempts remain processing until the timed-out attempt is reclaimed.
 pub async fn run_worker<T, F, Fut>(
-    mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
+    mut work_stream: mpsc::UnboundedReceiver<(
+        T,
+        Instant,
+        OwnedSemaphorePermit,
+    )>,
     completed: Arc<Notify>,
     process: F,
 ) where
@@ -69,7 +73,7 @@ pub async fn run_worker<T, F, Fut>(
     Fut: Future<Output = ()> + Send,
 {
     //
-    while let Some((item, deadline, permit)) = work_recv.recv().await {
+    while let Some((item, deadline, permit)) = work_stream.recv().await {
         //
         if deadline <= Instant::now() {
             //

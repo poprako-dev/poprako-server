@@ -20,7 +20,7 @@ fn permit() -> OwnedSemaphorePermit {
 // timed_out_attempt_releases_worker(run_worker)(negative): dropping a pending attempt frees its worker for the next task.
 #[tokio::test]
 async fn timed_out_attempt_releases_worker() {
-    let (work_send, work_recv) = mpsc::unbounded_channel();
+    let (work_sink, work_stream) = mpsc::unbounded_channel();
 
     let cancelled = tokio_util::sync::CancellationToken::new();
 
@@ -28,15 +28,15 @@ async fn timed_out_attempt_releases_worker() {
 
     let deadline = Instant::now() + StdDuration::from_millis(100);
 
-    work_send.send((true, deadline, permit())).unwrap();
+    work_sink.send((true, deadline, permit())).unwrap();
 
-    work_send
+    work_sink
         .send((false, Instant::now() + StdDuration::from_secs(1), permit()))
         .unwrap();
 
-    drop(work_send);
+    drop(work_sink);
 
-    let run = run_worker(work_recv, Arc::new(Notify::new()), |hang| {
+    let run = run_worker(work_stream, Arc::new(Notify::new()), |hang| {
         let cancelled = cancelled.clone();
 
         let finished = finished.clone();
@@ -62,27 +62,28 @@ async fn timed_out_attempt_releases_worker() {
 // panicked_attempt_releases_worker(run_worker)(negative): a task panic leaves the worker available to subsequent tasks.
 #[tokio::test]
 async fn panicked_attempt_releases_worker() {
-    let (work_send, work_recv) = mpsc::unbounded_channel();
+    let (work_sink, work_stream) = mpsc::unbounded_channel();
 
     let finished = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
     let deadline = Instant::now() + StdDuration::from_secs(1);
 
-    work_send.send((true, deadline, permit())).unwrap();
+    work_sink.send((true, deadline, permit())).unwrap();
 
-    work_send.send((false, deadline, permit())).unwrap();
+    work_sink.send((false, deadline, permit())).unwrap();
 
-    drop(work_send);
+    drop(work_sink);
 
-    let run = run_worker(work_recv, Arc::new(Notify::new()), |should_panic| {
-        let finished = finished.clone();
+    let run =
+        run_worker(work_stream, Arc::new(Notify::new()), |should_panic| {
+            let finished = finished.clone();
 
-        async move {
-            assert!(!should_panic, "injected task panic");
+            async move {
+                assert!(!should_panic, "injected task panic");
 
-            finished.store(true, std::sync::atomic::Ordering::SeqCst);
-        }
-    });
+                finished.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        });
 
     timeout(StdDuration::from_secs(1), run).await.unwrap();
 
@@ -92,15 +93,15 @@ async fn panicked_attempt_releases_worker() {
 // expired_queued_attempt_is_not_started(run_worker)(negative): a row that exhausted its deadline in the delivery must not invoke business code.
 #[tokio::test]
 async fn expired_queued_attempt_is_not_started() {
-    let (work_send, work_recv) = mpsc::unbounded_channel();
+    let (work_sink, work_stream) = mpsc::unbounded_channel();
 
-    work_send.send(((), Instant::now(), permit())).unwrap();
+    work_sink.send(((), Instant::now(), permit())).unwrap();
 
-    drop(work_send);
+    drop(work_sink);
 
     let started = std::sync::atomic::AtomicBool::new(false);
 
-    run_worker(work_recv, Arc::new(Notify::new()), |()| async {
+    run_worker(work_stream, Arc::new(Notify::new()), |()| async {
         started.store(true, std::sync::atomic::Ordering::SeqCst);
     })
     .await;
@@ -115,19 +116,19 @@ async fn shutdown_aborts_pending_workers() {
 
     let cancelled = tokio_util::sync::CancellationToken::new();
 
-    let (started_send, started_recv) = tokio::sync::oneshot::channel();
+    let (started_sink, started_stream) = tokio::sync::oneshot::channel();
 
     let drop_guard = cancelled.clone().drop_guard();
 
     workers.spawn(async move {
         let _drop_guard = drop_guard;
 
-        started_send.send(()).unwrap();
+        started_sink.send(()).unwrap();
 
         std::future::pending::<()>().await;
     });
 
-    started_recv.await.unwrap();
+    started_stream.await.unwrap();
 
     timeout(
         StdDuration::from_secs(1),
@@ -148,29 +149,29 @@ async fn workers_reserve_capacity_until_completion() {
 
     let release = Arc::new(Semaphore::new(0));
 
-    let (started_send, mut started_recv) = mpsc::unbounded_channel();
+    let (started_sink, mut started_stream) = mpsc::unbounded_channel();
 
     let mut slots = Vec::new();
 
     let mut workers = JoinSet::new();
 
     for task_id in 0..WORKER_COUNT {
-        let (slot, work_recv) = WorkerSlot::channel();
+        let (slot, work_stream) = WorkerSlot::channel();
 
-        let started_send = started_send.clone();
+        let started_sink = started_sink.clone();
 
         let release = release.clone();
 
         workers.spawn(run_worker(
-            work_recv,
+            work_stream,
             completed.clone(),
             move |task_id| {
-                let started_send = started_send.clone();
+                let started_sink = started_sink.clone();
 
                 let release = release.clone();
 
                 async move {
-                    started_send.send(task_id).unwrap();
+                    started_sink.send(task_id).unwrap();
 
                     release.acquire().await.unwrap().forget();
                 }
@@ -193,7 +194,7 @@ async fn workers_reserve_capacity_until_completion() {
     let mut started_ids = Vec::new();
 
     for _ in 0..WORKER_COUNT {
-        let task_id = timeout(StdDuration::from_secs(1), started_recv.recv())
+        let task_id = timeout(StdDuration::from_secs(1), started_stream.recv())
             .await
             .unwrap()
             .unwrap();
@@ -234,7 +235,7 @@ async fn workers_reserve_capacity_until_completion() {
 // unused_acquisitions_release_capacity(WorkerSlot::acquire)(negative): cancelled or partially filled claims return their unused slots.
 #[test]
 fn unused_reservations_release_capacity() {
-    let (slot, _work_recv) = WorkerSlot::<()>::channel();
+    let (slot, _work_stream) = WorkerSlot::<()>::channel();
 
     let reservation = slot.acquire().unwrap();
 
@@ -249,7 +250,7 @@ fn unused_reservations_release_capacity() {
 #[tokio::test]
 async fn failed_attempt_returns_reserved_capacity() {
     for should_panic in [true, false] {
-        let (slot, work_recv) = WorkerSlot::channel();
+        let (slot, work_stream) = WorkerSlot::channel();
 
         let completed = Arc::new(Notify::new());
 
@@ -259,7 +260,7 @@ async fn failed_attempt_returns_reserved_capacity() {
 
         let mut workers = JoinSet::new();
 
-        workers.spawn(run_worker(work_recv, completed.clone(), move |()| {
+        workers.spawn(run_worker(work_stream, completed.clone(), move |()| {
             let started = started.clone();
 
             async move {

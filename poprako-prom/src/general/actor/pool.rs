@@ -59,10 +59,10 @@ where
         //
         let actor = Arc::new(self);
 
-        let (worker_sends, worker_handles) = actor.spawn_workers();
+        let (worker_slots, worker_handles) = actor.spawn_workers();
 
         let supervisors =
-            futures_util::future::join_all(worker_sends.iter().map(|worker| {
+            futures_util::future::join_all(worker_slots.iter().map(|worker| {
                 //
                 actor.run_supervisor(
                     worker.topic,
@@ -78,7 +78,7 @@ where
             _ = supervisors => {}
         }
 
-        drop(worker_sends);
+        drop(worker_slots);
 
         shutdown_workers(worker_handles, SHUTDOWN_GRACE).await;
     }
@@ -86,19 +86,19 @@ where
     // Internal implementation of `spawn_workers`.
     fn spawn_workers(self: &Arc<Self>) -> (Vec<TopicWorker>, JoinSet<()>) {
         //
-        let (mut worker_sends, mut worker_handles) =
+        let (mut worker_slots, mut worker_handles) =
             (Vec::with_capacity(H::Payload::TOPICS.len()), JoinSet::new());
 
         for &topic in H::Payload::TOPICS {
             //
-            let (worker_send, worker_recv) = WorkerSlot::channel();
+            let (worker_sink, worker_stream) = WorkerSlot::channel();
 
             let completed = Arc::new(Notify::new());
 
             let actor = self.clone();
 
             worker_handles.spawn(run_worker(
-                worker_recv,
+                worker_stream,
                 completed.clone(),
                 move |row| {
                     //
@@ -110,14 +110,14 @@ where
 
             let topic_worker = TopicWorker {
                 topic,
-                slot: worker_send,
+                slot: worker_sink,
                 completed,
             };
 
-            worker_sends.push(topic_worker);
+            worker_slots.push(topic_worker);
         }
 
-        (worker_sends, worker_handles)
+        (worker_slots, worker_handles)
     }
 
     // Internal implementation of `run_supervisor`.

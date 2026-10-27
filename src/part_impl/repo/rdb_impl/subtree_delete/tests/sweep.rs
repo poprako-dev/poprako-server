@@ -217,8 +217,8 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
 
     mark_workset(shared, &workset_id).await;
 
-    let (claimed_send, claimed_recv) = oneshot::channel();
-    let (release_send, release_recv) = oneshot::channel();
+    let (claimed_sink, claimed_stream) = oneshot::channel();
+    let (release_sink, release_stream) = oneshot::channel();
     let claim_core = shared.clone();
     let claim_task = tokio::spawn(async move {
         let repo = RdbRepo::new(claim_core.clone(), repo_config());
@@ -232,16 +232,16 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
             .await?
             .unwrap();
 
-            claimed_send.send(target).unwrap();
+            claimed_sink.send(target).unwrap();
 
-            release_recv.await.unwrap();
+            release_stream.await.unwrap();
 
             Ok::<(), BaseError>(())
         })
         .await
         .unwrap();
     });
-    let locked_target = claimed_recv.await.unwrap();
+    let locked_target = claimed_stream.await.unwrap();
     let concurrent_target = claim(shared, SubtreeSweepLevel::Comic).await;
     let SubtreeDeleteSweepTarget::Comics { ids: locked_ids } = locked_target
     else {
@@ -256,7 +256,7 @@ async fn comic_claim_is_stable_and_bounded(shared: &RdbCore) {
         })
     );
 
-    release_send.send(()).unwrap();
+    release_sink.send(()).unwrap();
 
     claim_task.await.unwrap();
 

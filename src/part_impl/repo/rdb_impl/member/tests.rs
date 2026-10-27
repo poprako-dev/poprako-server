@@ -244,7 +244,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     )
     .await;
 
-    let (ready_tx, mut ready_rx) = mpsc::channel(2);
+    let (ready_sink, mut ready_stream) = mpsc::channel(2);
 
     let write_permits = Arc::new(Semaphore::new(0));
 
@@ -252,7 +252,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         shared.clone(),
         team_fixture.team_entry.id.clone(),
         first_member_entry.id.clone(),
-        ready_tx.clone(),
+        ready_sink.clone(),
         Arc::clone(&write_permits),
     ));
 
@@ -260,17 +260,17 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         shared.clone(),
         team_fixture.team_entry.id.clone(),
         second_member_entry.id.clone(),
-        ready_tx,
+        ready_sink,
         Arc::clone(&write_permits),
     ));
 
     tokio::time::timeout(Duration::from_secs(10), async {
-        ready_rx
+        ready_stream
             .recv()
             .await
             .expect("first transaction must report its completed read");
 
-        ready_rx
+        ready_stream
             .recv()
             .await
             .expect("second transaction must report its completed read");
@@ -330,7 +330,7 @@ async fn remove_admin_role_after_read(
     shared: RdbCore,
     team_id: String,
     member_id: String,
-    ready_tx: mpsc::Sender<()>,
+    ready_sink: mpsc::Sender<()>,
     write_permits: Arc<Semaphore>,
 ) -> Result<(), BaseError> {
     //
@@ -368,7 +368,7 @@ async fn remove_admin_role_after_read(
             roles,
         ));
 
-        ready_tx
+        ready_sink
             .send(())
             .await
             .expect("test read coordinator must remain available");

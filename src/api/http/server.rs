@@ -90,11 +90,11 @@ async fn shutdown_signal() {
     {
         let terminate = async {
             //
-            let mut terminate_recv = match signal::unix::signal(
+            let mut terminate_stream = match signal::unix::signal(
                 signal::unix::SignalKind::terminate(),
             ) {
                 //
-                Ok(terminate_recv) => terminate_recv,
+                Ok(terminate_stream) => terminate_stream,
 
                 Err(error) => {
                     //
@@ -110,7 +110,7 @@ async fn shutdown_signal() {
                 }
             };
 
-            terminate_recv.recv().await;
+            terminate_stream.recv().await;
         };
 
         tokio::select! {
