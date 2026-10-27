@@ -12,19 +12,19 @@ mod unit_save;
 mod tests;
 
 use crate::config::cache::CacheConfig;
-use crate::part_impl::cache::mem_impl::issue_save::IssueSaveCache;
-use crate::part_impl::cache::mem_impl::online_user::OnlineUserCache;
-use crate::part_impl::cache::mem_impl::unit_save::UnitSaveCache;
+use crate::part_impl::cache::mem_impl::issue_save::MemIssueSaveCache;
+use crate::part_impl::cache::mem_impl::online_user::MemOnlineUserCache;
+use crate::part_impl::cache::mem_impl::unit_save::MemUnitSaveCache;
 
 /// Process-local state shared by clones independently of database handles.
 #[derive(Clone, Default)]
 pub struct MemCache {
     /// Team-partitioned online-user lease deadlines.
-    online_users: OnlineUserCache,
+    online_users: MemOnlineUserCache,
     /// Save exclusion and bounded successful Unit mappings.
-    unit_saves: UnitSaveCache,
+    unit_saves: MemUnitSaveCache,
     /// Save exclusion and bounded annotation receipts.
-    issue_saves: IssueSaveCache,
+    issue_saves: MemIssueSaveCache,
 }
 
 impl MemCache {
@@ -32,9 +32,9 @@ impl MemCache {
     #[must_use]
     pub fn new(config: CacheConfig) -> Self {
         Self {
-            online_users: OnlineUserCache::new(config.online_user_ttl),
-            unit_saves: UnitSaveCache::new(config),
-            issue_saves: IssueSaveCache::new(config),
+            online_users: MemOnlineUserCache::new(config.online_user_ttl),
+            unit_saves: MemUnitSaveCache::new(config),
+            issue_saves: MemIssueSaveCache::new(config),
         }
     }
 

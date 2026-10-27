@@ -21,14 +21,14 @@ use crate::result::{BaseError, BaseRest};
 
 /// Shared team-partitioned online-user leases.
 #[derive(Clone)]
-pub struct OnlineUserCache {
+pub struct MemOnlineUserCache {
     /// Lease duration applied by every refresh.
     ttl: Duration,
     /// User expiration instants grouped by team.
     deadlines: Arc<DashMap<String, HashMap<String, Instant>>>,
 }
 
-impl OnlineUserCache {
+impl MemOnlineUserCache {
     /// Builds an empty cache with the configured online lease duration.
     #[must_use]
     pub fn new(ttl: Duration) -> Self {
@@ -92,7 +92,7 @@ impl OnlineUserCache {
     }
 }
 
-impl Default for OnlineUserCache {
+impl Default for MemOnlineUserCache {
     // Use the same lease policy as a cache adapter with default configuration.
     fn default() -> Self {
         Self::new(CacheConfig::default().online_user_ttl)
