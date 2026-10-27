@@ -78,9 +78,9 @@ pub use crate::part::nucl::{ReptRead, Serial};
 pub use crate::part::prom::payload::PromPayload;
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::cache::mem_impl::MemCache;
-pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
+pub use crate::part_impl::effect::async_impl::AsyncEventBus;
 pub use crate::part_impl::effect::async_impl::actor::{
-    EffectActor, EffectActorDesc,
+    EventBusActor, EventBusActorDesc,
 };
 pub use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
 pub use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;

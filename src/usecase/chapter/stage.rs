@@ -17,7 +17,7 @@ use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
-use crate::part::effect::{Develop, EffectEvent as _};
+use crate::part::effect::{EffectEvent as _, EventBus};
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::{ChapterArtwork, PageSourceImage};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -62,9 +62,9 @@ pub enum RawProvideAdvance {
 }
 
 /// Advances raw provisioning after every current page object is available.
-#[instrument(level = "info", skip(nucl, repo, obj_dept_view, develop))]
-pub async fn try_advance_raw_provide<C, N, R, V, D>(
-    (nucl, repo, obj_dept_view, develop): (&N, &R, &V, &D),
+#[instrument(level = "info", skip(nucl, repo, obj_dept_view, bus))]
+pub async fn try_advance_raw_provide<C, N, R, V, B>(
+    (nucl, repo, obj_dept_view, bus): (&N, &R, &V, &B),
     chapter_id: &str,
     actor_user_id: Option<String>,
 ) -> BaseRest<RawProvideAdvance>
@@ -77,7 +77,7 @@ where
         + Send
         + Sync,
     V: ObjDeptView<PageSourceImage, C> + Sync,
-    D: Develop + Sync,
+    B: EventBus + Sync,
 {
     let is_advanced = nucl
         .coord(async move |context| {
@@ -164,7 +164,7 @@ where
                     completed_stage: Stage::RawProvide,
                 },
             }
-            .develop_on(develop)
+            .emit_on(bus)
             .await;
 
             accept!(RawProvideAdvance::Advanced)
@@ -179,13 +179,13 @@ where
 /// Updates one chapter workflow stage and records the real phase transition.
 #[instrument(
     level = "info",
-    skip(nucl, repo, obj_dept, develop, token),
+    skip(nucl, repo, obj_dept, bus, token),
     fields(
         actor_user_id = %token.user_id,
     ),
 )]
-pub async fn update_stage<N, C, R, O, D>(
-    (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
+pub async fn update_stage<N, C, R, O, B>(
+    (nucl, repo, obj_dept, bus): (&N, &R, &O, &B),
     token: UserToken,
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
@@ -203,7 +203,7 @@ where
         + Send
         + Sync,
     O: ObjDept<ChapterArtwork, C> + ObjDept<PageSourceImage, C> + Send + Sync,
-    D: Develop + Send + Sync,
+    B: EventBus + Send + Sync,
 {
     let stage = Stage::from(instr.stage);
 
@@ -300,8 +300,8 @@ where
         })
         .await?;
 
-    develop_stage_events(
-        develop,
+    emit_stage_events(
+        bus,
         stage,
         workflow_completed_chapter_id,
         published_chapter_id,
@@ -428,14 +428,14 @@ where
     accept!(())
 }
 
-// Develops workflow completion and publication events after commit.
-async fn develop_stage_events<D>(
-    develop: &D,
+// Emits workflow completion and publication events after commit.
+async fn emit_stage_events<B>(
+    bus: &B,
     stage: Stage,
     workflow_completed_chapter_id: Option<String>,
     published_chapter_id: Option<String>,
 ) where
-    D: Develop + Sync,
+    B: EventBus + Sync,
 {
     if let Some(chapter_id) = workflow_completed_chapter_id {
         //
@@ -445,7 +445,7 @@ async fn develop_stage_events<D>(
                 completed_stage: stage,
             },
         }
-        .develop_on(develop)
+        .emit_on(bus)
         .await;
     }
 
@@ -454,7 +454,7 @@ async fn develop_stage_events<D>(
         Event::ChapterPublished {
             payload: ChapterPublishedEvent { chapter_id },
         }
-        .develop_on(develop)
+        .emit_on(bus)
         .await;
     }
 }

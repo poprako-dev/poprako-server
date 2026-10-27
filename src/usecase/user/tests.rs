@@ -7,7 +7,7 @@
 //!
 //! Tests exercise user profile reads, updates, avatar management, activity
 //! tracking against a [`Mock`] that doubles as the
-//! coordinator, repository, prom enqueuer, image pool, and effect developer.
+//! coordinator, repository, prom enqueuer, image pool, and event bus.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 

@@ -7,7 +7,7 @@
 //!
 //! Tests exercise the [`register`] and [`login`] functions against a
 //! [`Mock`] that doubles as the coordinator, repository, token authority,
-//! and effect developer.
+//! and event bus.
 //!
 //! [`register`]: super::register
 //! [`login`]: super::login

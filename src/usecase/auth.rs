@@ -17,7 +17,7 @@ use crate::model::write::user::UserEntry;
 use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpEvent;
-use crate::part::effect::{Develop, EffectEvent as _};
+use crate::part::effect::{EffectEvent as _, EventBus};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
@@ -51,10 +51,10 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 /// * `C` — Context anchor (see the [repo module](crate::part::repo) for details).
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
-/// * `D: EffectDevelop` — Processes the signup event.
-#[instrument(level = "info", skip(nucl, repo, auth, develop))]
-pub async fn register<N, C, R, A, D>(
-    (nucl, repo, auth, develop): (&N, &R, &A, &D),
+/// * `B: EventBus` — Processes the signup event.
+#[instrument(level = "info", skip(nucl, repo, auth, bus))]
+pub async fn register<N, C, R, A, B>(
+    (nucl, repo, auth, bus): (&N, &R, &A, &B),
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
@@ -63,7 +63,7 @@ where
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth + Sync,
-    D: Develop + Send + Sync,
+    B: EventBus + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
@@ -139,7 +139,7 @@ where
             invitee_qid,
         },
     }
-    .develop_on(develop)
+    .emit_on(bus)
     .await;
 
     let original_token = UserToken { user_id };

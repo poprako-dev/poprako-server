@@ -29,7 +29,7 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
-use crate::part::effect::{Develop, EffectEvent as _};
+use crate::part::effect::{EffectEvent as _, EventBus};
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::ChapterArtwork;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -145,11 +145,11 @@ where
 /// Confirms an exact generation and completes typesetting in the same transaction.
 #[instrument(
     level = "info",
-    skip(nucl, repo, obj_dept, develop, token),
+    skip(nucl, repo, obj_dept, bus, token),
     fields(actor_user_id = %token.user_id),
 )]
-pub async fn mark_artwork_uploaded<N, C, R, O, D>(
-    (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
+pub async fn mark_artwork_uploaded<N, C, R, O, B>(
+    (nucl, repo, obj_dept, bus): (&N, &R, &O, &B),
     token: UserToken,
     chapter_id: String,
     instr: MarkChapterArtworkUploadedInstr,
@@ -167,7 +167,7 @@ where
         + Send
         + Sync,
     O: ObjDept<ChapterArtwork, C> + Send + Sync,
-    D: Develop + Send + Sync,
+    B: EventBus + Send + Sync,
 {
     let completed_chapter_id = nucl
         .coord(async move |context| {
@@ -286,7 +286,7 @@ where
                 completed_stage: Stage::TypesetRedraw,
             },
         }
-        .develop_on(develop)
+        .emit_on(bus)
         .await;
     }
 

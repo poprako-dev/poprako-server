@@ -52,7 +52,7 @@ pub async fn register(
                 harn.nucl().rept_read(),
                 harn.repo(),
                 harn.auth(),
-                harn.develop(),
+                harn.bus(),
             ),
             instr,
         )

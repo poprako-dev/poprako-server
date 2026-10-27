@@ -6,22 +6,22 @@
 # ]
 # ///
 
-"""Require domain events to be constructed inline on `.develop_on(develop)`.
+"""Require domain events to be constructed inline on `.emit_on(bus)`.
 
 Events are dispatched through the [`Event`] enum: each variant carries a
 concrete payload struct, and dispatch happens by constructing
-``Event::Variant(Payload { ... }).develop_on(develop)`` inline at the call
+``Event::Variant(Payload { ... }).emit_on(bus)`` inline at the call
 site. The checker enforces two rules:
 
 Rules
 -----
 
 * **EVD001** — an ``Event::Variant(...)`` construction must be the inline
-  receiver of ``.develop_on(develop)``. Binding an event to a variable before
+  receiver of ``.emit_on(bus)``. Binding an event to a variable before
   dispatching it (or constructing it without an immediate dispatch) is
   forbidden.
-* **EVD002** — callers must never invoke ``Develop::develop`` directly;
-  dispatch through ``Event::Variant(...).develop_on(develop)`` instead.
+* **EVD002** — callers must never invoke ``EventBus::emit`` directly;
+  dispatch through ``Event::Variant(...).emit_on(bus)`` instead.
 
 [`Event`]: crate::part::effect::event::Event
 """
@@ -86,9 +86,9 @@ def is_event_constructor(source: bytes, function: tree_sitter.Node) -> bool:
 
     The constructor is the field expression ``Event::Variant`` whose receiver
     is the literal ``Event`` enum path. A dispatch like ``Event::Variant(...)``
-    ``.develop_on(...)`` surfaces the whole receiver as the outer call's
+    ``.emit_on(...)`` surfaces the whole receiver as the outer call's
     ``function``; requiring the receiver to be exactly ``Event`` keeps the
-    outer ``.develop_on`` call from being mistaken for a construction.
+    outer ``.emit_on`` call from being mistaken for a construction.
     """
     if function.type != "scoped_identifier":
         return False
@@ -96,8 +96,8 @@ def is_event_constructor(source: bytes, function: tree_sitter.Node) -> bool:
     return text(source, function).split("::", 1)[0] == "Event"
 
 
-def is_inline_develop_on(receiver: tree_sitter.Node, source: bytes) -> bool:
-    """Return True when `receiver` is the inline receiver of `.develop_on(...)`."""
+def is_inline_emit_on(receiver: tree_sitter.Node, source: bytes) -> bool:
+    """Return True when `receiver` is the inline receiver of `.emit_on(...)`."""
     parent = receiver.parent
 
     while parent is not None and parent.type in WRAPPERS:
@@ -106,7 +106,7 @@ def is_inline_develop_on(receiver: tree_sitter.Node, source: bytes) -> bool:
     if parent is None or parent.type != "field_expression":
         return False
 
-    if method_name(source, parent) != "develop_on":
+    if method_name(source, parent) != "emit_on":
         return False
 
     call = parent.parent
@@ -127,23 +127,23 @@ def check_file(path: Path, root: Path) -> list[str]:
     skip_dispatch = path.relative_to(root) == Path("src/part/effect.rs")
 
     # EVD001 — every Event::Variant(...) construction must be dispatched
-    # inline on .develop_on(develop); do not bind an event first.
+    # inline on .emit_on(bus); do not bind an event first.
     for call in descendants(tree.root_node, "call_expression"):
         function = call.child_by_field_name("function")
 
         if function is None or not is_event_constructor(source, function):
             continue
 
-        if is_inline_develop_on(call, source):
+        if is_inline_emit_on(call, source):
             continue
 
         errors.append(
             f"{path.relative_to(root)}:{call.start_point.row + 1}: "
-            "EVD001: construct Event::Variant(...) inline on .develop_on(develop); "
+            "EVD001: construct Event::Variant(...) inline on .emit_on(bus); "
             "do not bind an event before dispatching it",
         )
 
-    # EVD002 — never call Develop::develop(...) at a caller.
+    # EVD002 — never call EventBus::emit(...) at a caller.
     if not skip_dispatch:
         for call in descendants(tree.root_node, "call_expression"):
             function = call.child_by_field_name("function")
@@ -151,14 +151,14 @@ def check_file(path: Path, root: Path) -> list[str]:
             if (
                 function is None
                 or function.type != "field_expression"
-                or method_name(source, function) != "develop"
+                or method_name(source, function) != "emit"
                 or not has_call_arguments(call)
             ):
                 continue
 
             errors.append(
                 f"{path.relative_to(root)}:{call.start_point.row + 1}: "
-                "EVD002: dispatch events with Event::Variant(...).develop_on(develop)",
+                "EVD002: dispatch events with Event::Variant(...).emit_on(bus)",
             )
 
     return errors
@@ -171,13 +171,13 @@ def self_test() -> int:
         source_dir.mkdir()
         fixture = source_dir / "fixture.rs"
 
-        # ── valid: inline Event::Variant(...).develop_on(develop) ─────────
+        # ── valid: inline Event::Variant(...).emit_on(bus) ───────────
         fixture.write_text(
             "enum Event { UserActive(UserActiveEvent) }\n"
             "struct UserActiveEvent { user_id: String }\n"
-            "fn valid(develop: &Develop) {\n"
+            "fn valid(bus: &EventBus) {\n"
             "    Event::UserActive(UserActiveEvent { user_id: String::new() })\n"
-            "        .develop_on(develop);\n"
+            "        .emit_on(bus);\n"
             "}\n",
         )
 
@@ -185,13 +185,13 @@ def self_test() -> int:
             print("self-test: inline event dispatch was rejected", file=sys.stderr)
             return 1
 
-        # ── invalid: bound before dispatch, and direct develop call ───────
+        # ── invalid: bound before emit, and direct emit call ─────────
         fixture.write_text(
             "enum Event { UserActive(UserActiveEvent) }\n"
             "struct UserActiveEvent { user_id: String }\n"
-            "fn invalid(develop: &Develop) {\n"
+            "fn invalid(bus: &EventBus) {\n"
             "    let event = Event::UserActive(UserActiveEvent { user_id: String::new() });\n"
-            "    develop.develop(event);\n"
+            "    bus.emit(event);\n"
             "}\n",
         )
         diagnostics = check_file(fixture, root)

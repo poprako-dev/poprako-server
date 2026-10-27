@@ -1,4 +1,4 @@
-//! Bounded event producer, independent of its consumer lifecycle.
+//! Bounded event bus producer, independent of its consumer lifecycle.
 
 // Event delivery dispatcher for the asynchronous effect actor.
 mod dispatch;
@@ -15,7 +15,7 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TrySendError;
 use tracing::instrument;
 
-use crate::part::effect::Develop;
+use crate::part::effect::EventBus;
 use crate::part::effect::event::Event;
 
 /// Unique receive capability for a bounded event queue.
@@ -36,32 +36,32 @@ const fn event_name(event: &Event) -> &'static str {
     }
 }
 
-/// Cloneable best-effort event producer.
+/// Cloneable best-effort event bus.
 #[derive(Clone)]
-pub struct AsyncEffectDevelop {
-    /// Bounded queue sender.
-    send: mpsc::Sender<Event>,
+pub struct AsyncEventBus {
+    /// Bounded queue sink.
+    sink: mpsc::Sender<Event>,
 }
 
-impl AsyncEffectDevelop {
-    /// Constructs a sender and its unique receiver without starting a consumer.
+impl AsyncEventBus {
+    /// Constructs a sink and its unique stream without starting a consumer.
     #[must_use]
-    pub fn new(capacity: NonZeroUsize) -> (Self, actor::EffectRecv) {
+    pub fn new(capacity: NonZeroUsize) -> (Self, actor::EventBusStream) {
         //
-        let (send, recv) = mpsc::channel(capacity.get());
+        let (sink, stream) = mpsc::channel(capacity.get());
 
-        (Self { send }, actor::EffectRecv::new(recv))
+        (Self { sink }, actor::EventBusStream::new(stream))
     }
 }
 
-impl Develop for AsyncEffectDevelop {
+impl EventBus for AsyncEventBus {
     // Enqueues best-effort events without waiting for queue capacity.
     #[instrument(level = "info", skip_all)]
-    async fn develop(&self, events: Vec<Event>) {
+    async fn emit(&self, events: Vec<Event>) {
         //
         for event in events {
             //
-            match self.send.try_send(event) {
+            match self.sink.try_send(event) {
                 //
                 Ok(()) => {}
 

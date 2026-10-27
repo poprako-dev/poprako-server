@@ -26,7 +26,7 @@
 //! | `R: XxxRepo<C>` | Repository bundle for data access |
 //! | `P: Prom<C>` | Deferred-action enqueuer |
 //! | `O: ObjDept` or direct ObjDept `Run` bounds | Object lifecycle provider |
-//! | `D: EffectDevelop` | Side-effect processor for domain events |
+//! | `B: EventBus` | Event bus for domain events |
 //! | `A: TokenAuth` | Authentication token signer |
 //!
 //! [`Nucl::coord`]: poprako_orchestra::Nucl::coord

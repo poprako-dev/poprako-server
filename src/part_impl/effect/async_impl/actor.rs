@@ -13,35 +13,35 @@ use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part_impl::effect::async_impl::dispatch::dispatch;
 
-/// Unique receive capability for a bounded event queue.
-pub struct EffectRecv {
-    /// Receiver transferred to the event actor.
-    recv: Receiver<Event>,
+/// Unique stream capability for a bounded event queue.
+pub struct EventBusStream {
+    /// Stream transferred to the event actor.
+    stream: Receiver<Event>,
 }
 
-impl EffectRecv {
-    /// Creates a receiver capability for the event actor.
+impl EventBusStream {
+    /// Creates a stream capability for the event actor.
     #[must_use]
-    pub const fn new(recv: Receiver<Event>) -> Self {
-        Self { recv }
+    pub const fn new(stream: Receiver<Event>) -> Self {
+        Self { stream }
     }
 
-    /// Transfers the receiver to the actor.
+    /// Transfers the stream to the actor.
     #[must_use]
-    pub fn into_recv(self) -> Receiver<Event> {
-        self.recv
+    pub fn into_stream(self) -> Receiver<Event> {
+        self.stream
     }
 }
 
 /// Owns cancellation and completion of one background supervisor.
-pub struct EffectActorDesc {
+pub struct EventBusActorDesc {
     /// Cancellation signal for the supervisor.
     token: CancellationToken,
     /// Task whose completion includes its worker shutdown.
     task: tokio::task::JoinHandle<()>,
 }
 
-impl EffectActorDesc {
+impl EventBusActorDesc {
     /// Requests cancellation without waiting for completion.
     pub fn cancel(&self) {
         self.token.cancel();
@@ -69,7 +69,7 @@ impl EffectActorDesc {
     }
 }
 
-impl Drop for EffectActorDesc {
+impl Drop for EventBusActorDesc {
     // Request shutdown when the owner is dropped without joining.
     fn drop(&mut self) {
         self.token.cancel();
@@ -78,28 +78,28 @@ impl Drop for EffectActorDesc {
 
 /// Background event consumer that receives events from the channel and
 /// dispatches them to the appropriate domain actor.
-pub struct EffectActor<R> {
+pub struct EventBusActor<R> {
     /// Shared repository access for event processing.
     repo: R,
-    /// Channel receiver that yields queued events.
-    recv: Receiver<Event>,
+    /// Channel stream that yields queued events.
+    stream: Receiver<Event>,
     /// Cancellation token to stop the background loop.
     token: CancellationToken,
 }
 
-impl<R> EffectActor<R> {
-    /// Constructs a consumer with its injected repository and unique receiver.
-    pub fn new(repo: R, effect_recv: EffectRecv) -> Self {
+impl<R> EventBusActor<R> {
+    /// Constructs a consumer with its injected repository and unique stream.
+    pub fn new(repo: R, event_bus_stream: EventBusStream) -> Self {
         Self {
             repo,
-            recv: effect_recv.into_recv(),
+            stream: event_bus_stream.into_stream(),
             token: CancellationToken::new(),
         }
     }
 
     /// Starts consumption and returns its unique runtime owner.
     #[must_use]
-    pub fn run_detached<C>(self) -> EffectActorDesc
+    pub fn run_detached<C>(self) -> EventBusActorDesc
     where
         C: Context + Send + 'static,
         R: AssignmentRepo<C>
@@ -112,7 +112,7 @@ impl<R> EffectActor<R> {
     {
         let (token, task) = (self.token.clone(), tokio::spawn(self.run::<C>()));
 
-        EffectActorDesc { token, task }
+        EventBusActorDesc { token, task }
     }
 
     #[instrument(level = "info", skip_all)]
@@ -131,7 +131,7 @@ impl<R> EffectActor<R> {
             //
             tokio::select! {
                 //
-                event = self.recv.recv() => {
+                event = self.stream.recv() => {
                     //
                     match event {
                         //
@@ -147,9 +147,9 @@ impl<R> EffectActor<R> {
             }
         }
 
-        self.recv.close();
+        self.stream.close();
 
-        while let Ok(event) = self.recv.try_recv() {
+        while let Ok(event) = self.stream.try_recv() {
             dispatch::<C, R>(&self.repo, event).await;
         }
     }
