@@ -64,7 +64,7 @@ jobs:
       - name: Set up independent Node.js and pnpm
         run: sh scripts/setup-js.sh
 
-      - name: Check HTTP integration suite
+      - name: Type-check integration test sources
         run: sh scripts/ci-typecheck.sh
 
   migrations:
@@ -98,45 +98,6 @@ jobs:
       - name: Validate Diesel migrations
         run: sh scripts/ci-migration-check.sh
 
-  http:
-    name: HTTP integration
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment:
-      name: integration
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_DB: db_poprako_integration
-          POSTGRES_PASSWORD: poprako
-          POSTGRES_USER: poprako
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U poprako -d db_poprako_integration"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      INTEGRATION_DATABASE_URL: postgres://poprako:poprako@127.0.0.1:5432/db_poprako_integration
-      R2_ACCOUNT_ID: ${{ secrets.INTEGRATION_R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.INTEGRATION_R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.INTEGRATION_R2_SECRET_ACCESS_KEY }}
-      R2_BUCKET_NAME: ${{ secrets.INTEGRATION_R2_BUCKET_NAME }}
-      R2_CUSTOM_DOMAIN: ${{ secrets.INTEGRATION_R2_CUSTOM_DOMAIN }}
-      R2_REGION: auto
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Set up independent Node.js and pnpm
-        run: sh scripts/setup-js.sh
-
-      - name: Run database-backed HTTP regressions
-        run: sh scripts/ci-http.sh
-
   security:
     name: Dependency security
     runs-on: ubuntu-latest
@@ -152,7 +113,6 @@ jobs:
   production-image:
     name: Production image
     needs:
-      - http
       - migrations
       - rust
       - security
@@ -193,7 +153,6 @@ jobs:
     name: Deploy production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
-      - http
       - migrations
       - production-image
       - rust

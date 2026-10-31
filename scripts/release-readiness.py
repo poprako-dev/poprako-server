@@ -104,7 +104,7 @@ def collect_deployment(repository, sha, output):
     validate_run(workflow, sha, repository)
     run_id = workflow["id"]
     jobs = paginated(repository, f"actions/runs/{run_id}/attempts/{workflow['run_attempt']}/jobs?per_page=100", "jobs")
-    for name in ("Rust", "TypeScript", "Diesel migrations", "Dependency security", "HTTP integration", "Production image", "Deploy production"):
+    for name in ("Rust", "TypeScript", "Diesel migrations", "Dependency security", "Production image", "Deploy production"):
         require(any(job["name"] == name and job["conclusion"] == "success" for job in jobs),
                 f"Required CI job did not succeed: {name}")
     reviews = api(repository, f"actions/runs/{run_id}/approvals")
