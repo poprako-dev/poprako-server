@@ -1,8 +1,10 @@
 #![recursion_limit = "512"]
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::sync::Arc;
 
 use anyhow::Context as _;
+use tokio::sync::Semaphore;
 use tokio::task::JoinError;
 
 use poprako_obj_dept::actor::{ObjDeptActor, ObjDeptActorDesc};
@@ -12,10 +14,10 @@ use poprako_server::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;
 use poprako_server::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use poprako_server::part_impl::prom::rdb_impl::writer::RdbProm;
 use poprako_server::{
-    AppConfig, AsyncEffectDevelop, EffectActor, EffectActorDesc, Harn, HybNucl,
+    AppConfig, AsyncEventBus, EventBusActor, EventBusActorDesc, Harn, HybNucl,
     JwtAuth, MemCache, NormObjDept, R2ObjDeptPool, RdbContext, RdbCore,
     RdbNucl, RdbObjDeptProm, RdbRepo, ReptRead, Sched, SchedDesc, Serial,
-    SubtreeDeleteTask, dispatch_prom,
+    SubtreeDeleteTask, dispatch_prom, serve,
 };
 
 // Report every failed supervisor after all joins have completed.
@@ -78,25 +80,37 @@ fn http_addr(config: &AppConfig) -> anyhow::Result<SocketAddr> {
     .context("no address resolved for HTTP listen address")
 }
 
+// Construct process-wide archive admission from the validated runtime policy.
+fn archive_export_admission(
+    config: &AppConfig,
+) -> anyhow::Result<Arc<Semaphore>> {
+    //
+    let capacity =
+        usize::try_from(config.comic_archive_export.concurrency.get())
+            .context("archive export concurrency exceeds platform capacity")?;
+
+    Ok(Arc::new(Semaphore::new(capacity)))
+}
+
 // Join every startup-owned descriptor and report all supervisor failures.
 async fn join_background(
     sched_desc: SchedDesc,
     prom_actor_desc: PromActorDesc,
-    effect_actor_desc: EffectActorDesc,
+    event_bus_actor_desc: EventBusActorDesc,
     obj_dept_actor_desc: ObjDeptActorDesc,
 ) -> anyhow::Result<()> {
     //
-    let (sched_rest, prom_rest, effect_rest, obj_dept_rest) = tokio::join!(
+    let (sched_rest, prom_rest, event_bus_rest, obj_dept_rest) = tokio::join!(
         sched_desc.cancel_and_join(),
         prom_actor_desc.cancel_and_join(),
-        effect_actor_desc.cancel_and_join(),
+        event_bus_actor_desc.cancel_and_join(),
         obj_dept_actor_desc.cancel_and_join(),
     );
 
     report_shutdown([
         ("sched", sched_rest),
         ("prom", prom_rest),
-        ("effect", effect_rest),
+        ("event_bus", event_bus_rest),
         ("obj_dept", obj_dept_rest),
     ])
 }
@@ -123,14 +137,14 @@ async fn main() -> anyhow::Result<()> {
         obj_dept_pool,
         prom,
         prom_repo,
-        (develop, effect_recv),
+        (bus, event_bus_stream),
     ) = (
         RdbCore::from_env()?,
         JwtAuth::from_env()?,
         R2ObjDeptPool::from_env()?,
         RdbProm::new(),
         RdbPromRepo::new(),
-        AsyncEffectDevelop::new(config.effect.capacity),
+        AsyncEventBus::new(config.effect.capacity),
     );
 
     let (http_addr, rept_read_nucl, serial_nucl, repo, cache, obj_dept_prom) = (
@@ -142,16 +156,17 @@ async fn main() -> anyhow::Result<()> {
         RdbObjDeptProm::new(rdb_core.clone()),
     );
 
-    let (obj_dept, nucl) = (
+    let (obj_dept, nucl, archive_exports) = (
         NormObjDept::new(
             rdb_core.clone(),
             obj_dept_pool.clone(),
             obj_dept_prom.clone(),
         ),
         HybNucl::new(rept_read_nucl.clone(), serial_nucl),
+        archive_export_admission(&config)?,
     );
 
-    let (prom_actor, effect_actor, obj_dept_actor, sched) = (
+    let (prom_actor, event_bus_actor, obj_dept_actor, sched) = (
         PromActor::new(
             RdbPromDelivery::new(nucl.serial().clone(), prom_repo),
             Dispatcher::new(
@@ -159,16 +174,14 @@ async fn main() -> anyhow::Result<()> {
                     rept_read_nucl.clone(),
                     repo.clone(),
                     obj_dept.view(),
-                    develop.clone(),
+                    bus.clone(),
                 ),
-                |(nucl, repo, view, develop), payload| async move {
-                    //
-                    dispatch_prom((&nucl, &repo, &view, &develop), payload)
-                        .await
+                |(nucl, repo, view, bus), payload| async move {
+                    dispatch_prom((&nucl, &repo, &view, &bus), payload).await
                 },
             ),
         ),
-        EffectActor::new(repo.clone(), effect_recv),
+        EventBusActor::new(repo.clone(), event_bus_stream),
         ObjDeptActor::new(obj_dept_prom, move |task| {
             //
             let (rdb_core, obj_dept_pool) =
@@ -200,23 +213,23 @@ async fn main() -> anyhow::Result<()> {
     let (
         harn,
         obj_dept_actor_desc,
-        effect_actor_desc,
+        event_bus_actor_desc,
         prom_actor_desc,
         sched_desc,
     ) = (
-        Harn::new(config, (nucl, repo, cache, obj_dept, prom, auth, develop)),
+        Harn::new(config, (nucl, repo, cache, obj_dept, prom, auth, bus)),
         obj_dept_actor.run_detached(),
-        effect_actor.run_detached::<RdbContext<ReptRead>>(),
+        event_bus_actor.run_detached::<RdbContext<ReptRead>>(),
         prom_actor.run_detached(),
         sched.run_detached(),
     );
 
-    let serve_rest = poprako_server::serve(harn, http_addr).await;
+    let serve_rest = serve(harn, http_addr, archive_exports).await;
 
     let shutdown_rest = join_background(
         sched_desc,
         prom_actor_desc,
-        effect_actor_desc,
+        event_bus_actor_desc,
         obj_dept_actor_desc,
     )
     .await;

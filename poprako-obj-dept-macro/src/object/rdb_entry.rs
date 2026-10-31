@@ -9,7 +9,7 @@ pub fn expand(table: &Path, marker: &Ident) -> TokenStream {
 
     let lock_and_anchor_rows = lock_and_anchor_rows(table);
 
-    let load_rows = load_rows(table);
+    let load_rows = load_rows(table, marker);
 
     let decode_entries = decode_entries(table, marker);
 
@@ -311,7 +311,7 @@ fn lock_and_anchor_rows(table: &Path) -> TokenStream {
 }
 
 // Generates load rows.
-fn load_rows(table: &Path) -> TokenStream {
+fn load_rows(table: &Path, marker: &Ident) -> TokenStream {
     //
     quote! {
         pub async fn load(
@@ -347,9 +347,24 @@ fn load_rows(table: &Path) -> TokenStream {
 
         pub async fn load_many(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[&str],
+            ids: &[<#marker as ::poprako_obj_dept::key::ObjKind>::Id],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<Vec<ObjRdbEntry>> {
-            load_many_inner(conn, ids, false).await
+            use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+            use ::diesel::SelectableHelper as _;
+            use ::diesel_async::RunQueryDsl as _;
+            if ids.is_empty() {
+                return Ok(Vec::new());
+            }
+            let records = #table::table
+                .filter(#table::f_id.eq_any(
+                    ids.iter().map(::poprako_obj_dept::key::ObjId::as_str)
+                ))
+                .order(#table::f_id.asc())
+                .select(ObjStateEntryRecord::as_select())
+                .load::<ObjStateEntryRecord>(conn)
+                .await
+                .map_err(::poprako_obj_dept::rdb_impl::diesel_error)?;
+            Ok(records.into_iter().map(Into::into).collect())
         }
 
         pub async fn load_for_presence_reconciliation(

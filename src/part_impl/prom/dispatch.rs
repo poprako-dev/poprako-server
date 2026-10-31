@@ -5,7 +5,7 @@ use poprako_orchestra::{Context, Nucl};
 use poprako_obj_dept::ObjDeptView;
 use poprako_prom::general::dispatch_flow::DispatchFlow;
 
-use crate::part::effect::Develop;
+use crate::part::effect::EventBus;
 use crate::part::obj_dept::PageSourceImage;
 use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -23,8 +23,8 @@ use crate::usecase::{
 };
 
 /// Delivers one decoded Prom task to its domain use case.
-pub async fn dispatch<C, N, R, V, D>(
-    (nucl, repo, obj_dept_view, develop): (&N, &R, &V, &D),
+pub async fn dispatch<C, N, R, V, B>(
+    (nucl, repo, obj_dept_view, bus): (&N, &R, &V, &B),
     task: PromPayload,
 ) -> DispatchFlow
 where
@@ -38,7 +38,7 @@ where
         + Send
         + Sync,
     V: ObjDeptView<PageSourceImage, C> + Sync,
-    D: Develop + Sync,
+    B: EventBus + Sync,
 {
     match task {
         //
@@ -50,7 +50,7 @@ where
             } => {
                 //
                 let rest = chapter_stage_usecase::try_advance_raw_provide(
-                    (nucl, repo, obj_dept_view, develop),
+                    (nucl, repo, obj_dept_view, bus),
                     &chapter_id,
                     Some(actor_user_id),
                 )

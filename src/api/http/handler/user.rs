@@ -1,4 +1,4 @@
-//! User handlers: profile read/update, deletion, and avatar upload flow.
+//! User handlers: profile read/update and avatar upload flow.
 
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
@@ -22,11 +22,10 @@ use crate::data::instr::user::{
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{ReptRead, Serial};
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::user as user_usecase;
-use crate::usecase::user::delete as user_delete_usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -146,38 +145,6 @@ pub async fn update_password(
         user_token,
         user_id,
         instr,
-    )
-    .await?;
-
-    Ok(no_content())
-}
-
-/// `DELETE /api/v1/users/{user_id}` — delete a user account.
-#[cfg_attr(feature = "swagger", utoipa::path(
-    delete,
-    path = "/api/v1/users/{user_id}",
-    tag = "users",
-    params(("user_id" = String, Path, description = "Target user ID")),
-    responses(
-        (status = 204, description = "User deleted"),
-        (status = 403, description = "Cannot delete another user or the last \
-        admin of a team"),
-        (status = 409, description = "Serializable conflict; retry the \
-        complete request"),
-        (status = 404, description = "User not found"),
-    ),
-))]
-#[instrument(level = "info", skip_all)]
-pub async fn delete(
-    State(harn): State<AppHarn>,
-    Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-) -> HttpNoContent {
-    //
-    user_delete_usecase::delete::<_, RdbContext<Serial>, RdbRepo, _>(
-        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
-        user_token,
-        user_id,
     )
     .await?;
 

@@ -2,10 +2,12 @@
 
 use std::future::pending;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use anyhow::Context as _;
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::signal;
+use tokio::sync::Semaphore;
 
 use crate::api::http::router;
 use crate::api::http::shared::prometheus::init_prometheus;
@@ -21,7 +23,11 @@ use crate::api::http::state::AppHarn;
 ///
 /// Returns an error when metrics initialization, listener binding, or serving
 /// fails.
-pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
+pub async fn serve<A>(
+    harn: AppHarn,
+    addr: A,
+    archive_exports: Arc<Semaphore>,
+) -> anyhow::Result<()>
 where
     A: ToSocketAddrs + std::fmt::Debug + Send + Sync,
 {
@@ -43,7 +49,7 @@ where
 
     tracing::info!(addr = ?addr, "listening");
 
-    let app = router::new(harn.clone()).with_state(harn);
+    let app = router::new(harn.clone(), archive_exports).with_state(harn);
 
     axum::serve(
         listener,
@@ -84,11 +90,11 @@ async fn shutdown_signal() {
     {
         let terminate = async {
             //
-            let mut terminate_recv = match signal::unix::signal(
+            let mut terminate_stream = match signal::unix::signal(
                 signal::unix::SignalKind::terminate(),
             ) {
                 //
-                Ok(terminate_recv) => terminate_recv,
+                Ok(terminate_stream) => terminate_stream,
 
                 Err(error) => {
                     //
@@ -104,7 +110,7 @@ async fn shutdown_signal() {
                 }
             };
 
-            terminate_recv.recv().await;
+            terminate_stream.recv().await;
         };
 
         tokio::select! {

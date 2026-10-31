@@ -17,10 +17,10 @@ lto = "thin"
 codegen-units = 1
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.95"
-license = "MIT"
+license = "AGPL-3.0-only"
 repository = "https://github.com/poprako-dev/poprako-server"
 publish = false
 
@@ -33,7 +33,7 @@ serde_json = "1.0.149"
 time = "0.3.47"
 toml = "1.1.4"
 unic-langid = "0.9.6"
-utoipa = "5.5.0"
+utoipa = "6.0.0"
 uuid = "1.23.4"
 
 [workspace.lints.rust]
@@ -85,7 +85,7 @@ swagger = ["utoipa-swagger-ui", "utoipa"]
 anyhow.workspace = true
 async-trait = "0.1.89"
 aws-credential-types = { version = "1" }
-aws-sdk-s3 = { version = "1", default-features = false, features = [
+aws-sdk-s3 = { version = "1.144.0", default-features = false, features = [
     "default-https-client",
     "http-1x",
     "rt-tokio",
@@ -126,8 +126,9 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json.workspace = true
 sha2 = "0.11"
 time = { workspace = true, features = ["serde"] }
-tokio = { version = "1.52.1", features = ["full", "macros"] }
-tokio-util = { version = "0.7.18", features = ["rt"] }
+tokio = { version = "1.53.3", features = ["full", "macros"] }
+tokio-util = { version = "0.7.18", features = ["io", "rt"] }
+tempfile = "3.27.0"
 toml.workspace = true
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
@@ -136,7 +137,7 @@ url = "2.5.8"
 uuid.workspace = true
 veil = "0.3.0"
 utoipa = { workspace = true, features = ["axum_extras"], optional = true }
-utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
+utoipa-swagger-ui = { version = "10.0.2", features = ["axum", "vendored"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
 poprako-orchestra = { version = "0.6.0", features = ["macro", "oper_ext"] }

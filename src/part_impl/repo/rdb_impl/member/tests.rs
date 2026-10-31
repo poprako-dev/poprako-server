@@ -12,8 +12,6 @@ use super::*;
 use std::sync::Arc;
 use std::time::Duration;
 
-use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _, Step as _};
 use tokio::sync::{Semaphore, mpsc};
 
@@ -26,13 +24,11 @@ use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::model::write::user::UserEntry;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteUserMemberships, GetMemberInfo, ListMemberInfos,
-    UpdateMember,
+    CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
-use crate::part::repo::oper::user::{DeleteUser, GetUserInfo, UpdateUser};
+use crate::part::repo::oper::user::{GetUserInfo, UpdateUser};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
-use crate::part_impl::repo::rdb_impl::schema::{t_member, t_team, t_user};
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::value::member::MemberInclOpt;
@@ -202,90 +198,6 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         .unwrap();
 }
 
-/// Verifies user cleanup removes memberships hidden by a team tombstone.
-/// # Panics
-/// Panics if fixture setup fails or a scenario assertion is violated.
-pub async fn user_cleanup_includes_tombstoned_team_memberships(
-    shared: RdbCore,
-) {
-    test_shared::reset(&shared, PREFIX).await;
-
-    let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
-
-    let entry = MemberEntry {
-        id: [PREFIX, "tombstoned-member"].concat(),
-        user_id: team_fixture.user_entry.id.clone(),
-        user_nickname: team_fixture.user_entry.nickname.clone(),
-        team_id: team_fixture.team_entry.id.clone(),
-        roles: RoleMask::from(RoleField::ADMIN),
-    };
-
-    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
-
-    let nucl = RdbNucl::<Serial>::new(shared.clone());
-
-    nucl.coord(async |context| {
-        repo.step(context, &CreateMember { entry: &entry }).await?;
-
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .unwrap();
-
-    let mut conn = shared.get().await.unwrap();
-
-    diesel::update(
-        t_team::table.filter(t_team::f_id.eq(&team_fixture.team_entry.id)),
-    )
-    .set(t_team::f_deleted_at.eq(Some(time::OffsetDateTime::now_utc())))
-    .execute(&mut conn)
-    .await
-    .unwrap();
-
-    drop(conn);
-
-    nucl.coord(async |context| {
-        DeleteUserMemberships {
-            user_id: &team_fixture.user_entry.id,
-        }
-        .step_on(&repo, context)
-        .await?;
-
-        DeleteUser {
-            id: &team_fixture.user_entry.id,
-        }
-        .step_on(&repo, context)
-        .await?;
-
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .unwrap();
-
-    let mut conn = shared.get().await.unwrap();
-
-    let member_count = t_member::table
-        .filter(t_member::f_id.eq(&entry.id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .await
-        .unwrap();
-
-    let user_count = t_user::table
-        .filter(t_user::f_id.eq(&team_fixture.user_entry.id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(member_count, 0);
-    assert_eq!(user_count, 0);
-
-    drop(conn);
-
-    test_shared::cleanup(&shared, PREFIX).await.unwrap();
-}
-
 /// Verifies concurrent admin removals preserve one team administrator.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
@@ -332,7 +244,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
     )
     .await;
 
-    let (ready_tx, mut ready_rx) = mpsc::channel(2);
+    let (ready_sink, mut ready_stream) = mpsc::channel(2);
 
     let write_permits = Arc::new(Semaphore::new(0));
 
@@ -340,7 +252,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         shared.clone(),
         team_fixture.team_entry.id.clone(),
         first_member_entry.id.clone(),
-        ready_tx.clone(),
+        ready_sink.clone(),
         Arc::clone(&write_permits),
     ));
 
@@ -348,17 +260,17 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         shared.clone(),
         team_fixture.team_entry.id.clone(),
         second_member_entry.id.clone(),
-        ready_tx,
+        ready_sink,
         Arc::clone(&write_permits),
     ));
 
     tokio::time::timeout(Duration::from_secs(10), async {
-        ready_rx
+        ready_stream
             .recv()
             .await
             .expect("first transaction must report its completed read");
 
-        ready_rx
+        ready_stream
             .recv()
             .await
             .expect("second transaction must report its completed read");
@@ -418,7 +330,7 @@ async fn remove_admin_role_after_read(
     shared: RdbCore,
     team_id: String,
     member_id: String,
-    ready_tx: mpsc::Sender<()>,
+    ready_sink: mpsc::Sender<()>,
     write_permits: Arc<Semaphore>,
 ) -> Result<(), BaseError> {
     //
@@ -456,7 +368,7 @@ async fn remove_admin_role_after_read(
             roles,
         ));
 
-        ready_tx
+        ready_sink
             .send(())
             .await
             .expect("test read coordinator must remain available");

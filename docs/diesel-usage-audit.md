@@ -56,18 +56,34 @@ until the history keyset query demonstrates an explicit sort or substantial
 cross-PageSource filtering; that evidence would justify replacing it with
 `(f_page_source_id, f_id)`. A visible partial index remains a separate measurement.
 
-### P0 pinned: Chapter and Comic lock order is globally inconsistent
+### Resolved lock order and deferred driver classification
 
-Unit and stage paths acquire Chapter before updating Comic activity, while
-some Chapter creation and subtree-deletion paths acquire Comic before Chapter.
-That inverse order can deadlock across otherwise valid transactions. PostgreSQL
-`40P01` currently reaches Diesel as an unknown database error and is therefore
-classified as unrecoverable instead of the public retryable conflict.
+Chapter creation now acquires existing Chapters in stable ID order before the
+Comic row. Chapter deletion prelocks every potentially repinned sibling before
+Comic; hierarchy tombstoning prelocks affected Chapters before Comic updates.
+Archive snapshots acquire Workset, ordered Chapters, then Comic and revalidate
+the active roots. Locked Chapter projections preserve their previous descending
+index response order after acquisition. Single-Chapter editor/stage prefixes
+remain unchanged, so unrelated Chapter saves gain no early shared Comic lock.
 
-This is pinned for a separate cross-domain correction. Moving the Comic lock
-into the Unit transaction prefix would serialize every Chapter save belonging
-to that Comic and is not an acceptable local optimization without a broader
-business and contention review.
+Bounded PostgreSQL query-order regressions cover deletion scopes, hierarchy
+marking and archive snapshots. Existing creation, rollback, pinning and stage
+regressions remain required. These checks establish the corrected acquisition
+paths, not a claim that every possible database deadlock has been eliminated.
+
+On 2026-10-26, the maintainer deferred deadlock error classification to an
+existing issue and explicitly removed it from the 1.0.0 release blockers.
+This is a scope decision; the driver limitation remains unresolved. Locked
+`diesel-async 0.9.2` maps `40001` to `SerializationFailure` but discards the
+`40P01` SQLSTATE into `Unknown`; its private error wrapper does not expose the
+code through Diesel's public error information. The current upstream conversion
+has the same limitation. Do not match localized messages or make every Unknown
+error retryable. The existing server mapper correctly returns HTTP 409/code 8
+for typed serialization conflicts and keeps unknown errors unrecoverable.
+
+Follow-up completion criterion: a maintained driver change preserves or classifies `40P01`,
+with typed classification regressions and normal business transaction coverage.
+[Locked driver conversion](https://github.com/diesel-rs/diesel_async/blob/v0.9.2/src/pg/error_helper.rs).
 
 ### Resolved: Chapter Unit search no longer fans out by PageSource
 
@@ -137,9 +153,8 @@ business-domain use cases; their actors only provide queueing, dispatch, and
 retry lifecycles. This caller-independent boundary is codified in
 [`usecase-boundaries`](../.agents/skills/usecase-boundaries/SKILL.md).
 
-Tombstone follow-up guards cover adjacent lifecycle paths: user deletion
-batch-removes memberships even when their teams are already hidden; archive
-snapshot and commit both require an active Comic; and normal PageSource identity
+Tombstone follow-up guards cover adjacent lifecycle paths: archive
+snapshot and commit both require an active Comic; normal PageSource identity
 reads reject PageSources whose Chapter is tombstoned, preventing late upload
 confirmation.
 
@@ -150,7 +165,7 @@ Evidence:
 - [`src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs)
 - [`src/usecase/subtree_delete.rs`](../src/usecase/subtree_delete.rs)
 - [`src/usecase/internal/subtree_delete.rs`](../src/usecase/internal/subtree_delete.rs)
-- [`src/extra/sched/subtree_delete.rs`](../src/extra/sched/subtree_delete.rs)
+- [`src/extra/sched/task.rs`](../src/extra/sched/task.rs)
 - [`src/part_impl/repo/rdb_impl/subtree_delete/tests.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/tests.rs)
 
 ### P0 plan: Bound ordinary lists without truncating complete aggregates
@@ -212,19 +227,23 @@ orders it, and loads full fields only for the at-most-100 visible IDs. A 101st
 visible Unit, a counter mismatch, or a corrupt chain is an unrecoverable
 invariant failure rather than a partial response.
 
-Archive export remains complete. Push the exact selected month intervals into
-one typed SQL predicate, order by `(created_at, id)`, and stream rows into a
-temporary export artifact with bounded buffering before the HTTP adapter sends
-it. This preserves the current JSON envelope and month grouping without
-holding all payloads in memory or holding a database connection for the
-client's transfer time. Limit concurrent export artifact creation separately;
-resource exhaustion is an infrastructure error, not permission to return a
-partial archive.
+Archive export now uses exact typed month predicates and deterministic
+`(created_at, id)` keysets in one repeatable-read transaction. Each query first
+loads at most 64 identity/byte-length metadata records, then materializes only
+the prefix within the payload byte budget. An oversized next payload fails
+before its text is loaded; no selected row is silently discarded.
 
-Opaque cursor pagination and archive streaming are intentionally deferred and
-recorded as actionable TODOs in their shared implementation boundaries. The
-current bounded list limit and complete archive response semantics remain in
-force until those TODOs are implemented.
+The complete month map is generated into an anonymous temporary file using
+32 KiB buffers and UTF-8-aligned 4 KiB escaping fragments. The transaction ends
+before HTTP transfer begins. A process-wide admission permit remains owned by
+the response body until completion or cancellation, bounding simultaneous disk
+artifacts as well as generation. Defaults are 8 MiB per payload batch, 256 MiB
+serialized month-map artifact and one active export, configurable through
+`comic_archive_export`. Capacity or budget exhaustion returns HTTP 503/code 9;
+selected empty months and the existing JSON string payload envelope remain.
+
+Opaque cursor pagination remains a separate public API design. Offset limits
+and complete archive response semantics remain in force.
 
 Implementation order:
 
@@ -307,15 +326,14 @@ Term import now bulk-inserts new Terms and applies all replacements in one typed
 insert scope, and unexpected insert or update affected-row counts are
 unrecoverable invariants that roll back the import transaction.
 
-Administrator-retention work remains deferred P1: User deletion still loads
-and locks the complete roster of every Team the user belongs to, while
-Assignment and Member role changes load full collections to evaluate
-administrator retention.
+Administrator-retention optimization remains deferred P1 for Assignment and
+Member role changes that load full collections. User account deletion is not
+a supported business capability: its route, use case and exclusive repository
+operations were removed by the 1.0.0 scope decision.
 
 Evidence:
 
 - [`src/part_impl/repo/rdb_impl/term.rs`](../src/part_impl/repo/rdb_impl/term.rs#L375)
-- [`src/usecase/user/delete.rs`](../src/usecase/user/delete.rs#L72)
 - [`src/usecase/assignment/update_roles.rs`](../src/usecase/assignment/update_roles.rs#L58)
 - [`src/usecase/member.rs`](../src/usecase/member.rs#L340)
 
@@ -366,7 +384,7 @@ administrator must remain transactionally safe.
 - Chapter translation export fetches all Units for all PageSource IDs in one query:
   [`src/usecase/chapter_port/export_translation.rs`](../src/usecase/chapter_port/export_translation.rs#L96).
 - Edited-diff PageSource detection uses a correlated `EXISTS` predicate:
-  [`src/part_impl/repo/rdb_impl/page/step_impl.rs`](../src/part_impl/repo/rdb_impl/page/step_impl.rs#L141).
+  [`src/part_impl/repo/rdb_impl/page_source/step_impl.rs`](../src/part_impl/repo/rdb_impl/page_source/step_impl.rs#L141).
 - System-mail read marking validates a projected batch and updates the batch in
   one statement:
   [`src/part_impl/repo/rdb_impl/system_mail.rs`](../src/part_impl/repo/rdb_impl/system_mail.rs#L103).

@@ -15,7 +15,7 @@ use crate::part::cache::issue_save::{
 };
 use crate::part::cache::unit_save::{UnitSaveCache as _, UnitSaveGuard as _};
 
-// cache_clone(UnitSaveCache)(positive): independently injected handles share exclusion and committed mappings.
+// cache_clone(MemUnitSaveCache)(positive): independently injected handles share exclusion and committed mappings.
 #[tokio::test]
 async fn cloned_handles_share_unit_exclusion_and_results() {
     let cache = MemCache::default();
@@ -55,7 +55,7 @@ async fn cloned_handles_share_unit_exclusion_and_results() {
     );
 }
 
-// cache_clone(IssueSaveCache)(positive): clones share exclusion and receipts independently of Unit saves.
+// cache_clone(MemIssueSaveCache)(positive): clones share exclusion and receipts independently of Unit saves.
 #[tokio::test]
 async fn cloned_handles_share_issue_exclusion_and_receipts() {
     let cache = MemCache::default();
@@ -104,7 +104,7 @@ async fn cloned_handles_share_issue_exclusion_and_receipts() {
     assert!(restarted.lock_issue_save(save_id).await.receipt().is_none());
 }
 
-// cache_cancel(IssueSaveCache)(negative): cancelling a holder releases exclusion without recording success.
+// cache_cancel(MemIssueSaveCache)(negative): cancelling a holder releases exclusion without recording success.
 #[tokio::test]
 async fn cancelled_issue_holder_releases_exclusion_without_receipt() {
     let cache = MemCache::default();
@@ -113,17 +113,17 @@ async fn cancelled_issue_holder_releases_exclusion_without_receipt() {
 
     let save_id = Uuid::new_v4();
 
-    let (locked_send, locked_recv) = tokio::sync::oneshot::channel();
+    let (locked_sink, locked_stream) = tokio::sync::oneshot::channel();
 
     let task = tokio::spawn(async move {
         let _guard = cloned.lock_issue_save(save_id).await;
 
-        locked_send.send(()).unwrap();
+        locked_sink.send(()).unwrap();
 
         std::future::pending::<()>().await;
     });
 
-    timeout(Duration::from_secs(1), locked_recv)
+    timeout(Duration::from_secs(1), locked_stream)
         .await
         .unwrap()
         .unwrap();

@@ -1,26 +1,64 @@
-# TO FIX
+# ObjDept feedback reconciliation
 
-- [ ] ObjPool 应该是在 obj-dept 中定义的一个 trait，然后 R2 只是它的一个实现，这不应该是 poprako-server 的一个 part，因为它根本不会被 usecase 层使用！根本就不该在 poprako-server 中有 ObjRemote 这种垃圾 trait。
-- [ ] ActorHarn 是什么垃圾命名？它就叫 ActorDesc，所有负责 eventloop 的叫 *Actor，控制 Actor 的控制句柄叫做 *ActorDesc。
-- [ ] ActorInner 命名也是错误的。
-- [ ] 怎么还有 get_upload_slot 这种命名？？这个函数是他妈无副作用幂等的吗你就用 get？我不是都写了 gen？
-- [ ] ObjError 是什么玩意？你的结构体难道叫 Obj？我怎么不知道？我写的不是 ObjDept 吗？
-- [ ] 后面来了新的存储需求，你怎么扩展？比如 Font。你为什么不把样板代码用宏简化。
-- [ ] 到底是怎么保证类型安全的？必须保证没有的表和列编译期就报错。现在看起来根本不是这样。
-- [ ] 我的 phantom data 的字段除了 \_m 以外的名字允许你写了吗？？？
-- [ ] obj-dept 的 rdb_impl 是啥啊？？？他妈逼的一个完全不类型安全的莫名其妙的 trait。我说得类型安全是，diesel 可以在编译器立刻发现你没有构建好对应的表和列的安全。也就是说在不使用任何其他 diesel 的 trick 的情况下，直接可以被 diesel 生成的 schema 安全推断的。
+Reviewed against the working tree on 2026-10-25. This ledger preserves all
+22 original requests in their original order. Resolved items cite current
+source, rather than claiming release validation has passed. The current
+contract is [the ObjDept specification](../specs/obj-dept.md).
 
-- [ ] obj-dept 的 model 里面嵌套 obj 什么几把意思？？？？？？他妈逼的不按功能分 submod 是他妈逼什么意思？？？
-- [ ] ObjPoolSpec 是个什么垃圾命名啊？它他妈是创建还是搜索 ObjPool 啊你他妈逼这么命名？
-- [ ] settle 这个名字不可接受，必须包括类型和变量在哪全部改名。
-- [ ] 这个 settle 是什么几把操作啊？？还有这么还是有莫名其妙的 Bind 啊？？？
-- [ ] 为什么 HybNucl 的定义污染到了 harn.rs 里？？？
-- [ ] ObjActor 为什么他妈逼的会以数组存储啊？？？你是弱智吗？？？
-- [ ] 严禁有包含 start 名字的任何方法和结构体！！！他妈逼的 actor 当然是 new 函数里就直接他妈逼启动后台 task 啊？？？你他妈逼的手动启动个屁。
-- [ ] 我什么时候允许 oper 类结构体可以有自己的构造函数了？？？
-- [ ] RdbObjDept 它是他妈逼的 rdb 的 impl 吗？？他妈它不是还有 R2 吗？？？你他妈逼的不叫 NormObjDept？？？
-- [ ] 你不会吧 obj! 改成 objs_def! 吗？？？写那么多遍 obj 宏你不觉得有问题吗？？？？
-- [ ] 他妈逼除了 use 里为什么还有他妈逼的 crate:: 的调用方式啊？？？？？
-- [ ] 到处莫名其妙、毫无用处的 must use 有个屁用？？？
+## Original requests and disposition
 
-- [ ] 为什么 part 里对应的部分不是叫 obj_dept 而是叫 obj？
+| Request | Current evidence and disposition |
+| --- | --- |
+| 1. Define the pool trait inside ObjDept, implement it with R2, and remove the server `ObjRemote` port. | Resolved: `ObjDeptPool`/`ObjDeptPoolView` live in `poprako-obj-dept/src/pool.rs`; the R2 implementation lives in `src/part_impl/obj_dept/r2_impl.rs`. |
+| 2. Name event loops `*Actor` and control handles `*ActorDesc`, replacing `ActorHarn`. | Resolved for ObjDept: `ObjDeptActor` and `ObjDeptActorDesc` in `poprako-obj-dept/src/actor.rs`. |
+| 3. Remove misleading `ActorInner`. | Resolved in ObjDept: the actor directly owns `prom`/`handler`, and its descriptor owns cancellation/join handles. |
+| 4. Name effectful upload generation with `gen`, rather than `get_upload_slot`. | Resolved: `GenObjSlot`, `GenObjSlots`, and pool `gen_slot`. |
+| 5. Name the error after ObjDept. | Resolved: `ObjDeptError` in `poprako-obj-dept/src/rest.rs`. |
+| 6. Support future kinds such as Font through macros. | Generation seam exists: `objs_def!` and `impl_obj_dept!`; macro test `generated_names_are_readable_and_read_views_cover_every_marker` includes `FontFile`. A real Font feature remains separate product work. |
+| 7. Prove missing tables and columns fail compilation. | Typed implementation exists; explicit negative compilation coverage remains FIX-01. |
+| 8. Name phantom fields only `_m`. | Resolved in ObjDept identity and operation fields in `key.rs` and `oper.rs`. |
+| 9. Replace untyped `rdb_impl` indirection with direct Diesel schema inference. | Concrete table paths, typed expressions and `Selectable` projections are emitted by `poprako-obj-dept-macro/src/object/rdb_entry.rs`. The remaining `rdb_impl` module provides shared typed support; the name alone does not establish the old defect. Compiler rejection evidence remains FIX-01. |
+| 10. Split models by function instead of a nested generic `obj` module. | Resolved: `model.rs` declares `alloc`, `meta`, `record`, `slot`, `task`, and `url`. |
+| 11. Replace ambiguous `ObjPoolSpec`. | Resolved: `ObjSlotSpec` describes upload requirements; `ObjUrlSpec` selects URL renditions. |
+| 12. Remove `settle` from types and variables. | Resolved in inspected ObjDept source: explicit `persist_action`, `complete_task`, `retry_task`, and `mark_task_operator` names. |
+| 13. Remove unclear settle/Bind machinery. | Current dispatch uses `ObjKind` markers, generated typed table modules and explicit task actions. |
+| 14. Keep `HybNucl` definitions out of `harn.rs`. | Resolved: `src/harn.rs` stores generic ports; `src/main.rs` composes `HybNucl`. |
+| 15. Do not store ObjActor as an array. | Resolved: `src/main.rs` owns one `ObjDeptActorDesc`; its supervisor joins claim and maintenance loops. |
+| 16. Forbid start-named APIs and spawn tasks in `new`. | No start-named ObjDept API remains, but `new` constructs without spawning and `run_detached` spawns. Lifecycle disposition remains FIX-02. |
+| 17. Do not give operation descriptors constructors. | Policy conflict: `oper.rs` has `new` constructors; the later [remediation plan](../plans/obj-dept-remediation.md) explicitly requested these to replace `obj_inst!`. Preserve as FIX-03 pending confirmation of the governing decision. |
+| 18. Name the total implementation `NormObjDept`. | Resolved: `src/part_impl/obj_dept.rs` defines `NormObjDept`; `RdbObjDeptProm` names only the database queue adapter. |
+| 19. Replace repeated `obj!` declarations with `objs_def!`. | Resolved: the server manifest uses `objs_def!`. |
+| 20. Avoid `crate::` calls outside imports. | Review remains FIX-04: qualified paths remain in tests and macros, whose hygiene requirements need a separate disposition. |
+| 21. Remove unnecessary `must_use` attributes. | Review remains FIX-05: attributes remain on constructors, helpers and detached actor return values. |
+| 22. Name the server part `obj_dept`, rather than `obj`. | Resolved: `src/part/obj_dept.rs` and `src/part_impl/obj_dept.rs`. |
+
+## Open tasks and acceptance
+
+- [ ] **FIX-01 — Prove Diesel schema rejection.** Add compile-fail coverage for
+  a declaration referencing a missing table, a missing required column, and an
+  incompatible column type. Retain the successful typed fixture in
+  `poprako-obj-dept/tests/rdb_obj.rs`. Acceptance: invalid fixtures fail through
+  concrete Diesel schema/type checking; valid operations compile without raw
+  SQL or string-selected tables. Existing macro token tests do not establish
+  all three failure cases.
+- [ ] **FIX-02 — Resolve actor construction lifecycle.** Reconcile the original
+  auto-spawn requirement with `ObjDeptActor::new`/`run_detached` and composition
+  in `src/main.rs`. Acceptance: the active spec records the governing contract;
+  constructor spawning is implemented with cancellation/shutdown regression
+  coverage, or the original requirement is explicitly superseded by the user.
+- [ ] **FIX-03 — Resolve operation construction policy.** Reconcile the original
+  prohibition with the later remediation's associated-constructor requirement
+  and private `_m` fields. Acceptance: one documented decision governs all
+  descriptors and ordinary call sites compile without opaque macro navigation.
+  Do not undo the later implementation merely from this historical checklist.
+- [ ] **FIX-04 — Review qualified calls.** Inspect ordinary handwritten runtime
+  code and tests, including `poprako-obj-dept/src/tests.rs`, separately from
+  macro bodies. Acceptance: ordinary calls follow import conventions; retained
+  `$crate` and emitted absolute dependency paths have a hygiene rationale.
+- [ ] **FIX-05 — Review `must_use` individually.** Review `oper.rs`,
+  `model/url.rs`, `rest.rs`, `prom.rs`, `actor.rs`, `rdb_impl.rs`, `key.rs`, and
+  the server R2 adapter. Acceptance: remove redundant annotations and justify
+  retained lost-result contracts or lint requirements; canonical Rust checks
+  pass without weakening linters.
+
+Resource-limit and value/model audits remain in [the maintenance backlog](todo.md).

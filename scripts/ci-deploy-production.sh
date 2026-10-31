@@ -199,6 +199,7 @@ umask 077
 ssh_root=$(mktemp -d "${runner_temp}/poprako-deploy-ssh.XXXXXX")
 private_key_file="${ssh_root}/id_ed25519"
 known_hosts_file="${ssh_root}/known_hosts"
+deployment_log="${ssh_root}/deployment.log"
 ssh_target="${deploy_user}@${deploy_host}"
 
 cleanup() {
@@ -206,7 +207,7 @@ cleanup() {
 
     trap - EXIT INT TERM
 
-    rm -f "$private_key_file" "$known_hosts_file"
+    rm -f "$private_key_file" "$known_hosts_file" "$deployment_log"
     rmdir "$ssh_root" >/dev/null 2>&1 || true
 
     exit "$exit_status"
@@ -251,7 +252,34 @@ if ! stream_runtime_values | ssh \
     -o StrictHostKeyChecking=yes \
     -o "UserKnownHostsFile=$known_hosts_file" \
     "$ssh_target" \
-    "sh '$release_dir/ga-remote-deploy.sh' '$deploy_source_image' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network' '$postgres_container'"; then
+    "sh '$release_dir/ga-remote-deploy.sh' '$deploy_source_image' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network' '$postgres_container'" >"$deployment_log"; then
+    cat "$deployment_log"
     echo "::error title=Production deployment failed::Remote deployment or post-deployment verification failed for ${deploy_sha}"
     exit 1
+fi
+
+cat "$deployment_log"
+
+if [ -n "${DEPLOY_EVIDENCE_FILE:-}" ]; then
+    deployed_commit=$(sed -n 's/^deployed_commit=//p' "$deployment_log")
+    deployed_source_image=$(sed -n 's/^deployed_source_image=//p' "$deployment_log")
+    deployed_image=$(sed -n 's/^deployed_image=//p' "$deployment_log")
+    deployed_image_id=$(sed -n 's/^deployed_image_id=//p' "$deployment_log")
+
+    [ "$deployed_commit" = "$deploy_sha" ]
+    [ "$deployed_source_image" = "$deploy_source_image" ]
+    [ "$deployed_image" = "${image_name}:${image_tag}" ]
+
+    printf '%s\n' "$deployed_image_id" | LC_ALL=C grep -E '^sha256:[0-9a-f]{64}$' >/dev/null
+
+    jq -n \
+        --arg source_commit "$deployed_commit" \
+        --arg source_image "$deployed_source_image" \
+        --arg local_image "$deployed_image" \
+        --arg image_id "$deployed_image_id" \
+        --arg run_id "${GITHUB_RUN_ID:?GITHUB_RUN_ID is required}" \
+        --arg run_attempt "${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is required}" \
+        '{source_commit: $source_commit, source_image: $source_image,
+          local_image: $local_image, image_id: $image_id, result: "success",
+          run_id: $run_id, run_attempt: $run_attempt}' >"$DEPLOY_EVIDENCE_FILE"
 fi

@@ -128,11 +128,16 @@ pub fn submitted_stage_advances(edits: &[UnitEdit]) -> Vec<Stage> {
 }
 
 /// Normalizes one Unit edit batch against the persisted Unit IDs.
-pub fn normalize_edits(
-    base_ids: &[&str],
+pub fn normalize_edits<'a, I>(
+    base_ids: I,
     edits: Vec<UnitEdit>,
-) -> BaseRest<Vec<UnitEdit>> {
+) -> BaseRest<Vec<UnitEdit>>
+where
+    I: IntoIterator<Item = &'a str>,
+{
     //
+    let base_ids = base_ids.into_iter().collect::<HashSet<_>>();
+
     if !(1..=MAX_UNIT_EDIT_COUNT).contains(&edits.len()) {
         //
         let args = HashMap::from([
@@ -196,7 +201,7 @@ pub fn normalize_edits(
 
     compress_edits(&mut edits);
 
-    final_validate_edits(base_ids, &edits)?;
+    final_validate_edits(&base_ids, &edits)?;
 
     accept!(edits)
 }
@@ -285,10 +290,11 @@ fn compress_edits(edits: &mut Vec<UnitEdit>) {
 }
 
 // Validate cross-edit consistency and pointer validity.
-fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
+fn final_validate_edits(
+    base_ids: &HashSet<&str>,
+    edits: &[UnitEdit],
+) -> BaseRest<()> {
     //
-    let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
-
     let (deleted_ids, created_ids) = edits.iter().fold(
         (HashSet::new(), HashSet::new()),
         |(mut deleted, mut created), edit| {
@@ -330,7 +336,7 @@ fn final_validate_edits(base_ids: &[&str], edits: &[UnitEdit]) -> BaseRest<()> {
     }
 
     edits.iter().try_for_each(|edit| {
-        validate_edit(&base_ids, &deleted_ids, &created_ids, edit)
+        validate_edit(base_ids, &deleted_ids, &created_ids, edit)
     })
 }
 

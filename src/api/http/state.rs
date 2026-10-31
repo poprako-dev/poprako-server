@@ -9,7 +9,7 @@ use crate::harn::Harn;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::cache::mem_impl::MemCache;
-use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
+use crate::part_impl::effect::async_impl::AsyncEventBus;
 use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
 use crate::part_impl::obj_dept::NormObjDept;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
@@ -23,5 +23,5 @@ pub type AppHarn = Harn<
     NormObjDept,
     RdbProm,
     JwtAuth,
-    AsyncEffectDevelop,
+    AsyncEventBus,
 >;

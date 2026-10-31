@@ -281,3 +281,131 @@ async fn mark_workset(shared: &RdbCore, workset_id: &str) {
 pub async fn workset_subtree_delete_uses_mark_and_sweep(shared: RdbCore) {
     sweep::run(shared).await;
 }
+
+// deletion_locks_chapters_before_comics(LockSubtreeDeleteScope, MarkSubtree)(positive): deletion locks Chapters in ID order before their Comic and hierarchy tombstoning locks Chapters before Comic writes.
+#[tokio::test]
+#[serial_test::serial(repo_rdb)]
+async fn deletion_locks_chapters_before_comics() {
+    use std::sync::{Arc, Mutex};
+
+    use diesel::connection::InstrumentationEvent;
+    use diesel_async::AsyncConnection as _;
+
+    let database = crate::shared::test_rdb::start().await;
+
+    let shared = database.core();
+
+    let fixture =
+        super::super::test_shared::seed_page(&shared, "lock-order-").await;
+
+    let team_fixture =
+        super::super::test_shared::seed_page(&shared, "lock-order-team-").await;
+
+    let workset_id = {
+        let mut conn = shared.get().await.unwrap();
+
+        t_comic::table
+            .filter(t_comic::f_id.eq(&fixture.chapter_info.comic_id))
+            .select(t_comic::f_workset_id)
+            .get_result::<String>(&mut conn)
+            .await
+            .unwrap()
+    };
+
+    let repo = RdbRepo::new(shared.clone(), RepoConfig::default());
+
+    let nucl = RdbNucl::<Serial>::new(shared);
+
+    for root in [
+        SubtreeRoot::Chapter {
+            id: &fixture.chapter_info.id,
+        },
+        SubtreeRoot::Comic {
+            id: &fixture.chapter_info.comic_id,
+        },
+        SubtreeRoot::Workset { id: &workset_id },
+        SubtreeRoot::Team {
+            id: &team_fixture.team_entry.id,
+        },
+    ] {
+        let queries = Arc::new(Mutex::new(Vec::new()));
+
+        let is_hierarchy = matches!(
+            root,
+            SubtreeRoot::Team { .. } | SubtreeRoot::Workset { .. }
+        );
+
+        nucl.coord(async |context| {
+            let recorded = Arc::clone(&queries);
+
+            context.conn().set_instrumentation(
+                move |event: InstrumentationEvent<'_>| {
+                    if let InstrumentationEvent::StartQuery { query, .. } =
+                        event
+                    {
+                        recorded.lock().unwrap().push(query.to_string());
+                    }
+                },
+            );
+
+            let scope = LockSubtreeDeleteScope { root }
+                .step_on(&repo, context)
+                .await?;
+
+            if is_hierarchy {
+                MarkSubtree { scope: &scope }
+                    .step_on(&repo, context)
+                    .await?;
+            }
+
+            Ok::<(), crate::result::BaseError>(())
+        })
+        .await
+        .unwrap();
+
+        let queries = queries.lock().unwrap().clone();
+
+        let locks = queries
+            .iter()
+            .filter(|query| query.contains("FOR UPDATE"))
+            .collect::<Vec<_>>();
+
+        if is_hierarchy {
+            let chapter_lock = queries
+                .iter()
+                .position(|query| {
+                    query.contains("FOR UPDATE")
+                        && query.contains("FROM \"t_chapter\"")
+                })
+                .unwrap();
+
+            let comic_write = queries
+                .iter()
+                .position(|query| query.starts_with("UPDATE \"t_comic\""))
+                .unwrap();
+
+            assert!(chapter_lock < comic_write);
+
+            continue;
+        }
+
+        assert!(
+            locks
+                .as_slice()
+                .first()
+                .unwrap()
+                .contains("FROM \"t_workset\"")
+        );
+
+        assert!(locks.get(1).unwrap().contains("FROM \"t_chapter\""));
+
+        assert!(
+            locks
+                .get(1)
+                .unwrap()
+                .contains("ORDER BY \"t_chapter\".\"f_id\" ASC")
+        );
+
+        assert!(locks.get(2).unwrap().contains("FROM \"t_comic\""));
+    }
+}

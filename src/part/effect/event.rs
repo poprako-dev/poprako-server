@@ -10,11 +10,11 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::effect::event::user::UserSignedUpEvent;
 
-/// Domain events produced by use cases and dispatched through [`EffectDevelop`].
+/// Domain events produced by use cases and dispatched through [`EventBus`].
 ///
 /// Each variant carries a payload struct with the data relevant to that event.
 ///
-/// [`EffectDevelop`]: crate::part::effect::EffectDevelop
+/// [`EventBus`]: crate::part::effect::EventBus
 pub enum Event {
     /// Emitted when a new user signs up via an invitation.
     UserSignedUp {

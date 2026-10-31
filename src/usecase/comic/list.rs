@@ -85,46 +85,49 @@ where
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
-    let pinned_chapter_snapshot = match (with_pinned_chapter,) {
+    let pinned_chapter_snapshot = async {
         //
-        (true,) => Some(
+        if !with_pinned_chapter {
+            return accept!(None);
+        }
+
+        accept!(Some(
             PinnedChapterSnapshot::load_from_comics(
                 repo,
                 &comic_infos,
                 0..comic_infos.len(),
             )
             .await?,
-        ),
-
-        (false,) => None,
-    };
+        ))
+    }
+    .await?;
 
     let pinned_chapter_infos = pinned_chapter_snapshot
         .as_ref()
         .map(PinnedChapterSnapshot::infos);
 
-    let pinned_chapter_assignment_infos = match (with_pinned_chapter_assignment,)
-    {
-        (true,) => {
-            //
-            let chapter_ids = pinned_chapter_infos
-                .into_iter()
-                .flatten()
-                .map(|chapter_info| chapter_info.id.as_str())
-                .collect::<Vec<_>>();
-
-            let assignment_incls = [AssignmentInclOpt::User];
-
-            ListAssignmentInfos::Chapters {
-                chapter_ids: &chapter_ids,
-                incls: &assignment_incls,
-            }
-            .run_on(repo)
-            .await?
+    let pinned_chapter_assignment_infos = async {
+        //
+        if !with_pinned_chapter_assignment {
+            return accept!(Vec::new());
         }
 
-        (false,) => Vec::new(),
-    };
+        let chapter_ids = pinned_chapter_infos
+            .into_iter()
+            .flatten()
+            .map(|chapter_info| chapter_info.id.as_str())
+            .collect::<Vec<_>>();
+
+        let assignment_incls = [AssignmentInclOpt::User];
+
+        ListAssignmentInfos::Chapters {
+            chapter_ids: &chapter_ids,
+            incls: &assignment_incls,
+        }
+        .run_on(repo)
+        .await
+    }
+    .await?;
 
     let data = ComicListData::new(
         comic_infos,

@@ -19,6 +19,8 @@ sh scripts/ci-parallel.sh \
     "sh scripts/check-rust-lines.sh" \
     "Deployment scripts" \
     "sh scripts/test-deployment-scripts.sh" \
+    "Release readiness gates" \
+    "uv run --no-project python scripts/test-release-readiness.py" \
     "Rust compilation" \
     "cargo check --workspace --all-targets --all-features" \
     "Rust lint" \

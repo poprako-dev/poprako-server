@@ -120,7 +120,7 @@ where
         })
         .await?;
 
-    // FIXME: no need to use info val in create.
+    // Creation returns the same hydrated team view as reads, matching the API.
     team_info_view(obj_dept, team_info).await
 }
 

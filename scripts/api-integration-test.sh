@@ -15,7 +15,7 @@ if [ -f "$env_file" ]; then
     set +a
 fi
 
-RUST_LOG="${INTEGRATION_RUST_LOG:-$RUST_LOG}"
+RUST_LOG="${INTEGRATION_RUST_LOG:-${RUST_LOG:-info}}"
 
 export RUST_LOG
 
@@ -68,7 +68,7 @@ if [ "$run_migrations" = "1" ]; then
     # `diesel database setup` creates the integration database if it does not
     # exist yet, then runs pending migrations. It is idempotent on subsequent
     # runs.
-    diesel database setup
+    diesel database setup --config-file /dev/null
     psql "$integration_database_url" \
         --set ON_ERROR_STOP=1 \
         --file tests/fixtures/integration-bootstrap.sql
@@ -82,7 +82,10 @@ if [ "$start_api_server" = "1" ]; then
         exit 1
     fi
 
-    cargo run -p poprako-server --bin poprako-server &
+    # Compile before starting the health deadline, including on a cold CI runner.
+    # Launch the binary directly so cleanup terminates the API process itself.
+    cargo build -p poprako-server --bin poprako-server
+    target/debug/poprako-server &
     server_pid="$!"
 
     health_ok=0

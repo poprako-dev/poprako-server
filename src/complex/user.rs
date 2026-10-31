@@ -43,7 +43,7 @@ pub async fn hash_password(password: &str) -> BaseRest<String> {
 }
 
 /// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
-/// TODO: no need to return bool.
+/// The caller selects the public authentication error from the boolean verdict.
 pub async fn verify_password(password: &str, password_hash: &str) -> bool {
     //
     let (password, password_hash) =

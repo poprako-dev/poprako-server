@@ -6,13 +6,11 @@
 //! Test fixtures and cases for the user use case module.
 //!
 //! Tests exercise user profile reads, updates, avatar management, activity
-//! tracking, and account deletion against a [`Mock`] that doubles as the
-//! coordinator, repository, prom enqueuer, image pool, and effect developer.
+//! tracking against a [`Mock`] that doubles as the
+//! coordinator, repository, prom enqueuer, image pool, and event bus.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
-// Delete flow coverage, including avatar cleanup and related records.
-mod delete;
 mod extra;
 
 // get_info(get_info)(positive): self and other-user reads preserve activity without emitting events.
@@ -29,11 +27,6 @@ mod extra;
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): non-owner mark should return a perm error.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should rollback uploaded state.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
-// delete(delete)(positive): owner delete should remove user, credentials, and memberships, and enqueue uploaded avatar deletion.
-// delete(delete)(positive): deleting a user without an uploaded avatar should not enqueue prom records.
-// delete(delete)(negative): deleting a user must retain an admin in every affected team.
-// delete(delete)(negative): non-owner delete should return a perm error without mutation.
-// delete(delete)(negative): missing user should rollback state.
 
 use super::*;
 

@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-// FIXME: specific models and values are necessary.
+// Export data uses the shared translation-document models and validated format spec.
 
 use std::collections::HashMap;
 

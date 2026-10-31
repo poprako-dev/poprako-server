@@ -1,5 +1,7 @@
 # Prom 停服手工升级
 
+> 历史升级记录：目标是当时的 UUID-token 快照，不是当前 1.0.0 基线。脚本依赖当前规范已取消的业务 CHECK，且现有 migration CI 未调用本记录末尾的测试。以下命令仅保留作历史证据，不能作为当前升级操作指南。见 [升级支持范围](database-upgrade-support.md)。
+
 适用来源：主分支 `b514b4bf` 的两张数值 lease 队列表。目标是本分支
 `a4b957cb` 已实现的固定 Topic、当前 payload、成功即删除和 UUID claim token。
 脚本还支持对已完成升级的目标库重复校验；遇到两张表版本不一致会拒绝执行。

@@ -1,5 +1,10 @@
 # ObjDept Implementation Plan
 
+Historical record only. The old commands, names, scope and stop conditions below
+are not current implementation instructions. Use [the active specification](../../../specs/obj-dept.md)
+and [current feedback reconciliation](../../to-fix.md); retention is tracked in
+[the maintenance backlog](../../todo.md).
+
 > Superseded: this records the earlier PageImage-only infrastructure slice.
 > Current implementation and recheck work are governed by
 > `plans/obj-dept-remediation.md` and

@@ -2,13 +2,12 @@
 
 use std::collections::HashMap;
 
-use poprako_orchestra::{Run, Step};
-use time::OffsetDateTime;
+use poprako_orchestra::Step;
 use tracing::instrument;
 
 use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot,
-    ComicArchivePageSourceSnapshot, ComicArchiveSnapshot,
+    ComicArchivePageSourceSnapshot, ComicArchivePayload, ComicArchiveSnapshot,
 };
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
@@ -100,23 +99,25 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     accept!(visible_infos)
 }
 
-impl Run<ListComicArchivePayloads<'_>> for Mock {
+impl Step<ListComicArchivePayloads<'_>, MockContext> for Mock {
+    // Export metadata and payloads share the caller's snapshot.
+    type Level = ReptRead;
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
-    async fn run(
+    async fn step(
         &self,
+        context: &mut MockContext,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
+    ) -> BaseRest<Vec<ComicArchivePayload>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        let state = self.state.lock().unwrap();
-
-        let payloads = state
+        let mut records = context
+            .state
             .comic_archives
             .iter()
             .filter(|record| record.team_id == oper.team_id)
@@ -128,14 +129,48 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
                         && record.created_at < month.end
                 })
             })
-            .map(|record| (record.created_at, record.archived_payload.clone()))
-            .collect();
+            .filter(|record| {
+                //
+                oper.after.is_none_or(|(created_at, id)| {
+                    (record.created_at, record.id.as_str()) > (created_at, id)
+                })
+            })
+            .collect::<Vec<_>>();
 
-        let rest = accept!(payloads);
+        records.sort_by(|left, right| {
+            (left.created_at, &left.id).cmp(&(right.created_at, &right.id))
+        });
 
-        drop(state);
+        let mut bytes = 0_u64;
 
-        rest
+        let mut payloads = Vec::new();
+
+        for record in records.into_iter().take(64) {
+            //
+            let size = record.archived_payload.len() as u64;
+
+            if bytes + size > oper.payload_budget_bytes {
+                //
+                if payloads.is_empty() {
+                    //
+                    return Err(BaseError::Unavailable {
+                        message: "archive export memory budget exceeded".into(),
+                    });
+                }
+
+                break;
+            }
+
+            bytes += size;
+
+            payloads.push(ComicArchivePayload {
+                id: record.id.clone(),
+                created_at: record.created_at,
+                payload: record.archived_payload.clone(),
+            });
+        }
+
+        accept!(payloads)
     }
 }
 

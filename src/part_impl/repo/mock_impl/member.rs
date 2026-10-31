@@ -10,8 +10,8 @@ use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::MemberEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
-    GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    LockTeamMemberInfos, UpdateMember,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -292,23 +292,6 @@ fn list_member_infos(
     }
 }
 
-// Internal implementation of `list_member_infos_by_user`.
-fn list_member_infos_by_user(
-    state: &MockState,
-    user_id: &str,
-) -> Vec<MemberInfo> {
-    //
-    state
-        .members
-        .iter()
-        .filter(|member_info| member_info.user_id == user_id)
-        .filter(|member_info| {
-            !state.deleted_team_ids.contains(&member_info.team_id)
-        })
-        .cloned()
-        .collect()
-}
-
 impl<'a> Run<ListMemberInfos<'a>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
@@ -325,18 +308,9 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        match oper {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            ListMemberInfos::Spec { spec } => {
-                accept!(list_member_infos(&state, spec))
-            }
+        let ListMemberInfos::Spec { spec } = oper;
 
-            ListMemberInfos::User { user_id } => {
-                accept!(list_member_infos_by_user(&state, user_id))
-            }
-        }
+        accept!(list_member_infos(&state, spec))
     }
 }
 
@@ -446,18 +420,9 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
         oper: &ListMemberInfos<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        match oper {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            ListMemberInfos::Spec { spec } => {
-                accept!(list_member_infos(&context.state, spec))
-            }
+        let ListMemberInfos::Spec { spec } = oper;
 
-            ListMemberInfos::User { user_id } => {
-                accept!(list_member_infos_by_user(&context.state, user_id))
-            }
-        }
+        accept!(list_member_infos(&context.state, spec))
     }
 }
 
@@ -554,30 +519,6 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-member-not-found"))?;
 
         context.state.members.remove(position);
-
-        accept!(())
-    }
-}
-
-impl<'a> Step<DeleteUserMemberships<'a>, MockContext> for Mock {
-    // Required Orchestra execution level.
-    type Level = ReptRead;
-
-    // Shared repository error type.
-    type Error = BaseError;
-
-    // Execute the repository operation.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteUserMemberships<'a>,
-    ) -> BaseRest<()> {
-        //
-        context
-            .state
-            .members
-            .retain(|member_info| member_info.user_id != oper.user_id);
 
         accept!(())
     }

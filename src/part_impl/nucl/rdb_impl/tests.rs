@@ -39,7 +39,7 @@ async fn verify_cancelled_transaction(
     serial: &RdbNucl<Serial>,
     original: &(i32, String),
 ) -> (i32, String) {
-    let (started_send, started_recv) = oneshot::channel();
+    let (started_sink, started_stream) = oneshot::channel();
 
     let attempt = serial.coord(async |context| {
         diesel::update(t_local_message::table)
@@ -48,7 +48,7 @@ async fn verify_cancelled_transaction(
             .await
             .unwrap();
 
-        started_send.send(()).unwrap();
+        started_sink.send(()).unwrap();
 
         pending::<Result<(), BaseError>>().await
     });
@@ -58,7 +58,7 @@ async fn verify_cancelled_transaction(
             result = attempt => panic!("pending transaction finished: {:?}",
                 result),
 
-            started = started_recv => started.unwrap(),
+            started = started_stream => started.unwrap(),
         }
     })
     .await

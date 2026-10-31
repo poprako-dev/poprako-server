@@ -75,5 +75,5 @@ as a multi-day validity error for a fixed 30-day TTL.
 Thirty days is a maximum retention age, not a guaranteed replay window: capacity
 eviction can remove tokens earlier, and process-local storage does not survive
 restart. This follows from the existing bounded in-memory
-[Unit save cache](../src/part_impl/repo/mem_impl/unit_save.rs) and Moka's
+[Unit save cache](../src/part_impl/cache/mem_impl/unit_save.rs) and Moka's
 [size-based eviction contract](https://docs.rs/moka/0.12.16/moka/sync/struct.Cache.html#example-size-based-eviction).

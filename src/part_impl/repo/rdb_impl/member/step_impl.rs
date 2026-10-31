@@ -282,24 +282,6 @@ pub async fn list_infos_by_team_id_excluded(
     accept!(records.into_iter().map(Into::into).collect())
 }
 
-/// Query all member infos for a user without acquiring a lock.
-#[instrument(level = "info", skip_all)]
-pub async fn list_infos_by_user_id(
-    conn: &mut RdbConn,
-    user_id: &str,
-) -> BaseRest<Vec<MemberInfo>> {
-    //
-    let records = t_member
-        .filter(f_user_id.eq(user_id))
-        .filter(f_team_id.eq_any(active_team_ids!()))
-        .select(MemberInfoRecord::as_select())
-        .load::<MemberInfoRecord>(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept!(records.into_iter().map(Into::into).collect())
-}
-
 /// Update the role mask and refresh assignment timestamps for a member.
 #[instrument(level = "info", skip_all)]
 pub async fn update_role(
@@ -336,21 +318,6 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     .execute(conn)
     .await
     .map_err(diesel)?;
-
-    accept!(())
-}
-
-/// Delete every membership for a user, including records under tombstoned teams.
-#[instrument(level = "info", skip_all)]
-pub async fn delete_user_memberships(
-    conn: &mut RdbConn,
-    user_id: &str,
-) -> BaseRest<()> {
-    //
-    diesel::delete(t_member.filter(f_user_id.eq(user_id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
 
     accept!(())
 }

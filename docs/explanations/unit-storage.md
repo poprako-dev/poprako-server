@@ -65,7 +65,10 @@ Chapter 级文本搜索由
 ## 写语义
 
 `POST /api/v1/page-sources/{page_source_id}/units/save` 的请求体就是 edit 数组，每批
-接受 1–100 个 edit。成功返回 `204 No Content`；客户端随后重新 list。
+接受 1–100 个 edit，并要求 UUID 查询参数 `save_id`。成功返回 `200 OK`，
+`data.created_unit_ids` 包含新建 Unit 的 `local_id` 与 `unit_id` 映射；没有新建
+项时返回空数组。客户端应用映射后重新 list。重试、TTL 和事务语义以
+[Unit Save API](../unit-save-api.md) 为准。
 
 Edit 使用 `edit` 标签：
 
@@ -78,7 +81,7 @@ Edit 使用 `edit` 标签：
 - `delete`：只包含永久 `id`，将 Unit 转为 tombstone。
 
 Create 先为全部 `local_id` 生成永久 ID，再解析同批次主体与 `next_id`
-引用。`local_id` 只在当前请求内有效，不返回映射。
+引用。`local_id` 只在当前批次内有效，映射通过成功响应返回。
 
 同一批 edits 会先规范化：Delete 稳定前置、重复 Delete 去重、同 ID 的
 Save 按字段合并，Delete 与 Save 同时出现时收敛为 Save。Patch 会恢复
@@ -128,5 +131,6 @@ Comic；事务提交后再触发 translation/proofread stage。
 5. 添加 `f_next_id` 外键，保留 `f_page_source_id` 索引并删除 `f_index`；
 6. 提交后启动 v2，执行 list → save → list 冒烟验证。
 
-现场脚本位于 `scripts/migrate-unit-v2-storage.sql`。提交前任一校验失败会
-回滚整个事务；提交后的回退依赖切换前备份。
+以上是旧存储转换的历史说明。`scripts/migrate-unit-v2-storage.sql` 尚未获得
+当前基线的兼容性验证，不能作为 1.0.0 的通用升级入口；支持状态和恢复要求见
+[数据库升级支持范围](../database-upgrade-support.md)。提交后的回退依赖切换前备份。

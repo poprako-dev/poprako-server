@@ -3,11 +3,11 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// develop_dispatches_user_signup(AsyncEffectDevelop::develop)(positive): signup events should create one system mail for the invitor.
-// develop_dispatches_chapter_workflow_completed(AsyncEffectDevelop::develop)(positive): workflow completion should notify next-phase and reviewer assignees.
-// develop_dispatches_chapter_published(AsyncEffectDevelop::develop)(positive): chapter publication should notify reviewer assignees.
+// emit_dispatches_user_signup(AsyncEventBus::emit)(positive): signup events should create one system mail for the invitor.
+// emit_dispatches_chapter_workflow_completed(AsyncEventBus::emit)(positive): workflow completion should notify next-phase and reviewer assignees.
+// emit_dispatches_chapter_published(AsyncEventBus::emit)(positive): chapter publication should notify reviewer assignees.
 
-use super::actor::EffectActor;
+use super::actor::EventBusActor;
 use super::*;
 
 use std::sync::Arc;
@@ -34,16 +34,15 @@ const BUF_SIZE: NonZeroUsize = match NonZeroUsize::new(8) {
     None => NonZeroUsize::MIN,
 };
 
-// configured_capacity(AsyncEffectDevelop)(positive/negative): overflow drops events at the injected bound.
+// configured_capacity(AsyncEventBus)(positive/negative): overflow drops events at the injected bound.
 #[tokio::test]
 async fn configured_capacity_bounds_the_event_queue() {
     let config: crate::AppConfig =
         toml::from_str("[effect]\nqueue_capacity = 2").unwrap();
 
-    let (develop, effect_recv) =
-        AsyncEffectDevelop::new(config.effect.capacity);
+    let (bus, event_bus_stream) = AsyncEventBus::new(config.effect.capacity);
 
-    let mut recv = effect_recv.into_recv();
+    let mut stream = event_bus_stream.into_stream();
 
     for index in 0..3 {
         Event::UserSignedUp {
@@ -53,12 +52,12 @@ async fn configured_capacity_bounds_the_event_queue() {
                 invitee_qid: index.to_string(),
             },
         }
-        .develop_on(&develop)
+        .emit_on(&bus)
         .await;
     }
 
     for index in 0..2 {
-        let invitee_qid = match recv.try_recv().unwrap() {
+        let invitee_qid = match stream.try_recv().unwrap() {
             Event::UserSignedUp { payload } => Some(payload.invitee_qid),
 
             _ => None,
@@ -67,7 +66,7 @@ async fn configured_capacity_bounds_the_event_queue() {
         assert_eq!(invitee_qid, Some(index.to_string()));
     }
 
-    assert!(recv.try_recv().is_err());
+    assert!(stream.try_recv().is_err());
 }
 
 // Internal implementation of `team_info`.
@@ -192,17 +191,17 @@ fn assignment_info(id: &str, user_id: &str, roles: RoleMask) -> AssignmentInfo {
 }
 
 #[tokio::test]
-async fn develop_dispatches_user_signup() {
+async fn emit_dispatches_user_signup() {
     //
     // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     mock.seed_team(team_info());
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
+    let actor = EventBusActor::new(mock.as_ref().clone(), event_bus_stream)
+        .run_detached();
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
@@ -211,7 +210,7 @@ async fn develop_dispatches_user_signup() {
             invitee_qid: "10001".to_string(),
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     actor.cancel();
@@ -229,7 +228,7 @@ async fn develop_dispatches_user_signup() {
 }
 
 #[tokio::test]
-async fn develop_dispatches_chapter_workflow_completed() {
+async fn emit_dispatches_chapter_workflow_completed() {
     //
     // Internal implementation detail.
     let mock = Arc::new(Mock::new());
@@ -248,10 +247,10 @@ async fn develop_dispatches_chapter_workflow_completed() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
+    let actor = EventBusActor::new(mock.as_ref().clone(), event_bus_stream)
+        .run_detached();
 
     Event::ChapterWorkflowCompleted {
         payload: ChapterWorkflowCompletedEvent {
@@ -259,7 +258,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
             completed_stage: Stage::Translate,
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     actor.cancel();
@@ -280,7 +279,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
 }
 
 #[tokio::test]
-async fn develop_dispatches_chapter_published() {
+async fn emit_dispatches_chapter_published() {
     //
     // Internal implementation detail.
     let mock = Arc::new(Mock::new());
@@ -293,17 +292,17 @@ async fn develop_dispatches_chapter_published() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor =
-        EffectActor::new(mock.as_ref().clone(), effect_recv).run_detached();
+    let actor = EventBusActor::new(mock.as_ref().clone(), event_bus_stream)
+        .run_detached();
 
     Event::ChapterPublished {
         payload: ChapterPublishedEvent {
             chapter_id: "chapter--00000000001".to_string(),
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     actor.cancel();
@@ -320,12 +319,13 @@ async fn develop_dispatches_chapter_published() {
     );
 }
 
-// cancel_is_idempotent(EffectActorDesc::cancel)(positive): repeated cancellation safely joins the consumer.
+// cancel_is_idempotent(EventBusActorDesc::cancel)(positive): repeated cancellation safely joins the consumer.
 #[tokio::test]
 async fn cancel_is_idempotent() {
-    let (_develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (_bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor = EffectActor::new(Mock::new(), effect_recv).run_detached();
+    let actor =
+        EventBusActor::new(Mock::new(), event_bus_stream).run_detached();
 
     actor.cancel();
 
@@ -334,18 +334,19 @@ async fn cancel_is_idempotent() {
     actor.join().await.unwrap();
 }
 
-// clone_drop_preserves_consumer(AsyncEffectDevelop::clone)(positive): dropping a producer clone must not cancel event processing.
+// clone_drop_preserves_consumer(AsyncEventBus::clone)(positive): dropping a producer clone must not cancel event processing.
 #[tokio::test]
 async fn clone_drop_preserves_consumer() {
     let mock = Mock::new();
 
     mock.seed_team(team_info());
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor = EffectActor::new(mock.clone(), effect_recv).run_detached();
+    let actor =
+        EventBusActor::new(mock.clone(), event_bus_stream).run_detached();
 
-    drop(develop.clone());
+    drop(bus.clone());
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
@@ -354,7 +355,7 @@ async fn clone_drop_preserves_consumer() {
             invitee_qid: "10001".into(),
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     actor.cancel();
@@ -364,16 +365,16 @@ async fn clone_drop_preserves_consumer() {
     assert_eq!(mock.snapshot().system_mails.len(), 1);
 }
 
-// construction_defers_processing(EffectActor::new)(positive): queued events stay pending until explicit startup.
+// construction_defers_processing(EventBusActor::new)(positive): queued events stay pending until explicit startup.
 #[tokio::test]
 async fn construction_defers_processing() {
     let mock = Mock::new();
 
     mock.seed_team(team_info());
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor = EffectActor::new(mock.clone(), effect_recv);
+    let actor = EventBusActor::new(mock.clone(), event_bus_stream);
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
@@ -382,7 +383,7 @@ async fn construction_defers_processing() {
             invitee_qid: "10001".into(),
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     tokio::task::yield_now().await;
@@ -398,24 +399,22 @@ async fn construction_defers_processing() {
     assert_eq!(mock.snapshot().system_mails.len(), 1);
 }
 
-// descriptor_drop_stops_consumer(EffectActorDesc::drop)(positive): dropping the runtime owner closes the receive side.
+// descriptor_drop_stops_consumer(EventBusActorDesc::drop)(positive): dropping the runtime owner closes the receive side.
 #[tokio::test]
 async fn descriptor_drop_stops_consumer() {
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor = EffectActor::new(Mock::new(), effect_recv).run_detached();
+    let actor =
+        EventBusActor::new(Mock::new(), event_bus_stream).run_detached();
 
     drop(actor);
 
-    tokio::time::timeout(
-        std::time::Duration::from_secs(2),
-        develop.send.closed(),
-    )
-    .await
-    .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(2), bus.sink.closed())
+        .await
+        .unwrap();
 }
 
-// join_reports_supervisor_failure(EffectActorDesc::join)(negative): abrupt task termination is reported through the runtime owner.
+// join_reports_supervisor_failure(EventBusActorDesc::join)(negative): abrupt task termination is reported through the runtime owner.
 #[tokio::test]
 #[expect(
     clippy::panic,
@@ -426,9 +425,10 @@ async fn join_reports_supervisor_failure() {
 
     mock.seed_team(team_info());
 
-    let (develop, effect_recv) = AsyncEffectDevelop::new(BUF_SIZE);
+    let (bus, event_bus_stream) = AsyncEventBus::new(BUF_SIZE);
 
-    let actor = EffectActor::new(mock.clone(), effect_recv).run_detached();
+    let actor =
+        EventBusActor::new(mock.clone(), event_bus_stream).run_detached();
 
     let _ = std::panic::catch_unwind(|| {
         let _guard = mock.state.lock().unwrap();
@@ -443,7 +443,7 @@ async fn join_reports_supervisor_failure() {
             invitee_qid: "10001".into(),
         },
     }
-    .develop_on(&develop)
+    .emit_on(&bus)
     .await;
 
     assert!(

@@ -21,9 +21,7 @@ where
     C: Context,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
-    let user_ids = vec![model.id.as_str()];
-
-    let mut avatar_urls = avatar_urls(obj_dept, user_ids).await?;
+    let mut avatar_urls = avatar_urls(obj_dept, [model.id.as_str()]).await?;
 
     let urls = avatar_urls.take(&model.id);
 
@@ -42,12 +40,13 @@ pub fn user_info_view_from_urls(
 }
 
 /// Resolves current avatar URLs from one metadata query for the supplied user IDs.
-pub async fn avatar_urls<C, O>(
+pub async fn avatar_urls<'a, C, O, I>(
     obj_dept: &O,
-    user_ids: Vec<&str>,
+    user_ids: I,
 ) -> BaseRest<ObjUrlBatch>
 where
     C: Context,
+    I: IntoIterator<Item = &'a str>,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
     load_obj_urls(obj_dept, user_ids).await

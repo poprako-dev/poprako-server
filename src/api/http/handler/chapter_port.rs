@@ -245,7 +245,7 @@ pub async fn mark_artwork_uploaded(
             harn.nucl().rept_read(),
             harn.repo(),
             harn.obj_dept(),
-            harn.develop(),
+            harn.bus(),
         ),
         user_token,
         chapter_id,

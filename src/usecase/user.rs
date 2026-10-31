@@ -1,7 +1,5 @@
-//! User use cases — profile, avatar management, activity tracking, and deletion.
+//! User use cases — profile, avatar management, and activity tracking.
 
-/// User deletion use case.
-pub mod delete;
 /// User presentation assembly.
 pub mod view;
 

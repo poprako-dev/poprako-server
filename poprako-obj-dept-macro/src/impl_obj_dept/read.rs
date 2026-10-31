@@ -38,11 +38,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                     ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
-                let ids = oper.ids.iter()
-                    .map(::poprako_obj_dept::key::ObjId::as_str)
-                    .collect::<Vec<_>>();
-
-                let rows = #obj_module::load_many(&mut conn, &ids).await?;
+                let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
 
                 #obj_module::decode_many(rows)
             }
@@ -70,11 +66,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                     ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
-                let ids = oper.ids.iter()
-                    .map(::poprako_obj_dept::key::ObjId::as_str)
-                    .collect::<Vec<_>>();
-
-                let rows = #obj_module::load_many(context.conn(), &ids)
+                let rows = #obj_module::load_many(context.conn(), oper.ids)
                     .await?;
 
                 #obj_module::decode_many(rows)
@@ -113,11 +105,7 @@ fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
                     ::poprako_obj_dept::rdb_impl::rdb_error,
                 )?;
 
-                let ids = oper.ids.iter()
-                    .map(::poprako_obj_dept::key::ObjId::as_str)
-                    .collect::<Vec<_>>();
-
-                let rows = #obj_module::load_many(&mut conn, &ids).await?;
+                let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
 
                 #obj_module::decode_many(rows)
             }
@@ -144,11 +132,7 @@ fn view_reads(obj: &Ident, view: &Ident, obj_module: &Ident) -> TokenStream {
                     ::poprako_obj_dept::model::meta::ObjMeta<#obj>,
                 >,
             > {
-                let ids = oper.ids.iter()
-                    .map(::poprako_obj_dept::key::ObjId::as_str)
-                    .collect::<Vec<_>>();
-
-                let rows = #obj_module::load_many(context.conn(), &ids)
+                let rows = #obj_module::load_many(context.conn(), oper.ids)
                     .await?;
 
                 #obj_module::decode_many(rows)

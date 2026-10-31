@@ -11,10 +11,13 @@ mod v1;
 #[cfg(test)]
 mod tests;
 
-use axum::Router;
+use std::sync::Arc;
+
 use axum::http::StatusCode;
 use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::routing::get;
+use axum::{Extension, Router};
+use tokio::sync::Semaphore;
 use tower_http::compression::CompressionLayer;
 
 use crate::api::http::handler::health;
@@ -33,7 +36,7 @@ use crate::api::http::openapi::ApiDoc;
 use crate::api::http::state::AppHarn;
 
 /// Builds the application router from the production harness.
-pub fn new(harn: AppHarn) -> Router<AppHarn> {
+pub fn new(harn: AppHarn, archive_exports: Arc<Semaphore>) -> Router<AppHarn> {
     //
     let (limiter, cors_layer) = (
         rate_limit::new(harn.config().http.rate_limit),
@@ -46,7 +49,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .merge(v1::v1_member_invitation_router())
         .merge(v1::v1_workset_router())
         .merge(v1::v1_comic_router())
-        .merge(v1::v1_comic_archive_router())
+        .merge(v1::v1_comic_archive_router().layer(Extension(archive_exports)))
         .merge(v1::v1_chapter_router())
         .merge(v1::v1_page_source_router())
         .merge(v1::v1_unit_router())

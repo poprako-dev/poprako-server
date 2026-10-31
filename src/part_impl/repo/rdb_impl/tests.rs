@@ -58,14 +58,14 @@ async fn repo_rdb_impls_use_testcontainer() {
     comic_archive::tests::tombstoned_comic_rejects_archive(shared.clone())
         .await;
 
-    comment::tests::comment_roundtrip_uses_testcontainer(shared.clone()).await;
-
-    member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;
-
-    member::tests::user_cleanup_includes_tombstoned_team_memberships(
+    comic_archive::tests::export_payload::bounded_export_payloads(
         shared.clone(),
     )
     .await;
+
+    comment::tests::comment_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;
 
     member::tests::concurrent_admin_role_removals_are_serialized(
         shared.clone(),

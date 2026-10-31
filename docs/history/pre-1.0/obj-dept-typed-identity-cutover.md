@@ -2,6 +2,13 @@
 
 Status: strict persistence implemented and production repair completed.
 
+Retained operational record: preserve the dated production result and private
+backup/report location below independently of old Git history. The repair
+authorization described here applied to that completed operation; it does not
+authorize a new production action. Current contracts live in
+[the ObjDept specification](../../../specs/obj-dept.md); current upgrade support is
+defined in [the database support matrix](../../database-upgrade-support.md).
+
 ## Required contract
 
 Use a fresh database as the baseline. The server supports one current format

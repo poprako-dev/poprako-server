@@ -509,9 +509,8 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
         ),
         Dispatcher::new(
             (nucl.clone(), repo.clone(), dept.view(), Mock::new()),
-            |(nucl, repo, view, develop), payload| async move {
-                dispatch::dispatch((&nucl, &repo, &view, &develop), payload)
-                    .await
+            |(nucl, repo, view, bus), payload| async move {
+                dispatch::dispatch((&nucl, &repo, &view, &bus), payload).await
             },
         ),
     );

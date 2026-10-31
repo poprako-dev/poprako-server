@@ -17,7 +17,7 @@ use crate::part_impl::cache::mem_impl::MemCache;
 use crate::value::issue_save::IssueSaveReceipt;
 
 /// Receipt protected independently of cache eviction.
-pub struct IssueSaveCacheGuard<'a> {
+pub struct MemIssueSaveCacheGuard<'a> {
     /// Shared completed receipt cache.
     cache: &'a Cache<Uuid, IssueSaveReceipt>,
     /// Immutable batch identity.
@@ -26,7 +26,7 @@ pub struct IssueSaveCacheGuard<'a> {
     _guard: MutexGuard<'a, ()>,
 }
 
-impl IssueSaveGuard for IssueSaveCacheGuard<'_> {
+impl IssueSaveGuard for MemIssueSaveCacheGuard<'_> {
     // Reads the successful request fingerprint.
     fn receipt(&self) -> Option<IssueSaveReceipt> {
         self.cache.get(&self.save_id)
@@ -40,7 +40,7 @@ impl IssueSaveGuard for IssueSaveCacheGuard<'_> {
 
 /// Shared token cache charged conservatively for metadata and allocation overhead.
 #[derive(Clone)]
-pub struct IssueSaveCache {
+pub struct MemIssueSaveCache {
     /// Bounded successful receipt fingerprints.
     tokens: Cache<Uuid, IssueSaveReceipt>,
     /// Fixed lock stripes shared by cache clones.
@@ -49,7 +49,7 @@ pub struct IssueSaveCache {
     hasher: RandomState,
 }
 
-impl IssueSaveCache {
+impl MemIssueSaveCache {
     /// Constructs an empty cache with the injected byte budget and TTL.
     #[must_use]
     pub fn new(config: CacheConfig) -> Self {
@@ -81,7 +81,7 @@ impl IssueSaveCache {
     }
 
     /// Holds a fixed lock stripe across commit and receipt publication.
-    pub async fn lock(&self, save_id: Uuid) -> IssueSaveCacheGuard<'_> {
+    pub async fn lock(&self, save_id: Uuid) -> MemIssueSaveCacheGuard<'_> {
         //
         let [stripe, ..] = self.hasher.hash_one(save_id).to_le_bytes();
 
@@ -94,7 +94,7 @@ impl IssueSaveCache {
             .lock()
             .await;
 
-        IssueSaveCacheGuard {
+        MemIssueSaveCacheGuard {
             cache: &self.tokens,
             save_id,
             _guard: guard,
@@ -102,7 +102,7 @@ impl IssueSaveCache {
     }
 }
 
-impl Default for IssueSaveCache {
+impl Default for MemIssueSaveCache {
     // Builds the cache with default retention.
     fn default() -> Self {
         Self::new(CacheConfig::default())
@@ -111,7 +111,7 @@ impl Default for IssueSaveCache {
 
 impl IssueSavePort for MemCache {
     // Guard holding the receipt lock.
-    type Guard<'a> = IssueSaveCacheGuard<'a>;
+    type Guard<'a> = MemIssueSaveCacheGuard<'a>;
 
     // Serializes retries sharing a receipt stripe.
     fn lock_issue_save(

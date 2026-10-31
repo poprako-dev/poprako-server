@@ -49,7 +49,7 @@ fn entry_weight(ids: &[UnitSaveCreatedUnitId], min_entry_weight: u64) -> u32 {
 const LOCK_SHARDS: usize = 256;
 
 /// Borrows the shared cache while owning exclusion for this save key.
-pub struct UnitSaveCacheGuard<'a> {
+pub struct MemUnitSaveCacheGuard<'a> {
     /// Successful token storage.
     cache: &'a SegmentedCache<Uuid, Arc<[UnitSaveCreatedUnitId]>>,
     /// Identity protected by this guard.
@@ -58,7 +58,7 @@ pub struct UnitSaveCacheGuard<'a> {
     _guard: MutexGuard<'a, ()>,
 }
 
-impl UnitSaveGuard for UnitSaveCacheGuard<'_> {
+impl UnitSaveGuard for MemUnitSaveCacheGuard<'_> {
     // Read the immutable mapping shared by completed retries.
     fn created_unit_ids(&self) -> Option<Arc<[UnitSaveCreatedUnitId]>> {
         self.cache.get(&self.save_id)
@@ -72,7 +72,7 @@ impl UnitSaveGuard for UnitSaveCacheGuard<'_> {
 
 /// Shared segmented `TinyLFU` cache with bounded asynchronous coordination.
 #[derive(Clone)]
-pub struct UnitSaveCache {
+pub struct MemUnitSaveCache {
     /// Successful tokens, bounded independently of in-flight requests.
     tokens: SegmentedCache<Uuid, Arc<[UnitSaveCreatedUnitId]>>,
 
@@ -82,7 +82,7 @@ pub struct UnitSaveCache {
     hasher: RandomState,
 }
 
-impl UnitSaveCache {
+impl MemUnitSaveCache {
     /// Builds an empty process-local cache with the requested estimated-byte budget.
     #[must_use]
     pub fn new(config: CacheConfig) -> Self {
@@ -105,7 +105,7 @@ impl UnitSaveCache {
     }
 
     /// Acquires a stable lock that cannot disappear when a token is evicted.
-    pub async fn lock_save(&self, save_id: Uuid) -> UnitSaveCacheGuard<'_> {
+    pub async fn lock_save(&self, save_id: Uuid) -> MemUnitSaveCacheGuard<'_> {
         //
         let [stripe_byte, ..] = self.hasher.hash_one(save_id).to_le_bytes();
 
@@ -117,7 +117,7 @@ impl UnitSaveCache {
 
         let guard = lock.lock().await;
 
-        UnitSaveCacheGuard {
+        MemUnitSaveCacheGuard {
             cache: &self.tokens,
             save_id,
             _guard: guard,
@@ -135,7 +135,7 @@ impl UnitSaveCache {
     }
 }
 
-impl Default for UnitSaveCache {
+impl Default for MemUnitSaveCache {
     // Use the production estimated-memory budget.
     fn default() -> Self {
         Self::new(CacheConfig::default())
@@ -144,7 +144,7 @@ impl Default for UnitSaveCache {
 
 impl UnitSavePort for MemCache {
     // Keep the cache guard borrowed from this cache adapter handle.
-    type Guard<'a> = UnitSaveCacheGuard<'a>;
+    type Guard<'a> = MemUnitSaveCacheGuard<'a>;
 
     // Share the production cache and its exclusion guard.
     fn lock_save(

@@ -4,7 +4,8 @@
 // Shared HTTP metrics and transport support.
 mod shared;
 
-// FIXME: why all pub?
+// TODO: Define the public HTTP surface required by the server and OpenAPI
+// binaries, then restrict delivery-only modules to crate visibility.
 
 /// Authentication utilities for the HTTP API.
 pub mod auth;

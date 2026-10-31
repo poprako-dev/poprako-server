@@ -1,5 +1,7 @@
 # Spec: Shared chapter creation obligations
 
+> Historical design record from September 2026. The implementation is now in [shared Chapter creation](../src/usecase/internal/chapter_creation.rs). Branch names and authorization notes below describe the original implementation task, not current release instructions.
+
 Status: Implementation authorized on 2026-09-23; not published to an issue tracker.
 
 Branch: `fix/architecture-review` carries all three architecture-review fixes.

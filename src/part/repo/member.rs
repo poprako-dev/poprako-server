@@ -6,8 +6,8 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
-    GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    LockTeamMemberInfos, UpdateMember,
 };
 use crate::result::BaseError;
 
@@ -31,7 +31,6 @@ use crate::result::BaseError;
         for<'a, 'b> GetMemberInfo<'a, 'b>,
         for<'a> LockTeamMemberInfos<'a>,
         for<'a> DeleteMember<'a>,
-        for<'a> DeleteUserMemberships<'a>,
     ),
 )]
 pub trait MemberRepo<C> {}

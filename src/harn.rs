@@ -9,12 +9,12 @@ use std::sync::Arc;
 use crate::config::AppConfig;
 
 /// Shared storage for application ports composed by the entry point.
-pub struct Harn<N, R, K, O, P, A, D> {
+pub struct Harn<N, R, K, O, P, A, B> {
     /// Shared harness storage.
-    inner: Arc<HarnInner<N, R, K, O, P, A, D>>,
+    inner: Arc<HarnInner<N, R, K, O, P, A, B>>,
 }
 
-impl<N, R, K, O, P, A, D> Clone for Harn<N, R, K, O, P, A, D> {
+impl<N, R, K, O, P, A, B> Clone for Harn<N, R, K, O, P, A, B> {
     // Clones the shared harness handle.
     fn clone(&self) -> Self {
         Self {
@@ -24,7 +24,7 @@ impl<N, R, K, O, P, A, D> Clone for Harn<N, R, K, O, P, A, D> {
 }
 
 // Stores the concrete application ports.
-struct HarnInner<N, R, K, O, P, A, D> {
+struct HarnInner<N, R, K, O, P, A, B> {
     // Runtime application configuration.
     config: AppConfig,
 
@@ -42,23 +42,15 @@ struct HarnInner<N, R, K, O, P, A, D> {
     prom: P,
     // Authentication adapter.
     auth: A,
-    // Best-effort event producer.
-    develop: D,
+    // Best-effort event bus.
+    bus: B,
 }
 
-impl<N, R, K, O, P, A, D> Harn<N, R, K, O, P, A, D> {
+impl<N, R, K, O, P, A, B> Harn<N, R, K, O, P, A, B> {
     /// Builds a harness from its application ports.
     pub fn new(
         config: AppConfig,
-        (nucl, repo, cache, obj_dept, prom, auth, develop): (
-            N,
-            R,
-            K,
-            O,
-            P,
-            A,
-            D,
-        ),
+        (nucl, repo, cache, obj_dept, prom, auth, bus): (N, R, K, O, P, A, B),
     ) -> Self {
         Self {
             inner: Arc::new(HarnInner {
@@ -69,7 +61,7 @@ impl<N, R, K, O, P, A, D> Harn<N, R, K, O, P, A, D> {
                 obj_dept,
                 prom,
                 auth,
-                develop,
+                bus,
             }),
         }
     }
@@ -116,9 +108,9 @@ impl<N, R, K, O, P, A, D> Harn<N, R, K, O, P, A, D> {
         &self.inner.auth
     }
 
-    /// Returns the best-effort event producer.
+    /// Returns the best-effort event bus.
     #[must_use]
-    pub fn develop(&self) -> &D {
-        &self.inner.develop
+    pub fn bus(&self) -> &B {
+        &self.inner.bus
     }
 }

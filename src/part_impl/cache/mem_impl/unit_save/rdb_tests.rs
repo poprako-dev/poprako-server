@@ -3,8 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
-// save_tokens(UnitSaveCache)(positive): concurrent replays commit one Unit and share a memory token.
-// save_tokens(UnitSaveCache)(negative): rollback publishes no successful token.
+// save_tokens(MemUnitSaveCache)(positive): concurrent replays commit one Unit and share a memory token.
+// save_tokens(MemUnitSaveCache)(negative): rollback publishes no successful token.
 use crate::config::repo::RepoConfig;
 use crate::data::instr::unit::{
     SavePageSourceUnitEditsInstr, UnitCoordInstr, UnitEditInstr,

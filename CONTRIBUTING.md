@@ -23,6 +23,14 @@ sh scripts/ci-openapi-check.sh
 sh scripts/ci-typecheck.sh
 ```
 
+Workspace tests enable all features and require Docker for disposable
+PostgreSQL containers. `sh scripts/ci-local.sh` also validates the migration
+apply → revert-all → apply cycle and dependency security audit. Main pushes
+add HTTP integration through `sh scripts/ci-http.sh` using a dedicated R2 test
+bucket in the GitHub `integration` environment. For a local HTTP run, explicitly
+supply its disposable database and test-only R2 settings; see [the release
+checklist](docs/1.0.0-release-preparation.md).
+
 `just` is optional local convenience and is never required by CI/CD.
 
 Rust 1.95 and the Rust 2024 edition are required. Existing project rules in

@@ -1,5 +1,10 @@
 # Strict workspace lint policy
 
+Historical policy-change and 2026-10-05 validation record; this is not an active
+error list or evidence of current release readiness. Current authority is
+`Cargo.toml`, `AGENTS.md` and `scripts/ci-lint-policy.sh`. Retention is tracked in
+[the maintenance backlog](../../todo.md).
+
 The root `Cargo.toml` defines Rust and Clippy policy for all seven workspace
 packages. Each package exclusively inherits it with `[lints] workspace = true`.
 

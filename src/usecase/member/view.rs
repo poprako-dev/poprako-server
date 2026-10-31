@@ -24,19 +24,9 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + ObjDeptView<UserAvatar, C> + Sync,
 {
-    let user_ids = model
-        .user
-        .as_ref()
-        .map(|user_info| user_info.id.as_str())
-        .into_iter()
-        .collect();
+    let user_ids = model.user.as_ref().map(|user_info| user_info.id.as_str());
 
-    let team_ids = model
-        .team
-        .as_ref()
-        .map(|team_info| team_info.id.as_str())
-        .into_iter()
-        .collect();
+    let team_ids = model.team.as_ref().map(|team_info| team_info.id.as_str());
 
     let (mut user_urls, mut team_urls) = futures_util::try_join!(
         user_avatar_urls(obj_dept, user_ids),
@@ -69,19 +59,13 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + ObjDeptView<UserAvatar, C> + Sync,
 {
-    let user_ids = models
-        .iter()
-        .filter_map(|model| {
-            model.user.as_ref().map(|user_info| user_info.id.as_str())
-        })
-        .collect();
+    let user_ids = models.iter().filter_map(|model| {
+        model.user.as_ref().map(|user_info| user_info.id.as_str())
+    });
 
-    let team_ids = models
-        .iter()
-        .filter_map(|model| {
-            model.team.as_ref().map(|team_info| team_info.id.as_str())
-        })
-        .collect();
+    let team_ids = models.iter().filter_map(|model| {
+        model.team.as_ref().map(|team_info| team_info.id.as_str())
+    });
 
     let (mut user_urls, mut team_urls) = futures_util::try_join!(
         user_avatar_urls(obj_dept, user_ids),

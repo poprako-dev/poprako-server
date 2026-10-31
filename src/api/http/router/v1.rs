@@ -25,9 +25,7 @@ pub fn v1_user_router() -> Router<AppHarn> {
         .route("/users/me", get(user::get_my_info))
         .route(
             "/users/{user_id}",
-            get(user::get_info)
-                .put(user::update_info)
-                .delete(user::delete),
+            get(user::get_info).put(user::update_info),
         )
         .route("/users/{user_id}/password", put(user::update_password))
         .route("/users/{user_id}/avatar/alloc", post(user::alloc_avatar))

@@ -1,5 +1,7 @@
 # Organization Transfer Readiness Checklist
 
+> Historical organization-transfer checklist. Current release work and external setting verification are tracked in [1.0.0 preparation](1.0.0-release-preparation.md). Checked items below are historical observations and must not substitute for current verification.
+
 This checklist tracks the work required before moving `poprako-server` from
 the personal repository into the official PopRaKo organization. Complete the
 blocking items before the transfer, then verify the organization-side settings
@@ -16,8 +18,9 @@ immediately after it.
   - Document prerequisites, local configuration, database setup, migrations,
     development commands, tests, and production build commands.
   - Link to the API specification and contribution guide.
-- [x] Add the full MIT license text as root `LICENSE`.
-  - Keep `license = "MIT"` in Cargo package metadata.
+- [x] Historical: added the MIT license as root `LICENSE` and Cargo metadata.
+  - Superseded on 2026-10-26: the 1.0.0 snapshot uses `AGPL-3.0-only` in
+    `LICENSE`, README and inherited workspace package metadata.
 - [ ] Add a repository description, website, and topics on GitHub.
 - [x] Use protected `main` as the sole long-lived integration branch.
   - Create short-lived feature and fix branches from `main` and open their pull

@@ -2,6 +2,11 @@
 
 Status: implemented and validated.
 
+Historical implementation snapshot. Counts and passing checks below describe
+that change, not the current release gate. Current instrumentation rules live in
+[the tracing skill](../../../.agents/skills/tracing-usage-spec/SKILL.md). Retention is
+tracked in [the maintenance backlog](../../todo.md).
+
 ## Objective
 
 Keep production `Debug` implementations only where logging, trait contracts,

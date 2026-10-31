@@ -1,12 +1,18 @@
 //! Use cases for immutable comic archives.
 
+// Bounded temporary export construction.
+mod export;
+
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeMap;
+use std::slice;
+use std::sync::Arc;
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
+use tokio::fs::File;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
@@ -16,12 +22,11 @@ use poprako_util::i18n::trl;
 
 use crate::complex::comic_archive as comic_archive_complex;
 use crate::complex::comic_archive::perm as comic_archive_perm_complex;
+use crate::config::comic_archive_export::ComicArchiveExportConfig;
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
-use crate::data::val::comic_archive::{
-    ArchiveComicVal, ExportComicArchivesVal,
-};
+use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::Serial;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::obj_dept::{
     ChapterArtwork, ComicCover, PageArtworkImage, PageSourceImage,
 };
@@ -35,32 +40,70 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::usecase::comic_archive::export::ExportWriter;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
 
-// TODO: Generate this complete JSON export through a bounded temporary
-// artifact and let the HTTP adapter stream it after database access ends.
-// Preserve every selected month and payload; resource pressure must fail the
-// export rather than truncate it.
+/// Complete archive JSON data, generated before response transmission starts.
+///
+/// The anonymous temporary file is removed when its final handle is dropped.
+pub struct ComicArchiveExport {
+    /// Rewound file containing only the complete JSON month map.
+    file: File,
+    /// Exact byte length of the complete JSON month map.
+    bytes: u64,
+    /// Admission remains occupied until the completed response body is dropped.
+    permit: OwnedSemaphorePermit,
+}
+
+impl ComicArchiveExport {
+    /// Owns a completed artifact and its transfer admission permit.
+    #[must_use]
+    pub const fn new(
+        file: File,
+        bytes: u64,
+        permit: OwnedSemaphorePermit,
+    ) -> Self {
+        Self {
+            file,
+            bytes,
+            permit,
+        }
+    }
+
+    /// Transfers the artifact and admission ownership to its response stream.
+    pub fn into_transfer(self) -> (File, u64, OwnedSemaphorePermit) {
+        (self.file, self.bytes, self.permit)
+    }
+}
+
 /// Exports selected retained UTC month slots for one team.
 #[instrument(
     level = "info",
-    skip(repo, token),
+    skip(nucl, repo, config, admission, token),
     fields(
         actor_user_id = %token.user_id,
     ),
 )]
-pub async fn export<C, R>(
-    (repo,): (&R,),
+pub async fn export<N, C, R>(
+    (nucl, repo, config, admission): (
+        &N,
+        &R,
+        &ComicArchiveExportConfig,
+        &Arc<Semaphore>,
+    ),
     token: UserToken,
     team_id: String,
     instr: ExportComicArchivesInstr,
-) -> BaseRest<ExportComicArchivesVal>
+) -> BaseRest<ComicArchiveExport>
 where
-    C: Context,
+    C: Context + Send,
+    C::Level: AtLeast<ReptRead>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
 {
+    //
     let member_info = FindMemberInfo {
         user_id: &token.user_id,
         team_id: &team_id,
@@ -86,38 +129,82 @@ where
         OffsetDateTime::now_utc(),
     )?;
 
-    let records = ListComicArchivePayloads {
-        team_id: &team_id,
-        months: &months,
-    }
-    .run_on(repo)
-    .await?;
+    let permit =
+        Arc::clone(admission).try_acquire_owned().map_err(|error| {
+            //
+            tracing::warn!(
+                operation = "export_comic_archives",
+                sdk_error = ?error,
+                "archive export capacity unavailable",
+            );
 
-    let mut payloads_by_month =
-        (0..months.len()).map(|_| Vec::new()).collect::<Vec<_>>();
+            BaseError::Unavailable {
+                message: "archive export capacity unavailable".into(),
+            }
+        })?;
 
-    for (created_at, archived_payload) in records {
-        //
-        let Some((_, payloads)) = months
-            .iter()
-            .zip(payloads_by_month.iter_mut())
-            .find(|(month, _)| {
-                created_at >= month.start && created_at < month.end
-            })
-        else {
-            continue;
-        };
+    let (file, bytes) = nucl
+        .coord(async move |context| {
+            //
+            let mut writer = ExportWriter::new(config.artifact_limit_bytes())?;
 
-        payloads.push(archived_payload);
-    }
+            writer.write(b"{").await?;
 
-    let exports = months
-        .into_iter()
-        .zip(payloads_by_month)
-        .map(|(month, payloads)| (month.label, payloads))
-        .collect::<BTreeMap<_, _>>();
+            for (month_index, month) in months.iter().enumerate() {
+                //
+                if month_index > 0 {
+                    writer.write(b",").await?;
+                }
 
-    accept!(ExportComicArchivesVal(exports))
+                writer.string(&month.label).await?;
+
+                writer.write(b":[").await?;
+
+                let mut after = None::<(OffsetDateTime, String)>;
+
+                let mut first_payload = true;
+
+                loop {
+                    //
+                    let records = ListComicArchivePayloads {
+                        team_id: &team_id,
+                        months: slice::from_ref(month),
+                        after: after
+                            .as_ref()
+                            .map(|(created_at, id)| (*created_at, id.as_str())),
+                        payload_budget_bytes: config.payload_batch_bytes(),
+                    }
+                    .step_on(repo, context)
+                    .await?;
+
+                    if records.is_empty() {
+                        break;
+                    }
+
+                    for record in records {
+                        //
+                        if !first_payload {
+                            writer.write(b",").await?;
+                        }
+
+                        writer.string(&record.payload).await?;
+
+                        first_payload = false;
+
+                        after = Some((record.created_at, record.id));
+                    }
+                }
+
+                writer.write(b"]").await?;
+            }
+
+            writer.write(b"}").await?;
+
+            writer.finish().await
+        })
+        .await?;
+
+    accept!(ComicArchiveExport::new(file, bytes, permit))
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.

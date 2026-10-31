@@ -10,6 +10,9 @@
 
 use super::*;
 
+// Complete export traversal, resource limits, and permission regressions.
+mod export_bounds;
+
 use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
 use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use poprako_obj_dept::model::task::ObjTask;
@@ -320,38 +323,6 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
                 ObjTask::Delete { key } if key == &page_source_key
             )
     }));
-}
-
-#[tokio::test]
-async fn export_returns_stored_strings_grouped_by_month() {
-    let mock = Mock::new();
-
-    seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
-
-    archive((&mock, &mock, &mock), token(), COMIC_ID.into())
-        .await
-        .unwrap();
-
-    let now = OffsetDateTime::now_utc();
-
-    let month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
-
-    let val = export(
-        (&mock,),
-        token(),
-        "team--00000000001".into(),
-        ExportComicArchivesInstr {
-            months: vec![month.clone()],
-        },
-    )
-    .await
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    let stored = &snapshot.comic_archives.first().unwrap().archived_payload;
-
-    assert_eq!((*val.0.get(&month).unwrap()), vec![stored.clone()]);
 }
 
 #[tokio::test]

@@ -28,17 +28,14 @@ mgr-schema:
 connect:
     psql ${DATABASE_URL}
 
-prod-build:
+local-container-build:
     scripts/docker-build-prod.sh
 
-prod-run:
+local-container-run:
     scripts/local-run-release.sh
 
-prod-stop:
+local-container-stop:
     scripts/local-stop-release.sh
-
-prod-ci-build:
-    scripts/ci-build-prod.sh
 
 # Generate swagger.json from the annotated OpenAPI spec.
 swagger:

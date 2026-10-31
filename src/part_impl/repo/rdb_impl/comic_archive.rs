@@ -20,8 +20,7 @@ use diesel::prelude::{
     SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{AtLeast, Level, Run, Step};
-use time::OffsetDateTime;
+use poprako_orchestra::{AtLeast, Level, Step};
 use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
@@ -32,7 +31,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchiveSnapshot};
+use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageArtworkSnapshot, ComicArchivePayload, ComicArchiveSnapshot};
 use crate::model::read::proj::page_source::PageSourceInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -51,7 +50,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as cha
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, f_created_at as workflow_record_created_at, f_id as workflow_record_id, t_chapter_workflow_record};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_deleted_at as workset_deleted_at, f_id as workset_id, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
@@ -66,7 +65,6 @@ async fn load_archive_root(
         .filter(comic_id.eq(source_comic_id))
         .filter(comic_deleted_at.is_null())
         .select(ComicInfoRecord::as_select())
-        .for_update()
         .get_result::<ComicInfoRecord>(conn)
         .await
         .optional()
@@ -88,6 +86,7 @@ async fn load_archive_root(
 
     let workset_record = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
+        .filter(workset_deleted_at.is_null())
         .select(WorksetInfoRecord::as_select())
         .for_update()
         .get_result::<WorksetInfoRecord>(conn)
@@ -109,6 +108,37 @@ async fn load_archive_root(
     };
 
     let workset_info = WorksetInfo::try_from(workset_record)?;
+
+    // Shared Chapter edits acquire their Chapter before Comic activity.
+    t_chapter
+        .filter(chapter_comic_id.eq(source_comic_id))
+        .select(chapter_id)
+        .order_by(chapter_id.asc())
+        .for_update()
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let comic_record = t_comic
+        .filter(comic_id.eq(source_comic_id))
+        .filter(comic_deleted_at.is_null())
+        .select(ComicInfoRecord::as_select())
+        .for_update()
+        .get_result::<ComicInfoRecord>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| {
+            //
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-comic-not-found");
+                comic_id = %source_comic_id,
+                "active archive comic not found after locking chapters",
+            }
+        })?;
+
+    let comic_info = ComicInfo::try_from(comic_record)?;
 
     accept!((comic_info, workset_info))
 }
@@ -392,24 +422,24 @@ where
     }
 }
 
-impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+impl<L> Step<ListComicArchivePayloads<'_>, RdbContext<L>> for RdbRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Keep metadata and payload reads in one repeatable-read snapshot.
+    type Level = ReptRead;
     // Use base errors for payload-list operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Route to shared payload query with team-month filters.
-    async fn run(
+    async fn step(
         &self,
+        context: &mut RdbContext<L>,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-        //
-        submit_query!(
-            self.rdb_core,
-            payload::list_payloads,
-            oper.team_id,
-            oper.months
-        )
+    ) -> BaseRest<Vec<ComicArchivePayload>> {
+        payload::list_payloads(context.conn(), oper).await
     }
 }
 

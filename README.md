@@ -1,128 +1,66 @@
-# poprako-server
+# 白杨子 S · PopRaKo Server
 
-PopRaKo manga translation project management backend, built with Rust, Axum,
-Diesel, and PostgreSQL.
+白杨子的服务端，使用 Rust 构建，为客户端提供项目管理、团队协作与数据存储支持。
+具体功能请参考 [白杨子 W](https://github.com/poprako-dev/poprako-web)。
 
-The service provides APIs for teams, comics, chapters, pages, translation
-units, assignments, archives, and termbases. It is currently under active
-development.
+## 本地运行
 
-## Requirements
-
-- Rust 1.95 with Rust 2024 edition support
-- PostgreSQL and `diesel_cli`
-- Cloudflare R2 credentials
-
-Docker is additionally required for container builds. Node.js 26 and standalone pnpm 12.11.2 are required for
-the TypeScript HTTP integration tests. Install both independently (without npm):
-
-```sh
-sh scripts/setup-js.sh
-. "$HOME/.local/share/poprako-js/env"
-cd tests/integration-tests
-pnpm install --frozen-lockfile
-pnpm run check
-```
-
-The runtime is pinned in `.node-version`; pnpm is pinned in the test package and
-installer. Node.js 26 is currently Current, with LTS targeted for 2026-10-28.
-CI uses the same installer. Add the activation command to your shell startup
-file for persistent use. See the test inventory for API execution commands.
-
-## Run locally
-
-Create the local environment file:
+需要 Rust 1.95、PostgreSQL、`diesel_cli` 和 OSS（Cloudflare R2 或阿里云 OSS）。
 
 ```sh
 cp .env.example .env
 ```
 
-Set the PostgreSQL, JWT, and Cloudflare R2 values in `.env`, then initialize the
-database and start the server:
+填写 `.env` 中的数据库连接、JWT 密钥和 OSS 配置，开发时使用独立的开发数据库。
+随后初始化数据库并启动服务：
 
 ```sh
 diesel database setup
 cargo run -p poprako-server --bin poprako-server
 ```
 
-The API is served under `/api/v1` and listens on the address configured in
-`app_config.toml`.
+默认监听 `127.0.0.1:8888`，接口前缀为 `/api/v1`。
 
-Application configuration is loaded once at startup. Every `AppConfig` field
-has a default: a missing file, empty file, missing section, or omitted field
-uses that default. Explicit values override defaults; invalid values, malformed
-TOML, and read failures other than a missing file prevent startup. Restart the
-server after changing configuration. Existing environment variables remain
-required where applicable and are loaded independently.
+## 配置
 
-Defaults are `127.0.0.1:8888`, CORS origin `https://poprako.com`, and one shared
-HTTP quota of 20 requests/second with a burst of 80 per application instance.
-`http.cors_origin` is a single canonical HTTP(S) origin without a trailing slash,
-credentials, path, query, or fragment. Allowed methods and headers stay fixed.
-Image limits in MiB are 1 for either avatar, 2 for comic covers, 25 for page
-images, and 512 for chapter artwork. The local file overrides page images to
-30 MiB; the deployment file overrides the listener to `0.0.0.0`.
-Image and artwork limit keys consistently use the explicit `_mib` suffix.
-Unknown configuration keys, including obsolete names, are rejected.
+- [`.env.example`](.env.example)：数据库连接、JWT、OSS 等环境变量。
+- [`app_config.toml`](app_config.toml)：监听地址、跨域来源、上传限制等运行参数，各项均有注释。
 
-`effect.queue_capacity` defaults to 1024 events. `sched.shutdown_grace_secs`
-defaults to 30 seconds and permits zero for immediate cancellation of pending
-workers. `subtree_delete` defaults to concurrency 2, `timeout_secs = 300`,
-`idle_interval_secs = 5`, and `retry_interval_secs = 5`. These task durations,
-queue capacity, concurrency, and rate-limit values must be positive and fit
-their runtime representation. See the checked-in TOML for all configuration
-keys. Defaults are maintained in the corresponding Rust configuration types.
+当前启动入口接入 R2，接入阿里云 OSS 时需调整对应配置与实现。
 
-`cache` defaults to a 256 MiB estimated Unit-save budget, 500000 retained
-save tokens, and `online_user_ttl_secs = 600`. The token budget is translated
-into a minimum cache-entry weight; it is not a separate token store. `repo`
-defaults to `subtree_sweep_batch_size = 64` eligible Comics or Worksets and
-`unit_order_query_batch_size = 512` Unit links, with one derived sentinel row.
-`invitation.member_ttl_secs = 432000` and `assignment_ttl_secs = 259200`
-control cleanup delays for newly created pending invitations. Changing them
-does not reschedule existing tasks; cleanup may run later according to worker
-availability. All these budgets, batch sizes, and durations must be positive.
+缺少 TOML 文件或省略配置项时使用默认值，未知字段和无效值会导致启动失败。
+配置修改后需重启服务；本地联调时，将 `http.cors_origin` 设为客户端的实际访问来源。
 
-## Common commands
+## 部署
+
+生产部署通过 GitHub Actions 完成，需要准备 Docker 主机、PostgreSQL 和 OSS。
+按 [部署变量模板](deploy/poprako-server/github-production-secrets.env.example)
+配置 GitHub `production` 环境中的 Secrets；运行参数见
+[生产配置](deploy/poprako-server/app_config.toml)。
+
+代码合入 `main` 后，工作流完成检查和镜像构建，经生产环境审批后部署。
+数据库迁移由部署流程执行，应用启动时不会自动迁移。
+已有数据库升级请先查看 [升级说明](docs/database-upgrade-support.md)，发布规则见 [RELEASE.md](RELEASE.md)。
+
+## 开发
+
+常用检查命令（需安装 `just`）：
 
 ```sh
-# Apply pending migrations
-diesel migration run
-
-# Run Rust tests
-cargo test --workspace
-
-# Run repository checks
-cargo check --workspace --all-targets --all-features
-sh fmt/run-check.sh
-
-# Generate docs/swagger.json
-cargo run -p poprako-swagger > docs/swagger.json
+just fmt-check
+just check
+just clippy
+sh scripts/ci-test.sh
 ```
 
-The `justfile` provides optional shortcuts for local development. It is not a
-project requirement and is not used as the CI/CD interface.
+测试需要 Docker。完整贡献与验证流程见 [贡献指南](CONTRIBUTING.md)，
+HTTP 集成测试见 [测试说明](tests/integration-tests/TESTCASES.md)，
+接口定义见 [OpenAPI](docs/swagger.json)。
 
-The HTTP integration suite requires a dedicated disposable database:
+问题反馈见 [SUPPORT.md](SUPPORT.md)，安全问题请按 [安全策略](SECURITY.md) 报告。
 
-```sh
-INTEGRATION_DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/db_poprako_integration \
-  scripts/api-integration-test.sh
-```
+## 许可证
 
-The integration script drops its target database after the run. Do not point it
-at a database containing data that must be preserved.
+Copyright (c) 2026 PopRaKo contributors.
 
-## Documentation
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Release policy](RELEASE.md)
-- [HTTP integration test inventory](tests/integration-tests/TESTCASES.md)
-- [Organization transfer checklist](docs/organization-transfer-readiness.md)
-- [Agent and project conventions](AGENTS.md)
-- [OpenAPI specification](docs/swagger.json)
-
-## License
-
-[MIT](LICENSE)
+采用 GNU AGPL v3（`AGPL-3.0-only`），详见 [LICENSE](LICENSE)。

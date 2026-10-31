@@ -7,7 +7,7 @@ use super::*;
 
 #[test]
 fn first_mark_adds_user_and_list_sorts_ids() {
-    let online_users = OnlineUserCache::new(Duration::from_secs(90));
+    let online_users = MemOnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -31,7 +31,7 @@ fn first_mark_adds_user_and_list_sorts_ids() {
 
 #[test]
 fn repeated_mark_renews_existing_lease() {
-    let online_users = OnlineUserCache::new(Duration::from_secs(90));
+    let online_users = MemOnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -69,7 +69,7 @@ fn repeated_mark_renews_existing_lease() {
 
 #[test]
 fn list_removes_expired_user_and_empty_team() {
-    let online_users = OnlineUserCache::new(Duration::from_secs(90));
+    let online_users = MemOnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 
@@ -97,7 +97,7 @@ fn list_removes_expired_user_and_empty_team() {
 
 #[test]
 fn online_users_remain_isolated_by_team() {
-    let online_users = OnlineUserCache::new(Duration::from_secs(90));
+    let online_users = MemOnlineUserCache::new(Duration::from_secs(90));
 
     let now = Instant::now();
 

@@ -7,12 +7,19 @@
 
 use super::*;
 
+// Byte-bounded archive export query regressions.
+pub mod export_payload;
+
+use std::sync::{Arc, Mutex};
+
+use diesel::connection::InstrumentationEvent;
 use diesel::prelude::*;
+use diesel_async::AsyncConnection as _;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
-use poprako_rdb_core::RdbCore;
+use poprako_rdb_core::{RdbConn, RdbCore};
 
 use crate::complex::comic_archive as comic_archive_complex;
 use crate::config::repo::RepoConfig;
@@ -217,6 +224,72 @@ fn verify_archived_payload(
     );
 }
 
+// Record database queries for one snapshot or commit phase.
+fn record_queries(conn: &mut RdbConn, queries: &Arc<Mutex<Vec<String>>>) {
+    let recorded = Arc::clone(queries);
+
+    conn.set_instrumentation(move |event: InstrumentationEvent<'_>| {
+        if let InstrumentationEvent::StartQuery { query, .. } = event {
+            recorded.lock().unwrap().push(query.to_string());
+        }
+    });
+}
+
+// Verify the snapshot locks its Workset, ordered Chapters, and Comic.
+fn verify_snapshot_lock_order(queries: &Mutex<Vec<String>>) {
+    let queries = queries.lock().unwrap().clone();
+
+    let locks = queries
+        .iter()
+        .filter(|query| query.contains("FOR UPDATE"))
+        .collect::<Vec<_>>();
+
+    assert!(
+        locks
+            .as_slice()
+            .first()
+            .unwrap()
+            .contains("FROM \"t_workset\"")
+    );
+
+    assert!(locks.get(1).unwrap().contains("FROM \"t_chapter\""));
+
+    assert!(
+        locks
+            .get(1)
+            .unwrap()
+            .contains("ORDER BY \"t_chapter\".\"f_id\" ASC")
+    );
+
+    assert!(locks.get(2).unwrap().contains("FROM \"t_comic\""));
+}
+
+// Verify the commit independently locks Chapters before writing its Comic.
+fn verify_commit_lock_order(queries: &Mutex<Vec<String>>) {
+    let queries = queries.lock().unwrap().clone();
+
+    let chapter_lock = queries
+        .iter()
+        .position(|query| {
+            query.contains("FOR UPDATE") && query.contains("FROM \"t_chapter\"")
+        })
+        .unwrap();
+
+    let comic_write = queries
+        .iter()
+        .position(|query| query.starts_with("UPDATE \"t_comic\""))
+        .unwrap();
+
+    assert!(chapter_lock < comic_write);
+}
+
+// Fixed archive time aligned to PostgreSQL's microsecond timestamp precision.
+fn archive_timestamp() -> OffsetDateTime {
+    //
+    OffsetDateTime::from_unix_timestamp_nanos(1_700_000_000_123_456_000)
+        .unwrap()
+}
+
 /// Verifies comic archive roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
@@ -288,9 +361,15 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             .unwrap()
     };
 
+    let queries = Arc::new(Mutex::new(Vec::new()));
+
+    let commit_queries = Arc::new(Mutex::new(Vec::new()));
+
     let comic_archive_entry = nucl
         .coord(async |context| {
             //
+            record_queries(context.conn(), &queries);
+
             let comic_archive_snapshot = repo
                 .step(
                     context,
@@ -300,12 +379,16 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
                 )
                 .await?;
 
+            let archived_at = archive_timestamp();
+
             let comic_archive_entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 archiver_id.clone(),
-                OffsetDateTime::now_utc(),
+                archived_at,
             )
             .await?;
+
+            record_queries(context.conn(), &commit_queries);
 
             repo.step(
                 context,
@@ -319,6 +402,10 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         })
         .await
         .unwrap();
+
+    verify_snapshot_lock_order(&queries);
+
+    verify_commit_lock_order(&commit_queries);
 
     verify_archive_storage(
         &shared,

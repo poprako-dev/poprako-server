@@ -3,14 +3,14 @@
     reason = "Test assertions fail immediately when cache invariants are violated."
 )]
 
-// save_cache(UnitSaveCache)(positive): clones serialize identical keys and share results.
-// save_cache(UnitSaveCache)(negative): cancellation releases exclusion without a token.
-// save_cache(UnitSaveCache)(negative): eviction never removes in-flight exclusion.
+// save_cache(MemUnitSaveCache)(positive): clones serialize identical keys and share results.
+// save_cache(MemUnitSaveCache)(negative): cancellation releases exclusion without a token.
+// save_cache(MemUnitSaveCache)(negative): eviction never removes in-flight exclusion.
 
 use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 
-use super::{UnitSaveCache, entry_weight};
+use super::{MemUnitSaveCache, entry_weight};
 use crate::config::cache::CacheConfig;
 use crate::part::cache::unit_save::UnitSaveGuard as _;
 use crate::value::unit_save::UnitSaveCreatedUnitId;
@@ -21,7 +21,7 @@ fn key(value: u128) -> Uuid {
     Uuid::from_u128(value)
 }
 
-// save_cache(UnitSaveCache)(negative): expiration hides mappings without releasing in-flight exclusion.
+// save_cache(MemUnitSaveCache)(negative): expiration hides mappings without releasing in-flight exclusion.
 #[tokio::test]
 async fn expired_token_is_unavailable_while_its_guard_remains_held() {
     let config = CacheConfig {
@@ -29,7 +29,7 @@ async fn expired_token_is_unavailable_while_its_guard_remains_held() {
         ..CacheConfig::default()
     };
 
-    let cache = UnitSaveCache::new(config);
+    let cache = MemUnitSaveCache::new(config);
 
     let guard = cache.lock_save(key(999)).await;
 
@@ -66,7 +66,7 @@ async fn expired_token_is_unavailable_while_its_guard_remains_held() {
 
 #[tokio::test]
 async fn cloned_cache_waits_for_publication() {
-    let cache = UnitSaveCache::default();
+    let cache = MemUnitSaveCache::default();
 
     let cloned = cache.clone();
 
@@ -98,21 +98,21 @@ async fn cloned_cache_waits_for_publication() {
 
 #[tokio::test]
 async fn cancelled_owner_releases_key_without_token() {
-    let cache = UnitSaveCache::default();
+    let cache = MemUnitSaveCache::default();
 
     let cloned = cache.clone();
 
-    let (ready_send, ready_recv) = tokio::sync::oneshot::channel();
+    let (ready_sink, ready_stream) = tokio::sync::oneshot::channel();
 
     let owner = tokio::spawn(async move {
         let _guard = cloned.lock_save(key(999)).await;
 
-        ready_send.send(()).unwrap();
+        ready_sink.send(()).unwrap();
 
         std::future::pending::<()>().await;
     });
 
-    ready_recv.await.unwrap();
+    ready_stream.await.unwrap();
 
     owner.abort();
 
@@ -136,7 +136,7 @@ async fn capacity_eviction_preserves_lock_and_allows_a_later_miss() {
         ..CacheConfig::default()
     };
 
-    let cache = UnitSaveCache::new(config);
+    let cache = MemUnitSaveCache::new(config);
 
     let guard = cache.lock_save(key(999)).await;
 
@@ -169,13 +169,13 @@ async fn capacity_eviction_preserves_lock_and_allows_a_later_miss() {
 
 #[tokio::test]
 async fn distinct_tokens_and_restarted_cache_are_independent() {
-    let cache = UnitSaveCache::default();
+    let cache = MemUnitSaveCache::default();
 
     cache.lock_save(key(1)).await.record(Arc::from([]));
 
     assert!(cache.lock_save(key(2)).await.created_unit_ids().is_none());
 
-    let restarted = UnitSaveCache::default();
+    let restarted = MemUnitSaveCache::default();
 
     assert!(
         restarted
@@ -195,7 +195,7 @@ async fn weighted_budget_evicts_large_mappings() {
         ..CacheConfig::default()
     };
 
-    let cache = UnitSaveCache::new(config);
+    let cache = MemUnitSaveCache::new(config);
 
     for index in 0..256 {
         let pair = UnitSaveCreatedUnitId {
