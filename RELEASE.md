@@ -47,7 +47,7 @@ building artifacts. The workflow adds `--deployed --output FILE` to require:
 - An annotated tag matching the checkout and a commit reachable from `main`.
 - Exactly one root commit across all fetched branches and tags for `v1.0.0`.
 - A successful `main` push CI run at that exact SHA, including database-backed
-  Rust tests, HTTP integration, migrations, security, image build, and deployment.
+  Rust tests, migrations, security, image build, and deployment.
 - The CI run must succeed on its first attempt. GitHub's approval-history API
   does not identify attempts, so reruns cannot establish which deployment was
   approved. Reruns remain useful for diagnosis; release qualification requires
@@ -59,10 +59,11 @@ building artifacts. The workflow adds `--deployed --output FILE` to require:
   deployment result reported by the remote deployment script.
 
 Configure production required reviewers and prevent self-review in GitHub before
-releasing. Configure the protected `integration` environment with the five
-`INTEGRATION_R2_*` secrets used by CI, scoped to a dedicated test bucket. Main
-pushes execute HTTP tests before image publication and deployment; pull requests
-run static integration-suite checks without receiving object-storage credentials.
+releasing. HTTP integration is not executed by GitHub Actions and no
+object-storage credentials are stored there. Run `sh scripts/ci-http.sh` locally
+against a disposable database and a dedicated non-production R2 test bucket
+before requesting release approval; CI and pull requests only type-check the
+integration test sources.
 
 The release workflow provisions the same independent Node.js/pnpm toolchain as
 CI. It publishes a tracked-source archive including checked-out submodules,

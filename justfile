@@ -56,3 +56,7 @@ check:
 # Run Clippy using the CI arguments.
 clippy:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+# Run the local database-backed HTTP integration suite; it never runs in CI.
+ci-http:
+    sh scripts/ci-http.sh

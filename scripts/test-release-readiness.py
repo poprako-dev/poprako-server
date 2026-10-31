@@ -129,13 +129,13 @@ class ReleaseReadinessTest(unittest.TestCase):
             READINESS.collect_deployment("poprako-dev/poprako-server", SHA, Path("unused.json"))
         approval_api.assert_not_called()
 
-    def test_missing_http_job_blocks_release_even_when_other_jobs_pass(self):
+    def test_missing_required_job_blocks_release_even_when_other_jobs_pass(self):
         workflow = copy.deepcopy(WORKFLOW)
         workflow.update({"actor": {"login": "preparer"}, "triggering_actor": {"login": "preparer"}})
         with patch.object(READINESS, "paginated", side_effect=[
             [workflow], [{"name": name, "conclusion": "success"} for name in (
-                "Rust", "TypeScript", "Diesel migrations", "Dependency security", "Production image", "Deploy production")]
-        ]), self.assertRaisesRegex(ValueError, "HTTP integration"):
+                "Rust", "TypeScript", "Diesel migrations", "Dependency security", "Deploy production")]
+        ]), self.assertRaisesRegex(ValueError, "Production image"):
             READINESS.collect_deployment("poprako-dev/poprako-server", SHA, Path("unused.json"))
 
     def test_successful_ci_deployment_and_approval_are_written_to_release_evidence(self):
@@ -143,7 +143,7 @@ class ReleaseReadinessTest(unittest.TestCase):
         workflow.update({"actor": {"login": "preparer"}, "triggering_actor": {"login": "preparer"},
                          "html_url": "https://github.com/poprako-dev/poprako-server/actions/runs/42"})
         jobs = [{"name": name, "conclusion": "success"} for name in (
-            "Rust", "TypeScript", "Diesel migrations", "Dependency security", "HTTP integration",
+            "Rust", "TypeScript", "Diesel migrations", "Dependency security",
             "Production image", "Deploy production")]
         reviews = [{"state": "approved", "user": {"login": "reviewer"},
                     "environments": [{"name": "production"}]}]

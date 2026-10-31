@@ -185,7 +185,8 @@ pnpm install --frozen-lockfile
 pnpm run check
 ```
 
-- [x] Add a scheduled or manually triggered full HTTP integration-test job.
+- [x] Provide a local full HTTP integration-test entry point; it must not run
+  in GitHub Actions.
   - Provision an isolated non-production R2 bucket first; the suite performs
     real uploads through presigned URLs and must never target production.
 - [x] Regenerate `docs/swagger.json` through a checked-in `sh` script into a
