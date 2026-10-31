@@ -46,7 +46,7 @@ where
     .await?;
 
     let image_data =
-        load_image_data::<C, O>(obj_dept, &page_source_ids).await?;
+        load_image_data::<C, O, _>(obj_dept, page_source_ids).await?;
 
     let obj_meta = image_data.obj_metas.get(model.id.as_str());
 
@@ -82,7 +82,7 @@ where
     .await?;
 
     let image_data =
-        load_image_data::<C, O>(obj_dept, &page_source_ids).await?;
+        load_image_data::<C, O, _>(obj_dept, page_source_ids).await?;
 
     accept!(
         models
@@ -107,14 +107,17 @@ where
 }
 
 // Loads one consistent image metadata snapshot and its matching URLs.
-async fn load_image_data<C, O>(
+async fn load_image_data<'a, C, O, I>(
     obj_dept: &O,
-    page_source_ids: &[&str],
+    page_source_ids: I,
 ) -> BaseRest<PageSourceImageData>
 where
     C: Context,
+    I: IntoIterator<Item = &'a str>,
     O: ObjDeptView<PageSourceImage, C> + Sync,
 {
+    let mut page_source_ids = page_source_ids.into_iter().collect::<Vec<_>>();
+
     if page_source_ids.is_empty() {
         //
         return accept!(PageSourceImageData {
@@ -122,8 +125,6 @@ where
             image_urls: HashMap::new(),
         });
     }
-
-    let mut page_source_ids = page_source_ids.to_vec();
 
     page_source_ids.sort_unstable();
 

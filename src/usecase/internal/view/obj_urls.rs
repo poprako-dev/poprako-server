@@ -121,17 +121,20 @@ impl ObjUrlBatch {
 }
 
 /// Loads URLs once per marker while retaining every requested consumption count.
-pub async fn load_obj_urls<C, O, K>(
+pub async fn load_obj_urls<'a, C, O, K, I>(
     obj_dept: &O,
-    mut ids: Vec<&str>,
+    ids: I,
 ) -> BaseRest<ObjUrlBatch>
 where
     C: Context,
+    I: IntoIterator<Item = &'a str>,
     K: ObjKind,
     K::Id: Send + Sync,
     K::Ext: Send + Sync,
     O: ObjDeptView<K, C> + Sync,
 {
+    let mut ids = ids.into_iter().collect::<Vec<_>>();
+
     if ids.is_empty() {
         return accept!(ObjUrlBatch::default());
     }

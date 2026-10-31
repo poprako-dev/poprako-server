@@ -19,16 +19,13 @@ where
     C: Context,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
-    let user_ids = models
-        .iter()
-        .filter_map(|model| {
-            //
-            model
-                .invitor
-                .as_ref()
-                .map(|user_info| user_info.id.as_str())
-        })
-        .collect();
+    let user_ids = models.iter().filter_map(|model| {
+        //
+        model
+            .invitor
+            .as_ref()
+            .map(|user_info| user_info.id.as_str())
+    });
 
     let mut urls = avatar_urls(obj_dept, user_ids).await?;
 

@@ -21,9 +21,7 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let team_ids = vec![model.id.as_str()];
-
-    let mut avatar_urls = avatar_urls(obj_dept, team_ids).await?;
+    let mut avatar_urls = avatar_urls(obj_dept, [model.id.as_str()]).await?;
 
     let urls = avatar_urls.take(&model.id);
 
@@ -50,7 +48,7 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let team_ids = models.iter().map(|model| model.id.as_str()).collect();
+    let team_ids = models.iter().map(|model| model.id.as_str());
 
     let mut avatar_urls = avatar_urls(obj_dept, team_ids).await?;
 
@@ -68,12 +66,13 @@ where
 }
 
 /// Resolves current avatar URLs from one metadata query for the supplied team IDs.
-pub async fn avatar_urls<C, O>(
+pub async fn avatar_urls<'a, C, O, I>(
     obj_dept: &O,
-    team_ids: Vec<&str>,
+    team_ids: I,
 ) -> BaseRest<ObjUrlBatch>
 where
     C: Context,
+    I: IntoIterator<Item = &'a str>,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
     load_obj_urls(obj_dept, team_ids).await

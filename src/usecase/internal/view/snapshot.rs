@@ -189,20 +189,19 @@ impl ObjViewSnapshot {
 
         let (page_source_ids, positions) = pages.into_loaded();
 
-        let fallback_ids = snapshot
-            .comic_covers
-            .iter()
-            .zip(&positions)
-            .filter(|(cover, _)| cover.is_none())
-            .filter_map(|(_, position)| {
-                position.and_then(|position| page_source_ids.get(position))
-            })
-            .map(String::as_str)
-            .collect();
-
-        let mut page_source_urls =
-            load_obj_urls::<_, _, PageSourceImage>(obj_dept, fallback_ids)
-                .await?;
+        let mut page_source_urls = load_obj_urls::<_, _, PageSourceImage, _>(
+            obj_dept,
+            snapshot
+                .comic_covers
+                .iter()
+                .zip(&positions)
+                .filter(|(cover, _)| cover.is_none())
+                .filter_map(|(_, position)| {
+                    position.and_then(|position| page_source_ids.get(position))
+                })
+                .map(String::as_str),
+        )
+        .await?;
 
         for (cover, position) in snapshot.comic_covers.iter_mut().zip(positions)
         {
@@ -315,9 +314,12 @@ impl ObjViewSnapshot {
     {
         //
         let (mut covers, team_avatars, user_avatars) = futures_util::try_join!(
-            load_obj_urls::<_, _, ComicCover>(obj_dept, comic_ids.to_vec()),
-            load_obj_urls::<_, _, TeamAvatar>(obj_dept, team_ids),
-            load_obj_urls::<_, _, UserAvatar>(obj_dept, user_ids),
+            load_obj_urls::<_, _, ComicCover, _>(
+                obj_dept,
+                comic_ids.iter().copied()
+            ),
+            load_obj_urls::<_, _, TeamAvatar, _>(obj_dept, team_ids),
+            load_obj_urls::<_, _, UserAvatar, _>(obj_dept, user_ids),
         )?;
 
         let comic_covers = comic_ids.iter().map(|id| covers.take(id)).collect();
