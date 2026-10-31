@@ -25,7 +25,7 @@ use crate::part::effect::event::Event;
 /// [`emit_on`](EffectEvent::emit_on).
 pub trait EffectEvent {
     /// Consumes self and returns its events.
-    fn into_events(self) -> Vec<Event>;
+    fn into_events(self) -> impl IntoIterator<Item = Event> + Send;
 
     /// Emits this event through `bus`.
     fn emit_on<B>(self, bus: &B) -> impl Future<Output = ()>
@@ -39,15 +39,15 @@ pub trait EffectEvent {
 
 impl EffectEvent for Vec<Event> {
     // Returns the pre-collected side effects.
-    fn into_events(self) -> Vec<Event> {
+    fn into_events(self) -> impl IntoIterator<Item = Event> + Send {
         self
     }
 }
 
 impl EffectEvent for Event {
-    // Wraps one event for dispatch.
-    fn into_events(self) -> Vec<Event> {
-        vec![self]
+    // Dispatches one event without allocating a batch buffer.
+    fn into_events(self) -> impl IntoIterator<Item = Self> + Send {
+        std::iter::once(self)
     }
 }
 
@@ -58,5 +58,7 @@ impl EffectEvent for Event {
 /// notifications, etc.).
 pub trait EventBus {
     /// Emits each event in the provided iterator to the appropriate side-effect handlers.
-    fn emit(&self, events: Vec<Event>) -> impl Future<Output = ()> + Send;
+    fn emit<I>(&self, events: I) -> impl Future<Output = ()>
+    where
+        I: IntoIterator<Item = Event>;
 }

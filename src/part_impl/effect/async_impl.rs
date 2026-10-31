@@ -57,7 +57,10 @@ impl AsyncEventBus {
 impl EventBus for AsyncEventBus {
     // Enqueues best-effort events without waiting for queue capacity.
     #[instrument(level = "info", skip_all)]
-    async fn emit(&self, events: Vec<Event>) {
+    async fn emit<I>(&self, events: I)
+    where
+        I: IntoIterator<Item = Event>,
+    {
         //
         for event in events {
             //

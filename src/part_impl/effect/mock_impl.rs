@@ -16,7 +16,10 @@ use crate::part_impl::repo::mock_impl::Mock;
 /// be drained via [`Mock::drain_events`] for assertion.
 impl EventBus for Mock {
     // Collect emitted events into the mock event buffer during tests.
-    async fn emit(&self, events: Vec<Event>) {
+    async fn emit<I>(&self, events: I)
+    where
+        I: IntoIterator<Item = Event>,
+    {
         self.events.lock().unwrap().extend(events);
     }
 }
