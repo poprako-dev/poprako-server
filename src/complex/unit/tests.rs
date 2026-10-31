@@ -121,7 +121,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
         },
     ];
 
-    let edits = unit_complex::normalize_edits(&["a"], edits).unwrap();
+    let edits = unit_complex::normalize_edits(["a"], edits).unwrap();
 
     assert_eq!(edits.len(), 1);
 
@@ -141,7 +141,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
 fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     //
     let self_anchor = unit_complex::normalize_edits(
-        &["a"],
+        ["a"],
         vec![save(
             "a",
             Patch::Assign {
@@ -153,7 +153,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     assert_args(&self_anchor.unwrap_err());
 
     let unknown = unit_complex::normalize_edits(
-        &["a"],
+        ["a"],
         vec![UnitEdit::Delete {
             id: "missing".to_string(),
         }],
@@ -166,7 +166,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
 fn normalize_orders_create_prior_to_save_for_the_same_unit() {
     //
     let edits = unit_complex::normalize_edits(
-        &[],
+        [],
         vec![save("a", Patch::Clear), create("a", None)],
     )
     .unwrap();

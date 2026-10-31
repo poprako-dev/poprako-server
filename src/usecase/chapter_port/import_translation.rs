@@ -502,12 +502,9 @@ where
         .map(|id| UnitEdit::Delete { id: id.clone() })
         .collect::<Vec<_>>();
 
-    let base_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
+    let base_ids = orders.iter().map(|order| order.id.as_str());
 
-    let delete_edits = unit_complex::normalize_edits(&base_ids, delete_edits)?;
+    let delete_edits = unit_complex::normalize_edits(base_ids, delete_edits)?;
 
     ApplyUnitEdits {
         page_source_id,
@@ -542,12 +539,9 @@ where
     let edits =
         build_page_source_edits(&imported_page.units, user_id, edit_perm);
 
-    let base_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
+    let base_ids = orders.iter().map(|order| order.id.as_str());
 
-    let edits = unit_complex::normalize_edits(&base_ids, edits)?;
+    let edits = unit_complex::normalize_edits(base_ids, edits)?;
 
     let final_count_metrics = ApplyUnitEdits {
         page_source_id,

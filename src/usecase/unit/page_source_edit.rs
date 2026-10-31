@@ -55,12 +55,9 @@ where
     .step_on(repo, context)
     .await?;
 
-    let base_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
+    let base_ids = orders.iter().map(|order| order.id.as_str());
 
-    let edits = unit_complex::normalize_edits(&base_ids, edits)?;
+    let edits = unit_complex::normalize_edits(base_ids, edits)?;
 
     let count_metrics = ApplyUnitEdits {
         page_source_id: &page_source_scope.id,
