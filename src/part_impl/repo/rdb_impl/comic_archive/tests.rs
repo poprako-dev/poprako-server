@@ -283,6 +283,13 @@ fn verify_commit_lock_order(queries: &Mutex<Vec<String>>) {
     assert!(chapter_lock < comic_write);
 }
 
+// Fixed archive time aligned to PostgreSQL's microsecond timestamp precision.
+fn archive_timestamp() -> OffsetDateTime {
+    //
+    OffsetDateTime::from_unix_timestamp_nanos(1_700_000_000_123_456_000)
+        .unwrap()
+}
+
 /// Verifies comic archive roundtrip via testcontainers.
 /// # Panics
 /// Panics if fixture setup fails or a scenario assertion is violated.
@@ -372,10 +379,12 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
                 )
                 .await?;
 
+            let archived_at = archive_timestamp();
+
             let comic_archive_entry = comic_archive_complex::prepare_entry(
                 comic_archive_snapshot,
                 archiver_id.clone(),
-                OffsetDateTime::now_utc(),
+                archived_at,
             )
             .await?;
 
