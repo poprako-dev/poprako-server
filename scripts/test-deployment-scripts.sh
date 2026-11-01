@@ -204,8 +204,17 @@ case "$docker_command" in
                 ;;
             ls)
                 printf '%s\n' "$TEST_LOCAL_IMAGE"
+
+                if [ -n "${TEST_EXTRA_IMAGE:-}" ]; then
+                    printf '%s\n' "$TEST_EXTRA_IMAGE"
+                fi
                 ;;
-            rm) ;;
+            rm)
+                if [ -n "${TEST_IN_USE_IMAGE:-}" ] && [ "${1:-}" = "${TEST_IN_USE_IMAGE}" ]; then
+                    echo "conflict: image is in use" >&2
+                    exit 1
+                fi
+                ;;
         esac
         ;;
     info) ;;
@@ -379,6 +388,20 @@ assert_order "docker pull" "migration" "$command_log"
 assert_order "migration" "docker run" "$command_log"
 assert_not_contains "$registry_token" "$command_log"
 assert_not_contains "$registry_token" "$command_output"
+
+: >"$command_log"
+: >"$command_output"
+rm -f "${docker_state}/poprako-server-prod" "${docker_state}/new-current"
+
+in_use_image_ref="poprako-server-prod:sha-2222222222222222222222222222222222222222"
+
+if ! TEST_EXTRA_IMAGE="$in_use_image_ref" TEST_IN_USE_IMAGE="$in_use_image_ref" \
+    run_remote_deploy >"$command_output" 2>&1; then
+    fail "remote deployment failed when an in-use image could not be removed"
+fi
+
+assert_contains "warning: kept in-use image ${in_use_image_ref}" "$command_output"
+assert_contains "docker run" "$command_log"
 
 : >"$command_log"
 : >"$command_output"
