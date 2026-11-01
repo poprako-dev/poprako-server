@@ -231,7 +231,10 @@ cleanup_application_images() {
             cleanup_image_sha=${cleanup_image_ref#"${image_name}:sha-"}
             is_commit_sha "$cleanup_image_sha" || continue
 
-            docker image rm "$cleanup_image_ref" >/dev/null
+            # Retained rollback containers may still reference an older image.
+            if ! docker image rm "$cleanup_image_ref" >/dev/null; then
+                echo "warning: kept in-use image ${cleanup_image_ref}" >&2
+            fi
         done
 }
 
