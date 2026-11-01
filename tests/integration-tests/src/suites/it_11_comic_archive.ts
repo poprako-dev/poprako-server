@@ -34,6 +34,10 @@ import type { RunCtx } from "../state/runCtx.ts";
 
 export const IMPLEMENTED = true as const;
 
+type ExportedMonth = { month: string; archives: string[] };
+
+type ExportedArchives = { months: ExportedMonth[] };
+
 interface ActiveObjectVersion {
     f_obj_id: string;
     f_version: string;
@@ -128,16 +132,19 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // ---------- export selected archive month ----------
 
     const archive_month = new Date().toISOString().slice(0, 7);
-    const export_response = await ctx.sadmin.get<SuccessBody<Record<string, string[]>>>(
+    const export_response = await ctx.sadmin.get<SuccessBody<ExportedArchives>>(
         `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}&month=2000-01`,
     );
-    const exported_months = expectSuccessData<Record<string, string[]>>(export_response, 200);
-    const exported_comics = exported_months[archive_month]!;
+    const exported_archives = expectSuccessData<ExportedArchives>(export_response, 200);
+    const selected_month = exported_archives.months.find((entry) => entry.month === archive_month)!;
 
-    assert.deepEqual(exported_comics.length, 1);
-    assert.deepEqual(JSON.parse(exported_comics[0]!).source_comic_id, comic.id);
-    assert.deepEqual(Object.keys(exported_months), ["2000-01", archive_month]);
-    assert.deepEqual(exported_months["2000-01"], []);
+    assert.deepEqual(selected_month.archives.length, 1);
+    assert.deepEqual(JSON.parse(selected_month.archives[0]!).source_comic_id, comic.id);
+    assert.deepEqual(
+        exported_archives.months.map((entry) => entry.month),
+        ["2000-01", archive_month],
+    );
+    assert.deepEqual(exported_archives.months[0]!.archives, []);
 
     expectError(
         await guest.api.get<ErrorBody>(

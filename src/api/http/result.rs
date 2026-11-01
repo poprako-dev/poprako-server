@@ -14,8 +14,9 @@ use std::num::NonZeroU16;
 use std::result::Result;
 
 use axum::Json;
+use axum::body::{Body, Bytes};
 use axum::http::StatusCode;
-use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
+use axum::http::header::{HeaderMap, HeaderName, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::ser::SerializeStruct as _;
@@ -184,6 +185,55 @@ impl<T> HttpBody<T> {
         }
 
         self
+    }
+
+    /// Inserts an additional response header.
+    pub fn with_header(mut self, name: HeaderName, value: HeaderValue) -> Self {
+        //
+        self.headers.insert(name, value);
+
+        self
+    }
+}
+
+/// Raw success body emitted without the JSON success envelope.
+///
+/// Download and operational endpoints use it when the payload itself is the
+/// response body rather than a `code`/`data` JSON object.
+pub struct HttpRawBody {
+    /// Raw response bytes.
+    bytes: Bytes,
+}
+
+impl HttpRawBody {
+    /// Wraps raw response bytes.
+    #[must_use]
+    pub fn new<B>(bytes: B) -> Self
+    where
+        B: Into<Bytes>,
+    {
+        Self {
+            bytes: bytes.into(),
+        }
+    }
+}
+
+impl IntoResponse for HttpBody<HttpRawBody> {
+    // Converts a raw success body into a response and merges recorded headers.
+    fn into_response(self) -> Response {
+        //
+        let Self {
+            status,
+            headers,
+            data,
+            ..
+        } = self;
+
+        let mut response = (status, Body::from(data.bytes)).into_response();
+
+        response.headers_mut().extend(headers);
+
+        response
     }
 }
 

@@ -5719,14 +5719,11 @@
         ],
         "properties": {
           "headers": {
-            "type": "object",
-            "description": "Headers bound into the upload signature.",
-            "additionalProperties": {
-              "type": "string"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadHeaderView"
             },
-            "propertyNames": {
-              "type": "string"
-            }
+            "description": "Headers bound into the upload signature."
           },
           "put_url": {
             "type": "string",
@@ -6357,6 +6354,27 @@
           "label_plus",
           "poprako"
         ]
+      },
+      "ComicArchiveExportMonthVal": {
+        "type": "object",
+        "description": "Stored JSON archive payloads for one UTC month slot.",
+        "required": [
+          "month",
+          "archives"
+        ],
+        "properties": {
+          "archives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Stored JSON archive payload strings for this month."
+          },
+          "month": {
+            "type": "string",
+            "description": "UTC month slot in `YYYY-MM` format."
+          }
+        }
       },
       "ComicInclOpt": {
         "type": "string",
@@ -7111,15 +7129,18 @@
       },
       "ExportComicArchivesVal": {
         "type": "object",
-        "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
-        "additionalProperties": {
-          "type": "array",
-          "items": {
-            "type": "string"
+        "description": "Stored JSON archive payloads grouped by UTC month slot.",
+        "required": [
+          "months"
+        ],
+        "properties": {
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicArchiveExportMonthVal"
+            },
+            "description": "Selected month slots in the requested order."
           }
-        },
-        "propertyNames": {
-          "type": "string"
         }
       },
       "ExportFormatSpec": {
@@ -8305,15 +8326,18 @@
           },
           "data": {
             "type": "object",
-            "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
+            "description": "Stored JSON archive payloads grouped by UTC month slot.",
+            "required": [
+              "months"
+            ],
+            "properties": {
+              "months": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ComicArchiveExportMonthVal"
+                },
+                "description": "Selected month slots in the requested order."
               }
-            },
-            "propertyNames": {
-              "type": "string"
             }
           }
         }
@@ -11126,14 +11150,11 @@
         ],
         "properties": {
           "headers": {
-            "type": "object",
-            "description": "Headers bound into the PUT signature.",
-            "additionalProperties": {
-              "type": "string"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadHeaderView"
             },
-            "propertyNames": {
-              "type": "string"
-            }
+            "description": "Headers bound into the PUT signature."
           },
           "image_version": {
             "type": "integer",
@@ -13980,6 +14001,24 @@
           "name": {
             "type": "string",
             "description": "Updated workset display name."
+          }
+        }
+      },
+      "UploadHeaderView": {
+        "type": "object",
+        "description": "One header bound into a presigned upload request.",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Header name."
+          },
+          "value": {
+            "type": "string",
+            "description": "Header value bound into the upload signature."
           }
         }
       },

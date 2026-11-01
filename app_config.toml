@@ -64,9 +64,9 @@ online_user_ttl_secs = 600
 [comic_archive_export]
 # Combined stored payload memory per database batch in MiB. Default: 8; oversized individual payloads fail the complete export.
 payload_batch_mib = 8
-# Complete escaped month-map artifact size in MiB, excluding the fixed HTTP envelope. Default: 256; exceeding it fails before sending a success response.
+# Complete escaped export artifact size in MiB, excluding the fixed HTTP envelope. Default: 256; exceeding it fails before sending a success response.
 artifact_limit_mib = 256
-# Artifacts being generated or transferred concurrently. Default: 1; excess exports receive 503 without queueing.
+# Exports generated concurrently. Default: 1; excess exports receive 503 without queueing.
 concurrency = 1
 
 [repo]

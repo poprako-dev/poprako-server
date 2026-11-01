@@ -4,6 +4,7 @@ import { testEnv } from "../config/env.ts";
 import { expectError, expectNoContent, expectSuccessData, expectSuccessList } from "./assertions.ts";
 import { ApiClient, clientFor } from "./apiClient.ts";
 import type { ErrorBody, SuccessBody } from "./apiClient.ts";
+import { uploadHeaders } from "./types.ts";
 import type {
     AnnouncementInfoView,
     ArchiveComicVal,
@@ -193,7 +194,7 @@ async function reserveAndUploadImage(
     if (reserved.slot) {
         const response = await fetch(reserved.slot.put_url, {
             method: "PUT",
-            headers: reserved.slot.headers,
+            headers: uploadHeaders(reserved.slot.headers),
             body: imageBytes,
         });
 
@@ -531,7 +532,7 @@ async function uploadReservedPageSources(reservedPageSources: ReservedPageSource
 
         const response = await fetch(reservedPageSource.slot.put_url, {
             method: "PUT",
-            headers: reservedPageSource.slot.headers,
+            headers: uploadHeaders(reservedPageSource.slot.headers),
             body: TEST_PAGE_BYTES,
         });
 
@@ -589,7 +590,7 @@ export async function reservePageSourceImage(
     if (reserved.slot) {
         const response = await fetch(reserved.slot.put_url, {
             method: "PUT",
-            headers: reserved.slot.headers,
+            headers: uploadHeaders(reserved.slot.headers),
             body: imageBytes,
         });
 

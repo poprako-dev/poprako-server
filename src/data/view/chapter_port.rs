@@ -1,13 +1,12 @@
 //! View DTOs for chapter translation port import and export.
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::data::view::page_source_port::PageSourceTranslationPortView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::model::shared::translation_document::ChapterTranslationDocument;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
@@ -52,5 +51,5 @@ pub struct ChapterArtworkUploadSlotView {
     /// Presigned PUT URL.
     pub put_url: String,
     /// Headers bound into the upload signature.
-    pub headers: BTreeMap<String, String>,
+    pub headers: Vec<UploadHeaderView>,
 }

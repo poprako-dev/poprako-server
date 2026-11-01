@@ -1,8 +1,5 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
-// Complete archive artifact response streaming.
-mod export;
-
 #[cfg(test)]
 mod tests;
 
@@ -10,7 +7,6 @@ use std::sync::Arc;
 
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
-use axum::response::Response;
 use axum_extra::extract::Query;
 use serde::Deserialize;
 use tokio::sync::Semaphore;
@@ -25,7 +21,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::HttpBody;
 
 use crate::api::http::result::{
-    Accept as _, HttpError, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::comic::{
@@ -34,11 +30,9 @@ use crate::data::instr::comic::{
 };
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
 use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
-use crate::data::val::comic_archive::ArchiveComicVal;
-
-#[cfg(feature = "swagger")]
-use crate::data::val::comic_archive::ExportComicArchivesVal;
-
+use crate::data::val::comic_archive::{
+    ArchiveComicVal, ExportComicArchivesVal,
+};
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
@@ -81,9 +75,9 @@ pub async fn export_archives(
     Extension(user_token): Extension<UserToken>,
     Extension(admission): Extension<Arc<Semaphore>>,
     Query(instr): Query<ExportComicArchivesInstr>,
-) -> Result<Response, HttpError> {
+) -> HttpResult<ExportComicArchivesVal> {
     //
-    let artifact =
+    Ok(
         comic_archive_usecase::export::<_, RdbContext<ReptRead>, RdbRepo>(
             (
                 harn.nucl().rept_read(),
@@ -95,9 +89,9 @@ pub async fn export_archives(
             team_id,
             instr,
         )
-        .await?;
-
-    Ok(export::response(artifact))
+        .await?
+        .accept(StatusCode::OK),
+    )
 }
 
 /// Query for listing comics within a workset.

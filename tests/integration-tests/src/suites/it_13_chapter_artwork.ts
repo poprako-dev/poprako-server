@@ -6,13 +6,15 @@ import { withDatabaseClient } from "../db/seed.ts";
 import { expectError, expectNoContent, expectSuccessData } from "../http/assertions.ts";
 import type { ErrorBody, SuccessBody } from "../http/apiClient.ts";
 import { advanceStage, archiveComic, createComic, createWorkset } from "../http/fixtures.ts";
+import { uploadHeaders } from "../http/types.ts";
+import type { UploadHeader } from "../http/types.ts";
 import type { RunCtx } from "../state/runCtx.ts";
 
 export const IMPLEMENTED = true as const;
 
 interface ArtworkAllocation {
     artwork_version: number;
-    slot: { put_url: string; headers: Record<string, string> } | null;
+    slot: { put_url: string; headers: UploadHeader[] } | null;
 }
 
 interface ArtworkExport {
@@ -62,8 +64,9 @@ export async function runIt13Module(ctx: RunCtx): Promise<void> {
     assert.ok(allocated.slot);
     const putUrl = new URL(allocated.slot.put_url);
     assert.deepEqual(putUrl.protocol, "https:");
-    assert.deepEqual(allocated.slot.headers["content-length"], "1024");
-    assert.deepEqual(allocated.slot.headers["content-type"], "application/octet-stream");
+    const signedUploadHeaders = uploadHeaders(allocated.slot.headers);
+    assert.deepEqual(signedUploadHeaders["content-length"], "1024");
+    assert.deepEqual(signedUploadHeaders["content-type"], "application/octet-stream");
     const signedHeaders = putUrl.searchParams.get("X-Amz-SignedHeaders") ?? "";
     assert.ok(signedHeaders.includes("content-length"), "upload signature must bind the exact size");
     expectError(await ctx.sadmin.get<ErrorBody>(`${base}/export`), 422, 2);

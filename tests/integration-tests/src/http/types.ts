@@ -371,10 +371,19 @@ export interface PageSourceImageInput {
     ext: ImageExtension;
 }
 
+export interface UploadHeader {
+    name: string;
+    value: string;
+}
+
+export function uploadHeaders(headers: UploadHeader[]): Record<string, string> {
+    return Object.fromEntries(headers.map((header) => [header.name, header.value]));
+}
+
 export interface UploadSlotVal {
     put_url: string;
     image_version: number;
-    headers: Record<string, string>;
+    headers: UploadHeader[];
 }
 
 export interface ReservedPageSourceVal {
