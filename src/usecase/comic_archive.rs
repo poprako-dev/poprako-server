@@ -1,8 +1,5 @@
 //! Use cases for immutable comic archives.
 
-// Bounded temporary export construction.
-mod export;
-
 #[cfg(test)]
 mod tests;
 
@@ -11,8 +8,7 @@ use std::sync::Arc;
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
-use tokio::fs::File;
-use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+use tokio::sync::Semaphore;
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
@@ -24,7 +20,9 @@ use crate::complex::comic_archive as comic_archive_complex;
 use crate::complex::comic_archive::perm as comic_archive_perm_complex;
 use crate::config::comic_archive_export::ComicArchiveExportConfig;
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
-use crate::data::val::comic_archive::ArchiveComicVal;
+use crate::data::val::comic_archive::{
+    ArchiveComicVal, ComicArchiveExportMonthVal, ExportComicArchivesVal,
+};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::obj_dept::{
@@ -40,43 +38,9 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
-use crate::usecase::comic_archive::export::ExportWriter;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
-
-/// Complete archive JSON data, generated before response transmission starts.
-///
-/// The anonymous temporary file is removed when its final handle is dropped.
-pub struct ComicArchiveExport {
-    /// Rewound file containing only the complete JSON month map.
-    file: File,
-    /// Exact byte length of the complete JSON month map.
-    bytes: u64,
-    /// Admission remains occupied until the completed response body is dropped.
-    permit: OwnedSemaphorePermit,
-}
-
-impl ComicArchiveExport {
-    /// Owns a completed artifact and its transfer admission permit.
-    #[must_use]
-    pub const fn new(
-        file: File,
-        bytes: u64,
-        permit: OwnedSemaphorePermit,
-    ) -> Self {
-        Self {
-            file,
-            bytes,
-            permit,
-        }
-    }
-
-    /// Transfers the artifact and admission ownership to its response stream.
-    pub fn into_transfer(self) -> (File, u64, OwnedSemaphorePermit) {
-        (self.file, self.bytes, self.permit)
-    }
-}
 
 /// Exports selected retained UTC month slots for one team.
 #[instrument(
@@ -96,7 +60,7 @@ pub async fn export<N, C, R>(
     token: UserToken,
     team_id: String,
     instr: ExportComicArchivesInstr,
-) -> BaseRest<ComicArchiveExport>
+) -> BaseRest<ExportComicArchivesVal>
 where
     C: Context + Send,
     C::Level: AtLeast<ReptRead>,
@@ -129,7 +93,7 @@ where
         OffsetDateTime::now_utc(),
     )?;
 
-    let permit =
+    let _permit =
         Arc::clone(admission).try_acquire_owned().map_err(|error| {
             //
             tracing::warn!(
@@ -143,32 +107,22 @@ where
             }
         })?;
 
-    let (file, bytes) = nucl
+    let exports = nucl
         .coord(async move |context| {
             //
-            let mut writer = ExportWriter::new(config.artifact_limit_bytes())?;
+            let mut exports = Vec::new();
 
-            writer.write(b"{").await?;
-
-            for (month_index, month) in months.iter().enumerate() {
+            for month in months {
                 //
-                if month_index > 0 {
-                    writer.write(b",").await?;
-                }
-
-                writer.string(&month.label).await?;
-
-                writer.write(b":[").await?;
+                let mut payloads = Vec::new();
 
                 let mut after = None::<(OffsetDateTime, String)>;
-
-                let mut first_payload = true;
 
                 loop {
                     //
                     let records = ListComicArchivePayloads {
                         team_id: &team_id,
-                        months: slice::from_ref(month),
+                        months: slice::from_ref(&month),
                         after: after
                             .as_ref()
                             .map(|(created_at, id)| (*created_at, id.as_str())),
@@ -183,28 +137,46 @@ where
 
                     for record in records {
                         //
-                        if !first_payload {
-                            writer.write(b",").await?;
-                        }
-
-                        writer.string(&record.payload).await?;
-
-                        first_payload = false;
+                        payloads.push(record.payload);
 
                         after = Some((record.created_at, record.id));
                     }
                 }
 
-                writer.write(b"]").await?;
+                exports.push(ComicArchiveExportMonthVal {
+                    month: month.label,
+                    archives: payloads,
+                });
             }
 
-            writer.write(b"}").await?;
-
-            writer.finish().await
+            Ok::<_, BaseError>(exports)
         })
         .await?;
 
-    accept!(ComicArchiveExport::new(file, bytes, permit))
+    let export = ExportComicArchivesVal { months: exports };
+
+    let encoded = serde_json::to_vec(&export).map_err(|error| {
+        //
+        unrecoverable_error! {
+            message: "archive export JSON encoding failed".into();
+            sdk_error = ?error,
+            "JSON SDK archive export encoding error",
+        }
+    })?;
+
+    if encoded.len() as u64 > config.artifact_limit_bytes() {
+        //
+        tracing::warn!(
+            operation = "export_comic_archives",
+            "archive export exceeds the configured artifact budget"
+        );
+
+        return Err(BaseError::Unavailable {
+            message: "archive export artifact budget exceeded".into(),
+        });
+    }
+
+    accept!(export)
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.

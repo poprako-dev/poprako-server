@@ -4,21 +4,18 @@
 // Tests for native terminology-base query and wire contracts.
 mod tests;
 
-use axum::body::{Body, Bytes};
+use axum::body::Bytes;
 use axum::extract::{Extension, Json, Path, Query, State};
-use axum::http::StatusCode;
-use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
-use axum::response::Response;
+use axum::http::{HeaderValue, StatusCode, header};
 use serde::Deserialize;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger")]
-use crate::api::http::result::HttpBody;
-
-use crate::api::http::result::{Accept as _, HttpError, HttpResult};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpError, HttpRawBody, HttpResult,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::instr::termbase_port::{
     AppendTermbaseInstr, ImportTermbaseInstr,
@@ -61,11 +58,11 @@ pub async fn export(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> Result<Response, HttpError> {
+) -> HttpResult<HttpRawBody> {
     //
-    let body = export_payload(&harn, user_token, termbase_id.clone()).await?;
+    let body = export_payload(&harn, user_token, termbase_id).await?;
 
-    export_response(&termbase_id, body, false)
+    Ok(export_body(body))
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/export/download` — download native JSON.
@@ -86,11 +83,25 @@ pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> Result<Response, HttpError> {
+) -> HttpResult<HttpRawBody> {
     //
     let body = export_payload(&harn, user_token, termbase_id.clone()).await?;
 
-    export_response(&termbase_id, body, true)
+    let disposition = HeaderValue::from_str(
+        &["attachment; filename=\"termbase_", &termbase_id, ".json\""].concat(),
+    )
+    .map_err(|error| {
+        //
+        tracing::error!(
+            operation = "build_termbase_export_disposition",
+            sdk_error = ?error,
+            "HTTP SDK export filename error",
+        );
+
+        HttpError::internal()
+    })?;
+
+    Ok(export_body(body).with_header(header::CONTENT_DISPOSITION, disposition))
 }
 
 /// `POST /api/v1/teams/{team_id}/termbases/import` — import into a team scope.
@@ -246,36 +257,13 @@ async fn export_payload(
     serialize_export(&export_termbase_val)
 }
 
-// Build either an inline or attachment export response.
-fn export_response(
-    termbase_id: &str,
-    body: Bytes,
-    download: bool,
-) -> Result<Response, HttpError> {
+// Build the shared inline export body.
+fn export_body(body: Bytes) -> HttpBody<HttpRawBody> {
     //
-    let mut builder = Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_TYPE, "application/json");
-
-    if download {
-        //
-        builder = builder.header(
-            CONTENT_DISPOSITION,
-            ["attachment; filename=\"termbase_", termbase_id, ".json\""]
-                .concat(),
-        );
-    }
-
-    builder.body(Body::from(body)).map_err(|error| {
-        //
-        tracing::error!(
-            operation = "build_termbase_export_response",
-            sdk_error = ?error,
-            "HTTP SDK response build error",
-        );
-
-        HttpError::internal()
-    })
+    HttpBody::new(StatusCode::OK, HttpRawBody::new(body)).with_header(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    )
 }
 
 // Serialize one native export document at the HTTP SDK boundary.

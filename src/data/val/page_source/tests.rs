@@ -8,6 +8,7 @@ use super::*;
 use std::collections::BTreeMap;
 
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::value::image::{ImageExt, ImageHash};
 
 #[test]
@@ -48,7 +49,7 @@ fn reserved_page_source_serializes_required_slot_headers() {
         slot: Some(ImageUploadSlotView {
             put_url: "https://upload.example/page_source--00000000001".into(),
             image_ver: 1,
-            headers,
+            headers: UploadHeaderView::from_map(headers),
         }),
     };
 
@@ -56,9 +57,11 @@ fn reserved_page_source_serializes_required_slot_headers() {
 
     let upload_headers = value.get("slot").unwrap().get("headers").unwrap();
 
-    assert_eq!(upload_headers.get("content-type").unwrap(), "image/png");
-
-    assert_eq!(upload_headers.get("content-length").unwrap(), "4096");
-
-    assert!(upload_headers.get("x-amz-checksum-sha256").is_none());
+    assert_eq!(
+        upload_headers,
+        &serde_json::json!([
+            {"name": "content-length", "value": "4096"},
+            {"name": "content-type", "value": "image/png"},
+        ])
+    );
 }

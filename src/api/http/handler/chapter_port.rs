@@ -8,14 +8,13 @@ mod tests;
 
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::Response;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
 use crate::api::http::result::{
-    Accept as _, HttpError, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpRawBody, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::chapter_port::{
@@ -109,9 +108,9 @@ pub async fn export_translation(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ExportChapterTranslationInstr>,
-) -> Result<Response, HttpError> {
+) -> HttpResult<HttpRawBody> {
     //
-    let payload = export::export_payload(
+    let body = export::export_payload(
         &harn,
         user_token,
         chapter_id,
@@ -120,7 +119,7 @@ pub async fn export_translation(
     )
     .await?;
 
-    export::body_response(payload)
+    Ok(export::body_response(body))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.
@@ -154,11 +153,11 @@ pub async fn export_translation_download(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ExportChapterTranslationInstr>,
-) -> Result<Response, HttpError> {
+) -> HttpResult<HttpRawBody> {
     //
     let filename = ["chapter_", &chapter_id].concat();
 
-    let payload = export::export_payload(
+    let body = export::export_payload(
         &harn,
         user_token,
         chapter_id,
@@ -167,7 +166,7 @@ pub async fn export_translation_download(
     )
     .await?;
 
-    export::download_response(&filename, payload)
+    export::download_response(&filename, body)
 }
 
 /// Allocates a direct chapter artwork upload; an available duplicate has no slot.

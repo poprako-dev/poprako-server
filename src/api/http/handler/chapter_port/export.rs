@@ -1,12 +1,10 @@
 //! Shared chapter translation export response helpers.
 
-use axum::body::{Body, Bytes};
-use axum::http::StatusCode;
-use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
-use axum::response::Response;
+use axum::body::Bytes;
+use axum::http::{HeaderValue, StatusCode, header};
 use tracing::instrument;
 
-use crate::api::http::result::HttpError;
+use crate::api::http::result::{HttpBody, HttpError, HttpRawBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -15,20 +13,7 @@ use crate::shared::RdbContext;
 use crate::usecase::chapter_port::export_translation as chapter_port_export_translation_usecase;
 use crate::value::chapter_port::ExportFormatSpec;
 
-/// Internal payload carrying serialised export content and response metadata.
-pub struct TranslationExportPayload {
-    // MIME type of the HTTP response body.
-    /// MIME type of the HTTP response body.
-    content_type: &'static str,
-    // File extension for the downloaded filename suffix.
-    /// File extension for the downloaded filename suffix.
-    ext: &'static str,
-    // Raw bytes of the serialised export payload.
-    /// Raw bytes of the serialised export payload.
-    body: Bytes,
-}
-
-/// Loads exported chapter data and builds the response payload.
+/// Loads and serializes one export document.
 #[instrument(level = "info", skip_all)]
 pub async fn export_payload(
     harn: &AppHarn,
@@ -36,7 +21,7 @@ pub async fn export_payload(
     chapter_id: String,
     formats: ExportFormatSpec,
     with_raw_ident: bool,
-) -> Result<TranslationExportPayload, HttpError> {
+) -> Result<Bytes, HttpError> {
     //
     let val = chapter_port_export_translation_usecase::export_translation::<
         _,
@@ -63,58 +48,44 @@ pub async fn export_payload(
         HttpError::internal()
     })?;
 
-    Ok(TranslationExportPayload {
-        content_type: "application/json",
-        ext: "json",
-        body: Bytes::from(body),
-    })
+    Ok(Bytes::from(body))
 }
 
-/// Builds a `200 OK` inline export response with the payload's MIME type.
-pub fn body_response(
-    payload: TranslationExportPayload,
-) -> Result<Response, HttpError> {
+/// Builds a `200 OK` inline JSON export response.
+pub fn body_response(body: Bytes) -> HttpBody<HttpRawBody> {
     //
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_TYPE, payload.content_type)
-        .body(Body::from(payload.body))
-        .map_err(|error| {
-            //
-            tracing::error!(
-                operation = "build_inline_export_response",
-                sdk_error = ?error,
-                "HTTP SDK response build error",
-            );
-
-            HttpError::internal()
-        })
+    HttpBody::new(StatusCode::OK, HttpRawBody::new(body)).with_header(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    )
 }
 
-/// Builds a `200 OK` attachment response with MIME type and filename header.
+/// Builds a `200 OK` JSON attachment response with a filename header.
 pub fn download_response(
     filename_base: &str,
-    payload: TranslationExportPayload,
-) -> Result<Response, HttpError> {
+    body: Bytes,
+) -> HttpResult<HttpRawBody> {
     //
-    let filename = [filename_base, ".", payload.ext].concat();
+    let filename = [filename_base, ".json"].concat();
 
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_TYPE, payload.content_type)
-        .header(
-            CONTENT_DISPOSITION,
-            ["attachment; filename=\"", &filename, "\""].concat(),
+    let disposition = HeaderValue::from_str(
+        &["attachment; filename=\"", &filename, "\""].concat(),
+    )
+    .map_err(|error| {
+        //
+        tracing::error!(
+            operation = "build_chapter_export_disposition",
+            sdk_error = ?error,
+            "HTTP SDK export filename error",
+        );
+
+        HttpError::internal()
+    })?;
+
+    Ok(HttpBody::new(StatusCode::OK, HttpRawBody::new(body))
+        .with_header(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
         )
-        .body(Body::from(payload.body))
-        .map_err(|error| {
-            //
-            tracing::error!(
-                operation = "build_download_export_response",
-                sdk_error = ?error,
-                "HTTP SDK response build error",
-            );
-
-            HttpError::internal()
-        })
+        .with_header(header::CONTENT_DISPOSITION, disposition))
 }

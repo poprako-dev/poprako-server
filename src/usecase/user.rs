@@ -24,6 +24,7 @@ use crate::data::instr::user::{
 };
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberNicknameRepl;
@@ -278,7 +279,7 @@ where
     let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver(),
-        headers: obj_slot.headers,
+        headers: UploadHeaderView::from_map(obj_slot.headers),
     });
 
     accept!(AllocUserAvatarVal { slot })

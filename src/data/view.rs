@@ -48,6 +48,8 @@ pub mod termbase_port;
 pub mod unit;
 /// Unit-port response views.
 pub mod unit_port;
+/// Presigned-upload response views.
+pub mod upload;
 /// User response views.
 pub mod user;
 /// Workset response views.

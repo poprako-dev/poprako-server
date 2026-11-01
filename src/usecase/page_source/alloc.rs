@@ -32,6 +32,7 @@ use crate::data::val::page_source::{
     AllocChapterPageSourcesVal, AllocatedPageSourceVal,
 };
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page_source::PageSourceImageSpec;
 use crate::part::nucl::ReptRead;
@@ -285,7 +286,7 @@ fn alloc_val(alloc: PageSourceAlloc) -> BaseRest<AllocatedPageSourceVal> {
             .map(|obj_alloc| ImageUploadSlotView {
                 put_url: obj_alloc.url.to_string(),
                 image_ver: obj_alloc.key.ver(),
-                headers: obj_alloc.headers,
+                headers: UploadHeaderView::from_map(obj_alloc.headers),
             });
 
     let index = u32::try_from(alloc.index).map_err(|_| {

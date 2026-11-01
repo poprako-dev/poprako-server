@@ -25,6 +25,7 @@ use crate::data::val::chapter_port::{
     AllocChapterArtworkVal, ExportChapterArtworkVal,
 };
 use crate::data::view::chapter_port::ChapterArtworkUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::effect::event::Event;
@@ -130,7 +131,7 @@ where
                 slot: artwork_alloc.into_slot().map(|slot| {
                     ChapterArtworkUploadSlotView {
                         put_url: slot.url.to_string(),
-                        headers: slot.headers,
+                        headers: UploadHeaderView::from_map(slot.headers),
                     }
                 }),
             };

@@ -1,32 +1,12 @@
-use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
-use tokio::io::AsyncReadExt as _;
-use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+use tokio::sync::Semaphore;
 
 use super::*;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
-use crate::usecase::comic_archive::ComicArchiveExport;
 
 const TEAM_ID: &str = "team--00000000001";
-
-// Read completed JSON data in small regression fixtures.
-async fn read_months(
-    artifact: ComicArchiveExport,
-) -> (BTreeMap<String, Vec<String>>, OwnedSemaphorePermit) {
-    let (mut file, expected_bytes, permit) = artifact.into_transfer();
-
-    let mut bytes = Vec::new();
-
-    file.read_to_end(&mut bytes).await.unwrap();
-
-    drop(file);
-
-    assert_eq!(expected_bytes, bytes.len() as u64);
-
-    (serde_json::from_slice(&bytes).unwrap(), permit)
-}
 
 // Seed immutable records without invoking unrelated archive mutation behavior.
 fn seed_record(mock: &Mock, id: &str, month: &str, payload: String) {
@@ -69,26 +49,27 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let admission = Arc::new(Semaphore::new(1));
 
-    let (months, permit) = read_months(
-        export(
-            (&mock, &mock, &config, &admission),
-            token(),
-            TEAM_ID.into(),
-            ExportComicArchivesInstr {
-                months: vec![month.clone()],
-            },
-        )
-        .await
-        .unwrap(),
+    let months = export(
+        (&mock, &mock, &config, &admission),
+        token(),
+        TEAM_ID.into(),
+        ExportComicArchivesInstr {
+            months: vec![month.clone()],
+        },
     )
-    .await;
-
-    drop(permit);
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
+    let month_export = months
+        .months
+        .iter()
+        .find(|entry| entry.month == month)
+        .unwrap();
+
     assert_eq!(
-        months.get(&month).unwrap(),
+        &month_export.archives,
         &vec![
             snapshot
                 .comic_archives
@@ -122,36 +103,39 @@ async fn export_preserves_complete_selected_months_across_chunks() {
 
     let admission = Arc::new(Semaphore::new(1));
 
-    let (months, permit) = read_months(
-        export(
-            (&mock, &mock, &config, &admission),
-            token(),
-            TEAM_ID.into(),
-            ExportComicArchivesInstr {
-                months: vec!["2025-03".into(), "2025-01".into()],
-            },
-        )
-        .await
-        .unwrap(),
+    let months = export(
+        (&mock, &mock, &config, &admission),
+        token(),
+        TEAM_ID.into(),
+        ExportComicArchivesInstr {
+            months: vec!["2025-03".into(), "2025-01".into()],
+        },
     )
-    .await;
+    .await
+    .unwrap();
 
-    assert_eq!(months.len(), 2);
+    assert_eq!(months.months.len(), 2);
+
+    let january = months
+        .months
+        .iter()
+        .find(|entry| entry.month == "2025-01")
+        .unwrap();
 
     assert_eq!(
-        months.get("2025-01").unwrap(),
+        &january.archives,
         &(0..65)
             .map(|index| format!("payload-{index:03}\n\"中"))
             .collect::<Vec<_>>()
     );
 
-    assert!(months.get("2025-03").unwrap().is_empty());
+    let march = months
+        .months
+        .iter()
+        .find(|entry| entry.month == "2025-03")
+        .unwrap();
 
-    assert_eq!(admission.available_permits(), 0);
-
-    drop(permit);
-
-    assert_eq!(admission.available_permits(), 1);
+    assert!(march.archives.is_empty());
 }
 
 // export(export)(negative): resource rejection and failed authorization never consume permanent admission capacity.
@@ -218,21 +202,22 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
 
     drop(permit);
 
-    let (months, permit) = read_months(
-        export(
-            (&mock, &mock, &config, &admission),
-            token(),
-            TEAM_ID.into(),
-            ExportComicArchivesInstr {
-                months: vec!["2025-03".into()],
-            },
-        )
-        .await
-        .unwrap(),
+    let months = export(
+        (&mock, &mock, &config, &admission),
+        token(),
+        TEAM_ID.into(),
+        ExportComicArchivesInstr {
+            months: vec!["2025-03".into()],
+        },
     )
-    .await;
+    .await
+    .unwrap();
 
-    drop(permit);
+    let march = months
+        .months
+        .iter()
+        .find(|entry| entry.month == "2025-03")
+        .unwrap();
 
-    assert!(months.get("2025-03").unwrap().is_empty());
+    assert!(march.archives.is_empty());
 }

@@ -11,6 +11,7 @@ use crate::config::image::ImageConfig;
 use crate::data::instr::comic::AllocComicCoverInstr;
 use crate::data::val::comic::AllocComicCoverVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::ComicCover;
@@ -93,7 +94,7 @@ where
     let slot = obj_alloc.into_slot().map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver(),
-        headers: obj_slot.headers,
+        headers: UploadHeaderView::from_map(obj_slot.headers),
     });
 
     accept!(AllocComicCoverVal { slot })

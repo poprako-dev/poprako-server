@@ -2,8 +2,6 @@
 
 //! Request and response values for immutable comic archive operations.
 
-use std::collections::BTreeMap;
-
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -18,8 +16,21 @@ pub struct ArchiveComicVal {
     pub archived_id: String,
 }
 
-/// JSON archive payloads grouped by their UTC `YYYY-MM` month slot.
+/// Stored JSON archive payloads for one UTC month slot.
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(transparent)]
-pub struct ExportComicArchivesVal(pub BTreeMap<String, Vec<String>>);
+pub struct ComicArchiveExportMonthVal {
+    /// UTC month slot in `YYYY-MM` format.
+    pub month: String,
+
+    /// Stored JSON archive payload strings for this month.
+    pub archives: Vec<String>,
+}
+
+/// Stored JSON archive payloads grouped by UTC month slot.
+#[derive(Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct ExportComicArchivesVal {
+    /// Selected month slots in the requested order.
+    pub months: Vec<ComicArchiveExportMonthVal>,
+}

@@ -23,6 +23,8 @@ sh scripts/ci-parallel.sh \
     "uv run --no-project python scripts/test-release-readiness.py" \
     "Rust compilation" \
     "cargo check --workspace --all-targets --all-features" \
+    "Rust release binary" \
+    "cargo check --locked --release --bin poprako-server" \
     "Rust lint" \
     "cargo clippy --workspace --all-targets --all-features -- -D warnings" \
     "Repository lint" \

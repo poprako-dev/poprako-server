@@ -137,7 +137,7 @@ The main runner now includes it_13. Final database cleanup also deletes `t_chapt
 
 Rust RDB 测试补充数据库约束、批量插入、替换失败回滚、并发批次隔离和归档快照；Mock 用例覆盖相同业务权限、替换和清理规则。
 
-`it_11` archive export also verifies sorted non-contiguous selected months, empty selected month arrays, stored JSON strings inside the standard success envelope, and non-admin export rejection. Rust regressions verify byte-bounded multi-chunk reads in one repeatable-read snapshot, temporary artifact limits, admission recovery, and streamed-body cancellation cleanup.
+`it_11` archive export also verifies sorted non-contiguous selected months, empty selected month arrays, stored JSON strings inside the standard success envelope, and non-admin export rejection. Rust regressions verify byte-bounded multi-chunk reads in one repeatable-read snapshot, serialized artifact limits, and admission recovery.
 Issue variant 会裁剪 Unicode 首尾空白；note 保持原文。layer_name 输入被拒绝，输出不再包含该字段。
 
 ### Reviewer editor

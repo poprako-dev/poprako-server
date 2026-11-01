@@ -2,12 +2,12 @@
 
 //! Shared image-upload request and response data.
 
-use std::collections::BTreeMap;
-
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use crate::data::view::upload::UploadHeaderView;
 
 /// Presigned capability for one pending image upload.
 #[derive(Serialize)]
@@ -19,5 +19,5 @@ pub struct ImageUploadSlotView {
     #[serde(rename = "image_version")]
     pub image_ver: u32,
     /// Headers bound into the PUT signature.
-    pub headers: BTreeMap<String, String>,
+    pub headers: Vec<UploadHeaderView>,
 }

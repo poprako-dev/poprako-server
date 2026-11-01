@@ -6,13 +6,17 @@ mod tests;
 
 use std::net::SocketAddr;
 
-use axum::Json;
+use axum::body::Bytes;
 use axum::extract::ConnectInfo;
 use axum::http::{HeaderValue, StatusCode, header};
-use axum::response::{IntoResponse as _, Response};
 use tracing::instrument;
 
-use crate::api::http::shared::metric::{MetricTotal, read_total};
+use crate::api::http::result::{HttpBody, HttpError, HttpRawBody, HttpResult};
+
+#[cfg(feature = "swagger")]
+use crate::api::http::shared::metric::MetricTotal;
+
+use crate::api::http::shared::metric::read_total;
 use crate::api::http::shared::prometheus::render_detailed_metrics;
 
 /// `GET /api/health` — returns recent HTTP metrics to loopback callers.
@@ -35,7 +39,7 @@ use crate::api::http::shared::prometheus::render_detailed_metrics;
 #[instrument(level = "info", skip_all)]
 pub async fn check_health(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> Result<Json<MetricTotal>, StatusCode> {
+) -> HttpResult<HttpRawBody> {
     //
     if !is_loopback(addr) {
         //
@@ -45,10 +49,29 @@ pub async fn check_health(
             "health endpoint requires a loopback caller",
         );
 
-        return Err(StatusCode::NOT_FOUND);
+        return Ok(HttpBody::new(
+            StatusCode::NOT_FOUND,
+            HttpRawBody::new(Bytes::new()),
+        ));
     }
 
-    Ok(Json(read_total()))
+    let body = serde_json::to_vec(&read_total()).map_err(|error| {
+        //
+        tracing::error!(
+            operation = "serialize_health_metrics",
+            sdk_error = ?error,
+            "JSON SDK health metrics error",
+        );
+
+        HttpError::internal()
+    })?;
+
+    Ok(
+        HttpBody::new(StatusCode::OK, HttpRawBody::new(body)).with_header(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
+        ),
+    )
 }
 
 /// `GET /api/health/detailed-metrics` — renders Prometheus metrics locally.
@@ -72,7 +95,7 @@ pub async fn check_health(
 #[instrument(level = "info", skip_all)]
 pub async fn detailed_metrics(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> Result<Response, StatusCode> {
+) -> HttpResult<HttpRawBody> {
     //
     if !is_loopback(addr) {
         //
@@ -82,7 +105,10 @@ pub async fn detailed_metrics(
             "metrics endpoint requires a loopback caller",
         );
 
-        return Err(StatusCode::NOT_FOUND);
+        return Ok(HttpBody::new(
+            StatusCode::NOT_FOUND,
+            HttpRawBody::new(Bytes::new()),
+        ));
     }
 
     let Some(metrics_text) = render_detailed_metrics() else {
@@ -94,13 +120,21 @@ pub async fn detailed_metrics(
             "metrics recorder unavailable",
         );
 
-        return Err(StatusCode::SERVICE_UNAVAILABLE);
+        return Ok(HttpBody::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            HttpRawBody::new(Bytes::new()),
+        ));
     };
 
-    let content_type =
-        HeaderValue::from_static("text/plain; version=0.0.4; charset=utf-8");
-
-    Ok(([(header::CONTENT_TYPE, content_type)], metrics_text).into_response())
+    Ok(
+        HttpBody::new(StatusCode::OK, HttpRawBody::new(metrics_text))
+            .with_header(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static(
+                    "text/plain; version=0.0.4; charset=utf-8",
+                ),
+            ),
+    )
 }
 
 // Returns true only for loopback addresses, restricting internal status endpoints to localhost.

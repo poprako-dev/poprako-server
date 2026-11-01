@@ -12,6 +12,7 @@ use crate::complex::image as image_complex;
 use crate::config::image::ImageConfig;
 use crate::data::val::page_artwork::AllocatedPageArtworkVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::upload::UploadHeaderView;
 use crate::model::write::page_artwork::PageArtworkEntry;
 use crate::part::obj_dept::PageArtworkImage;
 use crate::result::{BaseError, BaseRest};
@@ -97,7 +98,7 @@ where
         slot: alloc.into_slot().map(|slot| ImageUploadSlotView {
             image_ver: slot.key.ver(),
             put_url: slot.url.to_string(),
-            headers: slot.headers,
+            headers: UploadHeaderView::from_map(slot.headers),
         }),
     })
 }
