@@ -127,6 +127,7 @@ validate_runtime_value "$r2_bucket_name" R2_BUCKET_NAME
 validate_runtime_value "$r2_custom_domain" R2_CUSTOM_DOMAIN
 validate_runtime_value "$r2_region" R2_REGION
 validate_runtime_value "$r2_secret_access_key" R2_SECRET_ACCESS_KEY
+r2_custom_domain=$(sh "$project_root/scripts/normalize-r2-domain.sh" "$r2_custom_domain")
 validate_port "$jwt_expiration_hours" JWT_EXPIRATION_HOURS
 validate_port "$snowflake_node_id" POPRAKO_SNOWFLAKE_NODE_ID
 validate_source_image

@@ -99,6 +99,23 @@ run_remote_deploy() {
         poprako-postgres
 }
 
+assert_custom_domain() {
+    input=$1
+    expected=$2
+    actual=$(sh "$project_root/scripts/normalize-r2-domain.sh" "$input") || fail "normalization failed for '$input'"
+
+    [ "$actual" = "$expected" ] || fail "normalized '$input' to '$actual', expected '$expected'"
+}
+
+assert_custom_domain 'assets.example.test' 'https://assets.example.test'
+assert_custom_domain '<https://assets.example.test>' 'https://assets.example.test'
+assert_custom_domain 'http://assets.example.test' 'https://assets.example.test'
+assert_custom_domain 'https://assets.example.test' 'https://assets.example.test'
+
+if sh "$project_root/scripts/normalize-r2-domain.sh" 'ftp://assets.example.test' >/dev/null 2>&1; then
+    fail "non-http R2 custom domain was accepted"
+fi
+
 trap cleanup EXIT INT TERM
 
 mkdir -p "$fake_bin" "$docker_state" "$release_dir/migrations"
