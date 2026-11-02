@@ -1,4 +1,4 @@
-//! Production logging with structured, payload-free Axum rejection diagnostics.
+//! Production logging with structured, redacted Axum rejection diagnostics.
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +22,7 @@ const REJECTION_TARGET: &str = "axum::rejection";
 /// Initialise production logging, including native Axum request rejections.
 ///
 /// `RUST_LOG` overrides the default INFO and targeted rejection TRACE directives.
-/// Rejection payloads are excluded from output, even with broader TRACE logging.
+/// Rejection diagnostics are always recorded, with client values redacted.
 pub fn init_log() {
     //
     let directives = var("RUST_LOG").ok();
@@ -71,7 +71,7 @@ where
     N: for<'a> FormatFields<'a> + 'static,
     T: FormatTime,
 {
-    // Formats native rejection events without visiting private payload values.
+    // Formats native rejection events with redacted diagnostics.
     fn format_event(
         &self,
         context: &FmtContext<'_, S, N>,
@@ -85,7 +85,9 @@ where
 
         self.timer.format_time(&mut writer)?;
 
-        write!(writer, " {} ", event.metadata().level())?;
+        // Axum emits native rejections at TRACE; render them as warnings so
+        // level-filtered sinks retain client errors without extra directives.
+        write!(writer, " WARN ")?;
 
         if let Some(scope) = context.event_scope() {
             //
@@ -118,55 +120,174 @@ where
         )?;
 
         let mut fields = RejectionFields {
-            writer,
-            format_rest: Ok(()),
+            status: None,
+            error_variant: None,
+            body: None,
         };
 
         event.record(&mut fields);
 
-        fields.format_rest?;
+        let RejectionFields {
+            status,
+            error_variant,
+            body,
+        } = fields;
 
-        writeln!(fields.writer)
+        if let Some(status) = status {
+            write!(writer, " status={}", &status)?;
+        }
+
+        if let Some(error_variant) = error_variant.as_ref() {
+            write!(writer, " error_variant={:?}", error_variant.as_str())?;
+        }
+
+        if let Some(body) = body.as_deref() {
+            //
+            let message = rejection_message(error_variant.as_deref(), body);
+
+            write!(writer, " error_message={:?}", message.as_str())?;
+        }
+
+        writeln!(writer)
     }
 }
 
-// Never format body, message, or unknown fields, including through Debug.
-struct RejectionFields<'a> {
-    // Output stream borrowed for this rejection event.
-    writer: Writer<'a>,
-    // First formatting failure, if any.
-    format_rest: FmtResult,
+// Collects the native rejection fields before their redacted formatting.
+struct RejectionFields {
+    // Native numeric HTTP rejection status.
+    status: Option<u64>,
+    // Concrete rejection type used to classify transport failures.
+    error_variant: Option<String>,
+    // Raw diagnostic supplied by the extractor.
+    body: Option<String>,
 }
 
-impl Visit for RejectionFields<'_> {
+impl Visit for RejectionFields {
     // Records the native numeric HTTP rejection status.
     fn record_u64(&mut self, field: &Field, value: u64) {
         //
-        if self.format_rest.is_err() || field.name() != "status" {
-            return;
+        if field.name() == "status" {
+            self.status = Some(value);
         }
-
-        self.format_rest = self
-            .writer
-            .write_str(" status=")
-            .and_then(|()| self.writer.write_str(&value.to_string()));
     }
 
-    // Records the library-controlled concrete rejection type.
+    // Records the concrete rejection type and its raw diagnostic.
     fn record_str(&mut self, field: &Field, value: &str) {
         //
-        if self.format_rest.is_err() || field.name() != "rejection_type" {
-            return;
-        }
+        match field.name() {
+            //
+            "rejection_type" => self.error_variant = Some(value.to_owned()),
 
-        self.format_rest =
-            self.writer.write_str(" error_variant=").and_then(|()| {
-                //
-                self.writer
-                    .write_str(&format!("{:?}", tracing::field::debug(value)))
-            });
+            "body" => self.body = Some(value.to_owned()),
+
+            _ => {}
+        }
     }
 
     // Drops all Debug fields without invoking their formatter.
     fn record_debug(&mut self, _: &Field, _: &dyn Debug) {}
+}
+
+// Removes quoted client values while preserving schema-field diagnostics.
+fn redact_rejection_message(message: &str) -> String {
+    //
+    // These forms may interpolate unescaped client text, including delimiters.
+    let sensitive = [
+        "unknown variant ",
+        "unknown field ",
+        "invalid type: string ",
+        "invalid value: string ",
+        "Cannot parse ",
+    ]
+    .into_iter()
+    .filter_map(|marker| message.find(marker).map(|index| (index, marker)))
+    .min_by_key(|(index, _)| *index);
+
+    if let Some((index, marker)) = sensitive {
+        //
+        let prefix = message.get(..index).unwrap_or_default();
+
+        // Preserve serde's source location while dropping the interpolated value.
+        let location = message
+            .rfind(" at line ")
+            .and_then(|offset| message.get(offset..))
+            .unwrap_or_default();
+
+        let mut redacted = String::with_capacity(
+            prefix.len() + marker.len() + location.len() + 12,
+        );
+
+        redacted.push_str(prefix);
+
+        redacted.push_str(marker);
+
+        redacted.push_str("<REDACTED>");
+
+        redacted.push_str(location);
+
+        return redacted;
+    }
+
+    let mut safe = String::new();
+
+    let mut chars = message.chars();
+
+    while let Some(character) = chars.next() {
+        //
+        if !matches!(character, '"' | '`') {
+            //
+            safe.push(character);
+
+            continue;
+        }
+
+        let preserve = character == '`'
+            && (safe.ends_with("missing field ")
+                || safe.ends_with("duplicate field ")
+                || safe.ends_with("Expected request with "));
+
+        safe.push(character);
+
+        if !preserve {
+            safe.push_str("<REDACTED>");
+        }
+
+        while let Some(quoted) = chars.next() {
+            //
+            if quoted == character {
+                //
+                safe.push(quoted);
+
+                break;
+            }
+
+            if preserve {
+                safe.push(quoted);
+            }
+
+            if quoted == '\\' {
+                let _ = chars.next();
+            }
+        }
+    }
+
+    safe
+}
+
+// Redacts client values and omits transport details from rejection diagnostics.
+fn rejection_message(error_variant: Option<&str>, body: &str) -> String {
+    //
+    let Some(error_variant) = error_variant else {
+        return redact_rejection_message(body);
+    };
+
+    if !error_variant.contains("UnknownBodyError") {
+        return redact_rejection_message(body);
+    }
+
+    let Some((prefix, _)) = body.split_once(':') else {
+        return body.to_owned();
+    };
+
+    prefix.to_owned()
 }

@@ -40,7 +40,7 @@ fn capture(directives: Option<&str>, operation: impl FnOnce()) -> String {
 }
 
 #[test]
-fn rejection_fields_exclude_body_message_and_unknown_debug_values() {
+fn rejection_fields_keep_redacted_diagnostics_and_drop_unknown_values() {
     for directives in [None, Some("info"), Some("axum=trace"), Some("trace")] {
         let logs = capture(directives, || {
             let span =
@@ -52,11 +52,14 @@ fn rejection_fields_exclude_body_message_and_unknown_debug_values() {
                 target: "axum::rejection",
                 status = 422_u16,
                 rejection_type = "axum::extract::rejection::JsonDataError",
-                body = ?Unformattable,
+                body = "Failed to deserialize the JSON body into the target \
+                    type: missing field `chapter_id` at line 1 column 141",
                 unexpected = ?Unformattable,
                 "private-message-sentinel",
             );
         });
+
+        assert!(logs.contains("WARN"), "{logs}");
 
         assert!(logs.contains("status=422"), "{logs}");
 
@@ -64,16 +67,55 @@ fn rejection_fields_exclude_body_message_and_unknown_debug_values() {
 
         assert!(logs.contains("error_origin=\"axum\""), "{logs}");
 
+        assert!(logs.contains("missing field `chapter_id`"), "{logs}");
+
         assert!(logs.contains("safe-request-id"), "{logs}");
 
         assert!(!logs.contains("private-message-sentinel"), "{logs}");
-
-        assert!(!logs.contains("body="), "{logs}");
 
         assert!(!logs.contains("unexpected="), "{logs}");
 
         assert_eq!(logs.lines().count(), 1, "{logs}");
     }
+}
+
+#[test]
+fn rejection_diagnostics_redact_client_values() {
+    let logs = capture(Some("info"), || {
+        tracing::trace!(
+            target: "axum::rejection",
+            status = 422_u16,
+            rejection_type = "axum::extract::rejection::JsonDataError",
+            body = "Failed to deserialize the JSON body into the target type: \
+                invalid type: string \"private-sentinel\", expected u32 at \
+                line 1 column 21",
+        );
+    });
+
+    assert!(
+        logs.contains("invalid type: string <REDACTED> at line 1 column 21"),
+        "{logs}",
+    );
+
+    assert!(!logs.contains("private-sentinel"), "{logs}");
+}
+
+#[test]
+fn rejection_diagnostics_redact_unknown_variants() {
+    let logs = capture(Some("info"), || {
+        tracing::trace!(
+            target: "axum::rejection",
+            status = 422_u16,
+            rejection_type = "axum::extract::rejection::JsonDataError",
+            body = "Failed to deserialize the JSON body into the target type: \
+                unknown variant \"private-sentinel\", expected one of \
+                `a` or `b` at line 1 column 12",
+        );
+    });
+
+    assert!(logs.contains("unknown variant <REDACTED>"), "{logs}");
+
+    assert!(!logs.contains("private-sentinel"), "{logs}");
 }
 
 #[test]
