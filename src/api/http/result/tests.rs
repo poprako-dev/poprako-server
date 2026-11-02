@@ -19,7 +19,9 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 
 use crate::part::auth::TokenAuth as _;
 use crate::part_impl::auth::jwt_impl::JwtAuth;
-use crate::test_util::http_logging::capture_request;
+use crate::test_util::http_logging::{
+    LogBuffer, capture_dispatch, capture_request,
+};
 
 #[test]
 fn http_body_serializes_success_envelope() {
@@ -245,4 +247,54 @@ async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
 
         assert!(logs.contains("source_file="), "{logs}");
     }
+}
+
+struct Unserializable;
+
+impl Serialize for Unserializable {
+    fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        Err(<S::Error as serde::ser::Error>::custom(
+            "unserializable response payload",
+        ))
+    }
+}
+
+fn capture_logs<T>(operation: impl FnOnce() -> T) -> (T, String) {
+    let buffer = LogBuffer::default();
+
+    let writer = buffer.clone();
+
+    let subscriber = tracing_subscriber::fmt()
+        .with_env_filter(crate::log::request_log_filter(Some("info")))
+        .with_ansi(false)
+        .event_format(crate::log::RequestLogFormat::new(()))
+        .with_writer(move || writer.clone())
+        .finish();
+
+    let dispatch = capture_dispatch(subscriber);
+
+    let value = tracing::dispatcher::with_default(&dispatch, operation);
+
+    (value, buffer.contents())
+}
+
+#[test]
+fn response_serialization_failure_is_logged_and_concealed() {
+    let (response, logs) = capture_logs(|| {
+        HttpBody::new(StatusCode::OK, Unserializable).into_response()
+    });
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+    assert!(
+        logs.contains("JSON response serialization failed"),
+        "{logs}"
+    );
+
+    assert!(logs.contains("unserializable response payload"), "{logs}");
+
+    assert!(logs.contains("error_message="), "{logs}");
 }

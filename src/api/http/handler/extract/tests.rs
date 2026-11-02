@@ -15,6 +15,7 @@ use axum_extra::extract::Query as MultiQuery;
 use serde::Deserialize;
 
 use crate::api::http::result::HttpError;
+use crate::data::instr::page_source::AllocChapterPageSourcesInstr;
 use crate::data::instr::unit::UnitEditInstr;
 use crate::result::ExpectedVariant;
 use crate::test_util::http_logging::capture_request;
@@ -144,11 +145,43 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
 
     assert_eq!(logs.matches("axum::rejection:").count(), 1, "{logs}");
 
-    assert!(!logs.contains("missing field"), "{logs}");
+    assert!(logs.contains("missing field `type`"), "{logs}");
 
     assert!(logs.contains("unit--71356523707"), "{logs}");
 
     assert!(!logs.contains("private-translation"), "{logs}");
+}
+
+#[tokio::test]
+async fn missing_required_json_field_is_logged_with_its_schema_name() {
+    let router = Router::new().route(
+        "/chapters/{chapter_id}/page-sources/alloc",
+        post(|Json(_): Json<AllocChapterPageSourcesInstr>| async {
+            StatusCode::OK
+        }),
+    );
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/chapters/chapter--00000000001/page-sources/alloc")
+        .header("content-type", "application/json")
+        .header("x-request-id", "missing-chapter-id")
+        .body(Body::from(r#"{"pages":[]}"#))
+        .unwrap();
+
+    let (status, body, logs) = capture_request(router, request).await;
+
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    assert!(body.contains("missing field `chapter_id`"), "{body}");
+
+    assert!(logs.contains("JsonDataError"), "{logs}");
+
+    assert!(logs.contains("missing field `chapter_id`"), "{logs}");
+
+    assert!(logs.contains("missing-chapter-id"), "{logs}");
+
+    assert_eq!(logs.matches("axum::rejection:").count(), 1, "{logs}");
 }
 
 // Checks only the rejection event because request spans retain request paths.
