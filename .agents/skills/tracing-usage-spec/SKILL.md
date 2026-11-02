@@ -32,6 +32,11 @@ Draw spans around observable operations, not pure data transformation.
 
 - Emit events for lifecycle state, retries, intentional error consumption,
   application error construction, and external error conversion.
+- Native Axum extraction rejections must record `status`, the concrete
+  rejection type, and the redacted diagnostic message. Keep the targeted
+  `axum::rejection` filter enabled, and never regress to status-only output.
+  JSON response serialization failures must emit one error event with the
+  serde diagnostic before returning `500`.
 - Before an adapter converts an external SDK, driver, or client error into an
   application error, emit exactly one event with the original error's Debug
   diagnostics, preserving variants/source information and redacting secrets.

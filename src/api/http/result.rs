@@ -13,10 +13,11 @@ mod tests;
 use std::num::NonZeroU16;
 use std::result::Result;
 
-use axum::Json;
 use axum::body::{Body, Bytes};
 use axum::http::StatusCode;
-use axum::http::header::{HeaderMap, HeaderName, HeaderValue, SET_COOKIE};
+use axum::http::header::{
+    CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue, SET_COOKIE,
+};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::ser::SerializeStruct as _;
@@ -143,7 +144,7 @@ impl From<BaseError> for HttpError {
 impl IntoResponse for HttpError {
     // Converts a boundary error into JSON response with status code.
     fn into_response(self) -> Response {
-        (self.status, Json(self)).into_response()
+        json_response(self.status, self)
     }
 }
 
@@ -334,14 +335,15 @@ where
             data,
         } = self;
 
-        let body = Self {
+        let mut response = json_response(
             status,
-            headers: HeaderMap::new(),
-            code,
-            data,
-        };
-
-        let mut response = (status, Json(body)).into_response();
+            Self {
+                status,
+                headers: HeaderMap::new(),
+                code,
+                data,
+            },
+        );
 
         response.headers_mut().extend(headers);
 
@@ -445,5 +447,35 @@ const fn nonzero_code(code: u16) -> NonZeroU16 {
         Some(code) => code,
 
         None => NonZeroU16::MIN,
+    }
+}
+
+// Serializes one JSON response and records serialization failures.
+fn json_response<T>(status: StatusCode, value: T) -> Response
+where
+    T: Serialize,
+{
+    //
+    match serde_json::to_vec(&value) {
+        //
+        Ok(body) => (
+            status,
+            [(CONTENT_TYPE, HeaderValue::from_static("application/json"))],
+            body,
+        )
+            .into_response(),
+
+        Err(error) => {
+            //
+            tracing::error!(
+                operation = "serialize_json_response",
+                payload_type = std::any::type_name::<T>(),
+                error_message = %error,
+                "JSON response serialization failed",
+            );
+
+            (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+                .into_response()
+        }
     }
 }
