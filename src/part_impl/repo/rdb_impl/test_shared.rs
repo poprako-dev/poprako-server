@@ -25,7 +25,7 @@ use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceEntry;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceInsert;
 use crate::part_impl::repo::rdb_impl::test_shared::form::{
     chapter_entry, comic_entry, page_source_entry, team_entry, user_entry,
     workset_entry,
@@ -76,7 +76,7 @@ pub struct PageSourceFixture {
     //
     pub team_entry: TeamEntry,
     pub chapter_info: ChapterInfo,
-    pub page_source_entry: PageSourceEntry,
+    pub page_source_entry: PageSourceInsert,
 }
 
 /// # Panics

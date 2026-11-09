@@ -27,7 +27,7 @@ use crate::result::BaseError;
 
 /// The data needed to insert one page row.
 #[cfg_attr(test, derive(Clone))]
-pub struct PageSourceEntry {
+pub struct PageSourceInsert {
     /// The unique identifier for the new page record.
     pub id: String,
 
@@ -136,11 +136,11 @@ pub struct PageSourceItem<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a PageSourceEntry> for PageSourceItem<'a> {
+impl<'a> TryFrom<&'a PageSourceInsert> for PageSourceItem<'a> {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(entry: &'a PageSourceEntry) -> Result<Self, Self::Error> {
+    fn try_from(entry: &'a PageSourceInsert) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 

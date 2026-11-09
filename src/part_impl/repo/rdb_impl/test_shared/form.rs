@@ -3,7 +3,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
-use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceEntry;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceInsert;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shape::write::comic::ComicEntryShape;
 
@@ -74,8 +74,8 @@ pub fn chapter_entry<'a>(
 pub fn page_source_entry(
     prefix: &str,
     chapter: &ChapterInfo,
-) -> PageSourceEntry {
-    PageSourceEntry {
+) -> PageSourceInsert {
+    PageSourceInsert {
         id: [prefix, "page"].concat(),
         chapter_id: chapter.id.clone(),
         index: 0,

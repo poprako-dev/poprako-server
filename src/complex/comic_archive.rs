@@ -24,7 +24,7 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
+    ComicArchiveChapterSnapshot, ComicArchiveInfo, ComicArchiveSnapshot,
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseRest, ExpectedVariant};
@@ -142,7 +142,7 @@ fn build_entry(
         chapter_snapshots,
     } = comic_archive_snapshot;
 
-    let record = ComicArchiveRecord {
+    let record = ComicArchiveInfo {
         id: archived_comic_id,
         team_id: workset_info.team_id,
         source_comic_id: comic_info.id,

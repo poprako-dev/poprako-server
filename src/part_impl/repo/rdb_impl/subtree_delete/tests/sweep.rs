@@ -487,7 +487,7 @@ async fn comic_batch_failure_rolls_back(shared: &RdbCore) {
     .await
     .unwrap();
 
-    let archive_record = ComicArchiveRecord {
+    let archive_record = ComicArchiveInfo {
         id: [PREFIX, "archive"].concat(),
         team_id: [PREFIX, "team"].concat(),
         source_comic_id: [PREFIX, "comic-0000"].concat(),

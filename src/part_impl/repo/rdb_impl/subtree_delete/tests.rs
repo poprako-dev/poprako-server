@@ -7,7 +7,7 @@
 
 // Generate typed Unit insert records for each page in the requested subtree scale.
 fn subtree_unit_items(
-    pages: &[PageSourceEntry],
+    pages: &[PageSourceInsert],
     prefix: &str,
     scale: Scale,
 ) -> Vec<UnitItem> {
@@ -47,7 +47,7 @@ use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::OffsetDateTime;
 
 use crate::config::repo::RepoConfig;
-use crate::model::read::proj::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comic_archive::ComicArchiveInfo;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::Serial;
@@ -61,7 +61,7 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterItem;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicItem;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
 use crate::part_impl::repo::rdb_impl::entity::page_source::{
-    PageSourceEntry, PageSourceItem,
+    PageSourceInsert, PageSourceItem,
 };
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetItem;
 use crate::part_impl::repo::rdb_impl::schema::{
@@ -155,7 +155,7 @@ async fn seed_subtree(shared: &RdbCore, prefix: &str, scale: Scale) -> String {
         .iter()
         .flat_map(|chapter| {
             (0..scale.page_sources_per_chapter).map(move |page_source_index| {
-                PageSourceEntry {
+                PageSourceInsert {
                     id: format!(
                         "{}page-{}-{:04}",
                         prefix, chapter.id, &page_source_index

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 use super::*;
-use crate::model::read::proj::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comic_archive::ComicArchiveInfo;
 
 const TEAM_ID: &str = "team--00000000001";
 
@@ -20,7 +20,7 @@ fn seed_record(mock: &Mock, id: &str, month: &str, payload: String) {
         .lock()
         .unwrap()
         .comic_archives
-        .push(ComicArchiveRecord {
+        .push(ComicArchiveInfo {
             id: id.into(),
             team_id: TEAM_ID.into(),
             source_comic_id: format!("source-{id}"),
