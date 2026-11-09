@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use tower_http::classify::ServerErrorsFailureClass;
 use tracing::Span;
 
-use super::record_request_failure;
+use super::record_req_failure;
 use crate::test_util::http_logging::{LogBuffer, capture_dispatch};
 
 fn capture_failure(failure: ServerErrorsFailureClass) -> String {
@@ -21,7 +21,7 @@ fn capture_failure(failure: ServerErrorsFailureClass) -> String {
         .finish();
 
     tracing::dispatcher::with_default(&capture_dispatch(subscriber), || {
-        record_request_failure(failure, Duration::ZERO, &Span::none());
+        record_req_failure(failure, Duration::ZERO, &Span::none());
     });
 
     buffer.contents()

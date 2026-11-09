@@ -11,7 +11,7 @@ use axum::middleware::Next;
 use tower::ServiceExt as _;
 
 use super::*;
-use crate::test_util::http_logging::capture_request;
+use crate::test_util::http_logging::capture_req;
 
 #[tokio::test]
 async fn route_and_method_rejections_record_one_correlated_warning() {
@@ -29,14 +29,14 @@ async fn route_and_method_rejections_record_one_correlated_warning() {
             .fallback(not_found)
             .method_not_allowed_fallback(method_not_allowed);
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri(uri)
             .method(method)
             .header("x-request-id", "routing-rejection")
             .body(Body::empty())
             .unwrap();
 
-        let (actual, body, logs) = capture_request(router, request).await;
+        let (actual, body, logs) = capture_req(router, req).await;
 
         assert_eq!(actual, status);
 
@@ -56,17 +56,17 @@ async fn method_rejection_preserves_allow_header() {
         .route("/known", get(|| async { StatusCode::OK }))
         .method_not_allowed_fallback(method_not_allowed);
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/known")
         .method("POST")
         .body(Body::empty())
         .unwrap();
 
-    let response = router.oneshot(request).await.unwrap();
+    let resp = router.oneshot(req).await.unwrap();
 
-    assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
 
-    assert_eq!(response.headers()["allow"], "GET,HEAD");
+    assert_eq!(resp.headers()["allow"], "GET,HEAD");
 }
 
 #[tokio::test]
@@ -83,13 +83,13 @@ async fn protected_method_fallback_keeps_authorization_before_routing() {
         }))
         .method_not_allowed_fallback(method_not_allowed);
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/known")
         .method("POST")
         .body(Body::empty())
         .unwrap();
 
-    let (status, _, logs) = capture_request(router, request).await;
+    let (status, _, logs) = capture_req(router, req).await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 

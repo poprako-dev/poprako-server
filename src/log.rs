@@ -28,14 +28,14 @@ pub fn init_log() {
     let directives = var("RUST_LOG").ok();
 
     tracing_subscriber::fmt()
-        .with_env_filter(request_log_filter(directives.as_deref()))
+        .with_env_filter(req_log_filter(directives.as_deref()))
         .with_ansi(cfg!(debug_assertions))
-        .event_format(RequestLogFormat::new(SystemTime))
+        .event_format(ReqLogFormat::new(SystemTime))
         .init();
 }
 
 /// Keeps native rejections enabled under ordinary INFO production directives.
-pub fn request_log_filter(directives: Option<&str>) -> EnvFilter {
+pub fn req_log_filter(directives: Option<&str>) -> EnvFilter {
     //
     EnvFilter::builder().parse_lossy(format!(
         "info,axum::rejection=trace,{}",
@@ -44,14 +44,14 @@ pub fn request_log_filter(directives: Option<&str>) -> EnvFilter {
 }
 
 /// Formats native rejections using safe fields and delegates other events.
-pub struct RequestLogFormat<T> {
+pub struct ReqLogFormat<T> {
     /// Standard output formatting for events outside the rejection target.
     default_format: Format<Full, T>,
     /// Timestamp formatter shared with standard events.
     timer: T,
 }
 
-impl<T> RequestLogFormat<T>
+impl<T> ReqLogFormat<T>
 where
     T: FormatTime + Clone,
 {
@@ -65,7 +65,7 @@ where
     }
 }
 
-impl<S, N, T> FormatEvent<S, N> for RequestLogFormat<T>
+impl<S, N, T> FormatEvent<S, N> for ReqLogFormat<T>
 where
     S: Subscriber + for<'a> LookupSpan<'a>,
     N: for<'a> FormatFields<'a> + 'static,

@@ -7,7 +7,7 @@ use poprako_obj_dept::rdb_impl::rdb_error;
 use poprako_obj_dept::rest::ObjDeptError;
 use poprako_rdb_core::RdbError;
 
-use super::{RequestLogFormat, request_log_filter};
+use super::{ReqLogFormat, req_log_filter};
 use crate::test_util::http_logging::{LogBuffer, capture_dispatch};
 
 struct Unformattable;
@@ -28,9 +28,9 @@ fn capture(directives: Option<&str>, operation: impl FnOnce()) -> String {
     let writer = buffer.clone();
 
     let subscriber = tracing_subscriber::fmt()
-        .with_env_filter(request_log_filter(directives))
+        .with_env_filter(req_log_filter(directives))
         .with_ansi(false)
-        .event_format(RequestLogFormat::new(()))
+        .event_format(ReqLogFormat::new(()))
         .with_writer(move || writer.clone())
         .finish();
 
@@ -44,7 +44,7 @@ fn rejection_fields_keep_redacted_diagnostics_and_drop_unknown_values() {
     for directives in [None, Some("info"), Some("axum=trace"), Some("trace")] {
         let logs = capture(directives, || {
             let span =
-                tracing::info_span!("request", request_id = "safe-request-id");
+                tracing::info_span!("request", req_id = "safe-request-id");
 
             let _entered = span.enter();
 

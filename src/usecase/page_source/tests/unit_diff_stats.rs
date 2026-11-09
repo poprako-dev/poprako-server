@@ -268,14 +268,14 @@ async fn list_unit_diff_stats_accepts_exact_page_source_limit() {
 async fn list_unit_diff_stats_rejects_missing_chapter() {
     let mock = read_scope();
 
-    let request = ListPageSourceUnitDiffStatsInstr {
+    let req = ListPageSourceUnitDiffStatsInstr {
         chapter_id: "missing-chapter".into(),
     };
 
     let error = list_unit_diff_stats(
         (&mock,),
         page_source_token("user--00000000001"),
-        request,
+        req,
     )
     .await
     .unwrap_err();
@@ -423,7 +423,7 @@ async fn flagged_stats_enforce_access_and_page_source_limit_without_matches() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let request = || ListPageSourceUnitFlaggedStatsInstr {
+    let req = || ListPageSourceUnitFlaggedStatsInstr {
         chapter_id: "chapter--00000000001".into(),
     };
 
@@ -431,19 +431,16 @@ async fn flagged_stats_enforce_access_and_page_source_limit_without_matches() {
         list_unit_flagged_stats(
             (&mock,),
             page_source_token("member--00000000001"),
-            request()
+            req()
         )
         .await
         .unwrap()
         .is_empty()
     );
 
-    let denied = list_unit_flagged_stats(
-        (&mock,),
-        page_source_token("outsider"),
-        request(),
-    )
-    .await;
+    let denied =
+        list_unit_flagged_stats((&mock,), page_source_token("outsider"), req())
+            .await;
 
     assert!(matches!(
         denied,
@@ -478,7 +475,7 @@ async fn flagged_stats_enforce_access_and_page_source_limit_without_matches() {
         list_unit_flagged_stats(
             (&mock,),
             page_source_token("user--00000000001"),
-            request()
+            req()
         )
         .await
         .unwrap()
@@ -491,7 +488,7 @@ async fn flagged_stats_enforce_access_and_page_source_limit_without_matches() {
         list_unit_flagged_stats(
             (&mock,),
             page_source_token("user--00000000001"),
-            request()
+            req()
         )
         .await,
         Err(BaseError::Unrecoverable { .. })

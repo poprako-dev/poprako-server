@@ -52,7 +52,7 @@ pub async fn export_payload(
 }
 
 /// Builds a `200 OK` inline JSON export response.
-pub fn body_response(body: Bytes) -> HttpBody<HttpRawBody> {
+pub fn body_resp(body: Bytes) -> HttpBody<HttpRawBody> {
     //
     HttpBody::new(StatusCode::OK, HttpRawBody::new(body)).with_header(
         header::CONTENT_TYPE,
@@ -61,7 +61,7 @@ pub fn body_response(body: Bytes) -> HttpBody<HttpRawBody> {
 }
 
 /// Builds a `200 OK` JSON attachment response with a filename header.
-pub fn download_response(
+pub fn download_resp(
     filename_base: &str,
     body: Bytes,
 ) -> HttpResult<HttpRawBody> {

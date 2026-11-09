@@ -278,15 +278,15 @@ impl MetricWindow {
 /// Records one response in the current minute bucket.
 ///
 /// The path dimension is populated only from axum's matched route template.
-pub fn record_response(
-    response: &Response,
+pub fn record_resp(
+    resp: &Response,
     matched_path: Option<&MatchedPath>,
     latency: Duration,
 ) {
     //
     let minute = curr_minute();
 
-    let status = response.status().as_u16();
+    let status = resp.status().as_u16();
 
     let matched_path = matched_path.map(MatchedPath::as_str);
 

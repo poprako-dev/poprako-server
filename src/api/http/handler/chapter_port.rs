@@ -119,7 +119,7 @@ pub async fn export_translation(
     )
     .await?;
 
-    Ok(export::body_response(body))
+    Ok(export::body_resp(body))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.
@@ -166,7 +166,7 @@ pub async fn export_translation_download(
     )
     .await?;
 
-    export::download_response(&filename, body)
+    export::download_resp(&filename, body)
 }
 
 /// Allocates a direct chapter artwork upload; an available duplicate has no slot.

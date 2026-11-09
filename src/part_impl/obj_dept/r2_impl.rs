@@ -202,7 +202,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 })?,
         );
 
-        let presigned_request = self
+        let presigned_req = self
             .client
             .put_object()
             .bucket(&self.bucket)
@@ -224,7 +224,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 }
             })?;
 
-        let url = Url::parse(presigned_request.uri()).map_err(|error| {
+        let url = Url::parse(presigned_req.uri()).map_err(|error| {
             //
             tracing::error!(
                 operation = "gen_obj_slot",

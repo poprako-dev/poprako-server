@@ -69,7 +69,7 @@ where
     for<'save> K::Guard<'save>: Send + Sync,
     O: ObjDeptView<PageArtworkImage, C> + Send + Sync,
 {
-    let fingerprint = request_fingerprint(&token.user_id, &page_id, &instr)?;
+    let fingerprint = req_fingerprint(&token.user_id, &page_id, &instr)?;
 
     let guard = cache.lock_issue_save(save_id).await;
 
@@ -178,7 +178,7 @@ where
 }
 
 // Hashes the actor, page and immutable payload.
-fn request_fingerprint(
+fn req_fingerprint(
     user_id: &str,
     page_id: &str,
     instr: &SavePageIssuesInstr,

@@ -27,10 +27,10 @@ fn router() -> Router {
         .layer(from_fn_with_state(new(config), rate_limit))
 }
 
-async fn request(router: Router, path: &str) -> StatusCode {
-    let request = Request::builder().uri(path).body(Body::empty()).unwrap();
+async fn req(router: Router, path: &str) -> StatusCode {
+    let req = Request::builder().uri(path).body(Body::empty()).unwrap();
 
-    router.oneshot(request).await.unwrap().status()
+    router.oneshot(req).await.unwrap().status()
 }
 
 // shared_quota(rate_limit)(positive/negative): routes and clones share the configured burst.
@@ -40,14 +40,11 @@ async fn routes_and_clones_share_quota_but_applications_are_independent() {
 
     let second = router();
 
-    assert_eq!(request(first.clone(), "/first").await, StatusCode::OK);
+    assert_eq!(req(first.clone(), "/first").await, StatusCode::OK);
 
-    assert_eq!(request(first.clone(), "/second").await, StatusCode::OK);
+    assert_eq!(req(first.clone(), "/second").await, StatusCode::OK);
 
-    assert_eq!(
-        request(first, "/first").await,
-        StatusCode::TOO_MANY_REQUESTS
-    );
+    assert_eq!(req(first, "/first").await, StatusCode::TOO_MANY_REQUESTS);
 
-    assert_eq!(request(second, "/first").await, StatusCode::OK);
+    assert_eq!(req(second, "/first").await, StatusCode::OK);
 }

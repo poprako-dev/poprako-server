@@ -19,12 +19,12 @@ use tower_http::trace::{
 use tracing::Span;
 
 /// Builds the request-ID propagation layer.
-pub fn propagate_request_id() -> PropagateRequestIdLayer {
+pub fn propagate_req_id() -> PropagateRequestIdLayer {
     PropagateRequestIdLayer::x_request_id()
 }
 
 /// Builds the request-ID generation layer.
-pub fn set_request_id() -> SetRequestIdLayer<MakeRequestUuid> {
+pub fn set_req_id() -> SetRequestIdLayer<MakeRequestUuid> {
     SetRequestIdLayer::x_request_id(MakeRequestUuid)
 }
 
@@ -40,33 +40,33 @@ type HttpTraceLayer = TraceLayer<
 >;
 
 /// Builds the HTTP tracing layer with request correlation fields.
-pub fn trace_request() -> HttpTraceLayer {
+pub fn trace_req() -> HttpTraceLayer {
     //
     TraceLayer::new_for_http()
-        .make_span_with(make_request_span as _)
-        .on_request(record_request_started as _)
-        .on_response(record_request_response as _)
+        .make_span_with(make_req_span as _)
+        .on_request(record_req_started as _)
+        .on_response(record_req_resp as _)
         .on_body_chunk(())
         .on_eos(())
-        .on_failure(record_request_failure as _)
+        .on_failure(record_req_failure as _)
 }
 
 // Creates the top-level span for one HTTP request.
-fn make_request_span(request: &Request) -> Span {
+fn make_req_span(req: &Request) -> Span {
     //
-    let request_id = request
+    let req_id = req
         .headers()
         .get("x-request-id")
         .and_then(|header_value| header_value.to_str().ok())
         .unwrap_or("invalid");
 
-    let user_agent = request
+    let user_agent = req
         .headers()
         .get(USER_AGENT)
         .and_then(|header_value| header_value.to_str().ok())
         .unwrap_or("unknown");
 
-    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>();
+    let connect_info = req.extensions().get::<ConnectInfo<SocketAddr>>();
 
     let remote_addr = connect_info
         .map(|connect_info| connect_info.0)
@@ -74,47 +74,43 @@ fn make_request_span(request: &Request) -> Span {
 
     tracing::info_span!(
         "request",
-        request_id = %request_id,
-        method = %request.method(),
-        uri = request.uri().path(),
-        http_ver = ?request.version(),
+        req_id = %req_id,
+        method = %req.method(),
+        uri = req.uri().path(),
+        http_ver = ?req.version(),
         user_agent = %user_agent,
         remote_addr = %remote_addr,
     )
 }
 
 // Records a received HTTP request.
-fn record_request_started(request: &Request, _span: &Span) {
+fn record_req_started(req: &Request, _span: &Span) {
     //
     metrics::counter!(
         "http_requests_started",
-        "method" => request.method().to_string(),
+        "method" => req.method().to_string(),
     )
     .increment(1);
 }
 
 // Records an HTTP response and its latency.
-fn record_request_response(
-    response: &Response,
-    latency: Duration,
-    _span: &Span,
-) {
+fn record_req_resp(resp: &Response, latency: Duration, _span: &Span) {
     //
     metrics::counter!(
         "http_requests",
-        "status" => response.status().as_u16().to_string(),
+        "status" => resp.status().as_u16().to_string(),
     )
     .increment(1);
 
     tracing::info!(
-        status = response.status().as_u16(),
+        status = resp.status().as_u16(),
         latency_millis = latency.as_secs_f64() * 1_000.0,
         "request completed",
     );
 }
 
 // Counts failures while leaving response-status diagnostics at their source.
-fn record_request_failure(
+fn record_req_failure(
     failure: ServerErrorsFailureClass,
     latency: Duration,
     span: &Span,

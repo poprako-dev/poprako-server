@@ -64,8 +64,8 @@ fn extract_token_preserves_header_and_cookie_semantics() {
             builder = builder.header(header::AUTHORIZATION, authorization);
         }
 
-        let request = builder.body(Body::empty()).unwrap();
+        let req = builder.body(Body::empty()).unwrap();
 
-        assert_eq!(extract_token(&request), expected);
+        assert_eq!(extract_token(&req), expected);
     }
 }

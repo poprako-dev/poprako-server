@@ -144,7 +144,7 @@ impl From<BaseError> for HttpError {
 impl IntoResponse for HttpError {
     // Converts a boundary error into JSON response with status code.
     fn into_response(self) -> Response {
-        json_response(self.status, self)
+        json_resp(self.status, self)
     }
 }
 
@@ -230,11 +230,11 @@ impl IntoResponse for HttpBody<HttpRawBody> {
             ..
         } = self;
 
-        let mut response = (status, Body::from(data.bytes)).into_response();
+        let mut resp = (status, Body::from(data.bytes)).into_response();
 
-        response.headers_mut().extend(headers);
+        resp.headers_mut().extend(headers);
 
-        response
+        resp
     }
 }
 
@@ -335,7 +335,7 @@ where
             data,
         } = self;
 
-        let mut response = json_response(
+        let mut resp = json_resp(
             status,
             Self {
                 status,
@@ -345,9 +345,9 @@ where
             },
         );
 
-        response.headers_mut().extend(headers);
+        resp.headers_mut().extend(headers);
 
-        response
+        resp
     }
 }
 
@@ -390,11 +390,11 @@ impl IntoResponse for NoContent {
     // Converts a 204 marker into an empty HTTP response with headers.
     fn into_response(self) -> Response {
         //
-        let mut response = StatusCode::NO_CONTENT.into_response();
+        let mut resp = StatusCode::NO_CONTENT.into_response();
 
-        response.headers_mut().extend(self.headers);
+        resp.headers_mut().extend(self.headers);
 
-        response
+        resp
     }
 }
 
@@ -451,7 +451,7 @@ const fn nonzero_code(code: u16) -> NonZeroU16 {
 }
 
 // Serializes one JSON response and records serialization failures.
-fn json_response<T>(status: StatusCode, value: T) -> Response
+fn json_resp<T>(status: StatusCode, value: T) -> Response
 where
     T: Serialize,
 {
