@@ -49,7 +49,6 @@ use time::OffsetDateTime;
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::subtree_delete::SubtreeDeleteSweepTarget;
-use crate::model::write::page_source::PageSourceEntry;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::Serial;
 use crate::part::repo::oper::subtree_delete::{
@@ -61,7 +60,9 @@ use crate::part_impl::repo::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterItem;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicItem;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveItem;
-use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceItem;
+use crate::part_impl::repo::rdb_impl::entity::page_source::{
+    PageSourceEntry, PageSourceItem,
+};
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetItem;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page_source, t_team, t_unit,

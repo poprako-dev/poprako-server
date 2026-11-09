@@ -12,9 +12,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use crate::config::repo::RepoConfig;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::page_source::{
-    PageSourceEntry, PageSourceManifestEntry,
-};
+use crate::model::write::page_source::PageSourceManifestEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
@@ -27,6 +25,7 @@ use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::RdbRepo;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceEntry;
 use crate::part_impl::repo::rdb_impl::test_shared::form::{
     chapter_entry, comic_entry, page_source_entry, team_entry, user_entry,
     workset_entry,

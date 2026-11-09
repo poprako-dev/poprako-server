@@ -1,9 +1,9 @@
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::page_source::PageSourceEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
+use crate::part_impl::repo::rdb_impl::entity::page_source::PageSourceEntry;
 use crate::shape::write::chapter::ChapterEntryShape;
 use crate::shape::write::comic::ComicEntryShape;
 
