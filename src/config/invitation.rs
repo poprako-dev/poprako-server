@@ -38,13 +38,18 @@ impl InvitationConfig {
             ("assignment_ttl_secs", self.assignment_ttl),
         ] {
             //
-            ensure!(!duration.is_zero(), "invitation.{field} must be positive");
+            ensure!(
+                !duration.is_zero(),
+                "invitation.{} must be positive",
+                field
+            );
 
             let delay = time::Duration::try_from(duration)?;
 
             ensure!(
                 OffsetDateTime::now_utc().checked_add(delay).is_some(),
-                "invitation.{field} exceeds the deferred-task timestamp range"
+                "invitation.{} exceeds the deferred-task timestamp range",
+                field
             );
         }
 

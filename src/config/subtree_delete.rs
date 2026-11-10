@@ -51,7 +51,8 @@ impl SubtreeDeleteConfig {
             //
             ensure!(
                 !duration.is_zero(),
-                "subtree_delete.{field} must be positive"
+                "subtree_delete.{} must be positive",
+                field
             );
         }
 

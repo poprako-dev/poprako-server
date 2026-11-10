@@ -14,6 +14,9 @@ REQUIRED_CLIPPY = {
     "print_stderr", "exit", "indexing_slicing", "string_slice",
     "mod_module_files", "allow_attributes_without_reason",
 }
+# The custom no-inline-format checker forbids inline captures, so this lint
+# must stay disabled even though `pedantic` enables it.
+REQUIRED_ALLOWED_CLIPPY = {"uninlined_format_args"}
 
 
 def level(setting):
@@ -40,6 +43,10 @@ def inspect_policy(metadata):
         if level(policy.get("clippy", {}).get(name)) not in {"deny", "forbid"}:
             errors.append(f"Cargo.toml: clippy::{name} must be deny or forbid")
 
+    for name in sorted(REQUIRED_ALLOWED_CLIPPY):
+        if level(policy.get("clippy", {}).get(name)) != "allow":
+            errors.append(f"Cargo.toml: clippy::{name} must be allow")
+
     for group in ("all", "pedantic", "nursery"):
         setting = policy.get("clippy", {}).get(group)
 
@@ -48,6 +55,9 @@ def inspect_policy(metadata):
 
     for tool, rules in policy.items():
         for name, setting in rules.items():
+            if tool == "clippy" and name in REQUIRED_ALLOWED_CLIPPY:
+                continue
+
             if level(setting) not in {"deny", "forbid"}:
                 errors.append(f"Cargo.toml: workspace {tool}::{name} weakens the policy")
 

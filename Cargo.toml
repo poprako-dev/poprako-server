@@ -58,6 +58,9 @@ indexing_slicing = "deny"
 string_slice = "deny"
 mod_module_files = "deny"
 allow_attributes_without_reason = "deny"
+# The custom no-inline-format checker forbids inline captures, so Clippy must
+# not require them. Keep this specific lint overridden; pedantic enables it.
+uninlined_format_args = "allow"
 
 [package]
 name = "poprako-server"
