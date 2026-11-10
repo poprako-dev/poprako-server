@@ -11,6 +11,19 @@ code, imports, built-in attributes, and standalone comments are outside its
 scope. It runs once across the workspace and reports every violation. See
 [line-width/FORMAT.md](line-width/FORMAT.md) for column counting and exclusions.
 
+`minimum-pub` requires every plain `pub` to be referenced outside its defining
+module. It checks modules, items, re-exports, struct fields, and inherent
+associated items across the whole workspace, including references from tests,
+benches, examples, macro bodies, and attribute string paths. It runs once for
+the workspace. See [minimum-pub/FORMAT.md](minimum-pub/FORMAT.md) for the
+diagnostic codes and known source-analysis limits.
+
+`serde-rename-ban` rejects manual `serde(rename = "...")` attributes. Rust
+fields and variants must carry their wire names directly; `rename_all` casing
+conversions remain allowed. Pica wire modules and enum values containing dots
+or hyphens are the only exceptions. See
+[serde-rename-ban/FORMAT.md](serde-rename-ban/FORMAT.md).
+
 Project rules run in one Python process. During that read-only run, masked
 production sources are reused across rules, and an LRU cache retains up to
 1024 Rust syntax trees keyed by their exact source bytes. Each caller receives

@@ -1,5 +1,7 @@
 # poprako-server
 
+MUST FOLLOW THE RULES OF LINTER CONFIG!!!!!
+
 Rust 2024 backend for manga translation project management. `Cargo.toml`
 defines the workspace; `src/lib.rs` defines the server module graph;
 `src/main.rs` composes production adapters and starts the Axum server.
@@ -89,12 +91,12 @@ include an English `reason`. Test-only modules may allow `unwrap_used` and
 Agents must prefer these exact `just` commands from the repository root.
 Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
 
-| Local command | Canonical Cargo invocation |
-| --- | --- |
-| `just fmt-check` | `cargo fmt --all --check` |
-| `just fmt` | `cargo fmt --all` |
-| `just check` | `cargo check --workspace --all-targets --all-features` |
-| `just clippy` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| Local command    | Canonical Cargo invocation                                             |
+| ---------------- | ---------------------------------------------------------------------- |
+| `just fmt-check` | `cargo fmt --all --check`                                              |
+| `just fmt`       | `cargo fmt --all`                                                      |
+| `just check`     | `cargo check --workspace --all-targets --all-features`                 |
+| `just clippy`    | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
 
 - After editing Rust, run `just fmt-check`, `just check`, and `just clippy`.
   Only if `just` is unavailable, use the exact Cargo invocations above.
@@ -123,21 +125,21 @@ Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
 Skills live in `.agents/skills/<name>/SKILL.md`. Read only those applicable
 to the task; follow their links when the referenced area is affected.
 
-| Task | Skill |
-| --- | --- |
-| Rust source creation, modification, moves, or review | `general-conventions` |
-| Backend behavior changes across layers | `implement-fullchain-spec` |
+| Task                                                                            | Skill                          |
+| ------------------------------------------------------------------------------- | ------------------------------ |
+| Rust source creation, modification, moves, or review                            | `general-conventions`          |
+| Backend behavior changes across layers                                          | `implement-fullchain-spec`     |
 | Business IDs, source/artwork identity, object keys, and Issue creation receipts | `identity-and-object-key-spec` |
-| Migration SQL creation, modification, review, or Diesel rollback/reset | `migration-sql-conventions` |
-| Use cases, repository contracts, or delivery boundaries | `usecase-boundaries` |
-| Owned Models, borrowed Shapes, normalization and repository payload ownership | `model-shape-boundaries` |
-| Instr, Val, View types and dependencies | `data-dto-boundaries` |
-| Harn, AppHarn, startup or test composition | `harness-spec` |
-| Error classification, conversion, or propagation | `error-handling-spec` |
-| Instrumentation, logging, or error-conversion events | `tracing-usage-spec` |
-| Tests or externally visible behavior | `test-spec` |
-| Rust struct fields in any workspace crate | `struct-field-blank-lines` |
-| Module extraction for the file-length limit | `module-splitting-conventions` |
+| Migration SQL creation, modification, review, or Diesel rollback/reset          | `migration-sql-conventions`    |
+| Use cases, repository contracts, or delivery boundaries                         | `usecase-boundaries`           |
+| Owned Models, borrowed Shapes, normalization and repository payload ownership   | `model-shape-boundaries`       |
+| Instr, Val, View types and dependencies                                         | `data-dto-boundaries`          |
+| Harn, AppHarn, startup or test composition                                      | `harness-spec`                 |
+| Error classification, conversion, or propagation                                | `error-handling-spec`          |
+| Instrumentation, logging, or error-conversion events                            | `tracing-usage-spec`           |
+| Tests or externally visible behavior                                            | `test-spec`                    |
+| Rust struct fields in any workspace crate                                       | `struct-field-blank-lines`     |
+| Module extraction for the file-length limit                                     | `module-splitting-conventions` |
 
 Server-specific domain, DTO, and error rules apply to the server crate.
 Do not impose its HTTP types or domain dependencies on infrastructure crates.
