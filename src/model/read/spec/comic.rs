@@ -22,7 +22,7 @@ pub struct ComicListSpec {
     pub status: Option<ComicStatus>,
 
     /// Additional data to include in each result, such as the workset or creator.
-    pub incl_opt: Vec<ComicInclOpt>,
+    pub incl: Vec<ComicInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

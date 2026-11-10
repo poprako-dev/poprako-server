@@ -17,23 +17,14 @@ pub struct SubtreeDeleteConfig {
     pub concurrency: NonZeroUsize,
 
     /// Maximum duration of one cleanup attempt.
-    #[serde(
-        rename = "timeout_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub timeout: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub timeout_secs: Duration,
     /// Delay when no cleanup work remains.
-    #[serde(
-        rename = "idle_interval_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub idle_interval: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub idle_interval_secs: Duration,
     /// Delay after a failed attempt or worker exit.
-    #[serde(
-        rename = "retry_interval_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub retry_interval: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub retry_interval_secs: Duration,
 }
 
 impl SubtreeDeleteConfig {
@@ -44,9 +35,9 @@ impl SubtreeDeleteConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("timeout_secs", self.timeout),
-            ("idle_interval_secs", self.idle_interval),
-            ("retry_interval_secs", self.retry_interval),
+            ("timeout_secs", self.timeout_secs),
+            ("idle_interval_secs", self.idle_interval_secs),
+            ("retry_interval_secs", self.retry_interval_secs),
         ] {
             //
             ensure!(
@@ -65,9 +56,9 @@ impl SubtreeDeleteConfig {
         SchedTaskConfig {
             name: "subtree_delete",
             concurrency: self.concurrency,
-            timeout: self.timeout,
-            idle_interval: self.idle_interval,
-            retry_interval: self.retry_interval,
+            timeout: self.timeout_secs,
+            idle_interval_secs: self.idle_interval_secs,
+            retry_interval_secs: self.retry_interval_secs,
         }
     }
 }
@@ -80,9 +71,9 @@ impl Default for SubtreeDeleteConfig {
 
         Self {
             concurrency: NonZeroUsize::MIN.saturating_add(1),
-            timeout: task.timeout,
-            idle_interval: task.idle_interval,
-            retry_interval: task.retry_interval,
+            timeout_secs: task.timeout,
+            idle_interval_secs: task.idle_interval_secs,
+            retry_interval_secs: task.retry_interval_secs,
         }
     }
 }

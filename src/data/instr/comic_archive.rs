@@ -12,7 +12,7 @@ use utoipa::IntoParams;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ExportComicArchivesInstr {
-    #[serde(default, rename = "month")]
+    #[serde(default)]
     /// UTC month slots in `YYYY-MM` format to filter archives by.
-    pub months: Vec<String>,
+    pub month: Vec<String>,
 }

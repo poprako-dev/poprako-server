@@ -11,7 +11,12 @@ use poprako_orchestra_extra::prom::task::Task;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
+use poprako_prom::general::delivery::ClaimedTask;
+use poprako_prom::general::dispatch_flow::DispatchFlow;
+use poprako_rdb_core::RdbCore;
+
 use crate::config::repo::RepoConfig;
+use crate::config::subtree_delete::SubtreeDeleteConfig;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::payload::PromPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -22,9 +27,6 @@ use crate::part_impl::prom::rdb_impl::repo::{
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::BaseError;
-use poprako_prom::general::delivery::ClaimedTask;
-use poprako_prom::general::dispatch_flow::DispatchFlow;
-use poprako_rdb_core::RdbCore;
 
 // Verify the writer persists committed tasks and rolls back aborted tasks before a consumer starts.
 async fn verify_writer_transactions(
@@ -472,6 +474,9 @@ async fn topic_claim_and_independent_requests_use_testcontainer() {
 pub async fn writer_and_consumer_lifecycles_are_independent(
     shared: poprako_rdb_core::RdbCore,
 ) {
+    use crate::config::sched::SchedConfig;
+    use crate::extra::sched::Sched;
+    use crate::extra::subtree_delete::SubtreeDeleteTask;
     use crate::part::nucl::ReptRead;
     use crate::part_impl::nucl::rdb_impl::RdbNucl;
     use crate::part_impl::obj_dept::tests::rdb::ArtworkTestPool;
@@ -480,7 +485,6 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
     use crate::part_impl::prom::rdb_impl::delivery::RdbPromDelivery;
     use crate::part_impl::repo::RdbRepo;
     use crate::part_impl::repo::mock_impl::Mock;
-    use crate::{Sched, SchedConfig, SubtreeDeleteTask};
     use diesel::{ExpressionMethods as _, QueryDsl as _};
     use poprako_prom::general::actor::PromActor;
     use poprako_prom::general::handler::Dispatcher;
@@ -559,7 +563,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
         nucl,
         repo,
         dept,
-        crate::SubtreeDeleteConfig::default(),
+        SubtreeDeleteConfig::default(),
     ));
 
     let sched = Sched::new(vec![task], SchedConfig::default()).run_detached();

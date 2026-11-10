@@ -24,7 +24,7 @@ use crate::value::incl::expand_incl_opts;
 pub fn get_chapter_by_id(
     state: &MockState,
     id: &str,
-    incl_opt: &[ChapterInclOpt],
+    incl: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
     let mut chapter_info = state
@@ -36,7 +36,7 @@ pub fn get_chapter_by_id(
         .cloned()
         .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-    apply_chapter_incls(state, &mut chapter_info, incl_opt);
+    apply_chapter_incls(state, &mut chapter_info, incl);
 
     accept!(chapter_info)
 }
@@ -135,16 +135,16 @@ pub fn create_chapter(
 pub fn apply_chapter_incls(
     state: &MockState,
     chapter_info: &mut ChapterInfo,
-    incl_opt: &[ChapterInclOpt],
+    incl: &[ChapterInclOpt],
 ) {
     //
     chapter_info.comic = None;
 
     chapter_info.creator = None;
 
-    for incl_opt in expand_incl_opts(incl_opt) {
+    for incl in expand_incl_opts(incl) {
         //
-        match incl_opt {
+        match incl {
             //
             // Attach base comic fields.
             ChapterInclOpt::Comic => {

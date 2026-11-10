@@ -56,9 +56,9 @@ where
         + Sync,
 {
     let (with_pinned_chapter, with_pinned_chapter_assignment) = (
-        instr.with_opt.contains(&ComicWithOpt::PinnedChapter),
+        instr.r#with.contains(&ComicWithOpt::PinnedChapter),
         instr
-            .with_opt
+            .r#with
             .contains(&ComicWithOpt::PinnedChapterAssignment),
     );
 

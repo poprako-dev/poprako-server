@@ -2,6 +2,8 @@
 
 // Integer-second decoding shared by runtime duration policies.
 mod duration;
+// Best-effort event queue configuration.
+mod effect;
 
 /// Chapter artwork upload configuration.
 pub mod artwork;
@@ -9,8 +11,6 @@ pub mod artwork;
 pub mod cache;
 /// Complete comic archive export resource budgets.
 pub mod comic_archive_export;
-/// Best-effort event queue configuration.
-pub mod effect;
 /// HTTP server configuration.
 pub mod http;
 /// Image upload configuration.

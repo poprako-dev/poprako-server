@@ -24,8 +24,8 @@ pub struct ListAnnouncementInfosInstr {
     pub team_id: String,
 
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<AnnouncementInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<AnnouncementInclOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -38,7 +38,7 @@ impl From<ListAnnouncementInfosInstr> for AnnouncementListSpec {
     fn from(instr: ListAnnouncementInfosInstr) -> Self {
         Self {
             team_id: instr.team_id,
-            incl_opt: instr.incl_opt,
+            incl: instr.incl,
             offset: instr.offset,
             limit: instr.limit,
         }

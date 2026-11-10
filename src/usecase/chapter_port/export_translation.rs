@@ -359,8 +359,8 @@ fn make_native_document(
                 .collect();
 
             PageSourceTranslationDocument {
-                page_source_id: page_source_info.id.clone(),
-                page_source_index: page_source_info.index,
+                page_id: page_source_info.id.clone(),
+                page_index: page_source_info.index,
                 units: unit_documents,
             }
         })
@@ -388,8 +388,8 @@ fn make_unit_export(
     UnitTranslationDocument {
         unit_id: unit_info.id.clone(),
         unit_index: index,
-        page_source_id: page_source_info.id.clone(),
-        page_source_index: page_source_info.index,
+        page_id: page_source_info.id.clone(),
+        page_index: page_source_info.index,
         x_coord: unit_info.coord.x_coord,
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,

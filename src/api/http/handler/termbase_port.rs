@@ -37,7 +37,7 @@ use crate::value::termbase::TermbaseScope;
 pub struct ImportTermbaseQuery {
     /// Merge into a same-name terminology base instead of rejecting it.
     #[serde(default)]
-    pub force_merge: bool,
+    force_merge: bool,
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/export` — export native JSON.

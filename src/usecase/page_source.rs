@@ -1,13 +1,14 @@
 //! source page image status, listing, allocation, and deletion.
 
+// source page presentation assembly.
+mod view;
+
 /// source page-manifest allocation orchestration.
 pub mod alloc;
 /// source page deletion orchestration.
 pub mod delete;
 /// source page-list orchestration.
 pub mod list;
-/// source page presentation assembly.
-pub mod view;
 
 #[cfg(test)]
 mod tests;

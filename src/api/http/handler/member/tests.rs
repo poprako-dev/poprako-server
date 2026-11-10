@@ -28,7 +28,7 @@ fn member_me_query_deserializes_missing_incl_as_empty() {
     //
     let query = parse_query("offset=0&limit=20");
 
-    assert!(query.incl_opt.is_empty());
+    assert!(query.incl.is_empty());
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn member_me_query_deserializes_one_incl() {
     //
     let query = parse_query("incl=team&offset=0&limit=20");
 
-    assert_eq!(query.incl_opt, [MemberInclOpt::Team]);
+    assert_eq!(query.incl, [MemberInclOpt::Team]);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn member_me_query_deserializes_repeated_incl_keys() {
     //
     let query = parse_query("incl=team&incl=user&offset=0&limit=20");
 
-    assert_eq!(query.incl_opt, [MemberInclOpt::Team, MemberInclOpt::User]);
+    assert_eq!(query.incl, [MemberInclOpt::Team, MemberInclOpt::User]);
 }
 
 #[test]

@@ -17,7 +17,7 @@ fn comic_query_accepts_optional_and_repeated_includes() {
     let Query(base) =
         Query::<GetComicInfoInstr>::try_from_uri(&base_uri).unwrap();
 
-    assert!(base.incl_opt.is_empty());
+    assert!(base.incl.is_empty());
 
     let uri: Uri =
         "/api/v1/comics/comic--00000000001?incl=workset.team&incl=creator"
@@ -27,7 +27,7 @@ fn comic_query_accepts_optional_and_repeated_includes() {
     let Query(instr) = Query::<GetComicInfoInstr>::try_from_uri(&uri).unwrap();
 
     assert_eq!(
-        instr.incl_opt,
+        instr.incl,
         vec![ComicInclOpt::WorksetTeam, ComicInclOpt::Creator]
     );
 }

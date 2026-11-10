@@ -34,9 +34,12 @@ fn assert_defaults(config: &AppConfig) {
 
     assert_eq!(config.cache.unit_save_token_budget.get(), 500_000);
 
-    assert_eq!(config.cache.unit_save_ttl, Duration::from_hours(30 * 24));
+    assert_eq!(
+        config.cache.unit_save_ttl_secs,
+        Duration::from_hours(30 * 24)
+    );
 
-    assert_eq!(config.cache.online_user_ttl, Duration::from_mins(10));
+    assert_eq!(config.cache.online_user_ttl_secs, Duration::from_mins(10));
 
     assert_eq!(config.repo.subtree_sweep_batch_size.get(), 64);
 
@@ -48,21 +51,30 @@ fn assert_defaults(config: &AppConfig) {
 
     assert_eq!(config.comic_archive_export.concurrency.get(), 1);
 
-    assert_eq!(config.invitation.member_ttl, Duration::from_hours(120));
+    assert_eq!(config.invitation.member_ttl_secs, Duration::from_hours(120));
 
-    assert_eq!(config.invitation.assignment_ttl, Duration::from_hours(72));
+    assert_eq!(
+        config.invitation.assignment_ttl_secs,
+        Duration::from_hours(72)
+    );
 
     assert_eq!(config.effect.capacity.get(), 1024);
 
-    assert_eq!(config.sched.shutdown_grace, Duration::from_secs(30));
+    assert_eq!(config.sched.shutdown_grace_secs, Duration::from_secs(30));
 
     assert_eq!(config.subtree_delete.concurrency.get(), 2);
 
-    assert_eq!(config.subtree_delete.timeout, Duration::from_mins(5));
+    assert_eq!(config.subtree_delete.timeout_secs, Duration::from_mins(5));
 
-    assert_eq!(config.subtree_delete.idle_interval, Duration::from_secs(5));
+    assert_eq!(
+        config.subtree_delete.idle_interval_secs,
+        Duration::from_secs(5)
+    );
 
-    assert_eq!(config.subtree_delete.retry_interval, Duration::from_secs(5));
+    assert_eq!(
+        config.subtree_delete.retry_interval_secs,
+        Duration::from_secs(5)
+    );
 }
 
 // default_overrides(AppConfig)(positive): empty documents, sections and constructors agree.
@@ -128,21 +140,24 @@ fn partial_overrides_reach_runtime_policy() {
 
     assert_eq!(config.cache.unit_save_min_entry_weight(), 65_536);
 
-    assert_eq!(config.cache.unit_save_ttl, Duration::from_secs(23));
+    assert_eq!(config.cache.unit_save_ttl_secs, Duration::from_secs(23));
 
-    assert_eq!(config.cache.online_user_ttl, Duration::from_secs(11));
+    assert_eq!(config.cache.online_user_ttl_secs, Duration::from_secs(11));
 
     assert_eq!(config.repo.subtree_sweep_batch_size.get(), 3);
 
     assert_eq!(config.repo.unit_order_query_batch_size.get(), 2);
 
-    assert_eq!(config.invitation.member_ttl, Duration::from_secs(13));
+    assert_eq!(config.invitation.member_ttl_secs, Duration::from_secs(13));
 
-    assert_eq!(config.invitation.assignment_ttl, Duration::from_secs(19));
+    assert_eq!(
+        config.invitation.assignment_ttl_secs,
+        Duration::from_secs(19)
+    );
 
     assert_eq!(config.effect.capacity.get(), 3);
 
-    assert_eq!(config.sched.shutdown_grace, Duration::ZERO);
+    assert_eq!(config.sched.shutdown_grace_secs, Duration::ZERO);
 
     let task = config.subtree_delete.task_config();
 
@@ -152,9 +167,9 @@ fn partial_overrides_reach_runtime_policy() {
 
     assert_eq!(task.timeout, Duration::from_secs(17));
 
-    assert_eq!(task.idle_interval, Duration::from_secs(2));
+    assert_eq!(task.idle_interval_secs, Duration::from_secs(2));
 
-    assert_eq!(task.retry_interval, Duration::from_secs(4));
+    assert_eq!(task.retry_interval_secs, Duration::from_secs(4));
 }
 
 // invalid_overrides(AppConfig)(negative): explicit invalid values never fall back.

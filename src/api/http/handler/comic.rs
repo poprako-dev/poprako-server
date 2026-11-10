@@ -116,14 +116,14 @@ pub struct ComicListQuery {
 
     /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
     /// `creator`. Dotted values imply their parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ComicInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<ComicInclOpt>,
 
     /// Derived rows to attach. Repeatable. Values: `pinned_chapter`,
     /// `pinned_chapter_assignment`. The assignment option requires the chapter
     /// option.
-    #[serde(default, rename = "with")]
-    pub with_opt: Vec<ComicWithOpt>,
+    #[serde(default)]
+    pub r#with: Vec<ComicWithOpt>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -193,8 +193,8 @@ pub async fn list_infos(
         fuzzy_title: query.fuzzy_title,
         stages: query.stages,
         status: query.status,
-        incl_opt: query.incl_opt,
-        with_opt: query.with_opt,
+        incl: query.incl,
+        r#with: query.r#with,
         offset: query.offset,
         limit: query.limit,
     };

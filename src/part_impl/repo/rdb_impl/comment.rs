@@ -50,8 +50,7 @@ async fn list_infos(
         .map(Into::into)
         .collect::<Vec<CommentInfo>>();
 
-    incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
-        .await?;
+    incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl).await?;
 
     accept!(infos)
 }

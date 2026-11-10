@@ -170,8 +170,7 @@ pub async fn list_infos(
         .map(Into::into)
         .collect::<Vec<MemberInfo>>();
 
-    incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
-        .await?;
+    incl::member::populate_member_incls(conn, &mut infos, spec.incl()).await?;
 
     accept!(infos)
 }
@@ -181,7 +180,7 @@ pub async fn list_infos(
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[MemberInclOpt],
+    incl: &[MemberInclOpt],
 ) -> BaseRest<MemberInfo> {
     //
     let record = t_member
@@ -210,7 +209,7 @@ pub async fn get_info_by_id(
     incl::member::populate_member_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 

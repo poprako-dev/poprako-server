@@ -134,7 +134,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         team_id: team_fixture.team_entry.id.clone(),
         fuzzy_nickname: Some("RDB".into()),
         role: Some(RoleField::ADMIN),
-        incl_opt: vec![MemberInclOpt::User],
+        incl: vec![MemberInclOpt::User],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -304,7 +304,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         team_id: team_fixture.team_entry.id,
         fuzzy_nickname: None,
         role: Some(RoleField::ADMIN),
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -344,7 +344,7 @@ async fn remove_admin_role_after_read(
             team_id,
             fuzzy_nickname: None,
             role: None,
-            incl_opt: Vec::new(),
+            incl: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };

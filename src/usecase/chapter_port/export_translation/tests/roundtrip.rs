@@ -17,13 +17,13 @@ fn document() -> ChapterTranslationPortView {
         comic_title: "source title".into(),
         pages: vec![
             PageSourceTranslationPortView {
-                page_source_id: "source-page-1".into(),
-                page_source_index: 1,
+                page_id: "source-page-1".into(),
+                page_index: 1,
                 units: vec![UnitTranslationPortView {
                     unit_id: "source-unit-1".into(),
                     unit_index: 1,
-                    page_source_id: "source-page-1".into(),
-                    page_source_index: 1,
+                    page_id: "source-page-1".into(),
+                    page_index: 1,
                     x_coord: 0.4,
                     y_coord: 0.5,
                     is_bubble: false,
@@ -38,14 +38,14 @@ fn document() -> ChapterTranslationPortView {
                 }],
             },
             PageSourceTranslationPortView {
-                page_source_id: "source-page-0".into(),
-                page_source_index: 0,
+                page_id: "source-page-0".into(),
+                page_index: 0,
                 units: vec![
                     UnitTranslationPortView {
                         unit_id: "source-unit-1".into(),
                         unit_index: 1,
-                        page_source_id: "source-page-0".into(),
-                        page_source_index: 0,
+                        page_id: "source-page-0".into(),
+                        page_index: 0,
                         x_coord: 0.2,
                         y_coord: 0.3,
                         is_bubble: true,
@@ -61,8 +61,8 @@ fn document() -> ChapterTranslationPortView {
                     UnitTranslationPortView {
                         unit_id: "source-unit-2".into(),
                         unit_index: 0,
-                        page_source_id: "source-page-0".into(),
-                        page_source_index: 0,
+                        page_id: "source-page-0".into(),
+                        page_index: 0,
                         x_coord: 0.1,
                         y_coord: 0.2,
                         is_bubble: true,

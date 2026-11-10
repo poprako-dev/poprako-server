@@ -25,7 +25,7 @@ fn key(value: u128) -> Uuid {
 #[tokio::test]
 async fn expired_token_is_unavailable_while_its_guard_remains_held() {
     let config = CacheConfig {
-        unit_save_ttl: Duration::from_millis(100),
+        unit_save_ttl_secs: Duration::from_millis(100),
         ..CacheConfig::default()
     };
 

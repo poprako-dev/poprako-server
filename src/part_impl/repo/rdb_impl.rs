@@ -5,62 +5,61 @@
 mod submit_query;
 // Numeric conversions at the database boundary.
 mod numeric;
+// Announcement repository operations.
+mod announcement;
+// Assignment repository operations.
+mod assignment;
+// Assignment invitation repository operations.
+mod assignment_invitation;
+// Chapter repository operations.
+mod chapter;
+// Immutable chapter workflow record repository operations.
+mod chapter_workflow_record;
+// Comic repository operations.
+mod comic;
+// Immutable comic archive repository operations.
+mod comic_archive;
+// Comment repository operations.
+mod comment;
+// Member repository operations.
+mod member;
+// Member invitation repository operations.
+mod member_invitation;
+// Composite artwork pages.
+mod page_artwork;
+// source page repository operations.
+mod page_source;
+// Hierarchical subtree deletion operations.
+mod subtree_delete;
+// System mail repository operations.
+mod system_mail;
+// Team repository operations.
+mod team;
+// Term repository operations.
+mod term;
+// Termbase repository operations.
+mod termbase;
+// Current chapter review issues.
+mod issue;
+// Versioned review editing.
+mod issue_edit;
+// Unit repository operations.
+mod unit;
+// User repository operations.
+mod user;
+// Workset repository operations.
+mod workset;
 
-/// Announcement repository operations.
-pub mod announcement;
-/// Assignment repository operations.
-pub mod assignment;
-/// Assignment invitation repository operations.
-pub mod assignment_invitation;
-/// Chapter repository operations.
-pub mod chapter;
-/// Immutable chapter workflow record repository operations.
-pub mod chapter_workflow_record;
-/// Comic repository operations.
-pub mod comic;
-/// Immutable comic archive repository operations.
-pub mod comic_archive;
-/// Comment repository operations.
-pub mod comment;
 /// Entity types for the RDB repository.
 pub mod entity;
 /// Batch include helpers.
 pub mod incl;
-/// Member repository operations.
-pub mod member;
-/// Member invitation repository operations.
-pub mod member_invitation;
-/// Composite artwork pages.
-pub mod page_artwork;
-/// source page repository operations.
-pub mod page_source;
 /// Diesel-generated schema.
 pub mod schema;
-/// Hierarchical subtree deletion operations.
-pub mod subtree_delete;
-/// System mail repository operations.
-pub mod system_mail;
-/// Team repository operations.
-pub mod team;
-/// Term repository operations.
-pub mod term;
-/// Termbase repository operations.
-pub mod termbase;
 
 /// Shared RDB integration-test fixtures.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod test_shared;
-
-/// Current chapter review issues.
-pub mod issue;
-/// Versioned review editing.
-pub mod issue_edit;
-/// Unit repository operations.
-pub mod unit;
-/// User repository operations.
-pub mod user;
-/// Workset repository operations.
-pub mod workset;
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 mod tests;

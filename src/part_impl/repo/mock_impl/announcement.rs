@@ -51,7 +51,7 @@ fn list_announcements(
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let include_user = spec.incl_opt.contains(&AnnouncementInclOpt::User);
+    let include_user = spec.incl.contains(&AnnouncementInclOpt::User);
 
     let mut announcement_infos = state
         .announcements

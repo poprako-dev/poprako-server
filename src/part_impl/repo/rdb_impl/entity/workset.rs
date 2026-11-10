@@ -34,9 +34,7 @@ pub struct WorksetInfoRecord {
     pub f_name: String,
     pub f_description: Option<String>,
 
-    pub f_comic_count: i32,
-    pub f_comic_next_index: i32,
-
+    f_comic_count: i32,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -106,8 +104,8 @@ pub struct WorksetPack<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 
-    pub f_comic_count: Option<i32>,
-    pub f_comic_next_index: Option<i32>,
+    f_comic_count: Option<i32>,
+    f_comic_next_index: Option<i32>,
 
     pub f_updated_at: OffsetDateTime,
 }
@@ -144,14 +142,6 @@ impl<'a> WorksetPack<'a> {
     pub const fn comic_count(mut self, val: i32) -> Self {
         //
         self.f_comic_count = Some(val);
-
-        self
-    }
-
-    #[must_use]
-    pub const fn comic_next_index(mut self, val: i32) -> Self {
-        //
-        self.f_comic_next_index = Some(val);
 
         self
     }

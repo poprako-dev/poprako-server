@@ -38,7 +38,7 @@ fn payloads_round_trip_through_rdb_storage_forms() {
         },
         ChapterWorkflowRecordPayload::TranslationImported {
             format: TranslationFormat::PopRaKo,
-            imported_page_source_count: 3,
+            imported_page_count: 3,
             imported_unit_count: 8,
         },
         ChapterWorkflowRecordPayload::TranslationExported {

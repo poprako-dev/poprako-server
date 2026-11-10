@@ -201,14 +201,6 @@ struct UnitSequence<'a> {
 }
 
 impl<'a> UnitSequence<'a> {
-    /// Returns one mutable node or classifies a broken internal link.
-    pub fn node_mut(&mut self, id: &str) -> BaseRest<&mut SequenceNode<'a>> {
-        //
-        self.nodes
-            .get_mut(id)
-            .ok_or_else(|| invalid_sequence("Unit sequence node is missing"))
-    }
-
     /// Returns one copied node or classifies a broken internal link.
     pub fn node(&self, id: &str) -> BaseRest<SequenceNode<'a>> {
         //
@@ -264,71 +256,51 @@ impl<'a> UnitSequence<'a> {
         })
     }
 
-    /// Appends one new ID before applying its requested successor.
-    pub fn append_new(&mut self, id: &'a str) -> BaseRest<()> {
+    /// Consumes the structure into a validated traversal and successor map.
+    pub fn finish(self) -> BaseRest<UnitSequenceState<'a>> {
         //
-        if self.nodes.contains_key(id) {
-            return Err(invalid_edit_sequence(id, None, "create"));
-        }
+        let mut ordered_ids = Vec::with_capacity(self.nodes.len());
 
-        match self.tail_id {
+        let mut visited_ids = HashSet::with_capacity(self.nodes.len());
+
+        let mut next_ids = HashMap::with_capacity(self.nodes.len());
+
+        let mut current_id = self.head_id;
+
+        while let Some(id) = current_id {
             //
-            Some(tail_id) => self.node_mut(tail_id)?.next_id = Some(id),
-
-            None if self.head_id.is_some() => {
-                //
-                return Err(invalid_sequence(
-                    "Unit sequence head exists without a tail",
-                ));
+            if !visited_ids.insert(id) {
+                return Err(invalid_sequence("Unit sequence contains a cycle"));
             }
 
-            None => self.head_id = Some(id),
+            let node = self.node(id)?;
+
+            ordered_ids.push(id);
+
+            next_ids.insert(id, node.next_id);
+
+            current_id = node.next_id;
         }
 
-        let node = SequenceNode {
-            prev_id: self.tail_id,
-            next_id: None,
-        };
-
-        if self.nodes.insert(id, node).is_some() {
+        if ordered_ids.len() != self.nodes.len() {
             //
             return Err(invalid_sequence(
-                "new Unit unexpectedly replaced a sequence node",
+                "Unit sequence contains unreachable nodes",
             ));
         }
 
-        self.tail_id = Some(id);
-
-        accept!(())
+        accept!((ordered_ids, next_ids))
     }
-
-    /// Moves one existing ID immediately before a successor, or to the tail.
-    pub fn move_before(
-        &mut self,
-        id: &'a str,
-        next_id: Option<&'a str>,
-    ) -> BaseRest<()> {
+    // Returns one mutable node or classifies a broken internal link.
+    fn node_mut(&mut self, id: &str) -> BaseRest<&mut SequenceNode<'a>> {
         //
-        if !self.nodes.contains_key(id)
-            || next_id.is_some_and(|next_id| {
-                next_id == id || !self.nodes.contains_key(next_id)
-            })
-        {
-            return Err(invalid_edit_sequence(id, next_id, "move"));
-        }
-
-        self.detach(id)?;
-
-        match next_id {
-            //
-            Some(next_id) => self.insert_before(id, next_id),
-
-            None => self.insert_at_tail(id),
-        }
+        self.nodes
+            .get_mut(id)
+            .ok_or_else(|| invalid_sequence("Unit sequence node is missing"))
     }
 
-    /// Detaches one node while preserving its neighbors.
-    pub fn detach(&mut self, id: &'a str) -> BaseRest<()> {
+    // Detaches one node while preserving its neighbors.
+    fn detach(&mut self, id: &'a str) -> BaseRest<()> {
         //
         let node = self.node(id)?;
 
@@ -368,12 +340,8 @@ impl<'a> UnitSequence<'a> {
         accept!(())
     }
 
-    /// Inserts a detached node immediately before an existing anchor.
-    pub fn insert_before(
-        &mut self,
-        id: &'a str,
-        next_id: &'a str,
-    ) -> BaseRest<()> {
+    // Inserts a detached node immediately before an existing anchor.
+    fn insert_before(&mut self, id: &'a str, next_id: &'a str) -> BaseRest<()> {
         //
         let prev_id = self.node(next_id)?.prev_id;
 
@@ -394,8 +362,8 @@ impl<'a> UnitSequence<'a> {
         accept!(())
     }
 
-    /// Inserts a detached node at the current tail.
-    pub fn insert_at_tail(&mut self, id: &'a str) -> BaseRest<()> {
+    // Inserts a detached node at the current tail.
+    fn insert_at_tail(&mut self, id: &'a str) -> BaseRest<()> {
         //
         let prev_id = self.tail_id;
 
@@ -415,41 +383,67 @@ impl<'a> UnitSequence<'a> {
 
         accept!(())
     }
-
-    /// Consumes the structure into a validated traversal and successor map.
-    pub fn finish(self) -> BaseRest<UnitSequenceState<'a>> {
+    // Appends one new ID before applying its requested successor.
+    fn append_new(&mut self, id: &'a str) -> BaseRest<()> {
         //
-        let mut ordered_ids = Vec::with_capacity(self.nodes.len());
-
-        let mut visited_ids = HashSet::with_capacity(self.nodes.len());
-
-        let mut next_ids = HashMap::with_capacity(self.nodes.len());
-
-        let mut current_id = self.head_id;
-
-        while let Some(id) = current_id {
-            //
-            if !visited_ids.insert(id) {
-                return Err(invalid_sequence("Unit sequence contains a cycle"));
-            }
-
-            let node = self.node(id)?;
-
-            ordered_ids.push(id);
-
-            next_ids.insert(id, node.next_id);
-
-            current_id = node.next_id;
+        if self.nodes.contains_key(id) {
+            return Err(invalid_edit_sequence(id, None, "create"));
         }
 
-        if ordered_ids.len() != self.nodes.len() {
+        match self.tail_id {
+            //
+            Some(tail_id) => self.node_mut(tail_id)?.next_id = Some(id),
+
+            None if self.head_id.is_some() => {
+                //
+                return Err(invalid_sequence(
+                    "Unit sequence head exists without a tail",
+                ));
+            }
+
+            None => self.head_id = Some(id),
+        }
+
+        let node = SequenceNode {
+            prev_id: self.tail_id,
+            next_id: None,
+        };
+
+        if self.nodes.insert(id, node).is_some() {
             //
             return Err(invalid_sequence(
-                "Unit sequence contains unreachable nodes",
+                "new Unit unexpectedly replaced a sequence node",
             ));
         }
 
-        accept!((ordered_ids, next_ids))
+        self.tail_id = Some(id);
+
+        accept!(())
+    }
+
+    // Moves one existing ID immediately before a successor, or to the tail.
+    fn move_before(
+        &mut self,
+        id: &'a str,
+        next_id: Option<&'a str>,
+    ) -> BaseRest<()> {
+        //
+        if !self.nodes.contains_key(id)
+            || next_id.is_some_and(|next_id| {
+                next_id == id || !self.nodes.contains_key(next_id)
+            })
+        {
+            return Err(invalid_edit_sequence(id, next_id, "move"));
+        }
+
+        self.detach(id)?;
+
+        match next_id {
+            //
+            Some(next_id) => self.insert_before(id, next_id),
+
+            None => self.insert_at_tail(id),
+        }
     }
 }
 

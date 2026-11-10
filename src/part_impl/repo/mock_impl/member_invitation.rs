@@ -70,8 +70,7 @@ fn list_member_invitation_infos(
 
     member_invitation_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
-    let include_invitor =
-        spec.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
+    let include_invitor = spec.incl.contains(&MemberInvitationInclOpt::Invitor);
 
     for member_invitation_info in &mut member_invitation_infos {
         apply_invitor_incl(state, member_invitation_info, include_invitor);

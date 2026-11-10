@@ -90,12 +90,12 @@ pub async fn run(
             "scheduler worker exited; replacing its slot",
         );
 
-        let delay = worker.config.retry_interval;
+        let delay = worker.config.retry_interval_secs;
 
         spawn_worker(&mut workers, &mut slots, worker, token.clone(), delay);
     }
 
-    shutdown_workers(workers, config.shutdown_grace).await;
+    shutdown_workers(workers, config.shutdown_grace_secs).await;
 }
 
 // Register a replacement immediately while its worker waits before execution.

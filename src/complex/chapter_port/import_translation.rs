@@ -87,16 +87,16 @@ pub fn parse_label_plus(
 
 /// Returns an error when imported pages do not match existing pages.
 pub fn validate_page_source_count(
-    imported_page_source_count: usize,
+    imported_page_count: usize,
     existing_page_source_count: usize,
 ) -> BaseRest<()> {
     //
-    if imported_page_source_count != existing_page_source_count {
+    if imported_page_count != existing_page_source_count {
         //
         return Err(expected_error! {
             ExpectedVariant::Args,
             message: trl("error-chapter-import-page-count-mismatch");
-            imported_page_source_count = imported_page_source_count,
+            imported_page_count = imported_page_count,
             existing_page_source_count = existing_page_source_count,
             "chapter import page count mismatch",
         });
@@ -127,8 +127,8 @@ fn convert_poprako_document(
 
     for page in project.pages {
         //
-        if page.page_source_index >= page_source_count
-            || !page_source_indexes.insert(page.page_source_index)
+        if page.page_index >= page_source_count
+            || !page_source_indexes.insert(page.page_index)
         {
             return Err(invalid_poprako_content("invalid PopRaKo page index"));
         }
@@ -189,7 +189,7 @@ fn convert_poprako_document(
         units.sort_by_key(|unit| unit.index);
 
         pages.push(PageSourceTranslationImport {
-            page_source_index: page.page_source_index,
+            page_source_index: page.page_index,
             units,
         });
     }

@@ -49,8 +49,8 @@ pub struct ListMemberInvitationInfosInstr {
     pub is_pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInvitationInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset.
     pub offset: u32,

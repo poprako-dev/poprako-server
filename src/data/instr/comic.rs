@@ -91,8 +91,8 @@ pub struct UpdateComicInfoInstr {
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct GetComicInfoInstr {
     /// Related rows to embed. Dotted values include their parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ComicInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<ComicInclOpt>,
 }
 
 /// Input parameters for listing comics within a workset.
@@ -111,12 +111,12 @@ pub struct ListComicInfosInstr {
     pub status: Option<ComicStatus>,
 
     /// Optional related data to include in results.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ComicInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<ComicInclOpt>,
 
     /// Optional expansion options for the result set.
-    #[serde(default, rename = "with")]
-    pub with_opt: Vec<ComicWithOpt>,
+    #[serde(default)]
+    pub r#with: Vec<ComicWithOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -139,7 +139,7 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
             fuzzy_title: instr.fuzzy_title,
             stages,
             status: instr.status,
-            incl_opt: instr.incl_opt,
+            incl: instr.incl,
             offset: instr.offset,
             limit: instr.limit,
         })

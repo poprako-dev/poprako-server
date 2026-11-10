@@ -48,7 +48,7 @@ fn list_comments(
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
+    let include_user = spec.incl.contains(&CommentInclOpt::User);
 
     let mut comment_infos = state
         .comments

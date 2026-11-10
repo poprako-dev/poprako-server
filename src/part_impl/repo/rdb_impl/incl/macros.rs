@@ -221,10 +221,10 @@ macro_rules! preloadable {
         pub async fn $populate(
             conn: &mut poprako_rdb_core::RdbConn,
             infos: &mut [$owner],
-            incl_opt: &[$opt],
+            incl: &[$opt],
         ) -> $crate::result::BaseRest<()> {
-            for incl_opt in $crate::value::incl::expand_incl_opts(incl_opt) {
-                match incl_opt {
+            for incl in $crate::value::incl::expand_incl_opts(incl) {
+                match incl {
                     $(
                         $opt::$marker => {
                             $crate::part_impl::repo::rdb_impl::incl::

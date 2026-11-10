@@ -149,8 +149,8 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: Vec::new(),
+            incl: Vec::new(),
+            r#with: Vec::new(),
             workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,

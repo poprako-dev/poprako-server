@@ -19,12 +19,12 @@ impl EffectConfig {
     /// Rejects capacities unsupported by Tokio's bounded channel.
     ///
     /// # Errors
-    /// Returns an error when the capacity exceeds Tokio's semaphore limit.
+    /// Returns an error when the `queue_capacity` exceeds Tokio's semaphore limit.
     pub fn validate(self) -> anyhow::Result<()> {
         //
         ensure!(
             self.capacity.get() <= Semaphore::MAX_PERMITS,
-            "effect.queue_capacity exceeds the channel capacity range"
+            "effect.queue_capacity exceeds the channel queue_capacity range"
         );
 
         Ok(())

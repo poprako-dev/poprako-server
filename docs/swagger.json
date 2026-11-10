@@ -6143,7 +6143,7 @@
                 "description": "Translation content was imported into a chapter.",
                 "required": [
                   "format",
-                  "imported_page_source_count",
+                  "imported_page_count",
                   "imported_unit_count"
                 ],
                 "properties": {
@@ -6151,7 +6151,7 @@
                     "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
                     "description": "Imported content format."
                   },
-                  "imported_page_source_count": {
+                  "imported_page_count": {
                     "type": "integer",
                     "description": "Number of pages whose visible Unit content changed.",
                     "minimum": 0
@@ -8398,11 +8398,11 @@
             "type": "object",
             "description": "Summary returned after importing chapter translations.",
             "required": [
-              "imported_page_source_count",
+              "imported_page_count",
               "imported_unit_count"
             ],
             "properties": {
-              "imported_page_source_count": {
+              "imported_page_count": {
                 "type": "integer",
                 "description": "Number of pages whose visible Unit content changed.",
                 "minimum": 0
@@ -11231,11 +11231,11 @@
         "type": "object",
         "description": "Summary returned after importing chapter translations.",
         "required": [
-          "imported_page_source_count",
+          "imported_page_count",
           "imported_unit_count"
         ],
         "properties": {
-          "imported_page_source_count": {
+          "imported_page_count": {
             "type": "integer",
             "description": "Number of pages whose visible Unit content changed.",
             "minimum": 0

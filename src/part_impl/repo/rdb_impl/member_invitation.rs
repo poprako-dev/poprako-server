@@ -88,9 +88,7 @@ async fn list_infos(
     }
 
     incl::member_invitation::populate_member_invitation_incls(
-        conn,
-        &mut infos,
-        &spec.incl_opt,
+        conn, &mut infos, &spec.incl,
     )
     .await?;
 
@@ -102,7 +100,7 @@ async fn list_infos(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[MemberInvitationInclOpt],
+    incl: &[MemberInvitationInclOpt],
 ) -> BaseRest<MemberInvitationInfo> {
     //
     let record = t_member_invitation
@@ -130,7 +128,7 @@ async fn get_info_by_id(
     incl::member_invitation::populate_member_invitation_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 

@@ -49,8 +49,8 @@ pub struct ListChapterInfosInstr {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ChapterInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<ChapterInclOpt>,
 
     /// Pagination offset: number of chapters to skip before beginning the
     /// result set.

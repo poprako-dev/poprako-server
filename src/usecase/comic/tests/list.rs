@@ -89,8 +89,8 @@ async fn list_infos_filters_by_lifecycle_status() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: Vec::new(),
+            incl: Vec::new(),
+            r#with: Vec::new(),
             workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
@@ -110,8 +110,8 @@ async fn list_infos_filters_by_lifecycle_status() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: Vec::new(),
+            incl: Vec::new(),
+            r#with: Vec::new(),
             workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
@@ -140,8 +140,8 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: vec![
+            incl: Vec::new(),
+            r#with: vec![
                 ComicWithOpt::PinnedChapter,
                 ComicWithOpt::PinnedChapterAssignment,
             ],
@@ -245,8 +245,8 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: vec![ComicWithOpt::PinnedChapterAssignment],
+            incl: Vec::new(),
+            r#with: vec![ComicWithOpt::PinnedChapterAssignment],
             workset_id: "workset--00000000001".into(),
             fuzzy_title: None,
             stages: None,
@@ -293,8 +293,8 @@ async fn list_infos_filters_by_fuzzy_title() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: vec![],
+            incl: Vec::new(),
+            r#with: vec![],
             workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("\u{2003}Beta\u{00a0}".into()),
             stages: None,
@@ -314,8 +314,8 @@ async fn list_infos_filters_by_fuzzy_title() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: vec![],
+            incl: Vec::new(),
+            r#with: vec![],
             workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("Carol".into()),
             stages: None,
@@ -335,8 +335,8 @@ async fn list_infos_filters_by_fuzzy_title() {
         (&mock, &mock),
         token("user--00000000001"),
         ListComicInfosInstr {
-            incl_opt: Vec::new(),
-            with_opt: vec![],
+            incl: Vec::new(),
+            r#with: vec![],
             workset_id: "workset--00000000001".into(),
             fuzzy_title: Some("1".into()),
             stages: None,

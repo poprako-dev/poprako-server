@@ -74,7 +74,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
         is_pending: Some(false),
-        incl_opt: vec![MemberInvitationInclOpt::Invitor],
+        incl: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

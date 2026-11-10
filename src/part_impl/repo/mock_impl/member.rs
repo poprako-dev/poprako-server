@@ -202,13 +202,13 @@ fn list_member_infos(
         // Internal implementation detail.
         MemberListSpec::User {
             owner_id,
-            incl_opt,
+            incl,
             offset,
             limit,
         } => (
             *offset,
             limit.get(),
-            incl_opt,
+            incl,
             state
                 .members
                 .iter()
@@ -224,13 +224,13 @@ fn list_member_infos(
             team_id,
             fuzzy_nickname: _,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         } => (
             *offset,
             limit.get(),
-            incl_opt,
+            incl,
             state
                 .members
                 .iter()

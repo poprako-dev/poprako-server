@@ -31,7 +31,7 @@ pub struct ChapterWorkflowRecordInfoView {
     pub actor_user_id: Option<String>,
 
     /// Strongly typed, language-neutral event data for client-side rendering.
-    pub event: ChapterWorkflowRecordEventView,
+    event: ChapterWorkflowRecordEventView,
 
     /// Record creation time in Unix milliseconds.
     pub created_at: i64,
@@ -103,7 +103,7 @@ pub enum ChapterWorkflowRecordEventView {
         /// Imported content format.
         format: ChapterWorkflowRecordTranslationFormatView,
         /// Number of pages whose visible Unit content changed.
-        imported_page_source_count: usize,
+        imported_page_count: usize,
         /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },
@@ -142,9 +142,8 @@ pub enum ChapterWorkflowRecordTranslationFormatView {
     /// `LabelPlus` translation format.
     LabelPlus,
 
-    /// `PopRaKo` native translation format.
-    #[serde(rename = "poprako")]
-    PopRaKo,
+    /// `Poprako` native translation format.
+    Poprako,
 }
 
 impl From<TranslationFormat> for ChapterWorkflowRecordTranslationFormatView {
@@ -155,7 +154,7 @@ impl From<TranslationFormat> for ChapterWorkflowRecordTranslationFormatView {
             //
             TranslationFormat::LabelPlus => Self::LabelPlus,
 
-            TranslationFormat::PopRaKo => Self::PopRaKo,
+            TranslationFormat::PopRaKo => Self::Poprako,
         }
     }
 }
@@ -338,11 +337,11 @@ impl From<ChapterWorkflowRecordPayload> for ChapterWorkflowRecordEventView {
 
             ChapterWorkflowRecordPayload::TranslationImported {
                 format,
-                imported_page_source_count,
+                imported_page_count,
                 imported_unit_count,
             } => Self::TranslationImported {
                 format: format.into(),
-                imported_page_source_count,
+                imported_page_count,
                 imported_unit_count,
             },
 

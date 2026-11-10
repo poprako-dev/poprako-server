@@ -47,8 +47,8 @@ use crate::value::pagination::PubListLimit;
 #[cfg_attr(test, derive(Debug))]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<MemberInclOpt>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -149,7 +149,7 @@ pub async fn list_my_infos(
         team_id: None,
         fuzzy_nickname: None,
         role: None,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };

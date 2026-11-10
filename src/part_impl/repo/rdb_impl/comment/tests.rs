@@ -40,7 +40,7 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let comment_list_spec = CommentListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        incl_opt: vec![CommentInclOpt::User],
+        incl: vec![CommentInclOpt::User],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

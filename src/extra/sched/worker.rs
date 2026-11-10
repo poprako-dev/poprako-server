@@ -76,7 +76,7 @@ async fn run_worker(
                     "scheduler runner creation panicked; retrying",
                 );
 
-                if wait(&token, config.retry_interval).await {
+                if wait(&token, config.retry_interval_secs).await {
                     return;
                 }
 
@@ -104,7 +104,7 @@ async fn run_worker(
             //
             Ok(Ok(Ok(SchedNext::Continue))) => Duration::ZERO,
 
-            Ok(Ok(Ok(SchedNext::Wait))) => config.idle_interval,
+            Ok(Ok(Ok(SchedNext::Wait))) => config.idle_interval_secs,
 
             Ok(Ok(Err(_))) => {
                 //
@@ -113,7 +113,7 @@ async fn run_worker(
                     "scheduler attempt failed; retrying",
                 );
 
-                config.retry_interval
+                config.retry_interval_secs
             }
 
             Ok(Err(_)) => {
@@ -125,7 +125,7 @@ async fn run_worker(
 
                 runner = None;
 
-                config.retry_interval
+                config.retry_interval_secs
             }
 
             Err(_) => {
@@ -137,7 +137,7 @@ async fn run_worker(
 
                 runner = None;
 
-                config.retry_interval
+                config.retry_interval_secs
             }
         };
 

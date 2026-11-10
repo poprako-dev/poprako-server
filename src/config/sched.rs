@@ -18,9 +18,9 @@ pub struct SchedTaskConfig {
     /// Maximum duration of one attempt, including all work inside its runner.
     pub timeout: Duration,
     /// Delay after a successful attempt requests an idle wait.
-    pub idle_interval: Duration,
+    pub idle_interval_secs: Duration,
     /// Delay after an error, panic, timeout, or unexpected worker exit.
-    pub retry_interval: Duration,
+    pub retry_interval_secs: Duration,
 }
 
 impl Default for SchedTaskConfig {
@@ -30,8 +30,8 @@ impl Default for SchedTaskConfig {
             name: "sched_task",
             concurrency: NonZeroUsize::MIN,
             timeout: Duration::from_mins(5),
-            idle_interval: Duration::from_secs(5),
-            retry_interval: Duration::from_secs(5),
+            idle_interval_secs: Duration::from_secs(5),
+            retry_interval_secs: Duration::from_secs(5),
         }
     }
 }
@@ -41,18 +41,15 @@ impl Default for SchedTaskConfig {
 #[serde(default, deny_unknown_fields)]
 pub struct SchedConfig {
     /// Shared grace period measured from cancellation, not from each join.
-    #[serde(
-        rename = "shutdown_grace_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub shutdown_grace: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub shutdown_grace_secs: Duration,
 }
 
 impl Default for SchedConfig {
     // Allow in-flight work to finish before aborting all remaining workers.
     fn default() -> Self {
         Self {
-            shutdown_grace: Duration::from_secs(30),
+            shutdown_grace_secs: Duration::from_secs(30),
         }
     }
 }

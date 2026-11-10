@@ -54,7 +54,7 @@ pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[ChapterInclOpt],
+    incl: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
     let record = t_chapter
@@ -82,7 +82,7 @@ pub async fn get_info_by_id(
     incl::chapter::populate_chapter_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 
@@ -94,7 +94,7 @@ pub async fn get_info_by_id(
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[ChapterInclOpt],
+    incl: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
     let record = t_chapter
@@ -123,7 +123,7 @@ pub async fn get_info_excluded(
     incl::chapter::populate_chapter_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 
@@ -186,8 +186,7 @@ pub async fn list_infos(
 
     let mut infos = records_into_infos(records)?;
 
-    incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl_opt)
-        .await?;
+    incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl).await?;
 
     accept!(infos)
 }
@@ -238,7 +237,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
 pub async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
-    incl_opt: &[ChapterInclOpt],
+    incl: &[ChapterInclOpt],
 ) -> BaseRest<Option<ChapterInfo>> {
     //
     let record = t_chapter
@@ -260,7 +259,7 @@ pub async fn find_pinned_info_by_comic_id(
     incl::chapter::populate_chapter_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 

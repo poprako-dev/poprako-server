@@ -10,7 +10,7 @@ use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
-use crate::ImageConfig;
+use crate::config::image::ImageConfig;
 use crate::result::{BaseError, ExpectedVariant};
 
 /// Image limits matching the default runtime configuration.

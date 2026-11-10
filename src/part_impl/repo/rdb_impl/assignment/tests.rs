@@ -104,7 +104,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     let assignment_list_spec = AssignmentListSpec::Chapter {
         chapter_id: chapter_fixture.chapter_info.id.clone(),
         role: Some(RoleField::TRANSLATOR),
-        incl_opt: vec![AssignmentInclOpt::User],
+        incl: vec![AssignmentInclOpt::User],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

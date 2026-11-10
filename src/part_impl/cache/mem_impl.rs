@@ -32,7 +32,7 @@ impl MemCache {
     #[must_use]
     pub fn new(config: CacheConfig) -> Self {
         Self {
-            online_users: MemOnlineUserCache::new(config.online_user_ttl),
+            online_users: MemOnlineUserCache::new(config.online_user_ttl_secs),
             unit_saves: MemUnitSaveCache::new(config),
             issue_saves: MemIssueSaveCache::new(config),
         }

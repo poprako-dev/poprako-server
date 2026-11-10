@@ -3,6 +3,10 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
+use diesel::{ExpressionMethods as _, QueryDsl as _};
+use diesel_async::RunQueryDsl as _;
+use poprako_orchestra::{Nucl as _, OperStep as _};
+
 // save_tokens(MemUnitSaveCache)(positive): concurrent replays commit one Unit and share a memory token.
 // save_tokens(MemUnitSaveCache)(negative): rollback publishes no successful token.
 use crate::config::repo::RepoConfig;
@@ -21,9 +25,6 @@ use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::shared::test_rdb::start;
 use crate::usecase::unit as unit_usecase;
 use crate::value::role::{RoleField, RoleMask};
-use diesel::{ExpressionMethods as _, QueryDsl as _};
-use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{Nucl as _, OperStep as _};
 
 fn batch(page_source_id: &str, save_id: &str) -> SavePageSourceUnitEditsInstr {
     SavePageSourceUnitEditsInstr {

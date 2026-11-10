@@ -14,11 +14,11 @@ use crate::shape::write::term::TermEntryShape;
 pub struct TermInfoRecord {
     pub f_id: String,
 
-    pub f_termbase_id: String,
+    f_termbase_id: String,
 
-    pub f_source: String,
-    pub f_targets: Vec<Option<String>>,
-    pub f_comment: Option<String>,
+    f_source: String,
+    f_targets: Vec<Option<String>>,
+    f_comment: Option<String>,
 
     pub f_creator_id: String,
 
@@ -47,11 +47,11 @@ impl From<TermInfoRecord> for TermInfo {
 pub struct TermItem<'a> {
     pub f_id: &'a str,
 
-    pub f_termbase_id: &'a str,
+    f_termbase_id: &'a str,
 
-    pub f_source: &'a str,
-    pub f_targets: Vec<Option<&'a str>>,
-    pub f_comment: Option<&'a str>,
+    f_source: &'a str,
+    f_targets: Vec<Option<&'a str>>,
+    f_comment: Option<&'a str>,
 
     pub f_creator_id: &'a str,
 

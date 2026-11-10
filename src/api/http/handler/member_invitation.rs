@@ -47,8 +47,8 @@ pub struct MemberInvitationListQuery {
     pub is_pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInvitationInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -126,7 +126,7 @@ pub async fn list_infos(
     let instr = ListMemberInvitationInfosInstr {
         team_id,
         is_pending: query.is_pending,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };

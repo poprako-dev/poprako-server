@@ -13,17 +13,11 @@ use crate::config::duration;
 #[serde(default, deny_unknown_fields)]
 pub struct InvitationConfig {
     /// Delay before cleaning up an unconsumed member invitation.
-    #[serde(
-        rename = "member_ttl_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub member_ttl: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub member_ttl_secs: Duration,
     /// Delay before cleaning up an unconsumed assignment invitation.
-    #[serde(
-        rename = "assignment_ttl_secs",
-        deserialize_with = "duration::deserialize"
-    )]
-    pub assignment_ttl: Duration,
+    #[serde(deserialize_with = "duration::deserialize")]
+    pub assignment_ttl_secs: Duration,
 }
 
 impl InvitationConfig {
@@ -34,8 +28,8 @@ impl InvitationConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("member_ttl_secs", self.member_ttl),
-            ("assignment_ttl_secs", self.assignment_ttl),
+            ("member_ttl_secs", self.member_ttl_secs),
+            ("assignment_ttl_secs", self.assignment_ttl_secs),
         ] {
             //
             ensure!(
@@ -61,8 +55,8 @@ impl Default for InvitationConfig {
     // Supplies the default runtime policy.
     fn default() -> Self {
         Self {
-            member_ttl: Duration::from_hours(120),
-            assignment_ttl: Duration::from_hours(72),
+            member_ttl_secs: Duration::from_hours(120),
+            assignment_ttl_secs: Duration::from_hours(72),
         }
     }
 }

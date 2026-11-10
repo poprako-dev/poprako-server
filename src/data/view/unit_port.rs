@@ -18,12 +18,10 @@ pub struct UnitTranslationPortView {
     pub unit_index: usize,
 
     /// Parent page identifier from the exporting chapter.
-    #[serde(rename = "page_id")]
-    pub page_source_id: String,
+    pub page_id: String,
 
     /// Ordinal index of the page within its chapter.
-    #[serde(rename = "page_index")]
-    pub page_source_index: usize,
+    pub page_index: usize,
 
     /// Horizontal coordinate of the unit bounding box on the page.
     pub x_coord: f64,
@@ -66,8 +64,8 @@ impl From<UnitTranslationDocument> for UnitTranslationPortView {
         Self {
             unit_id: document.unit_id,
             unit_index: document.unit_index,
-            page_source_id: document.page_source_id,
-            page_source_index: document.page_source_index,
+            page_id: document.page_id,
+            page_index: document.page_index,
             x_coord: document.x_coord,
             y_coord: document.y_coord,
             is_bubble: document.is_bubble,

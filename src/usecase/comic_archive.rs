@@ -89,7 +89,7 @@ where
     comic_archive_perm_complex::ensure_user_can_export(&member_info)?;
 
     let months = ComicArchiveMonth::parse_retained(
-        instr.months,
+        instr.month,
         OffsetDateTime::now_utc(),
     )?;
 

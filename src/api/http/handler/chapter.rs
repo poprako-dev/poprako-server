@@ -51,8 +51,8 @@ pub struct ChapterListQuery {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ChapterInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<ChapterInclOpt>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -129,7 +129,7 @@ pub async fn list_infos(
     //
     let instr = ListChapterInfosInstr {
         comic_id,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };

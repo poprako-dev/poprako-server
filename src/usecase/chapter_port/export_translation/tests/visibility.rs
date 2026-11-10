@@ -96,7 +96,7 @@ fn assert_visible_poprako(
         poprako
             .pages
             .iter()
-            .map(|page| page.page_source_id.as_str())
+            .map(|page| page.page_id.as_str())
             .collect::<Vec<_>>(),
         [SOURCE_ID, SOURCE_2_ID]
     );

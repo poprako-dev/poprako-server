@@ -1,9 +1,10 @@
 //! Deferred-action producer port.
 
+// Fixed consumption queues.
+mod topic;
+
 /// Deferred-action payloads.
 pub mod payload;
-/// Fixed consumption queues.
-pub mod topic;
 
 use poprako_orchestra::Context;
 use poprako_orchestra_extra::prom::Prom as GeneralProm;

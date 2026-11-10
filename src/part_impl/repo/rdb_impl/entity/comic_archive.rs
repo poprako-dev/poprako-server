@@ -13,9 +13,9 @@ pub struct ComicArchiveItem<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
-    pub f_source_comic_id: &'a str,
-    pub f_archived_payload: &'a str,
-    pub f_archiver_id: &'a str,
+    f_source_comic_id: &'a str,
+    f_archived_payload: &'a str,
+    f_archiver_id: &'a str,
 
     pub f_created_at: OffsetDateTime,
 }

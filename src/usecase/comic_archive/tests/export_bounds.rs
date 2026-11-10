@@ -54,7 +54,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec![month.clone()],
+            month: vec![month.clone()],
         },
     )
     .await
@@ -108,7 +108,7 @@ async fn export_preserves_complete_selected_months_across_chunks() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-03".into(), "2025-01".into()],
+            month: vec!["2025-03".into(), "2025-01".into()],
         },
     )
     .await
@@ -159,7 +159,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -177,7 +177,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -191,7 +191,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         "another-team".into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -207,7 +207,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-03".into()],
+            month: vec!["2025-03".into()],
         },
     )
     .await

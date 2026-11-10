@@ -58,7 +58,7 @@ impl MemIssueSaveCache {
                 .max_capacity(
                     u64::from(config.issue_save_limit_mib.get()) * 1024 * 1024,
                 )
-                .time_to_live(config.issue_save_ttl)
+                .time_to_live(config.issue_save_ttl_secs)
                 .weigher(|_, receipt: &IssueSaveReceipt| {
                     //
                     let bytes = receipt.created_issue_ids.iter().fold(

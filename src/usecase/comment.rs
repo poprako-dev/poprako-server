@@ -1,7 +1,7 @@
 //! Comment use cases — list and create team board comments.
 
-/// Comment presentation assembly.
-pub mod view;
+// Comment presentation assembly.
+mod view;
 
 #[cfg(test)]
 // Unit tests that validate comment lifecycle and visibility constraints.

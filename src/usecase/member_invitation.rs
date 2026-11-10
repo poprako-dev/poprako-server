@@ -1,7 +1,7 @@
 //! Member invitation use cases.
 
-/// Member-invitation presentation assembly.
-pub mod view;
+// Member-invitation presentation assembly.
+mod view;
 
 #[cfg(test)]
 // Unit tests for member invitation creation and cancellation semantics.
@@ -186,7 +186,7 @@ where
             let purge_task = Task {
                 id: &purge_task_id,
                 payload: &purge_payload,
-                delay: Some(invitation_config.member_ttl),
+                delay: Some(invitation_config.member_ttl_secs),
             };
 
             Defer::new(purge_task).step_on(prom, context).await?;
@@ -242,7 +242,7 @@ where
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: instr.team_id,
         is_pending: instr.is_pending,
-        incl_opt: instr.incl_opt,
+        incl: instr.incl,
         offset: instr.offset,
         limit: instr.limit,
     };

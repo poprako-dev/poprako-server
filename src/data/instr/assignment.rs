@@ -45,8 +45,8 @@ pub struct ListAssignmentInfosInstr {
     /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
     /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
     /// parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<AssignmentInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<AssignmentInclOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -65,7 +65,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             chapter_id,
             owner_id,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         } = self;
@@ -98,7 +98,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             return accept!(AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             });
@@ -119,7 +119,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
         accept!(AssignmentListSpec::User {
             owner_id,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         })

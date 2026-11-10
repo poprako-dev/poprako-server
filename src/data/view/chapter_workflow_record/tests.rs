@@ -99,14 +99,14 @@ fn delivery_event_cases()
         (
             ChapterWorkflowRecordPayload::TranslationImported {
                 format: TranslationFormat::PopRaKo,
-                imported_page_source_count: 2,
+                imported_page_count: 2,
                 imported_unit_count: 4,
             },
             json!({
                 "kind": "translation_imported",
                 "data": {
                     "format": "poprako",
-                    "imported_page_source_count": 2,
+                    "imported_page_count": 2,
                     "imported_unit_count": 4,
                 },
             }),

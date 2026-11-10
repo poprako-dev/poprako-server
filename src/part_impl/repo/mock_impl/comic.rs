@@ -101,7 +101,7 @@ fn apply_creator_incl(
 fn apply_comic_incls(
     state: &MockState,
     comic_info: &mut ComicInfo,
-    incl_opt: &[ComicInclOpt],
+    incl: &[ComicInclOpt],
 ) {
     //
     comic_info.workset = None;
@@ -110,9 +110,9 @@ fn apply_comic_incls(
 
     comic_info.creator = None;
 
-    for incl_opt in expand_incl_opts(incl_opt) {
+    for incl in expand_incl_opts(incl) {
         //
-        match incl_opt {
+        match incl {
             //
             ComicInclOpt::Workset => {
                 apply_workset_incl(state, comic_info, true);
@@ -240,7 +240,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
     });
 
     for comic_info in &mut comic_infos {
-        apply_comic_incls(state, comic_info, &spec.incl_opt);
+        apply_comic_incls(state, comic_info, &spec.incl);
     }
 
     let offset = spec.offset as usize;

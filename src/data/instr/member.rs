@@ -74,8 +74,8 @@ pub struct ListMemberInfosInstr {
     pub role: Option<RoleField>,
 
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<MemberInclOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -95,7 +95,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             team_id,
             fuzzy_nickname,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         } = instr;
@@ -130,7 +130,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             //
             return accept!(Self::User {
                 owner_id,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             });
@@ -153,7 +153,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             team_id,
             fuzzy_nickname,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         })

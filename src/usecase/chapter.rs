@@ -84,7 +84,7 @@ where
 
     let spec = ChapterListSpec {
         comic_id: instr.comic_id,
-        incl_opt: instr.incl_opt,
+        incl: instr.incl,
         offset: instr.offset,
         limit: instr.limit,
     };

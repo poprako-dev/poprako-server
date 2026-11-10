@@ -19,8 +19,8 @@ where
     // Keep include order deterministic while folding dependencies to avoid duplicate joins.
     let mut expanded_incl_opts = Vec::new();
 
-    for incl_opt in incl_opts {
-        push_path(&mut expanded_incl_opts, incl_opt.path());
+    for incl in incl_opts {
+        push_path(&mut expanded_incl_opts, incl.path());
     }
 
     expanded_incl_opts
@@ -32,20 +32,20 @@ fn push_path<I>(expanded_incl_opts: &mut Vec<I>, path: &[I])
 where
     I: InclOpt + Copy,
 {
-    for incl_opt in path {
-        push_unique(expanded_incl_opts, *incl_opt);
+    for incl in path {
+        push_unique(expanded_incl_opts, *incl);
     }
 }
 
 // Append a single incl opt to the expanded list if it is not already present,
 // preserving insertion order.
-fn push_unique<I>(expanded_incl_opts: &mut Vec<I>, incl_opt: I)
+fn push_unique<I>(expanded_incl_opts: &mut Vec<I>, incl: I)
 where
     I: InclOpt + Copy,
 {
-    if expanded_incl_opts.contains(&incl_opt) {
+    if expanded_incl_opts.contains(&incl) {
         return;
     }
 
-    expanded_incl_opts.push(incl_opt);
+    expanded_incl_opts.push(incl);
 }

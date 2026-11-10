@@ -6,8 +6,8 @@ use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::Response;
 
-/// `from_fn` handler that logs the elapsed wall-clock time of each request.
-pub async fn log_latency(req: Request, next: Next) -> Response {
+// `from_fn` handler that logs the elapsed wall-clock time of each request.
+async fn log_latency(req: Request, next: Next) -> Response {
     //
     let start = Instant::now();
 

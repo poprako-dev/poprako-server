@@ -20,7 +20,7 @@ fn list_chapter_infos(
     let mut chapter_infos = list_infos(state, &spec.comic_id);
 
     for chapter_info in &mut chapter_infos {
-        apply_chapter_incls(state, chapter_info, &spec.incl_opt);
+        apply_chapter_incls(state, chapter_info, &spec.incl);
     }
 
     let offset = spec.offset as usize;

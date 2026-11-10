@@ -204,12 +204,12 @@ fn defaults_bound_attempts_and_shutdown() {
 
     assert_eq!(config.timeout, Duration::from_mins(5));
 
-    assert_eq!(config.idle_interval, Duration::from_secs(5));
+    assert_eq!(config.idle_interval_secs, Duration::from_secs(5));
 
-    assert_eq!(config.retry_interval, Duration::from_secs(5));
+    assert_eq!(config.retry_interval_secs, Duration::from_secs(5));
 
     assert_eq!(
-        SchedConfig::default().shutdown_grace,
+        SchedConfig::default().shutdown_grace_secs,
         Duration::from_secs(30)
     );
 }
@@ -359,9 +359,9 @@ async fn errors_and_panics_retry_without_losing_workers() {
 
         let (mut task, probe) = task(vec![action]);
 
-        task.config.retry_interval = Duration::from_secs(3);
+        task.config.retry_interval_secs = Duration::from_secs(3);
 
-        task.config.idle_interval = Duration::from_mins(1);
+        task.config.idle_interval_secs = Duration::from_mins(1);
 
         probe.creation_panics.store(scenario == 2, Ordering::SeqCst);
 
@@ -418,7 +418,7 @@ async fn timeout_drops_the_attempt_before_recreating_runner() {
 
     task.config.timeout = Duration::from_secs(10);
 
-    task.config.retry_interval = Duration::from_secs(3);
+    task.config.retry_interval_secs = Duration::from_secs(3);
 
     let desc = start(vec![Box::new(task)]);
 
@@ -536,7 +536,7 @@ async fn shutdown_finishes_current_work_without_another_round() {
 async fn idle_wait_and_descriptor_drop_are_cancellable() {
     let (mut task, probe) = task(vec![]);
 
-    task.config.idle_interval = Duration::from_hours(1);
+    task.config.idle_interval_secs = Duration::from_hours(1);
 
     let desc = start(vec![Box::new(task)]);
 

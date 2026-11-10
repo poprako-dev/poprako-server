@@ -44,7 +44,7 @@ pub struct HttpError {
     code: NonZeroU16,
 
     /// Human-readable error detail, omitted when absent.
-    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     message: Option<String>,
 }
@@ -95,8 +95,8 @@ impl HttpError {
         }
     }
 
-    /// 503 Service Unavailable with a generic localized message.
-    pub fn unavailable() -> Self {
+    // 503 Service Unavailable with a generic localized message.
+    fn unavailable() -> Self {
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),

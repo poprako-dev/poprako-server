@@ -12,12 +12,10 @@ pub struct UnitTranslationDocument {
     pub unit_index: usize,
 
     /// Parent page identifier from the exporting chapter.
-    #[serde(rename = "page_id")]
-    pub page_source_id: String,
+    pub page_id: String,
 
     /// Ordinal index of the page within its chapter.
-    #[serde(rename = "page_index")]
-    pub page_source_index: usize,
+    pub page_index: usize,
 
     /// Horizontal coordinate of the unit bounding box on the page.
     pub x_coord: f64,
@@ -52,11 +50,9 @@ pub struct UnitTranslationDocument {
 #[derive(Deserialize)]
 pub struct PageSourceTranslationDocument {
     /// source page identifier from the exporting chapter.
-    #[serde(rename = "page_id")]
-    pub page_source_id: String,
+    pub page_id: String,
     /// Zero-based page index within its chapter.
-    #[serde(rename = "page_index")]
-    pub page_source_index: usize,
+    pub page_index: usize,
 
     /// Units belonging to this page.
     pub units: Vec<UnitTranslationDocument>,

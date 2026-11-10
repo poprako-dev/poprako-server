@@ -15,13 +15,11 @@ use crate::model::task::{ObjDeptPromTask, ObjTaskAction, validate_task};
 use crate::prom::ObjDeptProm;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
-/// Delay between idle polls.
-pub const POLL_INTERVAL: std::time::Duration =
-    std::time::Duration::from_secs(30);
+// Delay between idle polls.
+const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
 
-/// Maximum duration of one claimed attempt.
-pub const ATTEMPT_TIMEOUT: std::time::Duration =
-    std::time::Duration::from_mins(1);
+// Maximum duration of one claimed attempt.
+const ATTEMPT_TIMEOUT: std::time::Duration = std::time::Duration::from_mins(1);
 
 // Maps one adapter failure to its mechanical durable-task action.
 fn action_from_error(error: ObjDeptError) -> ObjTaskAction {

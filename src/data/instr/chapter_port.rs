@@ -81,9 +81,8 @@ pub enum ChapterTranslationFormatInstr {
     /// `LabelPlus` translation format.
     LabelPlus,
 
-    /// `PopRaKo` native translation format.
-    #[serde(rename = "poprako")]
-    PopRaKo,
+    /// `Poprako` native translation format.
+    Poprako,
 }
 
 impl From<ChapterTranslationFormatInstr> for TranslationFormat {
@@ -94,7 +93,7 @@ impl From<ChapterTranslationFormatInstr> for TranslationFormat {
             //
             ChapterTranslationFormatInstr::LabelPlus => Self::LabelPlus,
 
-            ChapterTranslationFormatInstr::PopRaKo => Self::PopRaKo,
+            ChapterTranslationFormatInstr::Poprako => Self::PopRaKo,
         }
     }
 }
@@ -107,7 +106,7 @@ impl From<TranslationFormat> for ChapterTranslationFormatInstr {
             //
             TranslationFormat::LabelPlus => Self::LabelPlus,
 
-            TranslationFormat::PopRaKo => Self::PopRaKo,
+            TranslationFormat::PopRaKo => Self::Poprako,
         }
     }
 }

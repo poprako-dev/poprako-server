@@ -238,7 +238,7 @@ fn build_page_source_payloads(
             let page_source_info = &page_source_snapshot.page_source_info;
 
             ArchivedPageSourcePayload {
-                source_page_source_id: &page_source_info.id,
+                source_page_id: &page_source_info.id,
                 index: page_source_info.index,
                 total_unit_count: page_source_info.total_unit_count,
                 translated_unit_count: page_source_info.translated_unit_count,
@@ -326,7 +326,7 @@ fn build_chapter_payload(
         is_pinned: chapter_info.is_pinned,
         index: chapter_info.index,
         subtitle: &chapter_info.subtitle,
-        page_source_count: chapter_info.page_source_count,
+        page_count: chapter_info.page_source_count,
         total_unit_count: chapter_info.total_unit_count,
         translated_unit_count: chapter_info.translated_unit_count,
         proofread_unit_count: chapter_info.proofread_unit_count,

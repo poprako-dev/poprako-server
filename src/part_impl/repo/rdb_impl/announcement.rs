@@ -82,9 +82,7 @@ async fn list_infos(
         .collect::<Vec<AnnouncementInfo>>();
 
     incl::announcement::populate_announcement_incls(
-        conn,
-        &mut infos,
-        &spec.incl_opt,
+        conn, &mut infos, &spec.incl,
     )
     .await?;
 

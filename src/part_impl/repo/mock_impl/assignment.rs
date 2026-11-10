@@ -29,7 +29,7 @@ fn list_infos(
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let (role, incl_opt, page, mut assignment_infos) = match oper {
+    let (role, incl, page, mut assignment_infos) = match oper {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -40,12 +40,12 @@ fn list_infos(
             AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
@@ -60,12 +60,12 @@ fn list_infos(
             AssignmentListSpec::User {
                 owner_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
@@ -116,7 +116,7 @@ fn list_infos(
     });
 
     for assignment_info in &mut assignment_infos {
-        apply_assignment_incls(state, assignment_info, incl_opt);
+        apply_assignment_incls(state, assignment_info, incl);
     }
 
     assignment_infos.sort_by(|left, right| {
@@ -169,7 +169,7 @@ fn list_infos_excluded(
 fn get_assignment(
     state: &MockState,
     id: &str,
-    incl_opt: &[AssignmentInclOpt],
+    incl: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
     // Internal implementation detail.
@@ -181,7 +181,7 @@ fn get_assignment(
         .cloned()
         .ok_or_else(|| expected("error-assignment-not-found"))?;
 
-    apply_assignment_incls(state, &mut assignment_info, incl_opt);
+    apply_assignment_incls(state, &mut assignment_info, incl);
 
     accept!(assignment_info)
 }

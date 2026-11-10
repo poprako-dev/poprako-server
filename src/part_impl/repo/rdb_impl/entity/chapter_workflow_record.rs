@@ -66,13 +66,13 @@ fn encode_payload(payload: &ChapterWorkflowRecordPayload) -> serde_json::Value {
 
         ChapterWorkflowRecordPayload::TranslationImported {
             format,
-            imported_page_source_count,
+            imported_page_count,
             imported_unit_count,
         } => {
             //
             json!({
                 "format": format,
-                "imported_page_source_count": imported_page_source_count,
+                "imported_page_count": imported_page_count,
                 "imported_unit_count": imported_unit_count,
             })
         }
@@ -137,11 +137,9 @@ fn decode_payload(
             &["subject_user_id", "previous_roles"][..]
         }
 
-        ChapterWorkflowRecordKind::TranslationImported => &[
-            "format",
-            "imported_page_source_count",
-            "imported_unit_count",
-        ][..],
+        ChapterWorkflowRecordKind::TranslationImported => {
+            &["format", "imported_page_count", "imported_unit_count"][..]
+        }
 
         ChapterWorkflowRecordKind::TranslationExported => &["formats"][..],
 
@@ -179,8 +177,8 @@ pub struct ChapterWorkflowRecordInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
-    pub f_actor_user_id: Option<String>,
-    pub f_kind: String,
+    f_actor_user_id: Option<String>,
+    f_kind: String,
     pub f_payload: serde_json::Value,
     pub f_created_at: OffsetDateTime,
 }
@@ -238,8 +236,8 @@ pub struct ChapterWorkflowRecordItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
-    pub f_actor_user_id: Option<&'a str>,
-    pub f_kind: String,
+    f_actor_user_id: Option<&'a str>,
+    f_kind: String,
     pub f_payload: serde_json::Value,
     pub f_created_at: OffsetDateTime,
 }

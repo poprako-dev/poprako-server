@@ -35,8 +35,8 @@ use crate::value::pagination::PubListLimit;
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct CommentListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<CommentInclOpt>,
+    #[serde(default)]
+    pub incl: Vec<CommentInclOpt>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -99,7 +99,7 @@ pub async fn list_infos(
     //
     let instr = ListCommentInfosInstr {
         team_id,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };
