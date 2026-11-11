@@ -96,7 +96,6 @@ pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
     shared: RdbCore,
 ) {
     //
-    // Internal state field test_shared.
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -194,7 +193,6 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     shared: RdbCore,
 ) {
     //
-    // Internal state field test_shared.
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -413,7 +411,6 @@ pub async fn stale_attempt_finalization_preserves_recreated_task(
 /// Purges expired dead records while pending and recent dead records remain.
 pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
     //
-    // Internal state field test_shared.
     test_shared::reset(&shared, PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -495,7 +492,6 @@ pub async fn dead_message_purge_preserves_pending_records(shared: RdbCore) {
         .unwrap();
 }
 
-// Internal implementation of `local_message_item`.
 fn local_message_item(
     id: &'static str,
     topic: &'static str,

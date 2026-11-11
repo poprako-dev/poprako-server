@@ -12,7 +12,6 @@
 // Workflow role validation for chapter stage transitions.
 mod role;
 
-// Domain-specific cascade helpers: delete-page cleanup and pinned chapter re-link.
 /// Permission gates for chapter entity operations.
 pub mod perm;
 

@@ -49,8 +49,7 @@ use crate::value::page_source::{
 
 #[declare_sql_function]
 extern "SQL" {
-    /// `PostgreSQL` text trim with an explicit character set.
-    // PostgreSQL text trim with an explicit character set.
+    // `PostgreSQL` text trim with an explicit character set.
     fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
 }
 

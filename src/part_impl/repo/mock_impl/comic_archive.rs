@@ -21,11 +21,8 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest};
 
-// Internal implementation of `order_unit_infos`.
 fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if unit_infos.is_empty() {
         return accept!(Vec::new());
     }
@@ -42,8 +39,6 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
 
     for unit_info in infos_by_id.values() {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let Some(next_id) = unit_info.next_id.as_ref() else {
             continue;
         };
@@ -79,8 +74,6 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
 
     while let Some(id) = current_id {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let Some(unit_info) = infos_by_id.remove(&id) else {
             return Err(unrecoverable("persisted Unit chain is corrupt"));
         };
@@ -107,15 +100,12 @@ impl Step<ListComicArchivePayloads<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListComicArchivePayloads<'_>,
     ) -> BaseRest<Vec<ComicArchivePayload>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let mut records = context
             .state
             .comic_archives
@@ -188,8 +178,6 @@ fn page_source_snapshots(
         .cloned()
         .map(|page_source_info| {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let unordered_unit_infos = context
                 .state
                 .units
@@ -223,8 +211,6 @@ fn get_snapshot_excluded(
     source_comic_id: &str,
 ) -> BaseRest<ComicArchiveSnapshot> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let comic_info = context
         .state
         .comics
@@ -253,8 +239,6 @@ fn get_snapshot_excluded(
         .cloned()
         .map(|chapter_info| {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let assignment_infos = context
                 .state
                 .assignments
@@ -265,8 +249,6 @@ fn get_snapshot_excluded(
                 .cloned()
                 .map(|mut assignment_info| {
                     //
-                    // Internal implementation detail.
-                    // Internal implementation detail.
                     assignment_info.user = Some(
                         context
                             .state
@@ -355,8 +337,6 @@ fn commit(
     entry: &ComicArchiveEntry,
 ) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if context.archive_commit_failure {
         //
         return Err(unrecoverable(
@@ -482,7 +462,6 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -500,7 +479,6 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

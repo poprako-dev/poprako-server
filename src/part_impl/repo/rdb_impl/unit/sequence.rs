@@ -31,8 +31,7 @@ use crate::value::unit::UnitTextPart;
 
 #[declare_sql_function]
 extern "SQL" {
-    /// `PostgreSQL` literal substring position.
-    // PostgreSQL literal substring position.
+    // `PostgreSQL` literal substring position.
     fn strpos(
         string: Nullable<Text>,
         substring: Text,
@@ -283,7 +282,7 @@ pub async fn list_orders(
             .is_ok_and(|chunk_len| chunk_len == sentinel_limit);
 
         if has_next_chunk {
-            let _ = chunk.pop();
+            chunk.pop();
         }
 
         if has_next_chunk && chunk.is_empty() {

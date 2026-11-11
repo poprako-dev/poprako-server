@@ -16,7 +16,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest};
 
-// Internal implementation of `get_info`.
 fn get_info(state: &MockState, id: &str) -> BaseRest<TermInfo> {
     //
     state
@@ -27,7 +26,6 @@ fn get_info(state: &MockState, id: &str) -> BaseRest<TermInfo> {
         .ok_or_else(|| expected("error-term-not-found"))
 }
 
-// Internal implementation of `source_conflicts`.
 fn source_conflicts(
     state: &MockState,
     id: Option<&str>,
@@ -43,7 +41,6 @@ fn source_conflicts(
     })
 }
 
-// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     termbase_id: &str,
@@ -52,8 +49,6 @@ fn list_infos(
     limit: u32,
 ) -> Vec<TermInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut term_infos = state
         .terms
         .iter()
@@ -63,8 +58,6 @@ fn list_infos(
 
     if let Some(fuzzy_source) = fuzzy_source {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let fuzzy_source = fuzzy_source.to_lowercase();
 
         term_infos.retain(|term_info| {
@@ -108,11 +101,8 @@ impl<'a> Run<GetTermInfo<'a>> for Mock {
 
     // Resolve one term by identifier.
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &GetTermInfo<'a>) -> BaseRest<TermInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper.id)
@@ -126,38 +116,35 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
     // Route list variants against the committed mock state.
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &ListTermInfos<'a>) -> BaseRest<Vec<TermInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let state = self.state.lock().unwrap();
-
-        let term_infos = match oper {
+        let term_infos = {
             //
-            ListTermInfos::Query {
-                termbase_id,
-                fuzzy_source,
-                offset,
-                limit,
-            } => list_infos(
-                &state,
-                termbase_id,
-                *fuzzy_source,
-                *offset,
-                limit.get(),
-            ),
+            // The state guard is released as soon as the list is collected.
+            let state = self.state.lock().unwrap();
 
-            ListTermInfos::Termbase { termbase_id } => {
-                list_all_infos(&state, termbase_id)
+            match oper {
+                //
+                ListTermInfos::Query {
+                    termbase_id,
+                    fuzzy_source,
+                    offset,
+                    limit,
+                } => list_infos(
+                    &state,
+                    termbase_id,
+                    *fuzzy_source,
+                    *offset,
+                    limit.get(),
+                ),
+
+                ListTermInfos::Termbase { termbase_id } => {
+                    list_all_infos(&state, termbase_id)
+                }
             }
         };
 
-        let rest = accept!(term_infos);
-
-        drop(state);
-
-        rest
+        accept!(term_infos)
     }
 }
 
@@ -169,15 +156,12 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateTerm<'a>,
     ) -> BaseRest<TermInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         if source_conflicts(
             &context.state,
             None,
@@ -262,15 +246,12 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &LockTerm<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         get_info(&context.state, oper.id)?;
 
         accept!(())
@@ -285,15 +266,12 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateTerm<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let current = get_info(&context.state, &oper.update.id)?;
 
         if source_conflicts(
@@ -446,15 +424,12 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTerm<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let position = context
             .state
             .terms
@@ -476,15 +451,12 @@ impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTerms<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         context
             .state
             .terms

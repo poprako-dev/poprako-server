@@ -59,31 +59,37 @@ where
         //
         let actor = Arc::new(self);
 
-        let (worker_slots, worker_handles) = actor.spawn_workers();
-
-        let supervisors =
-            futures_util::future::join_all(worker_slots.iter().map(|worker| {
-                //
-                actor.run_supervisor(
-                    worker.topic,
-                    &worker.slot,
-                    worker.completed.as_ref(),
-                )
-            }));
-
-        tokio::select! {
+        let worker_handles = {
             //
-            () = actor.token.cancelled() => {}
+            // Worker slots release their execution capacity when this scope
+            // ends, before shutdown waits for the workers.
+            let (worker_slots, worker_handles) = actor.spawn_workers();
 
-            _ = supervisors => {}
-        }
+            let supervisors = futures_util::future::join_all(
+                worker_slots.iter().map(|worker| {
+                    //
+                    actor.run_supervisor(
+                        worker.topic,
+                        &worker.slot,
+                        worker.completed.as_ref(),
+                    )
+                }),
+            );
 
-        drop(worker_slots);
+            tokio::select! {
+                //
+                () = actor.token.cancelled() => {}
+
+                _ = supervisors => {}
+            }
+
+            worker_handles
+        };
 
         shutdown_workers(worker_handles, SHUTDOWN_GRACE).await;
     }
 
-    // Internal implementation of `spawn_workers`.
+    // Spawns one worker slot and task per declared payload topic.
     fn spawn_workers(self: &Arc<Self>) -> (Vec<TopicWorker>, JoinSet<()>) {
         //
         let (mut worker_slots, mut worker_handles) =
@@ -120,7 +126,7 @@ where
         (worker_slots, worker_handles)
     }
 
-    // Internal implementation of `run_supervisor`.
+    // Supervises one topic: periodic recovery maintenance plus claim polling.
     async fn run_supervisor(
         &self,
         topic: &'static str,
@@ -214,7 +220,7 @@ where
         }
     }
 
-    // Internal implementation of `process_row`.
+    // Applies the dispatch outcome of one claimed row to the delivery port.
     #[instrument(level = "info", skip_all)]
     async fn process_row(&self, row: &ClaimedTask) {
         //
@@ -277,7 +283,7 @@ where
         }
     }
 
-    // Internal implementation of `log_reset_stuck`.
+    // Resets claims stuck past the processing timeout for one topic.
     async fn log_reset_stuck(&self, topic: &'static str) {
         //
         let Some(before) =
@@ -300,7 +306,7 @@ where
         }
     }
 
-    // Internal implementation of `log_purge_dead`.
+    // Purges dead claims past the retention window for one topic.
     async fn log_purge_dead(&self, topic: &'static str) {
         //
         let Some(before) =

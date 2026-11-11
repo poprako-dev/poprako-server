@@ -1,10 +1,8 @@
 //! Diesel-backed hierarchy mark-and-sweep operations.
 
-/// Locks active roots and atomically marks aggregate descendants.
-// Active hierarchy marking operations.
+// Locks active roots and atomically marks aggregate descendants.
 mod mark;
-/// Claims tombstones and physically removes their direct dependants.
-// Physical hierarchy sweeping operations.
+// Claims tombstones and physically removes their direct dependants.
 mod sweep;
 
 /// PostgreSQL mark-and-sweep integration tests.

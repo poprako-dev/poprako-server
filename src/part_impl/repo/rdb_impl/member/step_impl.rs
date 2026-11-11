@@ -406,9 +406,7 @@ fn pack_from_role_update(
     //
     let timestamps = role_timestamps_from_mask(update.roles, now);
 
-    let mut pack = MemberPack::new(now);
-
-    pack = pack
+    MemberPack::new(now)
         .assigned_raw_provider_at(timestamps.raw_provider)
         .assigned_translator_at(timestamps.translator)
         .assigned_proofreader_at(timestamps.proofreader)
@@ -417,9 +415,7 @@ fn pack_from_role_update(
         .assigned_reviewer_at(timestamps.reviewer)
         .assigned_publisher_at(timestamps.publisher)
         .assigned_admin_at(timestamps.admin)
-        .assigned_bot_at(timestamps.bot);
-
-    pack
+        .assigned_bot_at(timestamps.bot)
 }
 
 // Convert role mask into assignment timestamps by stamping enabled roles with now.

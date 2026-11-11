@@ -219,7 +219,7 @@ pub async fn list_infos_excluded(
 #[instrument(level = "info", skip_all)]
 pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
-    let _ = t_chapter
+    t_chapter
         .filter(f_comic_id.eq(comic_id))
         .filter(f_deleted_at.is_null())
         .select(f_id)

@@ -95,19 +95,22 @@ where
                 //
                 write!(writer, "{}", span.name())?;
 
-                let extensions = span.extensions();
-
-                if let Some(fields) = extensions.get::<FormattedFields<N>>()
-                    && !fields.is_empty()
                 {
-                    writer.write_char('{')?;
+                    //
+                    // The extension borrow is scoped to formatting this span's
+                    // fields.
+                    let extensions = span.extensions();
 
-                    writer.write_str(fields.as_str())?;
+                    if let Some(fields) = extensions.get::<FormattedFields<N>>()
+                        && !fields.is_empty()
+                    {
+                        writer.write_char('{')?;
 
-                    writer.write_char('}')?;
+                        writer.write_str(fields.as_str())?;
+
+                        writer.write_char('}')?;
+                    }
                 }
-
-                drop(extensions);
 
                 write!(writer, ":")?;
             }
@@ -266,7 +269,7 @@ fn redact_rejection_message(message: &str) -> String {
             }
 
             if quoted == '\\' {
-                let _ = chars.next();
+                chars.next();
             }
         }
     }

@@ -112,25 +112,25 @@ impl<'a> Run<CreateChapterWorkflowRecords<'a>> for Mock {
         oper: &CreateChapterWorkflowRecords<'a>,
     ) -> BaseRest<()> {
         //
-        let mut state = self.state.lock().unwrap();
+        {
+            //
+            // The state guard is released as soon as the records are appended.
+            let mut state = self.state.lock().unwrap();
 
-        state
-            .chapter_workflow_records
-            .extend(oper.entries.iter().map(|entry| {
-                ChapterWorkflowRecordInfo {
-                    id: entry.id.clone(),
-                    chapter_id: entry.chapter_id.to_string(),
-                    actor_user_id: entry.actor_user_id.map(str::to_owned),
-                    kind: entry.payload.kind(),
-                    payload: entry.payload.clone(),
-                    created_at: entry.created_at,
-                }
-            }));
+            state
+                .chapter_workflow_records
+                .extend(oper.entries.iter().map(|entry| {
+                    ChapterWorkflowRecordInfo {
+                        id: entry.id.clone(),
+                        chapter_id: entry.chapter_id.to_string(),
+                        actor_user_id: entry.actor_user_id.map(str::to_owned),
+                        kind: entry.payload.kind(),
+                        payload: entry.payload.clone(),
+                        created_at: entry.created_at,
+                    }
+                }));
+        }
 
-        let rest = accept!(());
-
-        drop(state);
-
-        rest
+        accept!(())
     }
 }

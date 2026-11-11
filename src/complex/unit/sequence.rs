@@ -26,83 +26,90 @@ where
         return accept!(());
     }
 
-    let mut index_by_id = HashMap::with_capacity(units.len());
+    let ordered_indexes = {
+        // The index maps borrow Unit ids, so they stay scoped to this
+        // reconstruction phase and release `units` before reordering.
+        let mut index_by_id = HashMap::with_capacity(units.len());
 
-    for (index, unit) in units.iter().enumerate() {
-        //
-        if index_by_id.insert(id_of(unit), index).is_some() {
-            return Err(corrupt_unit_chain_error());
-        }
-    }
-
-    let mut next_index_by_index = Vec::with_capacity(units.len());
-
-    let mut has_predecessor = vec![false; units.len()];
-
-    for unit in units.iter() {
-        //
-        let next_index = match next_id_of(unit) {
+        for (index, unit) in units.iter().enumerate() {
             //
-            Some(next_id) => {
+            if index_by_id.insert(id_of(unit), index).is_some() {
+                return Err(corrupt_unit_chain_error());
+            }
+        }
+
+        let mut next_index_by_index = Vec::with_capacity(units.len());
+
+        let mut has_predecessor = vec![false; units.len()];
+
+        for unit in units.iter() {
+            //
+            let next_index = match next_id_of(unit) {
                 //
-                let Some(next_index) = index_by_id.get(next_id).copied() else {
-                    return Err(corrupt_unit_chain_error());
-                };
+                Some(next_id) => {
+                    //
+                    let Some(next_index) = index_by_id.get(next_id).copied()
+                    else {
+                        return Err(corrupt_unit_chain_error());
+                    };
 
-                let Some(has_predecessor) = has_predecessor.get_mut(next_index)
-                else {
-                    return Err(corrupt_unit_chain_error());
-                };
+                    let Some(has_predecessor) =
+                        has_predecessor.get_mut(next_index)
+                    else {
+                        return Err(corrupt_unit_chain_error());
+                    };
 
-                if std::mem::replace(has_predecessor, true) {
-                    return Err(corrupt_unit_chain_error());
+                    if std::mem::replace(has_predecessor, true) {
+                        return Err(corrupt_unit_chain_error());
+                    }
+
+                    Some(next_index)
                 }
 
-                Some(next_index)
-            }
+                None => None,
+            };
 
-            None => None,
+            next_index_by_index.push(next_index);
+        }
+
+        let mut head_indexes = has_predecessor.iter().enumerate().filter_map(
+            |(index, has_predecessor)| (!has_predecessor).then_some(index),
+        );
+
+        let Some(head_index) = head_indexes.next() else {
+            return Err(corrupt_unit_chain_error());
         };
 
-        next_index_by_index.push(next_index);
-    }
-
-    let mut head_indexes = has_predecessor.iter().enumerate().filter_map(
-        |(index, has_predecessor)| (!has_predecessor).then_some(index),
-    );
-
-    let Some(head_index) = head_indexes.next() else {
-        return Err(corrupt_unit_chain_error());
-    };
-
-    if head_indexes.next().is_some() {
-        return Err(corrupt_unit_chain_error());
-    }
-
-    let mut ordered_indexes = Vec::with_capacity(units.len());
-
-    let mut current_index = Some(head_index);
-
-    while let Some(index) = current_index {
-        //
-        if ordered_indexes.len() >= units.len() {
+        if head_indexes.next().is_some() {
             return Err(corrupt_unit_chain_error());
         }
 
-        ordered_indexes.push(index);
+        let mut ordered_indexes = Vec::with_capacity(units.len());
 
-        let Some(next_index) = next_index_by_index.get(index).copied() else {
+        let mut current_index = Some(head_index);
+
+        while let Some(index) = current_index {
+            //
+            if ordered_indexes.len() >= units.len() {
+                return Err(corrupt_unit_chain_error());
+            }
+
+            ordered_indexes.push(index);
+
+            let Some(next_index) = next_index_by_index.get(index).copied()
+            else {
+                return Err(corrupt_unit_chain_error());
+            };
+
+            current_index = next_index;
+        }
+
+        if ordered_indexes.len() != units.len() {
             return Err(corrupt_unit_chain_error());
-        };
+        }
 
-        current_index = next_index;
-    }
-
-    if ordered_indexes.len() != units.len() {
-        return Err(corrupt_unit_chain_error());
-    }
-
-    drop(index_by_id);
+        ordered_indexes
+    };
 
     let mut original_index_by_position = (0..units.len()).collect::<Vec<_>>();
 

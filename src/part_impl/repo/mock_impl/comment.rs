@@ -14,7 +14,6 @@ use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest};
 use crate::value::comment::CommentInclOpt;
 
-// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     //
     state
@@ -24,15 +23,12 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-// Internal implementation of `apply_user_incl`.
 fn apply_user_incl(
     state: &MockState,
     comment_info: &mut CommentInfo,
     include_user: bool,
 ) {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     comment_info.user = None;
 
     if include_user {
@@ -40,14 +36,11 @@ fn apply_user_incl(
     }
 }
 
-// Internal implementation of `list_comments`.
 fn list_comments(
     state: &MockState,
     spec: &CommentListSpec,
 ) -> Vec<CommentInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let include_user = spec.incl.contains(&CommentInclOpt::User);
 
     let mut comment_infos = state
@@ -71,22 +64,17 @@ fn list_comments(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, comment_infos.len());
 
         (*comment_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
-// Internal implementation of `create_comment`.
 fn create_comment(
     state: &mut MockState,
     entry: &CommentEntry,
 ) -> BaseRest<CommentInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state
         .comments
         .iter()
@@ -115,14 +103,11 @@ impl Run<ListCommentInfos<'_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
     ) -> BaseRest<Vec<CommentInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_comments(&state, oper.spec))
@@ -134,7 +119,6 @@ impl Run<CreateComment<'_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &CreateComment<'_>) -> BaseRest<CommentInfo> {
         //
         let mut state = self.state.lock().unwrap();

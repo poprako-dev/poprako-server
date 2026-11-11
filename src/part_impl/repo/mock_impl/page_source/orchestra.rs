@@ -31,13 +31,11 @@ impl<'a> Run<GetPageSourceInfo<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetPageSourceInfo<'a>,
     ) -> BaseRest<PageSourceInfo> {
         //
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_page_source_by_id(&state, oper.id)
@@ -69,13 +67,11 @@ impl<'a> Run<ListPageSourceInfos<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListPageSourceInfos<'a>,
     ) -> BaseRest<Vec<PageSourceInfo>> {
         //
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         list_bounded_infos(&state, oper.chapter_id)
@@ -88,13 +84,11 @@ impl<'a> Run<ListFirstPageSourceInfos<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListFirstPageSourceInfos<'a>,
     ) -> BaseRest<Vec<PageSourceInfo>> {
         //
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_first_page_sources(&state, oper.chapter_ids))
@@ -142,7 +136,6 @@ impl<'a> Step<GetPageSourceInfo<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -177,7 +170,6 @@ impl<'a> Step<ListPageSourceInfos<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -195,7 +187,6 @@ impl<'a> Step<ListPageSourceInfosExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -212,7 +203,6 @@ impl<'a> Step<GetPageSourceInfoExcluded<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -247,14 +237,12 @@ impl<'a> Step<SetPageSourceUnitCountMetrics<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetPageSourceUnitCountMetrics<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
         let page_source_info = context
             .state
             .pages
@@ -375,7 +363,6 @@ impl<'a> Step<DeletePageSources<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -384,10 +371,8 @@ impl<'a> Step<DeletePageSources<'a>, MockContext> for Mock {
         //
         match oper {
             //
-            // Internal implementation detail.
             DeletePageSources::Chapter { chapter_id } => {
                 //
-                // Internal implementation detail.
                 let ids = context
                     .state
                     .pages
@@ -416,7 +401,6 @@ impl<'a> Step<DeletePageSources<'a>, MockContext> for Mock {
 
             DeletePageSources::Ids { ids } => {
                 //
-                // Internal implementation detail.
                 context.state.units.retain(|unit_info| {
                     !ids.contains(&unit_info.page_source_id)
                 });

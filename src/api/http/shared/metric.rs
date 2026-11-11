@@ -201,40 +201,37 @@ impl MetricWindow {
             return;
         };
 
-        let mut bucket = lock_bucket(bucket);
-
-        if bucket.minute != minute {
-            bucket.reset(minute);
-        }
-
-        bucket.total = bucket.total.saturating_add(1);
-
-        let latency_micros = latency.as_micros().try_into().unwrap_or(u64::MAX);
-
-        bucket.total_latency_micros =
-            bucket.total_latency_micros.saturating_add(latency_micros);
-
-        if status >= 400 {
+        {
             //
-            // Count bad/failed statuses for quick error visibility.
-            let error_total = bucket.by_error.entry(status).or_default();
+            // The bucket guard is released after the counters are updated.
+            let mut bucket = lock_bucket(bucket);
 
-            *error_total = error_total.saturating_add(1);
+            if bucket.minute != minute {
+                bucket.reset(minute);
+            }
+
+            bucket.total = bucket.total.saturating_add(1);
+
+            let latency_micros =
+                latency.as_micros().try_into().unwrap_or(u64::MAX);
+
+            bucket.total_latency_micros =
+                bucket.total_latency_micros.saturating_add(latency_micros);
+
+            if status >= 400 {
+                //
+                // Count bad/failed statuses for quick error visibility.
+                let error_total = bucket.by_error.entry(status).or_default();
+
+                *error_total = error_total.saturating_add(1);
+            }
+
+            let Some(matched_path) = matched_path else {
+                return;
+            };
+
+            *bucket.by_path.entry(matched_path.to_owned()).or_default() += 1;
         }
-
-        let Some(matched_path) = matched_path else {
-            //
-            drop(bucket);
-
-            return;
-        };
-
-        let path_total =
-            bucket.by_path.entry(matched_path.to_owned()).or_default();
-
-        *path_total = path_total.saturating_add(1);
-
-        drop(bucket);
     }
 
     // Reads and aggregates the current 60-minute window values.

@@ -16,7 +16,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest};
 
-// Internal implementation of `get_workset_info`.
 fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
     //
     state
@@ -29,14 +28,11 @@ fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
         .ok_or_else(|| expected("error-workset-not-found"))
 }
 
-// Internal implementation of `list_workset_infos`.
 fn list_workset_infos(
     state: &MockState,
     oper: &ListWorksetInfos<'_>,
 ) -> Vec<WorksetInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut workset_infos = state
         .worksets
         .iter()
@@ -57,19 +53,14 @@ fn list_workset_infos(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, workset_infos.len());
 
         (*workset_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
-// Internal implementation of `update_workset`.
 fn update_workset(state: &mut MockState, update: &WorksetRepl) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state.deleted_workset_ids.contains(&update.id) {
         return Err(expected("error-workset-not-found"));
     }
@@ -95,11 +86,8 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseRest<WorksetInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_workset_info(&state, oper.id)
@@ -112,14 +100,11 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
     ) -> BaseRest<Vec<WorksetInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_workset_infos(&state, oper))
@@ -132,11 +117,8 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         update_workset(&mut state, oper.update)
@@ -151,7 +133,6 @@ impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -169,7 +150,6 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -187,15 +167,12 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateWorkset<'a>,
     ) -> BaseRest<WorksetInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         if context
             .state
             .worksets
@@ -232,15 +209,12 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocWorksetComicIndex<'a>,
     ) -> BaseRest<usize> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         // verify the workset exists
         if context.state.deleted_workset_ids.contains(oper.id) {
             return Err(expected("error-workset-not-found"));
@@ -272,15 +246,12 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateWorksetComicCount<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         if context.state.deleted_workset_ids.contains(oper.id) {
             return Err(expected("error-workset-not-found"));
         }

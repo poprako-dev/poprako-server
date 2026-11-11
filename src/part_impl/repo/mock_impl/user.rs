@@ -136,8 +136,6 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
 
     user_info.updated_at = updated_at;
 
-    // Internal state field `UpdateUser`.
-    // Internal implementation detail.
     if let UpdateUser::PasswordHash { repl } = oper {
         //
         // Mutate matching credential hash for the same user id.

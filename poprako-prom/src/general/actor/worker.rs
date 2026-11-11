@@ -75,41 +75,43 @@ pub async fn run_worker<T, F, Fut>(
     //
     while let Some((item, deadline, permit)) = work_stream.recv().await {
         //
-        if deadline <= Instant::now() {
+        let expired = deadline <= Instant::now();
+
+        {
             //
-            drop(permit);
+            // The permit reserves this attempt's worker capacity and releases
+            // when the attempt scope ends.
+            let _permit = permit;
 
-            completed.notify_one();
+            if !expired {
+                //
+                let attempt = AssertUnwindSafe(async { process(item).await })
+                    .catch_unwind();
 
-            continue;
+                match timeout_at(deadline, attempt).await {
+                    //
+                    Ok(Ok(())) => {
+                        //
+                    }
+
+                    Ok(Err(_)) => {
+                        //
+                        tracing::error!(
+                            "prom attempt panicked; timeout recovery will \
+                                retry it"
+                        );
+                    }
+
+                    Err(_) => {
+                        //
+                        tracing::warn!(
+                            "prom attempt deadline elapsed; timeout recovery \
+                                will retry it"
+                        );
+                    }
+                }
+            }
         }
-
-        let attempt =
-            AssertUnwindSafe(async { process(item).await }).catch_unwind();
-
-        match timeout_at(deadline, attempt).await {
-            //
-            Ok(Ok(())) => {
-                //
-            }
-
-            Ok(Err(_)) => {
-                //
-                tracing::error!(
-                    "prom attempt panicked; timeout recovery will retry it"
-                );
-            }
-
-            Err(_) => {
-                //
-                tracing::warn!(
-                    "prom attempt deadline elapsed; timeout recovery will \
-                        retry it"
-                );
-            }
-        }
-
-        drop(permit);
 
         completed.notify_one();
     }

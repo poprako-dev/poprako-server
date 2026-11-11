@@ -31,7 +31,6 @@ const PUT_SIGNED_EXPIRATION: Duration = Duration::from_mins(10);
 /// Cloudflare R2-backed physical object pool.
 #[derive(Clone)]
 pub struct R2ObjDeptPool {
-    // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
     /// Name of the R2 bucket used for image storage.
@@ -59,7 +58,6 @@ impl R2ObjDeptPool {
     /// cannot be constructed.
     pub fn from_env() -> anyhow::Result<Self> {
         //
-        // Internal implementation detail.
         let (account_id, access_key_id) = (
             var("R2_ACCOUNT_ID").with_context(
                 || "[R2ObjDeptPool::from_env] R2_ACCOUNT_ID is not set",
@@ -174,7 +172,6 @@ impl ObjDeptPool for R2ObjDeptPool {
         let key = key.as_str();
 
         //
-        // Internal implementation detail.
         let signed_at = SystemTime::now();
 
         let expires_at =

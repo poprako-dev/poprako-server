@@ -37,7 +37,6 @@ pub fn missing_team(id: &str, operation: &str) -> BaseError {
     }
 }
 
-// Insert a team domain entry and return the persisted team info.
 /// Insert a new team record from a domain entry.
 #[instrument(level = "info", skip_all)]
 pub async fn create(
@@ -66,7 +65,6 @@ pub async fn create(
     record.try_into()
 }
 
-// Load one team by id and convert it into DTO view model.
 /// Load a single team info by ID.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
@@ -98,7 +96,6 @@ pub async fn get_info_by_id(
     record.try_into()
 }
 
-// Query teams using an optional membership filter, ordering and pagination.
 /// List team infos filtered and paginated by spec.
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos(
@@ -134,7 +131,6 @@ pub async fn list_infos(
     records.into_iter().map(TryInto::try_into).collect()
 }
 
-// Update mutable team profile fields for the target team.
 /// Apply a team metadata replacement.
 #[instrument(level = "info", skip_all)]
 pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
@@ -162,7 +158,6 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     accept!(())
 }
 
-// Load one team info and lock the record for transactional updates.
 /// Load a team info by ID, locking the record for update.
 #[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
@@ -195,7 +190,6 @@ pub async fn get_info_excluded(
     record.try_into()
 }
 
-// Lock a team record to serialize concurrent writes in the current transaction.
 /// Lock a team record for a transactional update.
 #[instrument(level = "info", skip_all)]
 pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
@@ -225,7 +219,6 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-// Advance workset sequence and return previous value for deterministic IDs.
 /// Increment and return the workset next index.
 #[instrument(level = "info", skip_all)]
 pub async fn increment_workset_next_index(

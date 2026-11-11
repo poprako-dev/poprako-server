@@ -127,14 +127,11 @@ impl Run<ListUnitInfosByPageSourceIds<'_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListUnitInfosByPageSourceIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         list_infos_by_page_source_ids(&state, oper.page_source_ids)
@@ -210,7 +207,6 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -228,7 +224,6 @@ impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

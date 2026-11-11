@@ -194,7 +194,7 @@ async fn load_archive_chapter_relations(
         .map(ChapterWorkflowRecordInfo::try_from)
         .collect::<BaseRest<Vec<_>>>()?;
 
-    let _ = t_assignment_invitation
+    t_assignment_invitation
         .filter(invitation_chapter_id.eq_any(source_chapter_ids))
         .select(invitation_id)
         .for_update()
@@ -354,8 +354,8 @@ fn assemble_chapter_snapshots(
     accept!(chapter_snapshots)
 }
 
-/// Lock every active descendant needed by an archive transaction.
-// Build a full snapshot of all descendants and lock them for commit safety.
+// Builds a full descendant snapshot and locks every active one needed by an
+// archive transaction for commit safety.
 #[instrument(level = "info", skip_all)]
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,

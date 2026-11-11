@@ -1,4 +1,3 @@
-// Maps delivered tasks to domain use cases.
 /// Business payload dispatch and delivery policy.
 pub mod dispatch;
 

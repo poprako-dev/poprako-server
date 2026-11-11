@@ -11,7 +11,6 @@ use crate::part_impl::repo::mock_impl::chapter::{
 };
 use crate::value::chapter::ChapterInclOpt;
 
-// Internal implementation of `list_chapter_infos`.
 fn list_chapter_infos(
     state: &MockState,
     spec: &ChapterListSpec,
@@ -31,23 +30,18 @@ fn list_chapter_infos(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, chapter_infos.len());
 
         (*chapter_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
-// Internal implementation of `find_pinned_chapter_info`.
 fn find_pinned_chapter_info(
     state: &MockState,
     comic_id: &str,
     incls: &[ChapterInclOpt],
 ) -> Option<ChapterInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut chapter_info = state
         .chapters
         .iter()
@@ -66,14 +60,11 @@ fn find_pinned_chapter_info(
     chapter_info
 }
 
-// Internal implementation of `list_pinned_chapter_infos`.
 fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[&str],
 ) -> Vec<ChapterInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     comic_ids
         .iter()
         .filter_map(|comic_id| {

@@ -42,7 +42,6 @@ mod util;
 // cases.
 mod value;
 
-// Concrete port implementations: repo, cache, auth, prom, image, effect, nucl.
 /// Concrete application port adapters.
 pub mod part_impl;
 

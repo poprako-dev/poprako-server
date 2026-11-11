@@ -18,14 +18,12 @@ use tracing::instrument;
 use crate::part::effect::EventBus;
 use crate::part::effect::event::Event;
 
-/// Unique receive capability for a bounded event queue.
-/// Returns a human-readable label for a domain event variant.
-// Used by queue diagnostics when logging full/closed queue drop events.
+// Returns a human-readable label for a domain event variant, used by queue
+// diagnostics when logging full or closed queue drop events.
 const fn event_name(event: &Event) -> &'static str {
     //
     match event {
         //
-        // Internal state field Event.
         Event::UserSignedUp { payload: _ } => "user_signed_up",
 
         Event::ChapterPublished { payload: _ } => "chapter_published",

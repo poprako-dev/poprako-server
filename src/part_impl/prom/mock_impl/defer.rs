@@ -30,14 +30,12 @@ impl<'a> Step<Defer<'a, String, PromPayload, ()>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &Defer<'a, String, PromPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
-        // Internal implementation detail.
         let payload_json = serde_json::to_string(oper.task.payload)
             .map_err(|error| serialize_payload_error(&error))?;
 
@@ -63,14 +61,12 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, PromPayload, ()>, MockContext>
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeferBatch<'t, 'a, String, PromPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
-        // Internal implementation detail.
         for task in oper.tasks {
             //
             Defer::new(Task {
