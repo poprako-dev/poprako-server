@@ -14,6 +14,20 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 - Preserve user-authored changes; never overwrite unrelated work.
 - Never modify linters unless the user explicitly requests it.
+- **Never invoke `cargo` directly.** Every build, check, format, lint, and
+  test run must go through the `just` recipes in "Canonical Rust checks".
+  Ad-hoc `cargo check`, `cargo test`, `cargo clippy`, `cargo fmt`,
+  `cargo build`, and `cargo run` invocations multiply build artifacts in
+  `target/` until it grows without bound and every later build slows down.
+  Direct Cargo calls are permitted only inside the checked-in `just` recipes
+  and CI scripts.
+- **Never pass a package, target, feature, profile, or test filter to any
+  build command.** No `-p`, `--package`, `--test`, `--bin`, `--features`,
+  `--profile`, or positional test filter may replace or narrow a recipe's
+  fixed scope. Every `just` recipe here carries one fixed argument set, and
+  any deviation produces a different artifact fingerprint that cannot reuse
+  the existing `target/` contents. Run the whole fixed scope and read its
+  output instead of narrowing it.
 - **Type-safe SQL is mandatory.** All Rust database queries in every
   workspace crate, including tests, must use Diesel's type-safe query DSL
   and typed schema expressions. This applies to joins, subqueries,
@@ -92,8 +106,9 @@ lint exemptions belong on the relevant function or boundary module and must
 include an English `reason`. Test-only modules may allow `unwrap_used` and
 `expect_used` for fixture setup and assertions while retaining all other checks.
 
-Agents must prefer these exact `just` commands from the repository root.
-Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
+Agents must run these exact `just` commands from the repository root. Their
+Cargo invocations match the Rust checks in `scripts/ci-check.sh` and
+`scripts/ci-test.sh`:
 
 | Local command    | Canonical Cargo invocation                                             |
 | ---------------- | ---------------------------------------------------------------------- |
@@ -101,28 +116,30 @@ Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
 | `just fmt`       | `cargo fmt --all`                                                      |
 | `just check`     | `cargo check --workspace --all-targets --all-features`                 |
 | `just clippy`    | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| `just test`      | `cargo test --workspace --all-features`                                |
 
 - After editing Rust, run `just fmt-check`, `just check`, and `just clippy`.
-  Only if `just` is unavailable, use the exact Cargo invocations above.
+  If `just` itself is unavailable, stop and report it; do not fall back to
+  invoking Cargo directly.
 - Use these recipes for routine validation; do not invoke `ci-check.sh` or
   `ci-local.sh` merely to run fmt, check, or clippy. Custom repository linters
   remain subject to the rules above; commits still require the full gate.
-- Do not add, remove, or substitute arguments, including package selection,
-  target selection, features, profiles, or Clippy lint flags. Do not use
-  narrower checks as a preliminary step or retry with a different combination
-  after failure. Fix the failure and rerun the same canonical command.
+- Every recipe is fixed and takes no arguments. Do not add, remove, or
+  substitute arguments, and do not narrow a run with a package, target,
+  feature, profile, or test filter. Do not use narrower checks as a
+  preliminary step or retry with a different combination after failure.
+  Fix the failure and rerun the same canonical command.
 - For formatting changes, use `just fmt`, then `just fmt-check`.
-  Apply the same Cargo fallback only if `just` is unavailable.
-  Do not use `cargo clippy --fix` as a validation shortcut.
+  Do not use Clippy's `--fix` mode as a validation shortcut.
 - Preserve the pinned toolchain and existing Cargo environment/configuration.
   Do not override `RUSTFLAGS`, `CARGO_ENCODED_RUSTFLAGS`, `CARGO_TARGET_DIR`,
   `CARGO_BUILD_TARGET`, or profile/incremental settings, create a separate
   target directory, or run `cargo clean` to work around validation failures.
 - Deviate only when the user explicitly requests a different invocation or
   when executing a checked-in CI/test/coverage workflow that requires it.
-  These rules constrain fmt/check/clippy; choose tests for the affected code.
-- When CI changes these three command combinations, update the `justfile`
-  recipes and this section in the same change so all three stay aligned.
+  These rules constrain fmt, check, clippy, and test runs.
+- When CI changes these command combinations, update the `justfile` recipes
+  and this section in the same change so they stay aligned.
 
 ## Skill routing
 
