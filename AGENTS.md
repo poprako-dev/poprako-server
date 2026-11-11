@@ -2,6 +2,10 @@
 
 MUST FOLLOW THE RULES OF LINTER CONFIG!!!!!
 
+NEVER DIRECTLY MODIFY `linters/` DIRECTORY!!!!!
+
+NEVER USE `async-trait` CRATE!!!!!!!! NO DYNAMIC DISPATCH IN TYPE SYSTEM IS ALLOWED!!!!
+
 Rust 2024 backend for manga translation project management. `Cargo.toml`
 defines the workspace; `src/lib.rs` defines the server module graph;
 `src/main.rs` composes production adapters and starts the Axum server.

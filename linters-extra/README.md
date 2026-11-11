@@ -14,9 +14,16 @@ scope. It runs once across the workspace and reports every violation. See
 `minimum-pub` requires every plain `pub` to be referenced outside its defining
 module. It checks modules, items, re-exports, struct fields, and inherent
 associated items across the whole workspace, including references from tests,
-benches, examples, macro bodies, and attribute string paths. It runs once for
-the workspace. See [minimum-pub/FORMAT.md](minimum-pub/FORMAT.md) for the
-diagnostic codes and known source-analysis limits.
+benches, examples, macro bodies, and attribute string paths. Struct fields are
+judged as one unit. It runs once for the workspace. See
+[minimum-pub/FORMAT.md](minimum-pub/FORMAT.md) for the diagnostic codes and
+known source-analysis limits.
+
+`struct-field-visibility` requires a struct to expose either every field or
+none. Mixed visibility means the struct is neither a data shape nor a
+behaviour object. See
+[struct-field-visibility/FORMAT.md](struct-field-visibility/FORMAT.md) for the
+data/behaviour split and its interaction with `minimum-pub`.
 
 `serde-rename-ban` rejects manual `serde(rename = "...")` attributes. Rust
 fields and variants must carry their wire names directly; `rename_all` casing

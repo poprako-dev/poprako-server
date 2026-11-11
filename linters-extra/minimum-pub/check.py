@@ -1161,10 +1161,27 @@ class Workspace:
                 ):
                     decl.used = True
 
+    def mark_struct_field_units(self) -> None:
+        # Field visibility is a property of the struct, not of one field.
+        # Once one field needs outside access, every field must stay public.
+        units: dict[tuple, list[Decl]] = {}
+
+        for decl in self.declarations:
+            if decl.kind == "field":
+                units.setdefault(
+                    (decl.crate, decl.module, decl.owner), []
+                ).append(decl)
+
+        for fields in units.values():
+            if any(field.used for field in fields):
+                for field in fields:
+                    field.used = True
+
     def diagnostics(self) -> list[str]:
         self.mark_named_references()
         self.mark_attribute_references()
         self.mark_public_signature_types()
+        self.mark_struct_field_units()
         messages = set()
 
         for decl in self.declarations:
@@ -1348,6 +1365,25 @@ class MinimumPubTests(unittest.TestCase):
 
         self.assertFalse(
             any("PUB002" in item or "PUB003" in item for item in diagnostics),
+            diagnostics,
+        )
+
+    def test_public_fields_are_judged_as_one_struct_unit(self):
+        diagnostics = self.diagnostics(
+            {
+                "lib.rs": "mod fields;\nmod user;\n",
+                "fields.rs": (
+                    "pub struct Data { pub value: i32, pub extra: i32 }\n"
+                ),
+                "user.rs": (
+                    "use crate::fields::Data;\n"
+                    "pub fn read(data: &Data) { let _ = data.value; }\n"
+                ),
+            }
+        )
+
+        self.assertFalse(
+            any("PUB002" in item for item in diagnostics),
             diagnostics,
         )
 

@@ -10,8 +10,9 @@ in package `src`, `tests`, `benches`, and `examples` sources.
 
 - `PUB001`: a module, item, or `pub use` re-export is not referenced outside
   its defining module.
-- `PUB002`: a named or tuple struct field is not used outside its defining
-  module.
+- `PUB002`: no field of a struct is used outside its defining module. Fields
+  are judged as one unit: one cross-module field reference justifies `pub` on
+  every field of that struct, matching the uniform field visibility rule.
 - `PUB003`: an inherent associated function, constant, or type is not used
   outside the module that owns the `impl`.
 
