@@ -1,33 +1,22 @@
 //! View DTOs for the termbase domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::termbase::TermbaseInfo;
 
 /// Presentation-ready terminology-base information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct TermbaseInfoView {
     /// Unique terminology-base identifier.
     pub id: String,
 
     /// Owning team identifier; absent when the termbase is comic-scoped.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub team_id: Option<String>,
     /// Owning comic identifier; absent when the termbase is team-scoped.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub comic_id: Option<String>,
 
     /// Human-readable terminology-base name.
     pub name: String,
     /// Optional longer description of the terminology base.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Number of terms in the terminology base.

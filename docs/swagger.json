@@ -70,7 +70,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAnnouncementInstr"
+                "$ref": "#/components/schemas/CreateAnnouncementPayload"
               }
             }
           },
@@ -82,7 +82,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementPayload"
                 }
               }
             }
@@ -118,7 +118,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAnnouncementInfoInstr"
+                "$ref": "#/components/schemas/UpdateAnnouncementInfoBody"
               }
             }
           },
@@ -178,7 +178,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAssignmentInvitationInstr"
+                "$ref": "#/components/schemas/CreateAssignmentInvitationPayload"
               }
             }
           },
@@ -190,7 +190,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationPayload"
                 }
               }
             }
@@ -215,7 +215,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinAssignmentInvitationInstr"
+                "$ref": "#/components/schemas/JoinAssignmentInvitationBody"
               }
             }
           },
@@ -227,7 +227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoView"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoObj"
                 }
               }
             }
@@ -350,7 +350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInfoObj"
                 }
               }
             }
@@ -375,7 +375,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinChapterAssignmentInstr"
+                "$ref": "#/components/schemas/JoinChapterAssignmentBody"
               }
             }
           },
@@ -387,7 +387,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoView"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoObj"
                 }
               }
             }
@@ -444,7 +444,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginAuthInstr"
+                "$ref": "#/components/schemas/LoginAuthPayload"
               }
             }
           },
@@ -456,7 +456,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_LoginAuthVal"
+                  "$ref": "#/components/schemas/HttpBody_LoginAuthPayload"
                 }
               }
             }
@@ -494,7 +494,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterAuthInstr"
+                "$ref": "#/components/schemas/RegisterAuthPayload"
               }
             }
           },
@@ -506,7 +506,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_RegisterAuthVal"
+                  "$ref": "#/components/schemas/HttpBody_RegisterAuthPayload"
                 }
               }
             }
@@ -531,7 +531,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateChapterInstr"
+                "$ref": "#/components/schemas/CreateChapterPayload"
               }
             }
           },
@@ -543,7 +543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateChapterVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateChapterPayload"
                 }
               }
             }
@@ -581,7 +581,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ChapterInfoView"
+                  "$ref": "#/components/schemas/HttpBody_ChapterInfoObj"
                 }
               }
             }
@@ -645,7 +645,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChapterInfoInstr"
+                "$ref": "#/components/schemas/UpdateChapterInfoBody"
               }
             }
           },
@@ -689,7 +689,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocChapterArtworkInstr"
+                "$ref": "#/components/schemas/AllocChapterArtworkPayload"
               }
             }
           },
@@ -701,7 +701,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocChapterArtworkVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterArtworkPayload"
                 }
               }
             }
@@ -739,7 +739,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ExportChapterArtworkVal"
+                  "$ref": "#/components/schemas/HttpBody_ExportChapterArtworkPayload"
                 }
               }
             }
@@ -775,7 +775,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkChapterArtworkUploadedInstr"
+                "$ref": "#/components/schemas/MarkChapterArtworkUploadedBody"
               }
             }
           },
@@ -848,7 +848,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInvitationInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInvitationInfoObj"
                 }
               }
             }
@@ -891,7 +891,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAssignmentRolesInstr"
+                "$ref": "#/components/schemas/UpdateAssignmentRolesBody"
               }
             }
           },
@@ -937,7 +937,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_IssueInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_IssueInfoObj"
                 }
               }
             }
@@ -973,7 +973,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportChapterIssuesInstr"
+                "$ref": "#/components/schemas/ImportChapterIssuesPayload"
               }
             }
           },
@@ -985,7 +985,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportChapterIssuesVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterIssuesPayload"
                 }
               }
             }
@@ -1023,7 +1023,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_IssueEditVariantsVal"
+                  "$ref": "#/components/schemas/HttpBody_IssueEditVariantsPayload"
                 }
               }
             }
@@ -1062,7 +1062,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RenameIssueEditVariantInstr"
+                "$ref": "#/components/schemas/RenameIssueEditVariantPayload"
               }
             }
           },
@@ -1074,7 +1074,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_RenameIssueEditVariantVal"
+                  "$ref": "#/components/schemas/HttpBody_RenameIssueEditVariantPayload"
                 }
               }
             }
@@ -1150,7 +1150,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageArtworkInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageArtworkInfoObj"
                 }
               }
             }
@@ -1186,7 +1186,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocChapterPageArtworksInstr"
+                "$ref": "#/components/schemas/AllocChapterPageArtworksPayload"
               }
             }
           },
@@ -1198,7 +1198,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageArtworksVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageArtworksPayload"
                 }
               }
             }
@@ -1236,7 +1236,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceInfoObj"
                 }
               }
             }
@@ -1295,7 +1295,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocChapterPageSourcesInstr"
+                "$ref": "#/components/schemas/AllocChapterPageSourcesPayload"
               }
             }
           },
@@ -1307,7 +1307,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageSourcesVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterPageSourcesPayload"
                 }
               }
             }
@@ -1345,7 +1345,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitDiffStatsVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitDiffStatsPayload"
                 }
               }
             }
@@ -1383,7 +1383,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitFlaggedStatsVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageSourceUnitFlaggedStatsPayload"
                 }
               }
             }
@@ -1420,7 +1420,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChapterStageInstr"
+                "$ref": "#/components/schemas/UpdateChapterStageBody"
               }
             }
           },
@@ -1482,7 +1482,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExportChapterTranslationsVal"
+                  "$ref": "#/components/schemas/ExportChapterTranslationsPayload"
                 }
               }
             }
@@ -1536,7 +1536,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExportChapterTranslationsVal"
+                  "$ref": "#/components/schemas/ExportChapterTranslationsPayload"
                 }
               }
             }
@@ -1569,7 +1569,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportChapterTranslationInstr"
+                "$ref": "#/components/schemas/ImportChapterTranslationPayload"
               }
             }
           },
@@ -1581,7 +1581,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationPayload"
                 }
               }
             }
@@ -1637,7 +1637,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_UnitInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_UnitInfoObj"
                 }
               }
             }
@@ -1673,7 +1673,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TransformChapterUnitsInstr"
+                "$ref": "#/components/schemas/TransformChapterUnitsBody"
               }
             }
           },
@@ -1739,7 +1739,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterWorkflowRecordInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterWorkflowRecordInfoObj"
                 }
               }
             }
@@ -1764,7 +1764,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateComicInstr"
+                "$ref": "#/components/schemas/CreateComicPayload"
               }
             }
           },
@@ -1776,7 +1776,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateComicVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateComicPayload"
                 }
               }
             }
@@ -1826,7 +1826,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ComicInfoView"
+                  "$ref": "#/components/schemas/HttpBody_ComicInfoObj"
                 }
               }
             }
@@ -1860,7 +1860,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateComicInfoInstr"
+                "$ref": "#/components/schemas/UpdateComicInfoBody"
               }
             }
           },
@@ -1935,7 +1935,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ArchiveComicVal"
+                  "$ref": "#/components/schemas/HttpBody_ArchiveComicPayload"
                 }
               }
             }
@@ -2006,7 +2006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterInfoObj"
                 }
               }
             }
@@ -2041,7 +2041,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Option_ChapterInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Option_ChapterInfoObj"
                 }
               }
             }
@@ -2074,7 +2074,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocComicCoverInstr"
+                "$ref": "#/components/schemas/AllocComicCoverPayload"
               }
             }
           },
@@ -2086,7 +2086,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocComicCoverVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocComicCoverPayload"
                 }
               }
             }
@@ -2122,7 +2122,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkComicCoverUploadedInstr"
+                "$ref": "#/components/schemas/MarkComicCoverUploadedBody"
               }
             }
           },
@@ -2194,7 +2194,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoObj"
                 }
               }
             }
@@ -2239,7 +2239,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportTermbaseInstr"
+                "$ref": "#/components/schemas/ImportTermbaseBody"
               }
             }
           },
@@ -2251,7 +2251,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbasePayload"
                 }
               }
             }
@@ -2261,7 +2261,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbasePayload"
                 }
               }
             }
@@ -2286,7 +2286,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCommentInstr"
+                "$ref": "#/components/schemas/CreateCommentPayload"
               }
             }
           },
@@ -2298,7 +2298,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateCommentVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateCommentPayload"
                 }
               }
             }
@@ -2323,7 +2323,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberInvitationInstr"
+                "$ref": "#/components/schemas/CreateMemberInvitationPayload"
               }
             }
           },
@@ -2335,7 +2335,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationPayload"
                 }
               }
             }
@@ -2402,7 +2402,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberInvitationRolesInstr"
+                "$ref": "#/components/schemas/UpdateMemberInvitationRolesBody"
               }
             }
           },
@@ -2508,7 +2508,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoObj"
                 }
               }
             }
@@ -2531,7 +2531,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberInstr"
+                "$ref": "#/components/schemas/CreateMemberPayload"
               }
             }
           },
@@ -2543,7 +2543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberPayload"
                 }
               }
             }
@@ -2571,7 +2571,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinTeamInstr"
+                "$ref": "#/components/schemas/JoinTeamBody"
               }
             }
           },
@@ -2583,7 +2583,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_MemberInfoView"
+                  "$ref": "#/components/schemas/HttpBody_MemberInfoObj"
                 }
               }
             }
@@ -2644,7 +2644,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoObj"
                 }
               }
             }
@@ -2711,7 +2711,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberRolesInstr"
+                "$ref": "#/components/schemas/UpdateMemberRolesBody"
               }
             }
           },
@@ -2758,7 +2758,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocPageArtworkImageInstr"
+                "$ref": "#/components/schemas/AllocPageArtworkImageBody"
               }
             }
           },
@@ -2770,7 +2770,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocatedPageArtworkVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocatedPageArtworkPayload"
                 }
               }
             }
@@ -2806,7 +2806,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkPageArtworkImageUploadedInstr"
+                "$ref": "#/components/schemas/MarkPageArtworkImageUploadedBody"
               }
             }
           },
@@ -2849,7 +2849,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_IssueEditPageVal"
+                  "$ref": "#/components/schemas/HttpBody_IssueEditPagePayload"
                 }
               }
             }
@@ -2897,7 +2897,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SavePageIssuesInstr"
+                "$ref": "#/components/schemas/SavePageIssuesPayload"
               }
             }
           },
@@ -2909,7 +2909,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageIssuesVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageIssuesPayload"
                 }
               }
             }
@@ -2950,7 +2950,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_PageSourceInfoView"
+                  "$ref": "#/components/schemas/HttpBody_PageSourceInfoObj"
                 }
               }
             }
@@ -2986,7 +2986,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocPageSourceImageInstr"
+                "$ref": "#/components/schemas/AllocPageSourceImageBody"
               }
             }
           },
@@ -2998,7 +2998,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocatedPageSourceVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocatedPageSourcePayload"
                 }
               }
             }
@@ -3034,7 +3034,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkPageSourceImageUploadedInstr"
+                "$ref": "#/components/schemas/MarkPageSourceImageUploadedBody"
               }
             }
           },
@@ -3077,7 +3077,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListPageSourceUnitInfosVal"
+                  "$ref": "#/components/schemas/HttpBody_ListPageSourceUnitInfosPayload"
                 }
               }
             }
@@ -3124,7 +3124,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/UnitEditInstr"
+                  "$ref": "#/components/schemas/UnitEditBody"
                 }
               }
             }
@@ -3137,7 +3137,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageSourceUnitEditsVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageSourceUnitEditsPayload"
                 }
               }
             }
@@ -3198,7 +3198,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoObj"
                 }
               }
             }
@@ -3220,7 +3220,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkSystemMailReadInstr"
+                "$ref": "#/components/schemas/MarkSystemMailReadBody"
               }
             }
           },
@@ -3281,7 +3281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TeamInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TeamInfoObj"
                 }
               }
             }
@@ -3304,7 +3304,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeamInstr"
+                "$ref": "#/components/schemas/CreateTeamBody"
               }
             }
           },
@@ -3316,7 +3316,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TeamInfoView"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoObj"
                 }
               }
             }
@@ -3354,7 +3354,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TeamInfoView"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoObj"
                 }
               }
             }
@@ -3388,7 +3388,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeamInfoInstr"
+                "$ref": "#/components/schemas/UpdateTeamInfoBody"
               }
             }
           },
@@ -3496,7 +3496,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AnnouncementInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AnnouncementInfoObj"
                 }
               }
             }
@@ -3529,7 +3529,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocTeamAvatarInstr"
+                "$ref": "#/components/schemas/AllocTeamAvatarPayload"
               }
             }
           },
@@ -3541,7 +3541,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocTeamAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocTeamAvatarPayload"
                 }
               }
             }
@@ -3577,7 +3577,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkTeamAvatarUploadedInstr"
+                "$ref": "#/components/schemas/MarkTeamAvatarUploadedBody"
               }
             }
           },
@@ -3632,7 +3632,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ExportComicArchivesVal"
+                  "$ref": "#/components/schemas/HttpBody_ExportComicArchivesPayload"
                 }
               }
             }
@@ -3706,7 +3706,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_CommentInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_CommentInfoObj"
                 }
               }
             }
@@ -3814,7 +3814,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInvitationInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInvitationInfoObj"
                 }
               }
             }
@@ -3916,7 +3916,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoObj"
                 }
               }
             }
@@ -3958,7 +3958,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportTermbaseInstr"
+                "$ref": "#/components/schemas/ImportTermbaseBody"
               }
             }
           },
@@ -3970,7 +3970,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbasePayload"
                 }
               }
             }
@@ -3980,7 +3980,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbasePayload"
                 }
               }
             }
@@ -4038,7 +4038,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_WorksetInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_WorksetInfoObj"
                 }
               }
             }
@@ -4063,7 +4063,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTermbaseInstr"
+                "$ref": "#/components/schemas/CreateTermbasePayload"
               }
             }
           },
@@ -4075,7 +4075,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateTermbasePayload"
                 }
               }
             }
@@ -4113,7 +4113,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TermbaseInfoView"
+                  "$ref": "#/components/schemas/HttpBody_TermbaseInfoObj"
                 }
               }
             }
@@ -4147,7 +4147,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTermbaseInfoInstr"
+                "$ref": "#/components/schemas/UpdateTermbaseInfoBody"
               }
             }
           },
@@ -4218,7 +4218,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AppendTermbaseInstr"
+                "$ref": "#/components/schemas/AppendTermbaseBody"
               }
             }
           },
@@ -4230,7 +4230,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AppendTermbaseVal"
+                  "$ref": "#/components/schemas/HttpBody_AppendTermbasePayload"
                 }
               }
             }
@@ -4268,7 +4268,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExportTermbaseVal"
+                  "$ref": "#/components/schemas/ExportTermbasePayload"
                 }
               }
             }
@@ -4306,7 +4306,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExportTermbaseVal"
+                  "$ref": "#/components/schemas/ExportTermbasePayload"
                 }
               }
             }
@@ -4373,7 +4373,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermInfoView"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermInfoObj"
                 }
               }
             }
@@ -4398,7 +4398,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTermInstr"
+                "$ref": "#/components/schemas/CreateTermPayload"
               }
             }
           },
@@ -4410,7 +4410,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateTermVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateTermPayload"
                 }
               }
             }
@@ -4448,7 +4448,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TermInfoView"
+                  "$ref": "#/components/schemas/HttpBody_TermInfoObj"
                 }
               }
             }
@@ -4482,7 +4482,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTermInfoInstr"
+                "$ref": "#/components/schemas/UpdateTermInfoBody"
               }
             }
           },
@@ -4543,7 +4543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_UserInfoView"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoObj"
                 }
               }
             }
@@ -4578,7 +4578,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_UserInfoView"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoObj"
                 }
               }
             }
@@ -4612,7 +4612,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserInfoInstr"
+                "$ref": "#/components/schemas/UpdateUserInfoBody"
               }
             }
           },
@@ -4656,7 +4656,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AllocUserAvatarInstr"
+                "$ref": "#/components/schemas/AllocUserAvatarPayload"
               }
             }
           },
@@ -4668,7 +4668,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AllocUserAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocUserAvatarPayload"
                 }
               }
             }
@@ -4701,7 +4701,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkUserAvatarUploadedInstr"
+                "$ref": "#/components/schemas/MarkUserAvatarUploadedBody"
               }
             }
           },
@@ -4739,7 +4739,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserPasswordInstr"
+                "$ref": "#/components/schemas/UpdateUserPasswordBody"
               }
             }
           },
@@ -4769,7 +4769,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateWorksetInstr"
+                "$ref": "#/components/schemas/CreateWorksetPayload"
               }
             }
           },
@@ -4781,7 +4781,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateWorksetVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateWorksetPayload"
                 }
               }
             }
@@ -4822,7 +4822,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_WorksetInfoView"
+                  "$ref": "#/components/schemas/HttpBody_WorksetInfoObj"
                 }
               }
             }
@@ -4859,7 +4859,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateWorksetInfoInstr"
+                "$ref": "#/components/schemas/UpdateWorksetInfoBody"
               }
             }
           },
@@ -5008,7 +5008,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListComicInfosVal"
+                  "$ref": "#/components/schemas/HttpBody_ListComicInfosPayload"
                 }
               }
             }
@@ -5025,32 +5025,7 @@
   },
   "components": {
     "schemas": {
-      "AllocChapterArtworkInstr": {
-        "type": "object",
-        "description": "Request to allocate the chapter's single artwork file.",
-        "required": [
-          "artwork_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "artwork_hash": {
-            "$ref": "#/components/schemas/ArtworkHash",
-            "description": "Canonical Base64 SHA-256 identity of the exact uploaded bytes."
-          },
-          "ext": {
-            "type": "string",
-            "description": "File extension without a leading dot."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Exact upload length, also bound into the PUT signature.",
-            "minimum": 0
-          }
-        }
-      },
-      "AllocChapterArtworkVal": {
+      "AllocChapterArtworkPayload": {
         "type": "object",
         "description": "Chapter artwork allocation result, including the version on a deduplication hit.",
         "required": [
@@ -5066,7 +5041,7 @@
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ChapterArtworkUploadSlotView",
+                "$ref": "#/components/schemas/ChapterArtworkUploadSlotObj",
                 "description": "Absent when the requested content is already available."
               },
               {
@@ -5076,24 +5051,7 @@
           }
         }
       },
-      "AllocChapterPageArtworksInstr": {
-        "type": "object",
-        "description": "Complete independently ordered composite page manifest.",
-        "required": [
-          "pages"
-        ],
-        "properties": {
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageArtworkImageInstr"
-            },
-            "description": "Final page sequence; omitted old pages are deleted."
-          }
-        },
-        "additionalProperties": false
-      },
-      "AllocChapterPageArtworksVal": {
+      "AllocChapterPageArtworksPayload": {
         "type": "object",
         "description": "Allocations aligned with the complete submitted manifest.",
         "required": [
@@ -5103,35 +5061,13 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AllocatedPageArtworkVal"
+              "$ref": "#/components/schemas/AllocatedPageArtworkPayload"
             },
             "description": "Resolved pages in request order."
           }
         }
       },
-      "AllocChapterPageSourcesInstr": {
-        "type": "object",
-        "description": "Input parameters for reserving all page images of a chapter.",
-        "required": [
-          "chapter_id",
-          "pages"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string",
-            "description": "Target chapter identifier."
-          },
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageSourceImageInstr"
-            },
-            "description": "source page images to allocate for the chapter."
-          }
-        },
-        "additionalProperties": false
-      },
-      "AllocChapterPageSourcesVal": {
+      "AllocChapterPageSourcesPayload": {
         "type": "object",
         "description": "Return value from successful chapter page allocations.",
         "required": [
@@ -5141,45 +5077,20 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AllocatedPageSourceVal"
+              "$ref": "#/components/schemas/AllocatedPageSourcePayload"
             },
             "description": "Allocated pages with upload targets."
           }
         }
       },
-      "AllocComicCoverInstr": {
-        "type": "object",
-        "description": "Request to allocate a comic cover upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Cover file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact cover bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "AllocComicCoverVal": {
+      "AllocComicCoverPayload": {
         "type": "object",
         "description": "Comic cover upload allocation response.",
         "properties": {
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "$ref": "#/components/schemas/ImageUploadSlotObj",
                 "description": "Upload capability, absent when this cover is already uploaded."
               },
               {
@@ -5189,7 +5100,7 @@
           }
         }
       },
-      "AllocPageArtworkImageInstr": {
+      "AllocPageArtworkImageBody": {
         "type": "object",
         "description": "Single composite image replacement.",
         "required": [
@@ -5222,7 +5133,7 @@
         },
         "additionalProperties": false
       },
-      "AllocPageSourceImageInstr": {
+      "AllocPageSourceImageBody": {
         "type": "object",
         "description": "Input parameters for reserving one page image.",
         "required": [
@@ -5255,39 +5166,14 @@
         },
         "additionalProperties": false
       },
-      "AllocTeamAvatarInstr": {
-        "type": "object",
-        "description": "Request to allocate a team avatar upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Avatar file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact avatar bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "AllocTeamAvatarVal": {
+      "AllocTeamAvatarPayload": {
         "type": "object",
         "description": "Team avatar upload allocation response.",
         "properties": {
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "$ref": "#/components/schemas/ImageUploadSlotObj",
                 "description": "Upload capability, absent when this avatar is already uploaded."
               },
               {
@@ -5297,39 +5183,14 @@
           }
         }
       },
-      "AllocUserAvatarInstr": {
+      "AllocUserAvatarPayload": {
         "type": "object",
-        "description": "Request to allocate a user avatar upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Avatar file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact avatar bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "AllocUserAvatarVal": {
-        "type": "object",
-        "description": "User avatar upload allocation response.",
+        "description": "User avatar upload allocation payload.",
         "properties": {
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "$ref": "#/components/schemas/ImageUploadSlotObj",
                 "description": "Upload capability, absent when this avatar is already uploaded."
               },
               {
@@ -5339,7 +5200,7 @@
           }
         }
       },
-      "AllocatedPageArtworkVal": {
+      "AllocatedPageArtworkPayload": {
         "type": "object",
         "description": "One resolved composite page and its current image generation.",
         "required": [
@@ -5376,7 +5237,7 @@
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "$ref": "#/components/schemas/ImageUploadSlotObj",
                 "description": "Upload capability; absent when the exact content is already available."
               },
               {
@@ -5386,7 +5247,7 @@
           }
         }
       },
-      "AllocatedPageSourceVal": {
+      "AllocatedPageSourcePayload": {
         "type": "object",
         "description": "One allocated page upload target.",
         "required": [
@@ -5424,7 +5285,7 @@
           "slot": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "$ref": "#/components/schemas/ImageUploadSlotObj",
                 "description": "Presigned upload slot, if a new image must be uploaded."
               },
               {
@@ -5441,7 +5302,7 @@
           "user"
         ]
       },
-      "AnnouncementInfoView": {
+      "AnnouncementInfoObj": {
         "type": "object",
         "description": "Presentation-ready team announcement information.",
         "required": [
@@ -5477,7 +5338,7 @@
           "user": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Authoring user information, omitted when not requested."
               },
               {
@@ -5491,7 +5352,7 @@
           }
         }
       },
-      "AppendTermbaseInstr": {
+      "AppendTermbaseBody": {
         "type": "object",
         "description": "Strict metadata-free document appended to an existing terminology base.",
         "required": [
@@ -5501,14 +5362,40 @@
           "terms": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AppendTermbaseTermInstr"
+              "$ref": "#/components/schemas/AppendTermbaseTermBody"
             },
             "description": "Portable entries; an empty batch is a successful no-op."
           }
         },
         "additionalProperties": false
       },
-      "AppendTermbaseTermInstr": {
+      "AppendTermbasePayload": {
+        "type": "object",
+        "description": "Content-change counts for one atomic terminology append.",
+        "required": [
+          "added",
+          "updated",
+          "unchanged"
+        ],
+        "properties": {
+          "added": {
+            "type": "integer",
+            "description": "Number of newly inserted entries.",
+            "minimum": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "description": "Number of matched entries whose content was already present.",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "description": "Number of existing entries whose content changed.",
+            "minimum": 0
+          }
+        }
+      },
+      "AppendTermbaseTermBody": {
         "type": "object",
         "description": "One strict portable terminology entry supplied by an append request.",
         "required": [
@@ -5537,33 +5424,7 @@
         },
         "additionalProperties": false
       },
-      "AppendTermbaseVal": {
-        "type": "object",
-        "description": "Content-change counts for one atomic terminology append.",
-        "required": [
-          "added",
-          "updated",
-          "unchanged"
-        ],
-        "properties": {
-          "added": {
-            "type": "integer",
-            "description": "Number of newly inserted entries.",
-            "minimum": 0
-          },
-          "unchanged": {
-            "type": "integer",
-            "description": "Number of matched entries whose content was already present.",
-            "minimum": 0
-          },
-          "updated": {
-            "type": "integer",
-            "description": "Number of existing entries whose content changed.",
-            "minimum": 0
-          }
-        }
-      },
-      "ArchiveComicVal": {
+      "ArchiveComicPayload": {
         "type": "object",
         "description": "Value returned after a comic has been archived atomically.",
         "required": [
@@ -5593,7 +5454,7 @@
           "chapter.comic.creator"
         ]
       },
-      "AssignmentInfoView": {
+      "AssignmentInfoObj": {
         "type": "object",
         "description": "Presentation-ready chapter assignment information.",
         "required": [
@@ -5608,7 +5469,7 @@
           "chapter": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ChapterInfoView",
+                "$ref": "#/components/schemas/ChapterInfoObj",
                 "description": "Resolved chapter information, when included."
               },
               {
@@ -5641,7 +5502,7 @@
           "user": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Resolved user information, when included."
               },
               {
@@ -5655,7 +5516,7 @@
           }
         }
       },
-      "AssignmentInvitationInfoView": {
+      "AssignmentInvitationInfoObj": {
         "type": "object",
         "description": "Presentation-ready assignment invitation information.",
         "required": [
@@ -5710,7 +5571,7 @@
           }
         }
       },
-      "ChapterArtworkUploadSlotView": {
+      "ChapterArtworkUploadSlotObj": {
         "type": "object",
         "description": "A direct artwork upload capability.",
         "required": [
@@ -5721,7 +5582,7 @@
           "headers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UploadHeaderView"
+              "$ref": "#/components/schemas/UploadHeaderObj"
             },
             "description": "Headers bound into the upload signature."
           },
@@ -5742,7 +5603,7 @@
           "creator"
         ]
       },
-      "ChapterInfoView": {
+      "ChapterInfoObj": {
         "type": "object",
         "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
         "required": [
@@ -5764,7 +5625,7 @@
           "comic": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ComicInfoView",
+                "$ref": "#/components/schemas/ComicInfoObj",
                 "description": "Included comic information; present only when requested via inclusion\noptions."
               },
               {
@@ -5784,7 +5645,7 @@
           "creator": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Included creator information; present only when requested via inclusion\noptions."
               },
               {
@@ -5844,7 +5705,7 @@
           }
         }
       },
-      "ChapterPageSourceRawIdentVal": {
+      "ChapterPageSourceRawIdentPayload": {
         "type": "object",
         "description": "One exported source page's original filename mapping.",
         "required": [
@@ -5862,7 +5723,7 @@
           }
         }
       },
-      "ChapterStageInstr": {
+      "ChapterStageBody": {
         "type": "string",
         "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
         "enum": [
@@ -5874,7 +5735,7 @@
           "publish"
         ]
       },
-      "ChapterStageOperInstr": {
+      "ChapterStageOperBody": {
         "type": "string",
         "description": "Operation accepted by the workflow-stage JSON body.",
         "enum": [
@@ -5882,7 +5743,7 @@
           "revert"
         ]
       },
-      "ChapterTranslationFormatInstr": {
+      "ChapterTranslationFormatBody": {
         "type": "string",
         "description": "Translation format used by chapter translation HTTP inputs.",
         "enum": [
@@ -5890,7 +5751,7 @@
           "poprako"
         ]
       },
-      "ChapterTranslationImportModeInstr": {
+      "ChapterTranslationImportModeBody": {
         "type": "string",
         "description": "source page-content strategy selected by a chapter translation import request.",
         "enum": [
@@ -5898,7 +5759,7 @@
           "overwrite"
         ]
       },
-      "ChapterTranslationPortView": {
+      "ChapterTranslationPortObj": {
         "type": "object",
         "description": "JSON document exchanged by the `PopRaKo` translation port.",
         "required": [
@@ -5936,13 +5797,13 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageSourceTranslationPortView"
+              "$ref": "#/components/schemas/PageSourceTranslationPortObj"
             },
             "description": "source pages and their translation units."
           }
         }
       },
-      "ChapterWorkflowRecordEventView": {
+      "ChapterWorkflowRecordEventObj": {
         "oneOf": [
           {
             "type": "object",
@@ -6148,7 +6009,7 @@
                 ],
                 "properties": {
                   "format": {
-                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatObj",
                     "description": "Imported content format."
                   },
                   "imported_page_count": {
@@ -6250,19 +6111,19 @@
                 ],
                 "properties": {
                   "next_phase": {
-                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseObj",
                     "description": "Phase after the transition."
                   },
                   "origin": {
-                    "$ref": "#/components/schemas/ChapterWorkflowRecordOriginView",
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordOriginObj",
                     "description": "Action that originated the transition."
                   },
                   "previous_phase": {
-                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseObj",
                     "description": "Phase before the transition."
                   },
                   "stage": {
-                    "$ref": "#/components/schemas/ChapterWorkflowRecordStageView",
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStageObj",
                     "description": "Changed workflow stage."
                   }
                 }
@@ -6278,7 +6139,7 @@
         ],
         "description": "Strongly typed workflow event exposed to clients as a discriminated union."
       },
-      "ChapterWorkflowRecordInfoView": {
+      "ChapterWorkflowRecordInfoObj": {
         "type": "object",
         "description": "API representation of one immutable chapter workflow record.",
         "required": [
@@ -6305,7 +6166,7 @@
             "description": "Record creation time in Unix milliseconds."
           },
           "event": {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordEventView",
+            "$ref": "#/components/schemas/ChapterWorkflowRecordEventObj",
             "description": "Strongly typed, language-neutral event data for client-side rendering."
           },
           "id": {
@@ -6314,7 +6175,7 @@
           }
         }
       },
-      "ChapterWorkflowRecordOriginView": {
+      "ChapterWorkflowRecordOriginObj": {
         "type": "string",
         "description": "Operation source used by a workflow record event.",
         "enum": [
@@ -6326,16 +6187,7 @@
           "artwork_upload"
         ]
       },
-      "ChapterWorkflowRecordStagePhaseView": {
-        "type": "string",
-        "description": "Workflow-stage phase used by a workflow record event.",
-        "enum": [
-          "pending",
-          "active",
-          "completed"
-        ]
-      },
-      "ChapterWorkflowRecordStageView": {
+      "ChapterWorkflowRecordStageObj": {
         "type": "string",
         "description": "Workflow stage used by a workflow record event.",
         "enum": [
@@ -6347,7 +6199,16 @@
           "publish"
         ]
       },
-      "ChapterWorkflowRecordTranslationFormatView": {
+      "ChapterWorkflowRecordStagePhaseObj": {
+        "type": "string",
+        "description": "Workflow-stage phase used by a workflow record event.",
+        "enum": [
+          "pending",
+          "active",
+          "completed"
+        ]
+      },
+      "ChapterWorkflowRecordTranslationFormatObj": {
         "type": "string",
         "description": "Translation format used by a workflow record event.",
         "enum": [
@@ -6355,7 +6216,7 @@
           "poprako"
         ]
       },
-      "ComicArchiveExportMonthVal": {
+      "ComicArchiveExportMonthPayload": {
         "type": "object",
         "description": "Stored JSON archive payloads for one UTC month slot.",
         "required": [
@@ -6385,7 +6246,7 @@
           "creator"
         ]
       },
-      "ComicInfoView": {
+      "ComicInfoObj": {
         "type": "object",
         "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and\naccepts object URLs already resolved by the use-case layer.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
         "required": [
@@ -6441,7 +6302,7 @@
           "creator": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Resolved creator profile, included when the `creator` expansion option is requested."
               },
               {
@@ -6481,7 +6342,7 @@
           "team": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/TeamInfoView",
+                "$ref": "#/components/schemas/TeamInfoObj",
                 "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
               },
               {
@@ -6501,7 +6362,7 @@
           "workset": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/WorksetInfoView",
+                "$ref": "#/components/schemas/WorksetInfoObj",
                 "description": "Resolved workset summary, included when the `workset` expansion option is requested."
               },
               {
@@ -6538,7 +6399,7 @@
           "user"
         ]
       },
-      "CommentInfoView": {
+      "CommentInfoObj": {
         "type": "object",
         "description": "Presentation-ready team board comment information.",
         "required": [
@@ -6569,7 +6430,7 @@
           "user": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Author user information, present when requested via inclusion options."
               },
               {
@@ -6583,30 +6444,7 @@
           }
         }
       },
-      "CreateAnnouncementInstr": {
-        "type": "object",
-        "description": "Input parameters for creating an announcement.",
-        "required": [
-          "team_id",
-          "title",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string",
-            "description": "Announcement body content."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Target team identifier."
-          },
-          "title": {
-            "type": "string",
-            "description": "Announcement title."
-          }
-        }
-      },
-      "CreateAnnouncementVal": {
+      "CreateAnnouncementPayload": {
         "type": "object",
         "description": "Return value from creating an announcement.",
         "required": [
@@ -6619,30 +6457,7 @@
           }
         }
       },
-      "CreateAssignmentInvitationInstr": {
-        "type": "object",
-        "description": "Input parameters for creating an assignment invitation.",
-        "required": [
-          "chapter_id",
-          "invitee_qid",
-          "roles"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string",
-            "description": "Identifier of the chapter to create the invitation for."
-          },
-          "invitee_qid": {
-            "type": "string",
-            "description": "Qualified identifier of the user being invited."
-          },
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Role mask to assign to the invitee upon joining."
-          }
-        }
-      },
-      "CreateAssignmentInvitationVal": {
+      "CreateAssignmentInvitationPayload": {
         "type": "object",
         "description": "Return value from creating an assignment invitation.",
         "required": [
@@ -6660,38 +6475,7 @@
           }
         }
       },
-      "CreateChapterInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a new chapter.",
-        "required": [
-          "comic_id"
-        ],
-        "properties": {
-          "comic_id": {
-            "type": "string",
-            "description": "Identifier of the parent comic to create the chapter in."
-          },
-          "preset_assignment_roles": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Optional worker roles assigned to the creator; absent means no assignment.\nEvery requested role must exist on the creator's team membership."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "subtitle": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional display subtitle; defaults to a generated value\nif omitted (see [`default_subtitle`]).\n\n[`default_subtitle`]: crate::complex::chapter::default_subtitle"
-          }
-        }
-      },
-      "CreateChapterVal": {
+      "CreateChapterPayload": {
         "type": "object",
         "description": "Return value from a successful chapter creation.",
         "required": [
@@ -6704,55 +6488,7 @@
           }
         }
       },
-      "CreateComicInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a new comic inside a workset.\n\nThe first chapter is created atomically with the comic. Its subtitle\ncan be customised via `first_chapter_subtitle`; when absent, a\nlocale-aware default (e.g. \"Ch. 1\") is generated.",
-        "required": [
-          "workset_id",
-          "title",
-          "author"
-        ],
-        "properties": {
-          "author": {
-            "type": "string",
-            "description": "Comic author name."
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional description of the comic."
-          },
-          "first_chapter_subtitle": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional subtitle for the first chapter created alongside the comic."
-          },
-          "preset_assignment_roles": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Optional worker roles assigned to the creator on the first chapter.\nAbsent means no assignment. Every requested role must exist on the\ncreator's team membership."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Comic title."
-          },
-          "workset_id": {
-            "type": "string",
-            "description": "Parent workset identifier."
-          }
-        }
-      },
-      "CreateComicVal": {
+      "CreateComicPayload": {
         "type": "object",
         "description": "Return value from a successful comic creation.\n\nIncludes the IDs of both the new comic and its auto-created first chapter.",
         "required": [
@@ -6770,25 +6506,7 @@
           }
         }
       },
-      "CreateCommentInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a comment.",
-        "required": [
-          "team_id",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string",
-            "description": "Comment body text."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Target team identifier."
-          }
-        }
-      },
-      "CreateCommentVal": {
+      "CreateCommentPayload": {
         "type": "object",
         "description": "Return value from creating a comment.",
         "required": [
@@ -6801,53 +6519,7 @@
           }
         }
       },
-      "CreateMemberInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a member.",
-        "required": [
-          "user_id",
-          "team_id",
-          "roles"
-        ],
-        "properties": {
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Initial role bitmask for the member."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Team identifier for the new membership."
-          },
-          "user_id": {
-            "type": "string",
-            "description": "User identifier for the new membership."
-          }
-        }
-      },
-      "CreateMemberInvitationInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a new team invitation.\n\nThe invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]\nthat will be granted upon acceptance. The actual in-app user lookup\nhappens during the registration flow.",
-        "required": [
-          "team_id",
-          "invitee_qid",
-          "roles"
-        ],
-        "properties": {
-          "invitee_qid": {
-            "type": "string",
-            "description": "The QQ ID of the person being invited (not a user UUID)."
-          },
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "The role mask that will be assigned when the invitee registers\nand accepts the invitation."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Owning team identifier."
-          }
-        }
-      },
-      "CreateMemberInvitationVal": {
+      "CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Return value from a successful invitation creation.\n\nThe `code` is a short opaque token the invitee presents during\nregistration to claim the invitation.",
         "required": [
@@ -6865,7 +6537,7 @@
           }
         }
       },
-      "CreateMemberVal": {
+      "CreateMemberPayload": {
         "type": "object",
         "description": "Return value from creating a member.",
         "required": [
@@ -6878,7 +6550,7 @@
           }
         }
       },
-      "CreateTeamInstr": {
+      "CreateTeamBody": {
         "type": "object",
         "description": "Input parameters for creating a new team.",
         "required": [
@@ -6896,40 +6568,7 @@
           }
         }
       },
-      "CreateTermInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a terminology entry.",
-        "required": [
-          "termbase_id",
-          "source",
-          "targets"
-        ],
-        "properties": {
-          "comment": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional annotation; absent when no comment is provided."
-          },
-          "source": {
-            "type": "string",
-            "description": "Source-language term text."
-          },
-          "targets": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Target-language translations."
-          },
-          "termbase_id": {
-            "type": "string",
-            "description": "Parent terminology base identifier."
-          }
-        }
-      },
-      "CreateTermVal": {
+      "CreateTermPayload": {
         "type": "object",
         "description": "Return value from creating a terminology entry.",
         "required": [
@@ -6942,41 +6581,7 @@
           }
         }
       },
-      "CreateTermbaseInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a terminology base.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "comic_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Comic scope identifier; absent for team-scoped termbases."
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional longer description."
-          },
-          "name": {
-            "type": "string",
-            "description": "Human-readable name for the new terminology base."
-          },
-          "team_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Team scope identifier; absent for comic-scoped termbases."
-          }
-        }
-      },
-      "CreateTermbaseVal": {
+      "CreateTermbasePayload": {
         "type": "object",
         "description": "Return value from creating a terminology base.",
         "required": [
@@ -6989,32 +6594,7 @@
           }
         }
       },
-      "CreateWorksetInstr": {
-        "type": "object",
-        "description": "Input parameters for creating a new workset inside a team.",
-        "required": [
-          "team_id",
-          "name"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional description for the new workset."
-          },
-          "name": {
-            "type": "string",
-            "description": "Display name for the new workset."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Owning team identifier to create the workset under."
-          }
-        }
-      },
-      "CreateWorksetVal": {
+      "CreateWorksetPayload": {
         "type": "object",
         "description": "Return value from a successful workset creation.",
         "required": [
@@ -7027,7 +6607,7 @@
           }
         }
       },
-      "CreatedIssueIdVal": {
+      "CreatedIssueIdPayload": {
         "type": "object",
         "description": "One new annotation's client-to-server identity mapping.",
         "required": [
@@ -7045,7 +6625,7 @@
           }
         }
       },
-      "CreatedUnitIdVal": {
+      "CreatedUnitIdPayload": {
         "type": "object",
         "description": "One explicit identity pair returned for a newly created Unit.",
         "required": [
@@ -7063,7 +6643,7 @@
           }
         }
       },
-      "ExportChapterArtworkVal": {
+      "ExportChapterArtworkPayload": {
         "type": "object",
         "description": "Current available artwork and its direct object-storage download address.",
         "required": [
@@ -7093,7 +6673,7 @@
           }
         }
       },
-      "ExportChapterTranslationsVal": {
+      "ExportChapterTranslationsPayload": {
         "type": "object",
         "description": "Translation documents generated together by one chapter export.",
         "properties": {
@@ -7107,7 +6687,7 @@
           "poprako": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ChapterTranslationPortView",
+                "$ref": "#/components/schemas/ChapterTranslationPortObj",
                 "description": "Native `PopRaKo` document, absent when that format was not selected."
               },
               {
@@ -7121,13 +6701,13 @@
               "null"
             ],
             "items": {
-              "$ref": "#/components/schemas/ChapterPageSourceRawIdentVal"
+              "$ref": "#/components/schemas/ChapterPageSourceRawIdentPayload"
             },
             "description": "source page-to-original-filename mappings, absent unless requested."
           }
         }
       },
-      "ExportComicArchivesVal": {
+      "ExportComicArchivesPayload": {
         "type": "object",
         "description": "Stored JSON archive payloads grouped by UTC month slot.",
         "required": [
@@ -7137,7 +6717,7 @@
           "months": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ComicArchiveExportMonthVal"
+              "$ref": "#/components/schemas/ComicArchiveExportMonthPayload"
             },
             "description": "Selected month slots in the requested order."
           }
@@ -7161,7 +6741,7 @@
           }
         }
       },
-      "ExportTermbaseVal": {
+      "ExportTermbasePayload": {
         "type": "object",
         "description": "Native portable terminology-base export document.",
         "required": [
@@ -7183,13 +6763,13 @@
           "terms": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TermbaseTermView"
+              "$ref": "#/components/schemas/TermbaseTermObj"
             },
             "description": "Portable terminology entries ordered deterministically."
           }
         }
       },
-      "HttpBody_AllocChapterArtworkVal": {
+      "HttpBody_AllocChapterArtworkPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7220,7 +6800,7 @@
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ChapterArtworkUploadSlotView",
+                    "$ref": "#/components/schemas/ChapterArtworkUploadSlotObj",
                     "description": "Absent when the requested content is already available."
                   },
                   {
@@ -7232,7 +6812,7 @@
           }
         }
       },
-      "HttpBody_AllocChapterPageArtworksVal": {
+      "HttpBody_AllocChapterPageArtworksPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7257,7 +6837,7 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/AllocatedPageArtworkVal"
+                  "$ref": "#/components/schemas/AllocatedPageArtworkPayload"
                 },
                 "description": "Resolved pages in request order."
               }
@@ -7265,7 +6845,7 @@
           }
         }
       },
-      "HttpBody_AllocChapterPageSourcesVal": {
+      "HttpBody_AllocChapterPageSourcesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7290,7 +6870,7 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/AllocatedPageSourceVal"
+                  "$ref": "#/components/schemas/AllocatedPageSourcePayload"
                 },
                 "description": "Allocated pages with upload targets."
               }
@@ -7298,7 +6878,7 @@
           }
         }
       },
-      "HttpBody_AllocComicCoverVal": {
+      "HttpBody_AllocComicCoverPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7320,7 +6900,7 @@
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "$ref": "#/components/schemas/ImageUploadSlotObj",
                     "description": "Upload capability, absent when this cover is already uploaded."
                   },
                   {
@@ -7332,7 +6912,7 @@
           }
         }
       },
-      "HttpBody_AllocTeamAvatarVal": {
+      "HttpBody_AllocTeamAvatarPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7354,7 +6934,7 @@
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "$ref": "#/components/schemas/ImageUploadSlotObj",
                     "description": "Upload capability, absent when this avatar is already uploaded."
                   },
                   {
@@ -7366,7 +6946,7 @@
           }
         }
       },
-      "HttpBody_AllocUserAvatarVal": {
+      "HttpBody_AllocUserAvatarPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7383,12 +6963,12 @@
           },
           "data": {
             "type": "object",
-            "description": "User avatar upload allocation response.",
+            "description": "User avatar upload allocation payload.",
             "properties": {
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "$ref": "#/components/schemas/ImageUploadSlotObj",
                     "description": "Upload capability, absent when this avatar is already uploaded."
                   },
                   {
@@ -7400,7 +6980,7 @@
           }
         }
       },
-      "HttpBody_AllocatedPageArtworkVal": {
+      "HttpBody_AllocatedPageArtworkPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7452,7 +7032,7 @@
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "$ref": "#/components/schemas/ImageUploadSlotObj",
                     "description": "Upload capability; absent when the exact content is already available."
                   },
                   {
@@ -7464,7 +7044,7 @@
           }
         }
       },
-      "HttpBody_AllocatedPageSourceVal": {
+      "HttpBody_AllocatedPageSourcePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7517,7 +7097,7 @@
               "slot": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "$ref": "#/components/schemas/ImageUploadSlotObj",
                     "description": "Presigned upload slot, if a new image must be uploaded."
                   },
                   {
@@ -7529,7 +7109,7 @@
           }
         }
       },
-      "HttpBody_AppendTermbaseVal": {
+      "HttpBody_AppendTermbasePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7572,7 +7152,7 @@
           }
         }
       },
-      "HttpBody_ArchiveComicVal": {
+      "HttpBody_ArchiveComicPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7602,7 +7182,7 @@
           }
         }
       },
-      "HttpBody_AssignmentInfoView": {
+      "HttpBody_AssignmentInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7632,7 +7212,7 @@
               "chapter": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ChapterInfoView",
+                    "$ref": "#/components/schemas/ChapterInfoObj",
                     "description": "Resolved chapter information, when included."
                   },
                   {
@@ -7665,7 +7245,7 @@
               "user": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UserInfoView",
+                    "$ref": "#/components/schemas/UserInfoObj",
                     "description": "Resolved user information, when included."
                   },
                   {
@@ -7681,7 +7261,7 @@
           }
         }
       },
-      "HttpBody_ChapterInfoView": {
+      "HttpBody_ChapterInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7718,7 +7298,7 @@
               "comic": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/ComicInfoView",
+                    "$ref": "#/components/schemas/ComicInfoObj",
                     "description": "Included comic information; present only when requested via inclusion\noptions."
                   },
                   {
@@ -7738,7 +7318,7 @@
               "creator": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UserInfoView",
+                    "$ref": "#/components/schemas/UserInfoObj",
                     "description": "Included creator information; present only when requested via inclusion\noptions."
                   },
                   {
@@ -7800,7 +7380,7 @@
           }
         }
       },
-      "HttpBody_ComicInfoView": {
+      "HttpBody_ComicInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7871,7 +7451,7 @@
               "creator": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UserInfoView",
+                    "$ref": "#/components/schemas/UserInfoObj",
                     "description": "Resolved creator profile, included when the `creator` expansion option is requested."
                   },
                   {
@@ -7911,7 +7491,7 @@
               "team": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/TeamInfoView",
+                    "$ref": "#/components/schemas/TeamInfoObj",
                     "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
                   },
                   {
@@ -7931,7 +7511,7 @@
               "workset": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/WorksetInfoView",
+                    "$ref": "#/components/schemas/WorksetInfoObj",
                     "description": "Resolved workset summary, included when the `workset` expansion option is requested."
                   },
                   {
@@ -7947,7 +7527,7 @@
           }
         }
       },
-      "HttpBody_CreateAnnouncementVal": {
+      "HttpBody_CreateAnnouncementPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7977,7 +7557,7 @@
           }
         }
       },
-      "HttpBody_CreateAssignmentInvitationVal": {
+      "HttpBody_CreateAssignmentInvitationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8012,7 +7592,7 @@
           }
         }
       },
-      "HttpBody_CreateChapterVal": {
+      "HttpBody_CreateChapterPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8042,7 +7622,7 @@
           }
         }
       },
-      "HttpBody_CreateComicVal": {
+      "HttpBody_CreateComicPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8077,7 +7657,7 @@
           }
         }
       },
-      "HttpBody_CreateCommentVal": {
+      "HttpBody_CreateCommentPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8107,7 +7687,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberInvitationVal": {
+      "HttpBody_CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8142,7 +7722,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberVal": {
+      "HttpBody_CreateMemberPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8172,7 +7752,7 @@
           }
         }
       },
-      "HttpBody_CreateTermVal": {
+      "HttpBody_CreateTermPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8202,7 +7782,7 @@
           }
         }
       },
-      "HttpBody_CreateTermbaseVal": {
+      "HttpBody_CreateTermbasePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8232,7 +7812,7 @@
           }
         }
       },
-      "HttpBody_CreateWorksetVal": {
+      "HttpBody_CreateWorksetPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8262,7 +7842,7 @@
           }
         }
       },
-      "HttpBody_ExportChapterArtworkVal": {
+      "HttpBody_ExportChapterArtworkPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8309,7 +7889,7 @@
           }
         }
       },
-      "HttpBody_ExportComicArchivesVal": {
+      "HttpBody_ExportComicArchivesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8334,7 +7914,7 @@
               "months": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ComicArchiveExportMonthVal"
+                  "$ref": "#/components/schemas/ComicArchiveExportMonthPayload"
                 },
                 "description": "Selected month slots in the requested order."
               }
@@ -8342,7 +7922,7 @@
           }
         }
       },
-      "HttpBody_ImportChapterIssuesVal": {
+      "HttpBody_ImportChapterIssuesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8379,7 +7959,7 @@
           }
         }
       },
-      "HttpBody_ImportChapterTranslationVal": {
+      "HttpBody_ImportChapterTranslationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8416,7 +7996,7 @@
           }
         }
       },
-      "HttpBody_ImportTermbaseVal": {
+      "HttpBody_ImportTermbasePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8463,7 +8043,7 @@
           }
         }
       },
-      "HttpBody_IssueEditPageVal": {
+      "HttpBody_IssueEditPagePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8505,7 +8085,7 @@
               "issues": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/IssueEditView"
+                  "$ref": "#/components/schemas/IssueEditObj"
                 },
                 "description": "Ordered annotations."
               },
@@ -8525,7 +8105,7 @@
           }
         }
       },
-      "HttpBody_IssueEditVariantsVal": {
+      "HttpBody_IssueEditVariantsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8560,7 +8140,7 @@
               "variants": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/IssueEditVariantCountView"
+                  "$ref": "#/components/schemas/IssueEditVariantCountObj"
                 },
                 "description": "Names currently used by at least one annotation."
               }
@@ -8568,7 +8148,7 @@
           }
         }
       },
-      "HttpBody_ListComicInfosVal": {
+      "HttpBody_ListComicInfosPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8595,7 +8175,7 @@
               "comics": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ComicInfoView"
+                  "$ref": "#/components/schemas/ComicInfoObj"
                 },
                 "description": "Comic information for the listed comics."
               },
@@ -8604,7 +8184,7 @@
                 "items": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AssignmentInfoView"
+                    "$ref": "#/components/schemas/AssignmentInfoObj"
                   }
                 },
                 "description": "Assignments, including their users, for each pinned chapter,\npositionally aligned with `comics`."
@@ -8614,7 +8194,7 @@
                 "items": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ChapterInfoView"
+                      "$ref": "#/components/schemas/ChapterInfoObj"
                     },
                     {
                       "type": "null"
@@ -8627,7 +8207,7 @@
           }
         }
       },
-      "HttpBody_ListPageSourceUnitInfosVal": {
+      "HttpBody_ListPageSourceUnitInfosPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8670,7 +8250,7 @@
               "unit_infos": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/UnitInfoView"
+                  "$ref": "#/components/schemas/UnitInfoObj"
                 },
                 "description": "Visible Units in final linked-list order."
               }
@@ -8678,7 +8258,7 @@
           }
         }
       },
-      "HttpBody_LoginAuthVal": {
+      "HttpBody_LoginAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8713,7 +8293,7 @@
           }
         }
       },
-      "HttpBody_MemberInfoView": {
+      "HttpBody_MemberInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8760,7 +8340,7 @@
               "team": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/TeamInfoView",
+                    "$ref": "#/components/schemas/TeamInfoObj",
                     "description": "Resolved team detail, present when the `team` include option is requested."
                   },
                   {
@@ -8775,7 +8355,7 @@
               "user": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UserInfoView",
+                    "$ref": "#/components/schemas/UserInfoObj",
                     "description": "Resolved user detail, present when the `user` include option is requested."
                   },
                   {
@@ -8791,7 +8371,7 @@
           }
         }
       },
-      "HttpBody_Option_ChapterInfoView": {
+      "HttpBody_Option_ChapterInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -8833,7 +8413,7 @@
                   "comic": {
                     "oneOf": [
                       {
-                        "$ref": "#/components/schemas/ComicInfoView",
+                        "$ref": "#/components/schemas/ComicInfoObj",
                         "description": "Included comic information; present only when requested via inclusion\noptions."
                       },
                       {
@@ -8853,7 +8433,7 @@
                   "creator": {
                     "oneOf": [
                       {
-                        "$ref": "#/components/schemas/UserInfoView",
+                        "$ref": "#/components/schemas/UserInfoObj",
                         "description": "Included creator information; present only when requested via inclusion\noptions."
                       },
                       {
@@ -8917,7 +8497,7 @@
           }
         }
       },
-      "HttpBody_PageSourceInfoView": {
+      "HttpBody_PageSourceInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9052,7 +8632,7 @@
           }
         }
       },
-      "HttpBody_RegisterAuthVal": {
+      "HttpBody_RegisterAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9087,7 +8667,7 @@
           }
         }
       },
-      "HttpBody_RenameIssueEditVariantVal": {
+      "HttpBody_RenameIssueEditVariantPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9113,19 +8693,19 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/IssueEditPageVal"
+                  "$ref": "#/components/schemas/IssueEditPagePayload"
                 },
                 "description": "Fresh documents for every changed page."
               },
               "summary": {
-                "$ref": "#/components/schemas/IssueEditVariantsVal",
+                "$ref": "#/components/schemas/IssueEditVariantsPayload",
                 "description": "Current usage summary after the rename."
               }
             }
           }
         }
       },
-      "HttpBody_SavePageIssuesVal": {
+      "HttpBody_SavePageIssuesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9151,19 +8731,19 @@
               "created_issue_ids": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/CreatedIssueIdVal"
+                  "$ref": "#/components/schemas/CreatedIssueIdPayload"
                 },
                 "description": "Stable mappings retained for retries of this batch."
               },
               "page": {
-                "$ref": "#/components/schemas/IssueEditPageVal",
+                "$ref": "#/components/schemas/IssueEditPagePayload",
                 "description": "Latest document under the same review and image context."
               }
             }
           }
         }
       },
-      "HttpBody_SavePageSourceUnitEditsVal": {
+      "HttpBody_SavePageSourceUnitEditsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9188,7 +8768,7 @@
               "created_unit_ids": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/CreatedUnitIdVal"
+                  "$ref": "#/components/schemas/CreatedUnitIdPayload"
                 },
                 "description": "Explicit identity pairs; empty when the batch creates no Units."
               }
@@ -9196,7 +8776,7 @@
           }
         }
       },
-      "HttpBody_TeamInfoView": {
+      "HttpBody_TeamInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9262,7 +8842,7 @@
           }
         }
       },
-      "HttpBody_TermInfoView": {
+      "HttpBody_TermInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9334,7 +8914,7 @@
           }
         }
       },
-      "HttpBody_TermbaseInfoView": {
+      "HttpBody_TermbaseInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9413,7 +8993,7 @@
           }
         }
       },
-      "HttpBody_UserInfoView": {
+      "HttpBody_UserInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9430,7 +9010,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
+            "description": "Presentation-ready user profile payload.",
             "required": [
               "id",
               "nickname",
@@ -9490,7 +9070,7 @@
           }
         }
       },
-      "HttpBody_Vec_AnnouncementInfoView": {
+      "HttpBody_Vec_AnnouncementInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9543,7 +9123,7 @@
                 "user": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Authoring user information, omitted when not requested."
                     },
                     {
@@ -9560,7 +9140,7 @@
           }
         }
       },
-      "HttpBody_Vec_AssignmentInfoView": {
+      "HttpBody_Vec_AssignmentInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9592,7 +9172,7 @@
                 "chapter": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ChapterInfoView",
+                      "$ref": "#/components/schemas/ChapterInfoObj",
                       "description": "Resolved chapter information, when included."
                     },
                     {
@@ -9625,7 +9205,7 @@
                 "user": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Resolved user information, when included."
                     },
                     {
@@ -9642,7 +9222,7 @@
           }
         }
       },
-      "HttpBody_Vec_AssignmentInvitationInfoView": {
+      "HttpBody_Vec_AssignmentInvitationInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9717,7 +9297,7 @@
           }
         }
       },
-      "HttpBody_Vec_ChapterInfoView": {
+      "HttpBody_Vec_ChapterInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9756,7 +9336,7 @@
                 "comic": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ComicInfoView",
+                      "$ref": "#/components/schemas/ComicInfoObj",
                       "description": "Included comic information; present only when requested via inclusion\noptions."
                     },
                     {
@@ -9776,7 +9356,7 @@
                 "creator": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Included creator information; present only when requested via inclusion\noptions."
                     },
                     {
@@ -9839,7 +9419,7 @@
           }
         }
       },
-      "HttpBody_Vec_ChapterWorkflowRecordInfoView": {
+      "HttpBody_Vec_ChapterWorkflowRecordInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9883,7 +9463,7 @@
                   "description": "Record creation time in Unix milliseconds."
                 },
                 "event": {
-                  "$ref": "#/components/schemas/ChapterWorkflowRecordEventView",
+                  "$ref": "#/components/schemas/ChapterWorkflowRecordEventObj",
                   "description": "Strongly typed, language-neutral event data for client-side rendering."
                 },
                 "id": {
@@ -9895,7 +9475,7 @@
           }
         }
       },
-      "HttpBody_Vec_CommentInfoView": {
+      "HttpBody_Vec_CommentInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -9943,7 +9523,7 @@
                 "user": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Author user information, present when requested via inclusion options."
                     },
                     {
@@ -9960,7 +9540,7 @@
           }
         }
       },
-      "HttpBody_Vec_IssueInfoView": {
+      "HttpBody_Vec_IssueInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10008,7 +9588,7 @@
                 "rect": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/IssueRectView",
+                      "$ref": "#/components/schemas/IssueRectObj",
                       "description": "Optional whole-page rectangle."
                     },
                     {
@@ -10025,7 +9605,7 @@
           }
         }
       },
-      "HttpBody_Vec_MemberInfoView": {
+      "HttpBody_Vec_MemberInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10074,7 +9654,7 @@
                 "team": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/TeamInfoView",
+                      "$ref": "#/components/schemas/TeamInfoObj",
                       "description": "Resolved team detail, present when the `team` include option is requested."
                     },
                     {
@@ -10089,7 +9669,7 @@
                 "user": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Resolved user detail, present when the `user` include option is requested."
                     },
                     {
@@ -10106,7 +9686,7 @@
           }
         }
       },
-      "HttpBody_Vec_MemberInvitationInfoView": {
+      "HttpBody_Vec_MemberInvitationInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10151,7 +9731,7 @@
                 "invitor": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UserInfoView",
+                      "$ref": "#/components/schemas/UserInfoObj",
                       "description": "Resolved invitor user information, present only when requested via incl."
                     },
                     {
@@ -10180,7 +9760,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageArtworkInfoView": {
+      "HttpBody_Vec_PageArtworkInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10293,7 +9873,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageSourceInfoView": {
+      "HttpBody_Vec_PageSourceInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10431,7 +10011,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageSourceUnitDiffStatsVal": {
+      "HttpBody_Vec_PageSourceUnitDiffStatsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10488,7 +10068,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageSourceUnitFlaggedStatsVal": {
+      "HttpBody_Vec_PageSourceUnitFlaggedStatsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10556,7 +10136,7 @@
           }
         }
       },
-      "HttpBody_Vec_SystemMailInfoView": {
+      "HttpBody_Vec_SystemMailInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10610,7 +10190,7 @@
           }
         }
       },
-      "HttpBody_Vec_TeamInfoView": {
+      "HttpBody_Vec_TeamInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10679,7 +10259,7 @@
           }
         }
       },
-      "HttpBody_Vec_TermInfoView": {
+      "HttpBody_Vec_TermInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10754,7 +10334,7 @@
           }
         }
       },
-      "HttpBody_Vec_TermbaseInfoView": {
+      "HttpBody_Vec_TermbaseInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10836,7 +10416,7 @@
           }
         }
       },
-      "HttpBody_Vec_UnitInfoView": {
+      "HttpBody_Vec_UnitInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -10955,7 +10535,7 @@
           }
         }
       },
-      "HttpBody_Vec_WorksetInfoView": {
+      "HttpBody_Vec_WorksetInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -11029,7 +10609,7 @@
           }
         }
       },
-      "HttpBody_WorksetInfoView": {
+      "HttpBody_WorksetInfoObj": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -11140,7 +10720,7 @@
         },
         "description": "SHA-256 content hash encoded as canonical padded RFC 4648 Base64."
       },
-      "ImageUploadSlotView": {
+      "ImageUploadSlotObj": {
         "type": "object",
         "description": "Presigned capability for one pending image upload.",
         "required": [
@@ -11152,7 +10732,7 @@
           "headers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UploadHeaderView"
+              "$ref": "#/components/schemas/UploadHeaderObj"
             },
             "description": "Headers bound into the PUT signature."
           },
@@ -11168,23 +10748,7 @@
           }
         }
       },
-      "ImportChapterIssuesInstr": {
-        "type": "object",
-        "description": "Replaces the single current review for a Chapter using explicit composite IDs.",
-        "required": [
-          "pages"
-        ],
-        "properties": {
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageIssuesInstr"
-            },
-            "description": "Composite page IDs with their issues; omitted pages have no issues."
-          }
-        }
-      },
-      "ImportChapterIssuesVal": {
+      "ImportChapterIssuesPayload": {
         "type": "object",
         "description": "Counts for the complete chapter import, including empty review pages.",
         "required": [
@@ -11204,30 +10768,7 @@
           }
         }
       },
-      "ImportChapterTranslationInstr": {
-        "type": "object",
-        "description": "Request body for importing chapter translations.",
-        "required": [
-          "format",
-          "mode",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string",
-            "description": "Raw translation content string."
-          },
-          "format": {
-            "$ref": "#/components/schemas/ChapterTranslationFormatInstr",
-            "description": "The translation format (e.g., JSON, SRT)."
-          },
-          "mode": {
-            "$ref": "#/components/schemas/ChapterTranslationImportModeInstr",
-            "description": "source page-content strategy used while applying the imported source."
-          }
-        }
-      },
-      "ImportChapterTranslationVal": {
+      "ImportChapterTranslationPayload": {
         "type": "object",
         "description": "Summary returned after importing chapter translations.",
         "required": [
@@ -11247,7 +10788,7 @@
           }
         }
       },
-      "ImportTermInstr": {
+      "ImportTermBody": {
         "type": "object",
         "description": "One portable terminology entry supplied by an import request.",
         "required": [
@@ -11275,7 +10816,7 @@
           }
         }
       },
-      "ImportTermbaseInstr": {
+      "ImportTermbaseBody": {
         "type": "object",
         "description": "Native terminology-base document supplied to an import endpoint.",
         "required": [
@@ -11297,13 +10838,13 @@
           "terms": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ImportTermInstr"
+              "$ref": "#/components/schemas/ImportTermBody"
             },
             "description": "Portable terminology entries to import."
           }
         }
       },
-      "ImportTermbaseVal": {
+      "ImportTermbasePayload": {
         "type": "object",
         "description": "Result of importing one native terminology-base document.",
         "required": [
@@ -11333,37 +10874,23 @@
           }
         }
       },
-      "IssueEditEntryInstr": {
+      "IssueBody": {
         "type": "object",
-        "description": "Final contents of one stable annotation.",
+        "description": "One issue in a complete chapter import.",
         "required": [
           "variant",
           "note"
         ],
         "properties": {
-          "id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Existing server-assigned identity; exclusive with `local_id`."
-          },
-          "local_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Temporary identity for a new annotation; exclusive with id."
-          },
           "note": {
             "type": "string",
-            "description": "Original text, including empty strings and whitespace."
+            "description": "Original text, preserved verbatim including empty strings and newlines."
           },
           "rect": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/IssueEditRectInstr",
-                "description": "Null denotes a whole-page annotation."
+                "$ref": "#/components/schemas/IssueRectBody",
+                "description": "Optional normalized whole-page rectangle."
               },
               {
                 "type": "null"
@@ -11372,135 +10899,12 @@
           },
           "variant": {
             "type": "string",
-            "description": "Nonblank category name."
+            "description": "Open category, required to contain non-whitespace text."
           }
         },
         "additionalProperties": false
       },
-      "IssueEditPageVal": {
-        "type": "object",
-        "description": "Editable contents tied to a specific review and image generation.",
-        "required": [
-          "page_artwork_id",
-          "review_key",
-          "revision",
-          "chapter_revision",
-          "issues"
-        ],
-        "properties": {
-          "chapter_revision": {
-            "type": "string",
-            "description": "Decimal chapter revision."
-          },
-          "image_version": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Current allocated image generation.",
-            "minimum": 0
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IssueEditView"
-            },
-            "description": "Ordered annotations."
-          },
-          "page_artwork_id": {
-            "type": "string",
-            "description": "Owning composite page."
-          },
-          "review_key": {
-            "type": "string",
-            "description": "Opaque whole-review identity."
-          },
-          "revision": {
-            "type": "string",
-            "description": "Decimal page revision."
-          }
-        }
-      },
-      "IssueEditRectInstr": {
-        "type": "object",
-        "description": "Rectangle expressed in whole-page normalized coordinates.",
-        "required": [
-          "x_coord",
-          "y_coord",
-          "width",
-          "height"
-        ],
-        "properties": {
-          "height": {
-            "type": "number",
-            "format": "double",
-            "description": "Positive height."
-          },
-          "width": {
-            "type": "number",
-            "format": "double",
-            "description": "Positive width."
-          },
-          "x_coord": {
-            "type": "number",
-            "format": "double",
-            "description": "Left edge."
-          },
-          "y_coord": {
-            "type": "number",
-            "format": "double",
-            "description": "Top edge."
-          }
-        },
-        "additionalProperties": false
-      },
-      "IssueEditVariantCountView": {
-        "type": "object",
-        "description": "Usage of a category within the current chapter.",
-        "required": [
-          "variant",
-          "count"
-        ],
-        "properties": {
-          "count": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Number of stored references."
-          },
-          "variant": {
-            "type": "string",
-            "description": "Category name."
-          }
-        }
-      },
-      "IssueEditVariantsVal": {
-        "type": "object",
-        "description": "Stored category references, never the user's local presets.",
-        "required": [
-          "review_key",
-          "revision",
-          "variants"
-        ],
-        "properties": {
-          "review_key": {
-            "type": "string",
-            "description": "Opaque review identity."
-          },
-          "revision": {
-            "type": "string",
-            "description": "Decimal chapter revision."
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IssueEditVariantCountView"
-            },
-            "description": "Names currently used by at least one annotation."
-          }
-        }
-      },
-      "IssueEditView": {
+      "IssueEditObj": {
         "type": "object",
         "description": "One editable page annotation.",
         "required": [
@@ -11531,7 +10935,7 @@
           "rect": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/IssueRectView",
+                "$ref": "#/components/schemas/IssueRectObj",
                 "description": "Null denotes a whole-page annotation."
               },
               {
@@ -11545,7 +10949,97 @@
           }
         }
       },
-      "IssueInfoView": {
+      "IssueEditPagePayload": {
+        "type": "object",
+        "description": "Editable contents tied to a specific review and image generation.",
+        "required": [
+          "page_artwork_id",
+          "review_key",
+          "revision",
+          "chapter_revision",
+          "issues"
+        ],
+        "properties": {
+          "chapter_revision": {
+            "type": "string",
+            "description": "Decimal chapter revision."
+          },
+          "image_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Current allocated image generation.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditObj"
+            },
+            "description": "Ordered annotations."
+          },
+          "page_artwork_id": {
+            "type": "string",
+            "description": "Owning composite page."
+          },
+          "review_key": {
+            "type": "string",
+            "description": "Opaque whole-review identity."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal page revision."
+          }
+        }
+      },
+      "IssueEditVariantCountObj": {
+        "type": "object",
+        "description": "Usage of a category within the current chapter.",
+        "required": [
+          "variant",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of stored references."
+          },
+          "variant": {
+            "type": "string",
+            "description": "Category name."
+          }
+        }
+      },
+      "IssueEditVariantsPayload": {
+        "type": "object",
+        "description": "Stored category references, never the user's local presets.",
+        "required": [
+          "review_key",
+          "revision",
+          "variants"
+        ],
+        "properties": {
+          "review_key": {
+            "type": "string",
+            "description": "Opaque review identity."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Decimal chapter revision."
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEditVariantCountObj"
+            },
+            "description": "Names currently used by at least one annotation."
+          }
+        }
+      },
+      "IssueInfoObj": {
         "type": "object",
         "description": "Read-only issue in the chapter's single current review.",
         "required": [
@@ -11576,7 +11070,7 @@
           "rect": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/IssueRectView",
+                "$ref": "#/components/schemas/IssueRectObj",
                 "description": "Optional whole-page rectangle."
               },
               {
@@ -11590,37 +11084,7 @@
           }
         }
       },
-      "IssueInstr": {
-        "type": "object",
-        "description": "One issue in a complete chapter import.",
-        "required": [
-          "variant",
-          "note"
-        ],
-        "properties": {
-          "note": {
-            "type": "string",
-            "description": "Original text, preserved verbatim including empty strings and newlines."
-          },
-          "rect": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRectInstr",
-                "description": "Optional normalized whole-page rectangle."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "variant": {
-            "type": "string",
-            "description": "Open category, required to contain non-whitespace text."
-          }
-        },
-        "additionalProperties": false
-      },
-      "IssueRectInstr": {
+      "IssueRectBody": {
         "type": "object",
         "description": "A finite rectangle contained within the normalized whole composite.",
         "required": [
@@ -11652,7 +11116,7 @@
           }
         }
       },
-      "IssueRectView": {
+      "IssueRectObj": {
         "type": "object",
         "description": "Geometry in normalized whole-page coordinates.",
         "required": [
@@ -11684,7 +11148,7 @@
           }
         }
       },
-      "JoinAssignmentInvitationInstr": {
+      "JoinAssignmentInvitationBody": {
         "type": "object",
         "description": "Input parameters for joining an assignment through an invitation code.",
         "required": [
@@ -11697,7 +11161,7 @@
           }
         }
       },
-      "JoinChapterAssignmentInstr": {
+      "JoinChapterAssignmentBody": {
         "type": "object",
         "description": "Input parameters for a user joining a chapter as a worker via role\nselection.\n\nThe role mask must contain role bits that are valid for volunteer\nassignment; the use case layer validates this before applying.",
         "required": [
@@ -11715,7 +11179,7 @@
           }
         }
       },
-      "JoinTeamInstr": {
+      "JoinTeamBody": {
         "type": "object",
         "description": "Input parameters for joining a team through a member invitation.",
         "required": [
@@ -11728,7 +11192,7 @@
           }
         }
       },
-      "ListComicInfosVal": {
+      "ListComicInfosPayload": {
         "type": "object",
         "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` and `pinned_chapter_assignments` are positionally aligned\nwith `comics`. Their entries are populated only when the corresponding\n`with` options are requested.",
         "required": [
@@ -11740,7 +11204,7 @@
           "comics": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ComicInfoView"
+              "$ref": "#/components/schemas/ComicInfoObj"
             },
             "description": "Comic information for the listed comics."
           },
@@ -11749,7 +11213,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/AssignmentInfoView"
+                "$ref": "#/components/schemas/AssignmentInfoObj"
               }
             },
             "description": "Assignments, including their users, for each pinned chapter,\npositionally aligned with `comics`."
@@ -11759,7 +11223,7 @@
             "items": {
               "oneOf": [
                 {
-                  "$ref": "#/components/schemas/ChapterInfoView"
+                  "$ref": "#/components/schemas/ChapterInfoObj"
                 },
                 {
                   "type": "null"
@@ -11770,7 +11234,7 @@
           }
         }
       },
-      "ListPageSourceUnitInfosVal": {
+      "ListPageSourceUnitInfosPayload": {
         "type": "object",
         "description": "Return value for listing visible Units under one source page.",
         "required": [
@@ -11798,31 +11262,13 @@
           "unit_infos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitInfoView"
+              "$ref": "#/components/schemas/UnitInfoObj"
             },
             "description": "Visible Units in final linked-list order."
           }
         }
       },
-      "LoginAuthInstr": {
-        "type": "object",
-        "description": "Input parameters for user login.",
-        "required": [
-          "qid",
-          "password"
-        ],
-        "properties": {
-          "password": {
-            "type": "string",
-            "description": "User password."
-          },
-          "qid": {
-            "type": "string",
-            "description": "Unique user identifier for authentication."
-          }
-        }
-      },
-      "LoginAuthVal": {
+      "LoginAuthPayload": {
         "type": "object",
         "description": "Return value from a successful login.",
         "required": [
@@ -11840,7 +11286,7 @@
           }
         }
       },
-      "MarkChapterArtworkUploadedInstr": {
+      "MarkChapterArtworkUploadedBody": {
         "type": "object",
         "description": "Confirmation of one exact current artwork generation.",
         "required": [
@@ -11855,7 +11301,7 @@
           }
         }
       },
-      "MarkComicCoverUploadedInstr": {
+      "MarkComicCoverUploadedBody": {
         "type": "object",
         "description": "Request to confirm one allocated comic cover version.",
         "required": [
@@ -11870,7 +11316,7 @@
           }
         }
       },
-      "MarkPageArtworkImageUploadedInstr": {
+      "MarkPageArtworkImageUploadedBody": {
         "type": "object",
         "description": "Exact-generation composite upload confirmation.",
         "required": [
@@ -11886,7 +11332,7 @@
         },
         "additionalProperties": false
       },
-      "MarkPageSourceImageUploadedInstr": {
+      "MarkPageSourceImageUploadedBody": {
         "type": "object",
         "description": "Input parameters for confirming a page image upload completed.",
         "required": [
@@ -11902,7 +11348,7 @@
         },
         "additionalProperties": false
       },
-      "MarkSystemMailReadInstr": {
+      "MarkSystemMailReadBody": {
         "type": "object",
         "description": "Input parameters for marking a batch of system mails as read.",
         "required": [
@@ -11918,7 +11364,7 @@
           }
         }
       },
-      "MarkTeamAvatarUploadedInstr": {
+      "MarkTeamAvatarUploadedBody": {
         "type": "object",
         "description": "Request to confirm one allocated team avatar version.",
         "required": [
@@ -11933,9 +11379,9 @@
           }
         }
       },
-      "MarkUserAvatarUploadedInstr": {
+      "MarkUserAvatarUploadedBody": {
         "type": "object",
-        "description": "Request to confirm one allocated user avatar version.",
+        "description": "Request body for confirming one allocated user avatar version.",
         "required": [
           "image_version"
         ],
@@ -11956,7 +11402,7 @@
           "team"
         ]
       },
-      "MemberInfoView": {
+      "MemberInfoObj": {
         "type": "object",
         "description": "Presentation-ready membership information.",
         "required": [
@@ -11988,7 +11434,7 @@
           "team": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/TeamInfoView",
+                "$ref": "#/components/schemas/TeamInfoObj",
                 "description": "Resolved team detail, present when the `team` include option is requested."
               },
               {
@@ -12003,7 +11449,7 @@
           "user": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Resolved user detail, present when the `user` include option is requested."
               },
               {
@@ -12024,7 +11470,7 @@
           "invitor"
         ]
       },
-      "MemberInvitationInfoView": {
+      "MemberInvitationInfoObj": {
         "type": "object",
         "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo",
         "required": [
@@ -12052,7 +11498,7 @@
           "invitor": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/UserInfoView",
+                "$ref": "#/components/schemas/UserInfoObj",
                 "description": "Resolved invitor user information, present only when requested via incl."
               },
               {
@@ -12163,7 +11609,7 @@
           }
         }
       },
-      "PageArtworkImageInstr": {
+      "PageArtworkImageBody": {
         "type": "object",
         "description": "One item in an authoritative composite manifest.",
         "required": [
@@ -12205,7 +11651,7 @@
         },
         "additionalProperties": false
       },
-      "PageArtworkInfoView": {
+      "PageArtworkInfoObj": {
         "type": "object",
         "description": "Presentation-ready composite artwork page information.",
         "required": [
@@ -12298,7 +11744,7 @@
           }
         }
       },
-      "PageIssuesInstr": {
+      "PageIssuesBody": {
         "type": "object",
         "description": "Issues for one explicit composite page in the imported review file.",
         "required": [
@@ -12309,7 +11755,7 @@
           "issues": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IssueInstr"
+              "$ref": "#/components/schemas/IssueBody"
             },
             "description": "Array order determines the zero-based issue index."
           },
@@ -12319,7 +11765,7 @@
           }
         }
       },
-      "PageSourceImageInstr": {
+      "PageSourceImageBody": {
         "type": "object",
         "description": "One page image in a complete chapter manifest.",
         "required": [
@@ -12361,7 +11807,7 @@
         },
         "additionalProperties": false
       },
-      "PageSourceInfoView": {
+      "PageSourceInfoObj": {
         "type": "object",
         "description": "Presentation-ready page information.",
         "required": [
@@ -12479,7 +11925,7 @@
           }
         }
       },
-      "PageSourceTranslationPortView": {
+      "PageSourceTranslationPortObj": {
         "type": "object",
         "description": "source page object exchanged by the `PopRaKo` translation port.",
         "required": [
@@ -12500,13 +11946,13 @@
           "units": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTranslationPortView"
+              "$ref": "#/components/schemas/UnitTranslationPortObj"
             },
             "description": "Units belonging to this page."
           }
         }
       },
-      "PageSourceUnitDiffStatsVal": {
+      "PageSourceUnitDiffStatsPayload": {
         "type": "object",
         "description": "Visible Unit text statistics for a source page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
         "required": [
@@ -12543,7 +11989,7 @@
           }
         }
       },
-      "PageSourceUnitFlaggedStatsVal": {
+      "PageSourceUnitFlaggedStatsPayload": {
         "type": "object",
         "description": "Visible flagged Unit statistics for one matching source page.",
         "required": [
@@ -12622,7 +12068,7 @@
         ],
         "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
       },
-      "PatchInput_UnitRevisionInstr": {
+      "PatchInput_UnitRevisionBody": {
         "oneOf": [
           {
             "type": "object",
@@ -12694,7 +12140,7 @@
         ],
         "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
       },
-      "PatchInput_UnitTranslationInstr": {
+      "PatchInput_UnitTranslationBody": {
         "oneOf": [
           {
             "type": "object",
@@ -12759,35 +12205,7 @@
         ],
         "description": "Tagged request representation shared by Patch deserialization and `OpenAPI`."
       },
-      "RegisterAuthInstr": {
-        "type": "object",
-        "description": "Input parameters for user registration.",
-        "required": [
-          "qid",
-          "nickname",
-          "password",
-          "code"
-        ],
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "Verification code."
-          },
-          "nickname": {
-            "type": "string",
-            "description": "Display name for the user."
-          },
-          "password": {
-            "type": "string",
-            "description": "User password."
-          },
-          "qid": {
-            "type": "string",
-            "description": "Unique user identifier for authentication."
-          }
-        }
-      },
-      "RegisterAuthVal": {
+      "RegisterAuthPayload": {
         "type": "object",
         "description": "Return value from a successful registration.",
         "required": [
@@ -12805,36 +12223,7 @@
           }
         }
       },
-      "RenameIssueEditVariantInstr": {
-        "type": "object",
-        "description": "Renames references only when the chapter snapshot is still current.",
-        "required": [
-          "review_key",
-          "revision",
-          "from",
-          "to"
-        ],
-        "properties": {
-          "from": {
-            "type": "string",
-            "description": "Current category name."
-          },
-          "review_key": {
-            "type": "string",
-            "description": "Expected review identity."
-          },
-          "revision": {
-            "type": "string",
-            "description": "Decimal chapter revision from the category summary."
-          },
-          "to": {
-            "type": "string",
-            "description": "New category name."
-          }
-        },
-        "additionalProperties": false
-      },
-      "RenameIssueEditVariantVal": {
+      "RenameIssueEditVariantPayload": {
         "type": "object",
         "description": "Result of an atomic chapter-wide category rename.",
         "required": [
@@ -12845,12 +12234,12 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IssueEditPageVal"
+              "$ref": "#/components/schemas/IssueEditPagePayload"
             },
             "description": "Fresh documents for every changed page."
           },
           "summary": {
-            "$ref": "#/components/schemas/IssueEditVariantsVal",
+            "$ref": "#/components/schemas/IssueEditVariantsPayload",
             "description": "Current usage summary after the rename."
           }
         }
@@ -12869,43 +12258,7 @@
         "example": 34,
         "minimum": 0
       },
-      "SavePageIssuesInstr": {
-        "type": "object",
-        "description": "Complete ordered page replacement guarded by its loaded context.",
-        "required": [
-          "review_key",
-          "revision",
-          "issues"
-        ],
-        "properties": {
-          "image_version": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Exact image generation shown while editing, or null.",
-            "minimum": 0
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IssueEditEntryInstr"
-            },
-            "description": "Final ordered contents; empty clears the page."
-          },
-          "review_key": {
-            "type": "string",
-            "description": "Opaque review identity returned by the read endpoint."
-          },
-          "revision": {
-            "type": "string",
-            "description": "Decimal page revision returned by the read endpoint."
-          }
-        },
-        "additionalProperties": false
-      },
-      "SavePageIssuesVal": {
+      "SavePageIssuesPayload": {
         "type": "object",
         "description": "Committed annotation document and identities assigned by the save batch.",
         "required": [
@@ -12916,17 +12269,17 @@
           "created_issue_ids": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreatedIssueIdVal"
+              "$ref": "#/components/schemas/CreatedIssueIdPayload"
             },
             "description": "Stable mappings retained for retries of this batch."
           },
           "page": {
-            "$ref": "#/components/schemas/IssueEditPageVal",
+            "$ref": "#/components/schemas/IssueEditPagePayload",
             "description": "Latest document under the same review and image context."
           }
         }
       },
-      "SavePageSourceUnitEditsVal": {
+      "SavePageSourceUnitEditsPayload": {
         "type": "object",
         "description": "Result of every successful Unit save, including replayed saves.",
         "required": [
@@ -12936,7 +12289,7 @@
           "created_unit_ids": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreatedUnitIdVal"
+              "$ref": "#/components/schemas/CreatedUnitIdPayload"
             },
             "description": "Explicit identity pairs; empty when the batch creates no Units."
           }
@@ -12948,7 +12301,7 @@
         "description": "A composite bitmask storing the phase of all 6 workflow stages.\n\nEach stage occupies 2 bits (4 possible states matching\n[`StagePhaseField`]), ordered from low bits:\n\n| Stage | Bits | Field |\n|:---:|:---:|:---:|\n| RawProvide | 0–1 | `StagePhaseField` |\n| Translate | 2–3 | `StagePhaseField` |\n| Proofread | 4–5 | `StagePhaseField` |\n| TypesetRedraw | 6–7 | `StagePhaseField` |\n| Review | 8–9 | `StagePhaseField` |\n| Publish | 10–11 | `StagePhaseField` |",
         "minimum": 0
       },
-      "SystemMailInfoView": {
+      "SystemMailInfoObj": {
         "type": "object",
         "description": "Presentation-ready system mail value.\n\nConverts the raw [`SystemMailInfo`] timestamp to Unix milliseconds\nand omits the internal `receiver_id` field.",
         "required": [
@@ -12982,7 +12335,7 @@
           }
         }
       },
-      "TeamInfoView": {
+      "TeamInfoObj": {
         "type": "object",
         "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
         "required": [
@@ -13031,7 +12384,7 @@
           }
         }
       },
-      "TermInfoView": {
+      "TermInfoObj": {
         "type": "object",
         "description": "Presentation-ready terminology-entry information.",
         "required": [
@@ -13086,7 +12439,7 @@
           }
         }
       },
-      "TermbaseInfoView": {
+      "TermbaseInfoObj": {
         "type": "object",
         "description": "Presentation-ready terminology-base information.",
         "required": [
@@ -13148,7 +12501,7 @@
           }
         }
       },
-      "TermbaseTermView": {
+      "TermbaseTermObj": {
         "type": "object",
         "description": "Portable terminology-entry content without persistence metadata.",
         "required": [
@@ -13176,7 +12529,7 @@
           }
         }
       },
-      "TransformChapterUnitsInstr": {
+      "TransformChapterUnitsBody": {
         "type": "object",
         "description": "Input parameters for transforming selected Units under one Chapter.",
         "required": [
@@ -13191,14 +12544,14 @@
           "units": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTransformInstr"
+              "$ref": "#/components/schemas/UnitTransformBody"
             },
             "description": "Selected Units and their literal transforms."
           }
         },
         "additionalProperties": false
       },
-      "UnitCoordInstr": {
+      "UnitCoordBody": {
         "type": "object",
         "description": "source page-relative Unit coordinates.",
         "required": [
@@ -13219,7 +12572,7 @@
         },
         "additionalProperties": false
       },
-      "UnitEditInstr": {
+      "UnitEditBody": {
         "oneOf": [
           {
             "type": "object",
@@ -13232,7 +12585,7 @@
             ],
             "properties": {
               "coord": {
-                "$ref": "#/components/schemas/UnitCoordInstr",
+                "$ref": "#/components/schemas/UnitCoordBody",
                 "description": "Initial page-relative coordinate."
               },
               "edit": {
@@ -13263,7 +12616,7 @@
               "revision": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UnitRevisionInstr",
+                    "$ref": "#/components/schemas/UnitRevisionBody",
                     "description": "Optional initial revision assignment."
                   },
                   {
@@ -13274,7 +12627,7 @@
               "translation": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UnitTranslationInstr",
+                    "$ref": "#/components/schemas/UnitTranslationBody",
                     "description": "Optional initial translation assignment."
                   },
                   {
@@ -13309,7 +12662,7 @@
               "coord": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/UnitCoordInstr",
+                    "$ref": "#/components/schemas/UnitCoordBody",
                     "description": "Optional coordinate replacement."
                   },
                   {
@@ -13355,7 +12708,7 @@
               "revision": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/PatchInput_UnitRevisionInstr",
+                    "$ref": "#/components/schemas/PatchInput_UnitRevisionBody",
                     "description": "Three-state revision patch."
                   },
                   {
@@ -13366,7 +12719,7 @@
               "translation": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/PatchInput_UnitTranslationInstr",
+                    "$ref": "#/components/schemas/PatchInput_UnitTranslationBody",
                     "description": "Three-state translation patch."
                   },
                   {
@@ -13421,7 +12774,7 @@
         ],
         "description": "One transport-facing Unit edit."
       },
-      "UnitInfoView": {
+      "UnitInfoObj": {
         "type": "object",
         "description": "Presentation-ready visible Unit information.",
         "required": [
@@ -13520,7 +12873,7 @@
           }
         }
       },
-      "UnitRevisionInstr": {
+      "UnitRevisionBody": {
         "type": "object",
         "description": "Revision assignment accepted from the client.",
         "required": [
@@ -13549,7 +12902,7 @@
           "proofread_text"
         ]
       },
-      "UnitTextTransformInstr": {
+      "UnitTextTransformBody": {
         "type": "object",
         "description": "One literal text transform supplied by the client.",
         "required": [
@@ -13568,7 +12921,7 @@
         },
         "additionalProperties": false
       },
-      "UnitTransformInstr": {
+      "UnitTransformBody": {
         "type": "object",
         "description": "Text transforms supplied for one permanent Unit.",
         "required": [
@@ -13579,7 +12932,7 @@
           "transforms": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTextTransformInstr"
+              "$ref": "#/components/schemas/UnitTextTransformBody"
             },
             "description": "Literal transforms evaluated against the same original text."
           },
@@ -13590,7 +12943,7 @@
         },
         "additionalProperties": false
       },
-      "UnitTranslationInstr": {
+      "UnitTranslationBody": {
         "type": "object",
         "description": "Translation assignment accepted from the client.",
         "required": [
@@ -13604,7 +12957,7 @@
         },
         "additionalProperties": false
       },
-      "UnitTranslationPortView": {
+      "UnitTranslationPortObj": {
         "type": "object",
         "description": "Unit object exchanged by the `PopRaKo` translation port.",
         "required": [
@@ -13702,7 +13055,7 @@
           }
         }
       },
-      "UpdateAnnouncementInfoInstr": {
+      "UpdateAnnouncementInfoBody": {
         "type": "object",
         "description": "Input parameters for replacing an announcement's editable fields.",
         "required": [
@@ -13725,7 +13078,7 @@
           }
         }
       },
-      "UpdateAssignmentRolesInstr": {
+      "UpdateAssignmentRolesBody": {
         "type": "object",
         "description": "Input parameters for updating assignment roles.",
         "required": [
@@ -13748,7 +13101,7 @@
           }
         }
       },
-      "UpdateChapterInfoInstr": {
+      "UpdateChapterInfoBody": {
         "type": "object",
         "description": "Input parameters for partially updating a chapter's profile.",
         "required": [
@@ -13768,7 +13121,7 @@
           }
         }
       },
-      "UpdateChapterStageInstr": {
+      "UpdateChapterStageBody": {
         "type": "object",
         "description": "Input parameters for applying one chapter workflow-stage operation.",
         "required": [
@@ -13782,16 +13135,16 @@
             "description": "Chapter identifier to update."
           },
           "oper": {
-            "$ref": "#/components/schemas/ChapterStageOperInstr",
+            "$ref": "#/components/schemas/ChapterStageOperBody",
             "description": "Operation to apply to the target stage (e.g. start, finish, revert)."
           },
           "stage": {
-            "$ref": "#/components/schemas/ChapterStageInstr",
+            "$ref": "#/components/schemas/ChapterStageBody",
             "description": "Workflow stage to operate on."
           }
         }
       },
-      "UpdateComicInfoInstr": {
+      "UpdateComicInfoBody": {
         "type": "object",
         "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`alloc_cover`]: crate::usecase::comic::alloc_cover",
         "required": [
@@ -13821,7 +13174,7 @@
           }
         }
       },
-      "UpdateMemberInvitationRolesInstr": {
+      "UpdateMemberInvitationRolesBody": {
         "type": "object",
         "description": "Input parameters for updating a pending invitation's roles.",
         "required": [
@@ -13839,7 +13192,7 @@
           }
         }
       },
-      "UpdateMemberRolesInstr": {
+      "UpdateMemberRolesBody": {
         "type": "object",
         "description": "Input parameters for updating a member's roles.",
         "required": [
@@ -13857,7 +13210,7 @@
           }
         }
       },
-      "UpdateTeamInfoInstr": {
+      "UpdateTeamInfoBody": {
         "type": "object",
         "description": "Input parameters for updating a team's profile.",
         "required": [
@@ -13880,7 +13233,7 @@
           }
         }
       },
-      "UpdateTermInfoInstr": {
+      "UpdateTermInfoBody": {
         "type": "object",
         "description": "Input parameters for replacing terminology-entry fields.",
         "required": [
@@ -13913,7 +13266,7 @@
           }
         }
       },
-      "UpdateTermbaseInfoInstr": {
+      "UpdateTermbaseInfoBody": {
         "type": "object",
         "description": "Input parameters for replacing terminology-base profile fields.",
         "required": [
@@ -13938,9 +13291,9 @@
           }
         }
       },
-      "UpdateUserInfoInstr": {
+      "UpdateUserInfoBody": {
         "type": "object",
-        "description": "Input parameters for updating a user's profile.",
+        "description": "Request body for updating a user's profile.",
         "required": [
           "id",
           "qid",
@@ -13961,9 +13314,9 @@
           }
         }
       },
-      "UpdateUserPasswordInstr": {
+      "UpdateUserPasswordBody": {
         "type": "object",
-        "description": "Input parameters for replacing the authenticated user's password.",
+        "description": "Request body for replacing the authenticated user's password.",
         "required": [
           "current_password",
           "new_password"
@@ -13979,7 +13332,7 @@
           }
         }
       },
-      "UpdateWorksetInfoInstr": {
+      "UpdateWorksetInfoBody": {
         "type": "object",
         "description": "Input parameters for updating a workset's name and description.\n\nCover and counter updates are handled internally by the repo layer.",
         "required": [
@@ -14004,7 +13357,7 @@
           }
         }
       },
-      "UploadHeaderView": {
+      "UploadHeaderObj": {
         "type": "object",
         "description": "One header bound into a presigned upload request.",
         "required": [
@@ -14022,9 +13375,9 @@
           }
         }
       },
-      "UserInfoView": {
+      "UserInfoObj": {
         "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
+        "description": "Presentation-ready user profile payload.",
         "required": [
           "id",
           "nickname",
@@ -14082,7 +13435,7 @@
           }
         }
       },
-      "WorksetInfoView": {
+      "WorksetInfoObj": {
         "type": "object",
         "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
         "required": [

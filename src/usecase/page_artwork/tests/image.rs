@@ -5,6 +5,7 @@
 
 use super::{alloc, config, mark, page, seed, token};
 
+use crate::api::http::object::page_artwork::PageArtworkInfoObj;
 use crate::data::instr::page_artwork::AllocPageArtworkImageInstr;
 use crate::part_impl::repo::mock_impl::MockContext;
 use crate::usecase::page_artwork as page_artwork_usecase;
@@ -58,7 +59,13 @@ async fn composite_list_exposes_only_raw_and_thumbnail_images() {
 
     assert!(image_thumbnail_url.starts_with("https://obj.test/thumbnail/"));
 
-    let payload = serde_json::to_value(&page_artwork_info_views).unwrap();
+    let payload = serde_json::to_value(
+        page_artwork_info_views
+            .into_iter()
+            .map(PageArtworkInfoObj::from)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
 
     let pages = payload.as_array().unwrap();
 

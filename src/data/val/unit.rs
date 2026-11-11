@@ -1,24 +1,15 @@
 //! Val DTOs for the unit domain.
-
 //! Data transfer objects for page Unit use cases.
 //!
 //! Types in this module describe how client-supplied edit payloads are
 //! represented and how persisted Unit rows are projected back into API-facing
 //! response types.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo};
 use crate::value::unit_save::UnitSaveCreatedUnitId;
 
 /// Return value for listing visible Units under one source page.
-#[derive(Serialize)]
 #[cfg_attr(test, derive(Debug))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageSourceUnitInfosVal {
     /// Visible Units in final linked-list order.
     pub unit_infos: Vec<UnitInfoView>,
@@ -51,9 +42,7 @@ impl ListPageSourceUnitInfosVal {
 }
 
 /// One explicit identity pair returned for a newly created Unit.
-#[derive(Serialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreatedUnitIdVal {
     /// Client identity from the create operation.
     pub local_id: String,
@@ -62,9 +51,7 @@ pub struct CreatedUnitIdVal {
 }
 
 /// Result of every successful Unit save, including replayed saves.
-#[derive(Serialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageSourceUnitEditsVal {
     /// Explicit identity pairs; empty when the batch creates no Units.
     pub created_unit_ids: Vec<CreatedUnitIdVal>,

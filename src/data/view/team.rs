@@ -1,13 +1,4 @@
 //! View DTOs for the team domain.
-
-#[cfg(test)]
-mod tests;
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::obj_url::ObjUrlView;
@@ -17,8 +8,6 @@ use crate::model::read::proj::team::TeamInfo;
 ///
 /// Converts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an
 /// avatar origin and thumbnail URLs already resolved by the use-case layer.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoView {
     /// Unique team identifier.
     pub id: String,
@@ -29,12 +18,8 @@ pub struct TeamInfoView {
     pub description: String,
 
     /// Signed avatar download URL, when one has been uploaded.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
     pub avatar_url: Option<ObjUrlView>,
     /// Signed avatar-thumbnail download URL, when available.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
     pub avatar_thumbnail_url: Option<ObjUrlView>,
 
     /// Timestamp of creation, in Unix milliseconds.

@@ -1,15 +1,8 @@
 //! View DTOs for unit translation port import and export.
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
-use crate::model::shared::translation_document::UnitTranslationDocument;
+use crate::value::chapter_port::document::UnitTranslationDocument;
 
 /// Unit object exchanged by the `PopRaKo` translation port.
-#[derive(Clone, Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Clone)]
 pub struct UnitTranslationPortView {
     /// Unit identifier from the exporting chapter.
     pub unit_id: String,
@@ -31,30 +24,23 @@ pub struct UnitTranslationPortView {
     /// Whether this unit represents a speech bubble area.
     pub is_bubble: bool,
     /// Whether this Unit is flagged for later review.
-    #[serde(default)]
     pub is_flagged: bool,
 
     /// Translation text annotation delivered to typesetters.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub typography_note: Option<String>,
     /// Communication between translators and proofreaders.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub translation_note: Option<String>,
 
     /// Translated text content, or [`None`] if not translated.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
     /// Identifier of the translator user, or [`None`]. This is export metadata.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub translator_id: Option<String>,
 
     /// Whether this unit has been proofread.
     pub is_proofread: bool,
     /// Proofread text content, or [`None`] if not proofread.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
     /// Identifier of the proofreader user, or [`None`]. This is export metadata.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofreader_id: Option<String>,
 }
 

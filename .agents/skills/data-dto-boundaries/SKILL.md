@@ -1,6 +1,6 @@
 ---
 name: data-dto-boundaries
-description: Define and review Instr, Val, and View roles, fields, conversions, serialization, and dependencies under src/data.
+description: Define and review Instr, Val, and View roles, fields, conversions, and dependencies under src/data, plus their HTTP wire mirrors under src/api/http/object.
 ---
 
 # Data DTO boundaries
@@ -40,10 +40,22 @@ a response aggregate to View merely because most of its fields are Views.
 - Reusable fragments live in `data::view` and normally end in `View`.
   Exposed model `*Info` projections end in `InfoView`.
 - Check the type's meaning, module, suffix, imports, fields, conversions, and
-  serialization together. Keep endpoint-specific aggregation on Val.
+  wire placement together. Keep endpoint-specific aggregation on Val.
 - Read nearby DTOs and `src/data.rs` before introducing a category or
   dependency pattern. Follow
   [struct-field-blank-lines](../struct-field-blank-lines/SKILL.md) for grouping.
+
+## HTTP wire mirrors
+
+`data` types are wire-neutral: no `serde`, no `utoipa`, no wire naming. Every
+HTTP input and output shape is mirrored under `src/api/http/object` with the
+suffix mapping `Instr` -> `Body` (or `Query` when read from the query string),
+`Val` -> `Payload`, and `View` -> `Obj`. The mirror owns all `serde`/`utoipa`
+attributes, the `image_ver`/`image_version` rename, and a `From` conversion from
+its data type. Handlers deserialize mirrors and convert them into use-case
+inputs, then convert use-case values back through the mirror or the
+`Wire`/`AcceptInto` helpers. `serde-scope` rejects `serde` definitions outside
+`src/value`, `src/model` is fully serde-free, and no barrel re-exports exist.
 
 For example, `ListComicInfosVal { comics: Vec<ComicInfoView>, ... }` is valid
 response composition; `UserInfoView { result: CreateUserVal }` and

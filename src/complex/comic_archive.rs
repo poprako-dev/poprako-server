@@ -1,5 +1,4 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::check_user_is_team_admin;
@@ -121,7 +120,7 @@ fn build_entry(
         //
         let comic_payload = build_comic_payload(&comic_archive_snapshot)?;
 
-        serde_json::to_string(&comic_payload).map_err(|error| {
+        comic_payload.to_json_string().map_err(|error| {
             //
             unrecoverable_error! {
                 message: format!(

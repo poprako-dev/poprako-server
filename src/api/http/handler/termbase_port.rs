@@ -1,5 +1,4 @@
 //! Native terminology-base import and export handlers.
-
 #[cfg(test)]
 // Tests for native terminology-base query and wire contracts.
 mod tests;
@@ -7,38 +6,22 @@ mod tests;
 use axum::body::Bytes;
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::{HeaderValue, StatusCode, header};
-use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
-
+use crate::api::http::object::termbase_port::{
+    AppendTermbaseBody, AppendTermbasePayload, ExportTermbasePayload,
+    ImportTermbaseBody, ImportTermbasePayload, ImportTermbaseQuery,
+};
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpError, HttpRawBody, HttpResult,
+    AcceptInto as _, HttpBody, HttpError, HttpRawBody, HttpResult,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::termbase_port::{
-    AppendTermbaseInstr, ImportTermbaseInstr,
-};
-use crate::data::val::termbase_port::{
-    AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
-};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::termbase_port as termbase_port_usecase;
 use crate::value::termbase::TermbaseScope;
-
-/// Query controls for terminology-base import.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct ImportTermbaseQuery {
-    /// Merge into a same-name terminology base instead of rejecting it.
-    #[serde(default)]
-    force_merge: bool,
-}
 
 /// `GET /api/v1/termbases/{termbase_id}/export` — export native JSON.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -48,7 +31,7 @@ pub struct ImportTermbaseQuery {
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
         (status = 200, description = "Native terminology-base export",
-            body = ExportTermbaseVal, content_type = "application/json"),
+            body = ExportTermbasePayload, content_type = "application/json"),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -73,7 +56,7 @@ pub async fn export(
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
         (status = 200, description = "Native terminology-base download",
-            body = ExportTermbaseVal, content_type = "application/json"),
+            body = ExportTermbasePayload, content_type = "application/json"),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -113,12 +96,12 @@ pub async fn export_download(
         ("team_id" = String, Path, description = "Team ID"),
         ImportTermbaseQuery,
     ),
-    request_body = ImportTermbaseInstr,
+    request_body = ImportTermbaseBody,
     responses(
         (status = 200, description = "Termbase merged",
-            body = HttpBody<ImportTermbaseVal>),
+            body = HttpBody<ImportTermbasePayload>),
         (status = 201, description = "Termbase imported",
-            body = HttpBody<ImportTermbaseVal>),
+            body = HttpBody<ImportTermbasePayload>),
         (status = 403, description = "Team translator or proofreader required"),
         (status = 422, description = "Invalid document, capacity, or \
         duplicate name"),
@@ -130,8 +113,8 @@ pub async fn import_team(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ImportTermbaseQuery>,
-    Json(instr): Json<ImportTermbaseInstr>,
-) -> HttpResult<ImportTermbaseVal> {
+    Json(instr): Json<ImportTermbaseBody>,
+) -> HttpResult<ImportTermbasePayload> {
     //
     let import_termbase_val =
         termbase_port_usecase::import::<_, RdbContext<ReptRead>, RdbRepo>(
@@ -139,15 +122,15 @@ pub async fn import_team(
             user_token,
             TermbaseScope::Team { team_id },
             query.force_merge,
-            instr,
+            instr.into(),
         )
         .await?;
 
     if import_termbase_val.created {
-        return Ok(import_termbase_val.accept(StatusCode::CREATED));
+        return Ok(import_termbase_val.accept_into(StatusCode::CREATED));
     }
 
-    Ok(import_termbase_val.accept(StatusCode::OK))
+    Ok(import_termbase_val.accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/comics/{comic_id}/termbases/import` — import into a comic scope.
@@ -159,12 +142,12 @@ pub async fn import_team(
         ("comic_id" = String, Path, description = "Comic ID"),
         ImportTermbaseQuery,
     ),
-    request_body = ImportTermbaseInstr,
+    request_body = ImportTermbaseBody,
     responses(
         (status = 200, description = "Termbase merged",
-            body = HttpBody<ImportTermbaseVal>),
+            body = HttpBody<ImportTermbasePayload>),
         (status = 201, description = "Termbase imported",
-            body = HttpBody<ImportTermbaseVal>),
+            body = HttpBody<ImportTermbasePayload>),
         (status = 403, description = "Team translator or proofreader required"),
         (status = 422, description = "Invalid document, capacity, or \
         duplicate name"),
@@ -176,8 +159,8 @@ pub async fn import_comic(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ImportTermbaseQuery>,
-    Json(instr): Json<ImportTermbaseInstr>,
-) -> HttpResult<ImportTermbaseVal> {
+    Json(instr): Json<ImportTermbaseBody>,
+) -> HttpResult<ImportTermbasePayload> {
     //
     let import_termbase_val =
         termbase_port_usecase::import::<_, RdbContext<ReptRead>, RdbRepo>(
@@ -185,15 +168,15 @@ pub async fn import_comic(
             user_token,
             TermbaseScope::Comic { comic_id },
             query.force_merge,
-            instr,
+            instr.into(),
         )
         .await?;
 
     if import_termbase_val.created {
-        return Ok(import_termbase_val.accept(StatusCode::CREATED));
+        return Ok(import_termbase_val.accept_into(StatusCode::CREATED));
     }
 
-    Ok(import_termbase_val.accept(StatusCode::OK))
+    Ok(import_termbase_val.accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/termbases/{termbase_id}/append` — atomically append portable terms.
@@ -210,10 +193,10 @@ pub async fn import_comic(
     uncertain response.",
     params(("termbase_id" = String, Path,
         description = "Existing termbase ID")),
-    request_body = AppendTermbaseInstr,
+    request_body = AppendTermbaseBody,
     responses(
         (status = 200, description = "Atomic \
-        append counts", body = HttpBody<AppendTermbaseVal>),
+        append counts", body = HttpBody<AppendTermbasePayload>),
         (status = 403, description = "Team translator or proofreader required"),
         (status = 422, description = "Invalid document, missing termbase, or \
         capacity exceeded"),
@@ -224,19 +207,19 @@ pub async fn append(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AppendTermbaseInstr>,
-) -> HttpResult<AppendTermbaseVal> {
+    Json(instr): Json<AppendTermbaseBody>,
+) -> HttpResult<AppendTermbasePayload> {
     //
     let append_termbase_val =
         termbase_port_usecase::append::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
             termbase_id,
-            instr,
+            instr.into(),
         )
         .await?;
 
-    Ok(append_termbase_val.accept(StatusCode::OK))
+    Ok(append_termbase_val.accept_into(StatusCode::OK))
 }
 
 // Load and serialize one export document for either response mode.
@@ -254,7 +237,9 @@ async fn export_payload(
         )
         .await?;
 
-    serialize_export(&export_termbase_val)
+    let export_payload = ExportTermbasePayload::from(export_termbase_val);
+
+    serialize_export(&export_payload)
 }
 
 // Build the shared inline export body.
@@ -268,7 +253,7 @@ fn export_body(body: Bytes) -> HttpBody<HttpRawBody> {
 
 // Serialize one native export document at the HTTP SDK boundary.
 fn serialize_export(
-    export_termbase_val: &ExportTermbaseVal,
+    export_termbase_val: &ExportTermbasePayload,
 ) -> Result<Bytes, HttpError> {
     //
     let body = serde_json::to_vec(export_termbase_val).map_err(|error| {

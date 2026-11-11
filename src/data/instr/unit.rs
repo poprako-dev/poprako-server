@@ -1,21 +1,10 @@
 //! Instr DTOs for the unit domain.
-
 //! Data transfer objects for page Unit use cases.
 //!
 //! Types in this module describe how client-supplied edit payloads are
 //! represented and how persisted Unit rows are projected back into API-facing
 //! response types.
-
-#[cfg(test)]
-mod tests;
-
 use std::collections::{HashMap, HashSet};
-use std::ops::Not as _;
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
 
 use poprako_util::i18n::{trl, trl_kv};
 
@@ -23,14 +12,10 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTextTransform, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::util::Patch;
-
-#[cfg(feature = "swagger")]
-use crate::util::patch_input::PatchInput;
-
 use crate::value::unit::{MAX_UNIT_TRANSFORM_COUNT, UnitTextPart};
 
 /// Input parameters for listing visible Units under one source page.
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct ListPageSourceUnitInfosInstr {
     /// source page whose visible Units are listed.
     pub page_source_id: String,
@@ -48,7 +33,6 @@ pub struct SearchChapterUnitInfosInstr {
 }
 
 /// Input parameters for saving a batch of Unit edits.
-#[derive(Deserialize)]
 pub struct SavePageSourceUnitEditsInstr {
     /// Client-generated identity of this immutable save batch.
     pub save_id: String,
@@ -61,9 +45,6 @@ pub struct SavePageSourceUnitEditsInstr {
 }
 
 /// One literal text transform supplied by the client.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct UnitTextTransformInstr {
     /// Literal text selected in the original value.
     pub origin: String,
@@ -87,9 +68,6 @@ impl UnitTextTransformInstr {
 }
 
 /// Text transforms supplied for one permanent Unit.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct UnitTransformInstr {
     /// Permanent target Unit ID.
     pub unit_id: String,
@@ -132,9 +110,6 @@ impl UnitTransformInstr {
 }
 
 /// Input parameters for transforming selected Units under one Chapter.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct TransformChapterUnitsInstr {
     /// Unit text field selected for transformation.
     pub part: UnitTextPart,
@@ -179,9 +154,6 @@ pub fn into_unit_transforms(
 }
 
 /// One transport-facing Unit edit.
-#[derive(Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(tag = "edit", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitEditInstr {
     /// Creates one Unit with a request-local ID.
     Create {
@@ -189,29 +161,23 @@ pub enum UnitEditInstr {
         local_id: String,
 
         /// Unit before which the new Unit is inserted, or the tail when null.
-        #[serde(default)]
         next_id: Option<String>,
 
         /// Whether the Unit identifies a speech bubble.
         is_bubble: bool,
         /// Initial review flag; omitted values are false and excluded from save digests.
-        #[serde(default, skip_serializing_if = "<&bool>::not")]
         is_flagged: bool,
         /// Initial page-relative coordinate.
         coord: UnitCoordInstr,
 
         /// Initial text annotation delivered to typesetters.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         typography_note: Option<String>,
         /// Initial communication between translators and proofreaders.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         translation_note: Option<String>,
 
         /// Optional initial translation assignment.
-        #[serde(default)]
         translation: Option<UnitTranslationInstr>,
         /// Optional initial revision assignment.
-        #[serde(default)]
         revision: Option<UnitRevisionInstr>,
     },
 
@@ -221,51 +187,23 @@ pub enum UnitEditInstr {
         id: String,
 
         /// Three-state linked-list successor patch.
-        #[serde(default)]
-        #[cfg_attr(
-            feature = "swagger",
-            schema(value_type = Option<PatchInput<String>>)
-        )]
         next_id: Patch<String>,
 
         /// Optional speech-bubble flag replacement.
-        #[serde(default)]
         is_bubble: Option<bool>,
         /// Optional review flag replacement; null leaves it unchanged.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         is_flagged: Option<bool>,
         /// Optional coordinate replacement.
-        #[serde(default)]
         coord: Option<UnitCoordInstr>,
 
         /// Three-state typesetting annotation patch.
-        #[serde(default, skip_serializing_if = "Patch::is_skip")]
-        #[cfg_attr(
-            feature = "swagger",
-            schema(value_type = Option<PatchInput<String>>)
-        )]
         typography_note: Patch<String>,
         /// Three-state translator and proofreader communication patch.
-        #[serde(default, skip_serializing_if = "Patch::is_skip")]
-        #[cfg_attr(
-            feature = "swagger",
-            schema(value_type = Option<PatchInput<String>>)
-        )]
         translation_note: Patch<String>,
 
         /// Three-state translation patch.
-        #[serde(default)]
-        #[cfg_attr(
-            feature = "swagger",
-            schema(value_type = Option<PatchInput<UnitTranslationInstr>>)
-        )]
         translation: Patch<UnitTranslationInstr>,
         /// Three-state revision patch.
-        #[serde(default)]
-        #[cfg_attr(
-            feature = "swagger",
-            schema(value_type = Option<PatchInput<UnitRevisionInstr>>)
-        )]
         revision: Patch<UnitRevisionInstr>,
     },
 
@@ -277,9 +215,6 @@ pub enum UnitEditInstr {
 }
 
 /// source page-relative Unit coordinates.
-#[derive(Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct UnitCoordInstr {
     /// Horizontal page-relative coordinate.
     pub x_coord: f64,
@@ -298,24 +233,17 @@ impl From<UnitCoordInstr> for UnitCoord {
 }
 
 /// Translation assignment accepted from the client.
-#[derive(Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct UnitTranslationInstr {
     /// Replacement translated text.
     pub translated_text: String,
 }
 
 /// Revision assignment accepted from the client.
-#[derive(Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(deny_unknown_fields)]
 pub struct UnitRevisionInstr {
     /// Replacement approval state.
     pub is_proofread: bool,
 
     /// Replacement proofread text.
-    #[serde(default)]
     pub proofread_text: Option<String>,
 }
 

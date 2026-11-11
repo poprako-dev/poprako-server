@@ -24,10 +24,6 @@ use crate::model::read::proj::page_source::{
     PageSourceInfo, PageSourceRawIdentInfo,
 };
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::shared::translation_document::{
-    ChapterTranslationDocument, PageSourceTranslationDocument,
-    UnitTranslationDocument,
-};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageSourceImage;
@@ -55,6 +51,10 @@ use crate::usecase::stage as stage_usecase;
 use crate::value::business_id::PageSourceId;
 use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::ExportFormatSpec;
+use crate::value::chapter_port::document::{
+    ChapterTranslationDocument, PageSourceTranslationDocument,
+    UnitTranslationDocument,
+};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };

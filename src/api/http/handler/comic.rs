@@ -1,5 +1,4 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
-
 #[cfg(test)]
 mod tests;
 
@@ -8,33 +7,27 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
-use serde::Deserialize;
 use tokio::sync::Semaphore;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::comic::{
+    AllocComicCoverBody, AllocComicCoverPayload, ComicInfoObj, ComicListQuery,
+    CreateComicBody, CreateComicPayload, GetComicInfoQuery,
+    ListComicInfosQuery, MarkComicCoverUploadedBody, UpdateComicInfoBody,
+};
+use crate::api::http::object::comic_archive::{
+    ArchiveComicPayload, ExportComicArchivesPayload, ExportComicArchivesQuery,
+};
+use crate::api::http::object::comic_list::ListComicInfosPayload;
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::comic::{
-    AllocComicCoverInstr, CreateComicInstr, GetComicInfoInstr,
-    ListComicInfosInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
-};
-use crate::data::instr::comic_archive::ExportComicArchivesInstr;
-use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
-use crate::data::val::comic_archive::{
-    ArchiveComicVal, ExportComicArchivesVal,
-};
-use crate::data::val::comic_list::ListComicInfosVal;
-use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::RdbRepo;
@@ -46,8 +39,6 @@ use crate::usecase::comic::{
 use crate::usecase::{
     comic as comic_usecase, comic_archive as comic_archive_usecase,
 };
-use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
-use crate::value::pagination::PubListLimit;
 
 /// `GET /api/v1/teams/{team_id}/comic-archives/export` — export archive month slots.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -56,12 +47,12 @@ use crate::value::pagination::PubListLimit;
     tag = "comics",
     params(
         ("team_id" = String, Path, description = "Team ID"),
-        ExportComicArchivesInstr,
+        ExportComicArchivesQuery,
     ),
     responses(
         (status = 200, description = "Archive \
         JSON strings grouped by UTC month",
-            body = HttpBody<ExportComicArchivesVal>),
+            body = HttpBody<ExportComicArchivesPayload>),
         (status = 403, description = "No perm to export this team's archives"),
         (status = 422, description = "Invalid month selection"),
         (status = 503, description = "Export capacity or configured \
@@ -74,8 +65,8 @@ pub async fn export_archives(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Extension(admission): Extension<Arc<Semaphore>>,
-    Query(instr): Query<ExportComicArchivesInstr>,
-) -> HttpResult<ExportComicArchivesVal> {
+    Query(instr): Query<ExportComicArchivesQuery>,
+) -> HttpResult<ExportComicArchivesPayload> {
     //
     Ok(
         comic_archive_usecase::export::<_, RdbContext<ReptRead>, RdbRepo>(
@@ -87,49 +78,11 @@ pub async fn export_archives(
             ),
             user_token,
             team_id,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
-}
-
-/// Query for listing comics within a workset.
-///
-/// When present, `stages` narrows the list by pinned chapter workflow state.
-///
-/// `incl` embeds related rows into each item; `with` populates derived rows
-/// in the parallel list payload.
-/// Dotted `incl` values implicitly pull in their parent segments.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct ComicListQuery {
-    /// Fuzzy title substring filter (case-insensitive).
-    pub fuzzy_title: Option<String>,
-
-    /// Workflow stage bitmask filter for pinned chapters.
-    pub stages: Option<u32>,
-
-    /// Lifecycle state filter. Omit to list both active and archived comics.
-    pub status: Option<ComicStatus>,
-
-    /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
-    /// `creator`. Dotted values imply their parent segments.
-    #[serde(default)]
-    pub incl: Vec<ComicInclOpt>,
-
-    /// Derived rows to attach. Repeatable. Values: `pinned_chapter`,
-    /// `pinned_chapter_assignment`. The assignment option requires the chapter
-    /// option.
-    #[serde(default)]
-    pub r#with: Vec<ComicWithOpt>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/comics` — create a comic (and its first chapter).
@@ -137,10 +90,10 @@ pub struct ComicListQuery {
     post,
     path = "/api/v1/comics",
     tag = "comics",
-    request_body = CreateComicInstr,
+    request_body = CreateComicPayload,
     responses(
         (status = 201, description = "Comic \
-        created", body = HttpBody<CreateComicVal>),
+        created", body = HttpBody<CreateComicPayload>),
         (status = 403, description = "No perm to create comics in this \
         workset"),
         (status = 404, description = "Workset not found"),
@@ -150,16 +103,16 @@ pub struct ComicListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateComicInstr>,
-) -> HttpResult<CreateComicVal> {
+    Json(instr): Json<CreateComicBody>,
+) -> HttpResult<CreateComicPayload> {
     //
     Ok(comic_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.
@@ -174,7 +127,7 @@ pub async fn create(
         ComicListQuery),
     responses(
         (status = 200, description = "Comics \
-        listed", body = HttpBody<ListComicInfosVal>),
+        listed", body = HttpBody<ListComicInfosPayload>),
         (status = 403, description = "No perm to list comics in this workset"),
         (status = 422, description = "Invalid query option combination or \
         workflow-stage filter"),
@@ -186,9 +139,9 @@ pub async fn list_infos(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ComicListQuery>,
-) -> HttpResult<ListComicInfosVal> {
+) -> HttpResult<ListComicInfosPayload> {
     //
-    let instr = ListComicInfosInstr {
+    let instr = ListComicInfosQuery {
         workset_id,
         fuzzy_title: query.fuzzy_title,
         stages: query.stages,
@@ -203,10 +156,10 @@ pub async fn list_infos(
         comic_list_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -216,10 +169,10 @@ pub async fn list_infos(
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID"),
-        GetComicInfoInstr),
+        GetComicInfoQuery),
     responses(
         (status = 200, description = "Comic \
-        info retrieved", body = HttpBody<ComicInfoView>),
+        info retrieved", body = HttpBody<ComicInfoObj>),
         (status = 403, description = "No perm to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -229,17 +182,17 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<GetComicInfoInstr>,
-) -> HttpResult<ComicInfoView> {
+    Query(instr): Query<GetComicInfoQuery>,
+) -> HttpResult<ComicInfoObj> {
     //
     Ok(comic_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
@@ -248,7 +201,7 @@ pub async fn get_info(
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = UpdateComicInfoInstr,
+    request_body = UpdateComicInfoBody,
     responses(
         (status = 204, description = "Comic updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -261,7 +214,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateComicInfoInstr>,
+    Json(instr): Json<UpdateComicInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&comic_id, &instr.id)?;
@@ -269,7 +222,7 @@ pub async fn update_info(
     comic_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -282,10 +235,10 @@ pub async fn update_info(
     path = "/api/v1/comics/{comic_id}/cover/alloc",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = AllocComicCoverInstr,
+    request_body = AllocComicCoverPayload,
     responses(
         (status = 200, description = "Cover \
-        upload URL allocated", body = HttpBody<AllocComicCoverVal>),
+        upload URL allocated", body = HttpBody<AllocComicCoverPayload>),
         (status = 403, description = "No perm to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
@@ -295,8 +248,8 @@ pub async fn alloc_cover(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocComicCoverInstr>,
-) -> HttpResult<AllocComicCoverVal> {
+    Json(instr): Json<AllocComicCoverBody>,
+) -> HttpResult<AllocComicCoverPayload> {
     //
     Ok(comic_alloc_usecase::alloc_cover::<_, RdbContext<ReptRead>, RdbRepo, _>(
         (
@@ -307,10 +260,9 @@ pub async fn alloc_cover(
         ),
         user_token,
         comic_id,
-        instr,
+        instr.into(),
     )
-    .await?
-    .accept(StatusCode::OK))
+    .await?.accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/mark-uploaded` — confirm a cover upload.
@@ -319,7 +271,7 @@ pub async fn alloc_cover(
     path = "/api/v1/comics/{comic_id}/cover/mark-uploaded",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = MarkComicCoverUploadedInstr,
+    request_body = MarkComicCoverUploadedBody,
     responses(
         (status = 204, description = "Cover upload confirmed"),
         (status = 403, description = "No perm to modify this comic's cover"),
@@ -331,14 +283,14 @@ pub async fn mark_cover_uploaded(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkComicCoverUploadedInstr>,
+    Json(instr): Json<MarkComicCoverUploadedBody>,
 ) -> HttpNoContent {
     //
     comic_cover_usecase::mark_uploaded::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -353,7 +305,7 @@ pub async fn mark_cover_uploaded(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 201, description = "Comic \
-        archived", body = HttpBody<ArchiveComicVal>),
+        archived", body = HttpBody<ArchiveComicPayload>),
         (status = 403, description = "No perm to archive this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -363,7 +315,7 @@ pub async fn archive(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ArchiveComicVal> {
+) -> HttpResult<ArchiveComicPayload> {
     //
     Ok(
         comic_archive_usecase::archive::<_, RdbContext<Serial>, RdbRepo, _>(
@@ -372,7 +324,7 @@ pub async fn archive(
             comic_id,
         )
         .await?
-        .accept(StatusCode::CREATED),
+        .accept_into(StatusCode::CREATED),
     )
 }
 

@@ -1,11 +1,11 @@
 //! Compatibility between exported response views and native import documents.
-
+use crate::api::http::object::chapter_port::ChapterTranslationPortObj;
 use crate::complex::chapter_port::import_translation as chapter_translation_import_complex;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::model::shared::translation_document::ChapterTranslationDocument;
 use crate::model::write::translation_import::UnitTranslationImportSource;
+use crate::value::chapter_port::document::ChapterTranslationDocument;
 
 // Build an unordered native export with independent annotations.
 fn document() -> ChapterTranslationPortView {
@@ -85,7 +85,9 @@ fn document() -> ChapterTranslationPortView {
 fn export_view_roundtrips_native_import_and_sorts_indexes() {
     let document = document();
 
-    let original_json = serde_json::to_value(&document).unwrap();
+    let original_json =
+        serde_json::to_value(ChapterTranslationPortObj::from(document))
+            .unwrap();
 
     let native_document = serde_json::from_value::<ChapterTranslationDocument>(
         original_json.clone(),
@@ -94,9 +96,11 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
 
     let exported_view = ChapterTranslationPortView::from(native_document);
 
-    assert_eq!(serde_json::to_value(&exported_view).unwrap(), original_json);
+    let exported_obj = ChapterTranslationPortObj::from(exported_view);
 
-    let content = serde_json::to_string(&exported_view).unwrap();
+    assert_eq!(serde_json::to_value(&exported_obj).unwrap(), original_json);
+
+    let content = serde_json::to_string(&exported_obj).unwrap();
 
     let pages =
         chapter_translation_import_complex::parse_poprako(&content).unwrap();

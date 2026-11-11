@@ -1,5 +1,4 @@
 //! Calendar-month values used by comic archive export.
-
 /// Composite page archive payloads.
 pub mod artwork;
 /// Archived chapter workflow-record payload values.
@@ -52,6 +51,13 @@ pub struct ArchivedComicPayload<'a> {
     pub updated_at: i64,
     /// Archived payloads for every chapter in this comic.
     pub chapters: Vec<ArchivedChapterPayload<'a>>,
+}
+
+impl ArchivedComicPayload<'_> {
+    /// Serializes this immutable comic payload for archive storage.
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
 }
 
 /// Immutable workset payload serialized into an archive entry.

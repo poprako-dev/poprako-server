@@ -1,12 +1,5 @@
 //! Instr DTOs for the assignment domain.
-
 //! Data transfer objects for assignment use cases.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
-
 use poprako_util::i18n::trl;
 
 use crate::model::read::spec::assignment::AssignmentListSpec;
@@ -25,9 +18,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// embeds related rows; dotted values imply their parent segments.
 ///
 /// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListAssignmentInfosInstr {
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
@@ -45,7 +36,6 @@ pub struct ListAssignmentInfosInstr {
     /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
     /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
     /// parent segments.
-    #[serde(default)]
     pub incl: Vec<AssignmentInclOpt>,
 
     /// Pagination offset.
@@ -127,8 +117,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 }
 
 /// Input parameters for updating assignment roles.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateAssignmentRolesInstr {
     /// Target chapter identifier.
     pub chapter_id: String,
@@ -144,8 +133,7 @@ pub struct UpdateAssignmentRolesInstr {
 ///
 /// The role mask must contain role bits that are valid for volunteer
 /// assignment; the use case layer validates this before applying.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct JoinChapterAssignmentInstr {
     /// Chapter to join as an assignee.
     pub chapter_id: String,

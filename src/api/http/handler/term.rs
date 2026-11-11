@@ -1,57 +1,36 @@
 //! Terminology-entry handlers.
-
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::term::{
+    CreateTermBody, CreateTermPayload, ListTermInfosBody, TermInfoObj,
+    TermListQuery, UpdateTermInfoBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::term::{
-    CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
-};
-use crate::data::val::term::CreateTermVal;
-use crate::data::view::term::TermInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::term as term_usecase;
-use crate::value::pagination::PubListLimit;
-
-/// Query parameters for terms inside one terminology base.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct TermListQuery {
-    /// Optional case-insensitive source substring.
-    pub fuzzy_source: Option<String>,
-
-    /// Number of records to skip for pagination.
-    pub offset: u32,
-    /// Maximum number of records to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/terms` — create a terminology entry.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/terms",
     tag = "terms",
-    request_body = CreateTermInstr,
+    request_body = CreateTermPayload,
     responses(
         (status = 201, description = "Term \
-        created", body = HttpBody<CreateTermVal>),
+        created", body = HttpBody<CreateTermPayload>),
         (status = 403, description = "Team translator or proofreader role \
         required"),
         (status = 422, description = "Invalid term, duplicate source, or \
@@ -62,16 +41,16 @@ pub struct TermListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateTermInstr>,
-) -> HttpResult<CreateTermVal> {
+    Json(instr): Json<CreateTermBody>,
+) -> HttpResult<CreateTermPayload> {
     //
     Ok(term_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/terms` — list terms in one base.
@@ -83,7 +62,7 @@ pub async fn create(
         TermListQuery),
     responses(
         (status = 200, description = "Terms \
-        listed", body = HttpBody<Vec<TermInfoView>>),
+        listed", body = HttpBody<Vec<TermInfoObj>>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -94,9 +73,9 @@ pub async fn list_infos(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermListQuery>,
-) -> HttpResult<Vec<TermInfoView>> {
+) -> HttpResult<Vec<TermInfoObj>> {
     //
-    let instr = ListTermInfosInstr {
+    let instr = ListTermInfosBody {
         termbase_id,
         fuzzy_source: query.fuzzy_source,
         offset: query.offset,
@@ -106,10 +85,10 @@ pub async fn list_infos(
     Ok(term_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `GET /api/v1/terms/{term_id}` — fetch a terminology entry.
@@ -120,7 +99,7 @@ pub async fn list_infos(
     params(("term_id" = String, Path, description = "Term ID")),
     responses(
         (status = 200, description = "Term \
-        retrieved", body = HttpBody<TermInfoView>),
+        retrieved", body = HttpBody<TermInfoObj>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Term not found"),
     ),
@@ -130,7 +109,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<TermInfoView> {
+) -> HttpResult<TermInfoObj> {
     //
     Ok(term_usecase::get_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
@@ -138,7 +117,7 @@ pub async fn get_info(
         term_id,
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `PUT /api/v1/terms/{term_id}` — replace terminology-entry fields.
@@ -147,7 +126,7 @@ pub async fn get_info(
     path = "/api/v1/terms/{term_id}",
     tag = "terms",
     params(("term_id" = String, Path, description = "Term ID")),
-    request_body = UpdateTermInfoInstr,
+    request_body = UpdateTermInfoBody,
     responses(
         (status = 204, description = "Term updated"),
         (status = 403, description = "Team translator or proofreader role \
@@ -161,7 +140,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateTermInfoInstr>,
+    Json(instr): Json<UpdateTermInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&term_id, &instr.id)?;
@@ -169,7 +148,7 @@ pub async fn update_info(
     term_usecase::update_info::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 

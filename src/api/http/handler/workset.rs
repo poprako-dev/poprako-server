@@ -1,25 +1,22 @@
 //! Workset handlers: create, list, read, update, and delete.
-
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::handler::util::{
-    Pagination, ensure_path_matches_body_id,
-};
+use crate::api::http::handler::util::ensure_path_matches_body_id;
+use crate::api::http::object::pagination::Pagination;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::workset::{
+    CreateWorksetBody, CreateWorksetPayload, ListWorksetInfosQuery,
+    UpdateWorksetInfoBody, WorksetInfoObj,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::workset::{
-    CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
-};
-use crate::data::val::workset::CreateWorksetVal;
-use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::RdbRepo;
@@ -31,10 +28,10 @@ use crate::usecase::workset as workset_usecase;
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
-    request_body = CreateWorksetInstr,
+    request_body = CreateWorksetPayload,
     responses(
         (status = 201, description = "Workset \
-        created", body = HttpBody<CreateWorksetVal>),
+        created", body = HttpBody<CreateWorksetPayload>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to create worksets in this team"),
         (status = 404, description = "Team not found"),
@@ -44,16 +41,16 @@ use crate::usecase::workset as workset_usecase;
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateWorksetInstr>,
-) -> HttpResult<CreateWorksetVal> {
+    Json(instr): Json<CreateWorksetBody>,
+) -> HttpResult<CreateWorksetPayload> {
     //
     Ok(workset_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
@@ -64,7 +61,7 @@ pub async fn create(
     params(("team_id" = String, Path, description = "Team ID"), Pagination),
     responses(
         (status = 200, description = "Worksets listed",
-            body = HttpBody<Vec<WorksetInfoView>>),
+            body = HttpBody<Vec<WorksetInfoObj>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to list worksets in this team"),
     ),
@@ -75,9 +72,9 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(pagination): Query<Pagination>,
-) -> HttpResult<Vec<WorksetInfoView>> {
+) -> HttpResult<Vec<WorksetInfoObj>> {
     //
-    let instr = ListWorksetInfosInstr {
+    let instr = ListWorksetInfosQuery {
         team_id,
         offset: pagination.offset,
         limit: pagination.limit,
@@ -87,10 +84,10 @@ pub async fn list_infos(
         workset_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo>(
             (harn.repo(),),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -102,7 +99,7 @@ pub async fn list_infos(
     params(("workset_id" = String, Path, description = "Workset ID")),
     responses(
         (status = 200, description = "Workset \
-        info retrieved", body = HttpBody<WorksetInfoView>),
+        info retrieved", body = HttpBody<WorksetInfoObj>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No perm to view this workset"),
         (status = 404, description = "Workset not found"),
@@ -113,7 +110,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<WorksetInfoView> {
+) -> HttpResult<WorksetInfoObj> {
     //
     Ok(workset_usecase::get_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
@@ -121,7 +118,7 @@ pub async fn get_info(
         workset_id,
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.
@@ -130,7 +127,7 @@ pub async fn get_info(
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
-    request_body = UpdateWorksetInfoInstr,
+    request_body = UpdateWorksetInfoBody,
     responses(
         (status = 204, description = "Workset updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -143,7 +140,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateWorksetInfoInstr>,
+    Json(instr): Json<UpdateWorksetInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&workset_id, &instr.id)?;
@@ -151,7 +148,7 @@ pub async fn update_info(
     workset_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 

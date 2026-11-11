@@ -1,5 +1,4 @@
 //! Resource budgets for complete comic archive exports.
-
 use std::num::NonZeroU32;
 
 use anyhow::ensure;
@@ -12,8 +11,8 @@ use tokio::sync::Semaphore;
 pub struct ComicArchiveExportConfig {
     /// Maximum combined stored payload bytes materialized per batch, in MiB.
     pub payload_batch_mib: NonZeroU32,
-    /// Maximum serialized month-map artifact size, in MiB.
-    /// Excludes the fixed HTTP envelope.
+    /// Maximum stored payload bytes exported for one month, in MiB.
+    /// Counts payload bytes before JSON escaping and the fixed HTTP envelope.
     pub artifact_limit_mib: NonZeroU32,
 
     /// Maximum artifacts being generated or transferred simultaneously.

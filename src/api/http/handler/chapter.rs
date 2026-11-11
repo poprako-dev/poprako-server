@@ -1,31 +1,25 @@
 //! Chapter handlers: CRUD, pinned chapter, and workflow stage advance.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::chapter::{
+    ChapterInfoObj, ChapterListQuery, ChapterWorkflowRecordListQuery,
+    CreateChapterBody, CreateChapterPayload, ListChapterInfosQuery,
+    ListChapterWorkflowRecordInfosQuery, UpdateChapterInfoBody,
+    UpdateChapterStageBody,
+};
+use crate::api::http::object::chapter_workflow_record::ChapterWorkflowRecordInfoObj;
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::chapter::{
-    CreateChapterInstr, ListChapterInfosInstr,
-    ListChapterWorkflowRecordInfosInstr, UpdateChapterInfoInstr,
-    UpdateChapterStageInstr,
-};
-use crate::data::val::chapter::CreateChapterVal;
-use crate::data::view::chapter::ChapterInfoView;
-use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::RdbRepo;
@@ -35,52 +29,16 @@ use crate::usecase::chapter::{
     delete as chapter_delete_usecase, stage as chapter_stage_usecase,
     workflow_record as chapter_workflow_record_usecase,
 };
-use crate::value::chapter::ChapterInclOpt;
-use crate::value::pagination::PubListLimit;
-
-/// Query for listing chapters within a comic.
-///
-/// `incl` embeds related rows into each item; dotted values implicitly pull
-/// in their parent segments.
-///
-/// Example: `?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct ChapterListQuery {
-    /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
-    /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
-    /// their parent segments.
-    #[serde(default)]
-    pub incl: Vec<ChapterInclOpt>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
-
-/// Query for listing immutable chapter workflow records.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct ChapterWorkflowRecordListQuery {
-    /// Pagination offset (0-based).
-    pub offset: u32,
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/chapters` — create a chapter under a comic.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters",
     tag = "chapters",
-    request_body = CreateChapterInstr,
+    request_body = CreateChapterPayload,
     responses(
         (status = 201, description = "Chapter \
-        created", body = HttpBody<CreateChapterVal>),
+        created", body = HttpBody<CreateChapterPayload>),
         (status = 403, description = "No perm to create chapters in this \
         comic"),
         (status = 404, description = "Comic not found"),
@@ -90,16 +48,16 @@ pub struct ChapterWorkflowRecordListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateChapterInstr>,
-) -> HttpResult<CreateChapterVal> {
+    Json(instr): Json<CreateChapterBody>,
+) -> HttpResult<CreateChapterPayload> {
     //
     Ok(chapter_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
@@ -115,7 +73,7 @@ pub async fn create(
         ChapterListQuery),
     responses(
         (status = 200, description = "Chapters listed",
-            body = HttpBody<Vec<ChapterInfoView>>),
+            body = HttpBody<Vec<ChapterInfoObj>>),
         (status = 403, description = "No perm to list chapters in this comic"),
     ),
 ))]
@@ -125,9 +83,9 @@ pub async fn list_infos(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ChapterListQuery>,
-) -> HttpResult<Vec<ChapterInfoView>> {
+) -> HttpResult<Vec<ChapterInfoObj>> {
     //
-    let instr = ListChapterInfosInstr {
+    let instr = ListChapterInfosQuery {
         comic_id,
         incl: query.incl,
         offset: query.offset,
@@ -138,10 +96,10 @@ pub async fn list_infos(
         chapter_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -153,7 +111,7 @@ pub async fn list_infos(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 200, description = "Pinned \
-        chapter (or null)", body = HttpBody<Option<ChapterInfoView>>),
+        chapter (or null)", body = HttpBody<Option<ChapterInfoObj>>),
         (status = 403, description = "No perm to view this comic's pinned \
         chapter"),
     ),
@@ -163,17 +121,17 @@ pub async fn get_pinned(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Option<ChapterInfoView>> {
+) -> HttpResult<Option<ChapterInfoObj>> {
     //
-    Ok(
-        chapter_usecase::get_pinned::<RdbContext<ReptRead>, RdbRepo>(
-            (harn.repo(),),
-            user_token,
-            comic_id,
-        )
-        .await?
-        .accept(StatusCode::OK),
-    )
+    let pinned_chapter = chapter_usecase::get_pinned::<
+        RdbContext<ReptRead>,
+        RdbRepo,
+    >((harn.repo(),), user_token, comic_id)
+    .await?;
+
+    let pinned_chapter = pinned_chapter.map(Into::into);
+
+    Ok(pinned_chapter.accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
@@ -184,7 +142,7 @@ pub async fn get_pinned(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Chapter \
-        info retrieved", body = HttpBody<ChapterInfoView>),
+        info retrieved", body = HttpBody<ChapterInfoObj>),
         (status = 403, description = "No perm to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -194,7 +152,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ChapterInfoView> {
+) -> HttpResult<ChapterInfoObj> {
     //
     Ok(chapter_usecase::get_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
@@ -202,7 +160,7 @@ pub async fn get_info(
         chapter_id,
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/workflow-records` — list activity records.
@@ -215,7 +173,7 @@ pub async fn get_info(
     responses(
         (status = 200, description = "Chapter \
         workflow records listed",
-            body = HttpBody<Vec<ChapterWorkflowRecordInfoView>>),
+            body = HttpBody<Vec<ChapterWorkflowRecordInfoObj>>),
         (status = 403, description = "No perm to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -226,9 +184,9 @@ pub async fn list_workflow_record_infos(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ChapterWorkflowRecordListQuery>,
-) -> HttpResult<Vec<ChapterWorkflowRecordInfoView>> {
+) -> HttpResult<Vec<ChapterWorkflowRecordInfoObj>> {
     //
-    let instr = ListChapterWorkflowRecordInfosInstr {
+    let instr = ListChapterWorkflowRecordInfosQuery {
         chapter_id,
         offset: query.offset,
         limit: query.limit,
@@ -238,9 +196,9 @@ pub async fn list_workflow_record_infos(
         chapter_workflow_record_usecase::list_workflow_record_infos::<
             RdbContext<ReptRead>,
             RdbRepo,
-        >((harn.repo(),), user_token, instr)
+        >((harn.repo(),), user_token, instr.into())
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -252,7 +210,7 @@ pub async fn list_workflow_record_infos(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     description = "Requires owning-team administrator membership; no chapter \
     assignment is needed.",
-    request_body = UpdateChapterInfoInstr,
+    request_body = UpdateChapterInfoBody,
     responses(
         (status = 204, description = "Chapter updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -265,7 +223,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateChapterInfoInstr>,
+    Json(instr): Json<UpdateChapterInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
@@ -273,7 +231,7 @@ pub async fn update_info(
     chapter_usecase::update_info::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -322,7 +280,7 @@ pub async fn mark_pinned(
     chapter assignment or worker role holder. Other callers require the \
     appropriate chapter worker role. State transitions and published freezing \
     still apply.",
-    request_body = UpdateChapterStageInstr,
+    request_body = UpdateChapterStageBody,
     responses(
         (status = 204, description = "Stage advanced"),
         (status = 422, description = "Path id does not match body id"),
@@ -335,7 +293,7 @@ pub async fn advance_stage(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateChapterStageInstr>,
+    Json(instr): Json<UpdateChapterStageBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
@@ -354,7 +312,7 @@ pub async fn advance_stage(
             harn.bus(),
         ),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 

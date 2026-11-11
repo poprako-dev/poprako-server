@@ -1,5 +1,4 @@
 //! System mail handlers: list and mark-read.
-
 use axum::extract::{Extension, Json, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -7,14 +6,13 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::system_mail::{
+    ListSystemMailInfosQuery, MarkSystemMailReadBody, SystemMailInfoObj,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::system_mail::{
-    ListSystemMailInfosInstr, MarkSystemMailReadInstr,
-};
-use crate::data::view::system_mail::SystemMailInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase::system_mail as system_mail_usecase;
 
@@ -23,10 +21,10 @@ use crate::usecase::system_mail as system_mail_usecase;
     get,
     path = "/api/v1/system-mails",
     tag = "system-mails",
-    params(ListSystemMailInfosInstr),
+    params(ListSystemMailInfosQuery),
     responses(
         (status = 200, description = "System \
-        mails listed", body = HttpBody<Vec<SystemMailInfoView>>),
+        mails listed", body = HttpBody<Vec<SystemMailInfoObj>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -34,14 +32,16 @@ use crate::usecase::system_mail as system_mail_usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ListSystemMailInfosInstr>,
-) -> HttpResult<Vec<SystemMailInfoView>> {
+    Query(instr): Query<ListSystemMailInfosQuery>,
+) -> HttpResult<Vec<SystemMailInfoObj>> {
     //
-    Ok(
-        system_mail_usecase::list_infos((harn.repo(),), user_token, instr)
-            .await?
-            .accept(StatusCode::OK),
+    Ok(system_mail_usecase::list_infos(
+        (harn.repo(),),
+        user_token,
+        instr.into(),
     )
+    .await?
+    .accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/system-mails/mark-read` — mark a batch of mails as read.
@@ -49,7 +49,7 @@ pub async fn list_infos(
     post,
     path = "/api/v1/system-mails/mark-read",
     tag = "system-mails",
-    request_body = MarkSystemMailReadInstr,
+    request_body = MarkSystemMailReadBody,
     responses(
         (status = 204, description = "Mails marked as read"),
         (status = 403, description = "One or more mails do not belong to the \
@@ -60,7 +60,7 @@ pub async fn list_infos(
 pub async fn mark_read(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkSystemMailReadInstr>,
+    Json(instr): Json<MarkSystemMailReadBody>,
 ) -> HttpNoContent {
     //
     system_mail_usecase::mark_read((harn.repo(),), user_token, instr.ids)

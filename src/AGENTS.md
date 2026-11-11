@@ -2,9 +2,20 @@
 
 Use `src/lib.rs` for the authoritative module graph. HTTP delivery lives in
 `api/http`, domain orchestration in `usecase`, pure rules in `complex`,
-owned business models in `model`, borrowed domain Shapes in `shape`, DTOs in `data`, ports in `part`, adapters in
+owned business models in `model`, borrowed domain Shapes in `shape`, DTOs in
+`data`, HTTP wire objects in `api/http/object`, ports in `part`, adapters in
 `part_impl`, background scheduling in `extra`, and shared domain types in
 `value`. `harn.rs` stores the already-composed application parts.
+
+## Data and wire types
+
+`data` holds plain use-case data only: `Instr` inputs, `Val` outputs, and
+reusable `View` fragments carry no `serde` or `utoipa` attributes and no wire
+naming. HTTP wire DTOs mirror them under `api/http/object` as `*Body`,
+`*Query`, `*Payload`, and `*Obj`, own every `serde`/`utoipa` attribute, and
+convert from the data types through `From`. Only `value` (including `Patch`)
+and `api/http/object` may depend on `serde`; `model` must not. The
+`serde-scope` extra linter enforces this split.
 
 Read the root skill routing for the affected layer. Workspace utility and
 infrastructure crates have their own module graphs in their crate roots.

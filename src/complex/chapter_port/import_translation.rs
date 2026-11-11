@@ -10,7 +10,6 @@ use std::collections::{HashMap, HashSet};
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::unit as unit_complex;
-use crate::model::shared::translation_document::ChapterTranslationDocument;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::translation_import::{
     PageSourceTranslationImport, UnitTranslationImport,
@@ -18,6 +17,7 @@ use crate::model::write::translation_import::{
 };
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::chapter_port::document::ChapterTranslationDocument;
 use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
@@ -28,18 +28,18 @@ pub fn parse_poprako(
     //
     let content = content.strip_prefix('\u{feff}').unwrap_or(content);
 
-    let project = serde_json::from_str::<ChapterTranslationDocument>(content)
-        .map_err(|error| {
-        //
-        expected_error! {
-            ExpectedVariant::Args,
-            message: trl("error-invalid-chapter-import-content");
-            input_length = content.len(),
-            parse_error = ?error,
-            operation = "parse_poprako",
-            "chapter import JSON is invalid",
-        }
-    })?;
+    let project =
+        ChapterTranslationDocument::parse(content).map_err(|error| {
+            //
+            expected_error! {
+                ExpectedVariant::Args,
+                message: trl("error-invalid-chapter-import-content");
+                input_length = content.len(),
+                parse_error = ?error,
+                operation = "parse_poprako",
+                "chapter import JSON is invalid",
+            }
+        })?;
 
     convert_poprako_document(project)
 }

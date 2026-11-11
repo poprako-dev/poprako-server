@@ -1,5 +1,4 @@
 //! Independent composite page HTTP delivery.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -7,18 +6,15 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::page_artwork::{
+    AllocChapterPageArtworksBody, AllocChapterPageArtworksPayload,
+    AllocPageArtworkImageBody, AllocatedPageArtworkPayload,
+    MarkPageArtworkImageUploadedBody, PageArtworkInfoObj,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::page_artwork::{
-    AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
-    MarkPageArtworkImageUploadedInstr,
-};
-use crate::data::val::page_artwork::{
-    AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
-};
-use crate::data::view::page_artwork::PageArtworkInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
@@ -37,7 +33,7 @@ use crate::usecase::page_artwork::{
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Composite pages",
-            body = HttpBody<Vec<PageArtworkInfoView>>),
+            body = HttpBody<Vec<PageArtworkInfoObj>>),
         (status = 403, description = "Chapter read access required"),
         (status = 422, description = "Chapter not found"),
     ),
@@ -47,7 +43,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<Vec<PageArtworkInfoView>> {
+) -> HttpResult<Vec<PageArtworkInfoObj>> {
     //
     Ok(
         page_artwork_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
@@ -56,7 +52,7 @@ pub async fn list_infos(
             chapter_id,
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -65,9 +61,9 @@ pub async fn list_infos(
     post, path = "/api/v1/chapters/{chapter_id}/page-artworks/alloc",
         tag = "page-artworks",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-        request_body = AllocChapterPageArtworksInstr,
+        request_body = AllocChapterPageArtworksPayload,
     responses((status = 200, description = "Composite allocations",
-        body = HttpBody<AllocChapterPageArtworksVal>),
+        body = HttpBody<AllocChapterPageArtworksPayload>),
         (status = 403, description = "Composite write access required"),
             (status = 422, description = "Invalid manifest or published \
             Chapter"))
@@ -77,8 +73,8 @@ pub async fn alloc_chapter_page_artworks(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
-    Json(instr): Json<AllocChapterPageArtworksInstr>,
-) -> HttpResult<AllocChapterPageArtworksVal> {
+    Json(instr): Json<AllocChapterPageArtworksBody>,
+) -> HttpResult<AllocChapterPageArtworksPayload> {
     //
     Ok(
         page_artwork_manifest_usecase::alloc_chapter_page_artworks::<
@@ -95,10 +91,10 @@ pub async fn alloc_chapter_page_artworks(
             ),
             token,
             chapter_id,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -108,9 +104,9 @@ pub async fn alloc_chapter_page_artworks(
         tag = "page-artworks",
     params(("page_artwork_id" = String, Path,
         description = "Composite \
-        page ID")), request_body = AllocPageArtworkImageInstr,
+        page ID")), request_body = AllocPageArtworkImageBody,
     responses((status = 200, description = "Image \
-    allocation", body = HttpBody<AllocatedPageArtworkVal>),
+    allocation", body = HttpBody<AllocatedPageArtworkPayload>),
         (status = 403, description = "Composite write access required"),
             (status = 422, description = "Invalid input, missing page or \
             published Chapter"))
@@ -120,8 +116,8 @@ pub async fn alloc_image(
     State(harn): State<AppHarn>,
     Path(page_artwork_id): Path<String>,
     Extension(token): Extension<UserToken>,
-    Json(instr): Json<AllocPageArtworkImageInstr>,
-) -> HttpResult<AllocatedPageArtworkVal> {
+    Json(instr): Json<AllocPageArtworkImageBody>,
+) -> HttpResult<AllocatedPageArtworkPayload> {
     //
     Ok(page_artwork_image_usecase::alloc_image::<
         _,
@@ -137,10 +133,10 @@ pub async fn alloc_image(
         ),
         token,
         page_artwork_id,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// Marks an exact composite generation uploaded without changing workflow.
@@ -150,7 +146,7 @@ pub async fn alloc_image(
     tag = "page-artworks",
     params(("page_artwork_id" = String, Path,
         description = "Composite page ID")),
-    request_body = MarkPageArtworkImageUploadedInstr,
+    request_body = MarkPageArtworkImageUploadedBody,
     responses(
         (status = 204, description = "Generation confirmed"),
         (status = 403, description = "Composite write access required"),
@@ -163,7 +159,7 @@ pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,
     Path(page_artwork_id): Path<String>,
     Extension(token): Extension<UserToken>,
-    Json(instr): Json<MarkPageArtworkImageUploadedInstr>,
+    Json(instr): Json<MarkPageArtworkImageUploadedBody>,
 ) -> HttpNoContent {
     //
     page_artwork_image_usecase::mark_image_uploaded::<
@@ -175,7 +171,7 @@ pub async fn mark_image_uploaded(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         token,
         page_artwork_id,
-        instr,
+        instr.into(),
     )
     .await?;
 

@@ -1,5 +1,4 @@
 //! Use cases for immutable comic archives.
-
 #[cfg(test)]
 mod tests;
 
@@ -143,6 +142,25 @@ where
                     }
                 }
 
+                let artifact_bytes =
+                    payloads.iter().map(String::len).sum::<usize>();
+
+                if u64::try_from(artifact_bytes)
+                    .is_ok_and(|bytes| bytes > config.artifact_limit_bytes())
+                {
+                    //
+                    tracing::warn!(
+                        operation = "export_comic_archives",
+                        month = %month.label,
+                        "archive export exceeds the configured artifact budget"
+                    );
+
+                    return Err(BaseError::Unavailable {
+                        message: "archive export artifact budget exceeded"
+                            .into(),
+                    });
+                }
+
                 exports.push(ComicArchiveExportMonthVal {
                     month: month.label,
                     archives: payloads,
@@ -153,30 +171,7 @@ where
         })
         .await?;
 
-    let export = ExportComicArchivesVal { months: exports };
-
-    let encoded = serde_json::to_vec(&export).map_err(|error| {
-        //
-        unrecoverable_error! {
-            message: "archive export JSON encoding failed".into();
-            sdk_error = ?error,
-            "JSON SDK archive export encoding error",
-        }
-    })?;
-
-    if encoded.len() as u64 > config.artifact_limit_bytes() {
-        //
-        tracing::warn!(
-            operation = "export_comic_archives",
-            "archive export exceeds the configured artifact budget"
-        );
-
-        return Err(BaseError::Unavailable {
-            message: "archive export artifact budget exceeded".into(),
-        });
-    }
-
-    accept!(export)
+    accept!(ExportComicArchivesVal { months: exports })
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.

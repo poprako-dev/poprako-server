@@ -3,6 +3,8 @@
     reason = "Test fixtures and assertions fail immediately when their invariants are violated"
 )]
 
+use crate::api::http::object::chapter_port::ChapterTranslationPortObj;
+
 // export_translation(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
 mod roundtrip;
@@ -378,6 +380,10 @@ async fn export_by_unassigned_team_member_does_not_start_typeset_redraw() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "The scenario asserts one complete export flow; splitting would duplicate fixtures"
+)]
 async fn export_raw_ident_is_opt_in_with_per_page_source_fallback_and_duplicate_names()
  {
     use poprako_orchestra::{Nucl as _, OperStep as _};
@@ -443,8 +449,14 @@ async fn export_raw_ident_is_opt_in_with_per_page_source_fallback_and_duplicate_
     assert!(label_plus.contains(">>>>>>>>[原稿 01.JPG]<<<<<<<<"));
     assert!(label_plus.contains(">>>>>>>>[001.png]<<<<<<<<"));
     assert_eq!(
-        serde_json::to_value(default_export.poprako).unwrap(),
-        serde_json::to_value(raw_export.poprako).unwrap()
+        serde_json::to_value(
+            default_export.poprako.map(ChapterTranslationPortObj::from),
+        )
+        .unwrap(),
+        serde_json::to_value(
+            raw_export.poprako.map(ChapterTranslationPortObj::from),
+        )
+        .unwrap()
     );
 
     let repls = PageSourceRawIdentsReplShape {

@@ -1,20 +1,11 @@
 //! Val DTOs for the chapter port domain.
-
 //! Data transfer objects for chapter import/export port use cases.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::chapter_port::{
     ChapterArtworkUploadSlotView, ChapterTranslationPortView,
 };
 use crate::value::artwork::ArtworkHash;
 
 /// Translation documents generated together by one chapter export.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationsVal {
     /// `LabelPlus` text, absent when that format was not selected.
     pub label_plus: Option<String>,
@@ -25,8 +16,6 @@ pub struct ExportChapterTranslationsVal {
 }
 
 /// One exported source page's original filename mapping.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterPageSourceRawIdentVal {
     /// Stable source page identifier.
     pub page_source_id: String,
@@ -35,8 +24,6 @@ pub struct ChapterPageSourceRawIdentVal {
 }
 
 /// Summary returned after importing chapter translations.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
     /// Number of pages whose visible Unit content changed.
     pub imported_page_count: usize,
@@ -45,22 +32,16 @@ pub struct ImportChapterTranslationVal {
 }
 
 /// Chapter artwork allocation result, including the version on a deduplication hit.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterArtworkVal {
     /// Current artwork generation to confirm.
-    #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,
     /// Absent when the requested content is already available.
     pub slot: Option<ChapterArtworkUploadSlotView>,
 }
 
 /// Current available artwork and its direct object-storage download address.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterArtworkVal {
     /// Current available object generation.
-    #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,
     /// Canonical Base64 SHA-256 identity supplied by the uploader.
     pub artwork_hash: ArtworkHash,

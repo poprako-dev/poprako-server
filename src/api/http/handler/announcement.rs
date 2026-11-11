@@ -1,66 +1,38 @@
 //! Announcement handlers.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::announcement::{
+    AnnouncementInfoObj, AnnouncementListQuery, CreateAnnouncementBody,
+    CreateAnnouncementPayload, ListAnnouncementInfosQuery,
+    UpdateAnnouncementInfoBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::announcement::{
-    CreateAnnouncementInstr, ListAnnouncementInfosInstr,
-    UpdateAnnouncementInfoInstr,
-};
-use crate::data::val::announcement::CreateAnnouncementVal;
-use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::announcement as announcement_usecase;
-use crate::value::announcement::AnnouncementInclOpt;
-use crate::value::pagination::PubListLimit;
-
-/// Query for listing announcements within a team.
-///
-/// `incl` embeds related rows into each item.
-///
-/// Example: `?incl=user&offset=0&limit=20`.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct AnnouncementListQuery {
-    /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default)]
-    pub incl: Vec<AnnouncementInclOpt>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/announcements` — create a team announcement.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
-    request_body = CreateAnnouncementInstr,
+    request_body = CreateAnnouncementPayload,
     responses(
         (status = 201, description = "Announcement created",
-            body = HttpBody<CreateAnnouncementVal>),
+            body = HttpBody<CreateAnnouncementPayload>),
         (status = 403, description = "No perm to create announcements in \
         this team"),
         (status = 404, description = "Team not found"),
@@ -70,17 +42,17 @@ pub struct AnnouncementListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateAnnouncementInstr>,
-) -> HttpResult<CreateAnnouncementVal> {
+    Json(instr): Json<CreateAnnouncementBody>,
+) -> HttpResult<CreateAnnouncementPayload> {
     //
     Ok(
         announcement_usecase::create::<RdbContext<ReptRead>, RdbRepo>(
             harn.repo(),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::CREATED),
+        .accept_into(StatusCode::CREATED),
     )
 }
 
@@ -96,7 +68,7 @@ pub async fn create(
         AnnouncementListQuery),
     responses(
         (status = 200, description = "Announcements listed",
-            body = HttpBody<Vec<AnnouncementInfoView>>),
+            body = HttpBody<Vec<AnnouncementInfoObj>>),
         (status = 403, description = "No perm to list announcements in this \
         team"),
     ),
@@ -107,9 +79,9 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AnnouncementListQuery>,
-) -> HttpResult<Vec<AnnouncementInfoView>> {
+) -> HttpResult<Vec<AnnouncementInfoObj>> {
     //
-    let instr = ListAnnouncementInfosInstr {
+    let instr = ListAnnouncementInfosQuery {
         team_id,
         incl: query.incl,
         offset: query.offset,
@@ -120,10 +92,10 @@ pub async fn list_infos(
         announcement_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -133,7 +105,7 @@ pub async fn list_infos(
     path = "/api/v1/announcements/{announcement_id}",
     tag = "announcements",
     params(("announcement_id" = String, Path, description = "Announcement ID")),
-    request_body = UpdateAnnouncementInfoInstr,
+    request_body = UpdateAnnouncementInfoBody,
     responses(
         (status = 204, description = "Announcement updated"),
         (status = 403, description = "Team admin role required"),
@@ -145,7 +117,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(announcement_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateAnnouncementInfoInstr>,
+    Json(instr): Json<UpdateAnnouncementInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&announcement_id, &instr.id)?;
@@ -153,7 +125,7 @@ pub async fn update_info(
     announcement_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         harn.repo(),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 

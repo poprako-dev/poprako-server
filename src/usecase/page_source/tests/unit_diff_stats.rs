@@ -1,5 +1,8 @@
 use super::*;
 
+use crate::api::http::object::page_source::{
+    PageSourceUnitDiffStatsPayload, PageSourceUnitFlaggedStatsPayload,
+};
 use crate::data::instr::page_source::{
     ListPageSourceUnitDiffStatsInstr, ListPageSourceUnitFlaggedStatsInstr,
 };
@@ -73,7 +76,12 @@ async fn list_unit_diff_stats_filters_diffs_and_preserves_page_source_order() {
     .unwrap();
 
     assert_eq!(
-        serde_json::to_value(val).unwrap(),
+        serde_json::to_value(
+            val.into_iter()
+                .map(PageSourceUnitDiffStatsPayload::from)
+                .collect::<Vec<_>>(),
+        )
+        .unwrap(),
         serde_json::json!([
             {"page_source_id": "page_source--00000000003", "index": 0,
              "translated_unit_count": 0,
@@ -403,7 +411,13 @@ async fn flagged_stats_count_visible_units_in_page_source_order() {
     .unwrap();
 
     assert_eq!(
-        serde_json::to_value(stats).unwrap(),
+        serde_json::to_value(
+            stats
+                .into_iter()
+                .map(PageSourceUnitFlaggedStatsPayload::from)
+                .collect::<Vec<_>>(),
+        )
+        .unwrap(),
         serde_json::json!([
             {"page_source_id":"page_source--00000000003","index":0,
              "flagged_unit_count":1},

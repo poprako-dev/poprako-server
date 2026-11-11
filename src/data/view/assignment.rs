@@ -1,10 +1,4 @@
 //! View DTOs for the assignment domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::chapter::ChapterInfoView;
@@ -13,8 +7,6 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoView {
     /// Unique identifier of the assignment.
     pub id: String,
@@ -24,10 +16,9 @@ pub struct AssignmentInfoView {
     /// Assigned user identifier.
     pub user_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Resolved user information, when included.
     pub user: Option<UserInfoView>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     /// Resolved chapter information, when included.
     pub chapter: Option<ChapterInfoView>,
 

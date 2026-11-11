@@ -1,15 +1,6 @@
 //! Val DTOs for the term domain.
-
 //! Request and response DTOs for terminology-entry use cases.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 /// Return value from creating a terminology entry.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct CreateTermVal {
     /// Identifier of the newly created terminology entry.

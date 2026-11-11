@@ -1,13 +1,6 @@
 //! Instr DTOs for the member invitation domain.
-
 //! Data transfer objects for member invitation use cases — input parameters
 //! and presentation-ready invitation values.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
-
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
@@ -17,8 +10,7 @@ use crate::value::role::RoleMask;
 /// The invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]
 /// that will be granted upon acceptance. The actual in-app user lookup
 /// happens during the registration flow.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateMemberInvitationInstr {
     /// Owning team identifier.
     pub team_id: String,
@@ -37,9 +29,7 @@ pub struct CreateMemberInvitationInstr {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/teams/{team_id}/member-invitations?is_pending=true&incl=invitor&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListMemberInvitationInfosInstr {
     /// Parent team whose invitations to list.
     pub team_id: String,
@@ -49,7 +39,6 @@ pub struct ListMemberInvitationInfosInstr {
     pub is_pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(default)]
     pub incl: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset.
@@ -59,8 +48,7 @@ pub struct ListMemberInvitationInfosInstr {
 }
 
 /// Input parameters for updating a pending invitation's roles.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateMemberInvitationRolesInstr {
     /// Invitation identifier.
     pub id: String,

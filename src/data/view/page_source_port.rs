@@ -1,16 +1,9 @@
 //! View DTOs for page translation port import and export.
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::model::shared::translation_document::PageSourceTranslationDocument;
+use crate::value::chapter_port::document::PageSourceTranslationDocument;
 
 /// source page object exchanged by the `PopRaKo` translation port.
-#[derive(Clone, Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Clone)]
 pub struct PageSourceTranslationPortView {
     /// source page identifier from the exporting chapter.
     pub page_id: String,

@@ -1,23 +1,19 @@
 //! HTTP delivery for versioned annotation editing.
-
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
-use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
-use crate::api::http::result::{Accept as _, HttpError, HttpResult};
+use crate::api::http::object::issue_edit::{
+    IssueEditPagePayload, IssueEditVariantsPayload, RenameIssueEditVariantBody,
+    RenameIssueEditVariantPayload, SavePageIssuesBody, SavePageIssuesPayload,
+    SaveQuery,
+};
+use crate::api::http::result::{AcceptInto as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::instr::issue_edit::{
-    RenameIssueEditVariantInstr, SavePageIssuesInstr,
-};
-use crate::data::val::issue_edit::{
-    IssueEditPageVal, IssueEditVariantsVal, RenameIssueEditVariantVal,
-    SavePageIssuesVal,
-};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
@@ -26,13 +22,6 @@ use crate::usecase::issue_edit as issue_edit_usecase;
 use crate::usecase::issue_edit::{
     rename as issue_rename_usecase, save as issue_save_usecase,
 };
-
-/// Immutable request identity reused only when retrying the same batch.
-#[derive(Deserialize)]
-pub struct SaveQuery {
-    /// UUID batch identity.
-    pub save_id: String,
-}
 
 /// GET `/page-artworks/{page_artwork_id}/issues`.
 #[cfg_attr(feature = "swagger",
@@ -45,11 +34,10 @@ pub struct SaveQuery {
          Path,
          description = "Resource identity")),
 
-
     responses(
         (status = 200,
          description = "Current review state",
-         body = HttpBody<IssueEditPageVal>),
+         body = HttpBody<IssueEditPagePayload>),
 
         (status = 403,
          description = "Insufficient review permissions"),
@@ -68,7 +56,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<IssueEditPageVal> {
+) -> HttpResult<IssueEditPagePayload> {
     //
     Ok(
         issue_edit_usecase::get_info::<_, RdbContext<ReptRead>, RdbRepo, _>(
@@ -77,7 +65,7 @@ pub async fn get_info(
             id,
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -92,11 +80,10 @@ pub async fn get_info(
          Path,
          description = "Resource identity")),
 
-
     responses(
         (status = 200,
          description = "Current review state",
-         body = HttpBody<IssueEditVariantsVal>),
+         body = HttpBody<IssueEditVariantsPayload>),
 
         (status = 403,
          description = "Insufficient review permissions"),
@@ -115,7 +102,7 @@ pub async fn list_variant_infos(
     State(harn): State<AppHarn>,
     Path(id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<IssueEditVariantsVal> {
+) -> HttpResult<IssueEditVariantsPayload> {
     //
     Ok(
         issue_edit_usecase::list_variant_infos::<
@@ -124,7 +111,7 @@ pub async fn list_variant_infos(
             RdbRepo,
         >((harn.nucl().rept_read(), harn.repo()), token, id)
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -139,12 +126,12 @@ pub async fn list_variant_infos(
          Path,
          description = "Resource identity")),
 
-    request_body = RenameIssueEditVariantInstr,
+    request_body = RenameIssueEditVariantPayload,
 
     responses(
         (status = 200,
          description = "Current review state",
-         body = HttpBody<RenameIssueEditVariantVal>),
+         body = HttpBody<RenameIssueEditVariantPayload>),
 
         (status = 403,
          description = "Insufficient review permissions"),
@@ -164,8 +151,8 @@ pub async fn rename_variant(
     Path(id): Path<String>,
     Extension(token): Extension<UserToken>,
 
-    Json(instr): Json<RenameIssueEditVariantInstr>,
-) -> HttpResult<RenameIssueEditVariantVal> {
+    Json(instr): Json<RenameIssueEditVariantBody>,
+) -> HttpResult<RenameIssueEditVariantPayload> {
     //
     Ok(issue_rename_usecase::rename_variant::<
         _,
@@ -176,10 +163,10 @@ pub async fn rename_variant(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         token,
         id,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// POST `/page-artworks/{page_artwork_id}/issues/save`.
@@ -196,12 +183,12 @@ pub async fn rename_variant(
          Query,
          description = "Immutable batch UUID")),
 
-    request_body = SavePageIssuesInstr,
+    request_body = SavePageIssuesPayload,
 
     responses(
         (status = 200,
          description = "Current review state",
-         body = HttpBody<SavePageIssuesVal>),
+         body = HttpBody<SavePageIssuesPayload>),
 
         (status = 403,
          description = "Insufficient review permissions"),
@@ -221,8 +208,8 @@ pub async fn save_infos(
     Path(id): Path<String>,
     Extension(token): Extension<UserToken>,
     Query(query): Query<SaveQuery>,
-    Json(instr): Json<SavePageIssuesInstr>,
-) -> HttpResult<SavePageIssuesVal> {
+    Json(instr): Json<SavePageIssuesBody>,
+) -> HttpResult<SavePageIssuesPayload> {
     //
     let save_id = Uuid::parse_str(&query.save_id)
         .map_err(|_| HttpError::unprocessable("save_id must be a UUID"))?;
@@ -233,9 +220,8 @@ pub async fn save_infos(
             token,
             id,
             save_id,
-            instr,
+            instr.into(),
         )
-        .await?
-        .accept(StatusCode::OK),
+        .await?.accept_into(StatusCode::OK),
     )
 }

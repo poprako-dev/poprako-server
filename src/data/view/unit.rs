@@ -1,23 +1,14 @@
 //! View DTOs for the unit domain.
-
 //! Data transfer objects for page Unit use cases.
 //!
 //! Types in this module describe how client-supplied edit payloads are
 //! represented and how persisted Unit rows are projected back into API-facing
 //! response types.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Presentation-ready visible Unit information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct UnitInfoView {
     /// Permanent Unit ID.
@@ -39,24 +30,18 @@ pub struct UnitInfoView {
     pub y_coord: f64,
 
     /// Translation text annotation delivered to typesetters.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub typography_note: Option<String>,
     /// Communication between translators and proofreaders.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub translation_note: Option<String>,
 
     /// Current translated text.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
     /// ID of the translator who last assigned translation content.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
     /// Current proofread text.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
     /// ID of the proofreader who last assigned revision content.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
     /// Creation time as Unix milliseconds.

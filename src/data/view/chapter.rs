@@ -1,10 +1,4 @@
 //! View DTOs for the chapter domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::comic::ComicInfoView;
@@ -20,8 +14,6 @@ use crate::value::chapter::mask::StageMask;
 /// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
 ///
 /// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoView {
     /// Unique chapter identifier.
     pub id: String,
@@ -31,7 +23,6 @@ pub struct ChapterInfoView {
 
     /// Included comic information; present only when requested via inclusion
     /// options.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub comic: Option<ComicInfoView>,
 
     /// Whether the chapter is pinned to the top of its comic's chapter list.
@@ -59,7 +50,6 @@ pub struct ChapterInfoView {
 
     /// Included creator information; present only when requested via inclusion
     /// options.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoView>,
 
     /// Timestamp of creation, in Unix milliseconds.

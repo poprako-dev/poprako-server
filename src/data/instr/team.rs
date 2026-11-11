@@ -1,18 +1,10 @@
 //! Instr DTOs for the team domain.
-
 //! Data transfer objects for team profile use cases.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
-
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::pagination::PubListLimit;
 
 /// Request to allocate a team avatar upload.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocTeamAvatarInstr {
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
@@ -23,17 +15,14 @@ pub struct AllocTeamAvatarInstr {
 }
 
 /// Request to confirm one allocated team avatar version.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct MarkTeamAvatarUploadedInstr {
     /// Version returned in the avatar upload slot.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 }
 
 /// Input parameters for creating a new team.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateTeamInstr {
     /// Team display name.
     pub name: String,
@@ -50,9 +39,7 @@ pub struct CreateTeamInstr {
 ///   different user's ID is rejected with `403`.
 ///
 /// Example: `/api/v1/teams?user_id=u_123&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListTeamInfosInstr {
     /// Filter to teams joined by the authenticated user. A different user's
     /// ID is rejected. Omit to list all teams (super-admin only).
@@ -65,8 +52,7 @@ pub struct ListTeamInfosInstr {
 }
 
 /// Input parameters for updating a team's profile.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateTeamInfoInstr {
     /// Team identifier.
     pub id: String,

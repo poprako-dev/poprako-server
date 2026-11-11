@@ -1,3 +1,6 @@
+/// Native translation exchange documents.
+pub mod document;
+
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 

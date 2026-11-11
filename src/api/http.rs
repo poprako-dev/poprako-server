@@ -1,11 +1,7 @@
 //! Active HTTP API module: result types, auth token constants, middleware,
 //! handlers, router, OpenAPI, and server entry point.
-
 // Shared HTTP metrics and transport support.
 mod shared;
-// TODO: Define the public HTTP surface required by the server and OpenAPI
-// binaries, then restrict delivery-only modules to crate visibility.
-
 // Authentication utilities for the HTTP API.
 mod auth;
 // HTTP request handlers grouped by resource.
@@ -19,6 +15,8 @@ mod state;
 
 /// HTTP middleware: authorization, latency, rate limiting.
 pub mod middleware;
+/// HTTP wire objects for request bodies and response payloads.
+pub mod object;
 /// HTTP server entry point.
 pub mod server;
 

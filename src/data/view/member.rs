@@ -1,10 +1,4 @@
 //! View DTOs for the member domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::team::TeamInfoView;
@@ -13,8 +7,6 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready membership information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoView {
     /// Unique member identifier.
     pub id: String,
@@ -30,10 +22,8 @@ pub struct MemberInfoView {
     pub team_id: String,
 
     /// Resolved user detail, present when the `user` include option is requested.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoView>,
     /// Resolved team detail, present when the `team` include option is requested.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoView>,
 
     /// Bitmask of roles assigned to this member.

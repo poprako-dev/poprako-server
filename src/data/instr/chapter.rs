@@ -1,23 +1,12 @@
 //! Instr DTOs for the chapter domain.
-
 //! Data transfer objects for chapter use cases.
-
-#[cfg(test)]
-mod tests;
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
-
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new chapter.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateChapterInstr {
     /// Identifier of the parent comic to create the chapter in.
     pub comic_id: String,
@@ -39,9 +28,7 @@ pub struct CreateChapterInstr {
 /// in their parent segments.
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListChapterInfosInstr {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
@@ -49,7 +36,6 @@ pub struct ListChapterInfosInstr {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(default)]
     pub incl: Vec<ChapterInclOpt>,
 
     /// Pagination offset: number of chapters to skip before beginning the
@@ -60,9 +46,7 @@ pub struct ListChapterInfosInstr {
 }
 
 /// Input parameters for listing immutable workflow records under one chapter.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListChapterWorkflowRecordInfosInstr {
     /// Chapter whose activity records are listed.
     pub chapter_id: String,
@@ -73,8 +57,7 @@ pub struct ListChapterWorkflowRecordInfosInstr {
 }
 
 /// Input parameters for partially updating a chapter's profile.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateChapterInfoInstr {
     /// Chapter identifier to update.
     pub id: String,
@@ -88,9 +71,7 @@ pub struct UpdateChapterInfoInstr {
 /// Encodes a single operation on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
-#[derive(Debug, Clone, Copy, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy)]
 pub enum ChapterStageInstr {
     /// Raw-provision stage.
     RawProvide,
@@ -154,9 +135,7 @@ impl From<Stage> for ChapterStageInstr {
 }
 
 /// Operation accepted by the workflow-stage JSON body.
-#[derive(Debug, Clone, Copy, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy)]
 pub enum ChapterStageOperInstr {
     /// Advance the stage.
     Advance,
@@ -192,8 +171,7 @@ impl From<StageOper> for ChapterStageOperInstr {
 }
 
 /// Input parameters for applying one chapter workflow-stage operation.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateChapterStageInstr {
     /// Chapter identifier to update.
     pub id: String,

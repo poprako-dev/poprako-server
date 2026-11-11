@@ -1,5 +1,4 @@
 //! Team handlers: CRUD, avatar upload flow, and deletion.
-
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -9,16 +8,15 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::team::{
+    AllocTeamAvatarBody, AllocTeamAvatarPayload, CreateTeamBody,
+    ListTeamInfosQuery, MarkTeamAvatarUploadedBody, TeamInfoObj,
+    UpdateTeamInfoBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::team::{
-    AllocTeamAvatarInstr, CreateTeamInstr, ListTeamInfosInstr,
-    MarkTeamAvatarUploadedInstr, UpdateTeamInfoInstr,
-};
-use crate::data::val::team::AllocTeamAvatarVal;
-use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::RdbRepo;
@@ -34,10 +32,10 @@ use crate::usecase::team::{
     post,
     path = "/api/v1/teams",
     tag = "teams",
-    request_body = CreateTeamInstr,
+    request_body = CreateTeamBody,
     responses(
         (status = 201, description = "Team \
-        created", body = HttpBody<TeamInfoView>),
+        created", body = HttpBody<TeamInfoObj>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
@@ -46,16 +44,16 @@ use crate::usecase::team::{
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateTeamInstr>,
-) -> HttpResult<TeamInfoView> {
+    Json(instr): Json<CreateTeamBody>,
+) -> HttpResult<TeamInfoObj> {
     //
     Ok(team_usecase::create::<_, RdbContext<ReptRead>, RdbRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams` — list teams with pagination.
@@ -68,10 +66,10 @@ pub async fn create(
     they have joined. A different user's ID is rejected with `403`. Examples: \
     `/api/v1/teams?user_id=u_1&offset=0&limit=20`, \
     `/api/v1/teams?offset=0&limit=20` (super-admin).",
-    params(ListTeamInfosInstr),
+    params(ListTeamInfosQuery),
     responses(
         (status = 200, description = "Teams \
-        listed", body = HttpBody<Vec<TeamInfoView>>),
+        listed", body = HttpBody<Vec<TeamInfoObj>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Listing all teams requires \
         super-admin; user filters must match the authenticated user"),
@@ -81,17 +79,17 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ListTeamInfosInstr>,
-) -> HttpResult<Vec<TeamInfoView>> {
+    Query(instr): Query<ListTeamInfosQuery>,
+) -> HttpResult<Vec<TeamInfoObj>> {
     //
     Ok(
         team_read_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -121,7 +119,7 @@ pub async fn list_online_user_ids(
         _,
     >((harn.repo(), harn.cache()), user_token, team_id)
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own activity and lease.
@@ -162,7 +160,7 @@ pub async fn mark_self_online(
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
         (status = 200, description = "Team \
-        info retrieved", body = HttpBody<TeamInfoView>),
+        info retrieved", body = HttpBody<TeamInfoObj>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
@@ -171,7 +169,7 @@ pub async fn mark_self_online(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-) -> HttpResult<TeamInfoView> {
+) -> HttpResult<TeamInfoObj> {
     //
     Ok(
         team_read_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
@@ -179,7 +177,7 @@ pub async fn get_info(
             team_id,
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -189,7 +187,7 @@ pub async fn get_info(
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = UpdateTeamInfoInstr,
+    request_body = UpdateTeamInfoBody,
     responses(
         (status = 204, description = "Team updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -202,7 +200,7 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateTeamInfoInstr>,
+    Json(instr): Json<UpdateTeamInfoBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&team_id, &instr.id)?;
@@ -210,7 +208,7 @@ pub async fn update_info(
     team_usecase::update_info::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -223,10 +221,10 @@ pub async fn update_info(
     path = "/api/v1/teams/{team_id}/avatar/alloc",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = AllocTeamAvatarInstr,
+    request_body = AllocTeamAvatarPayload,
     responses(
         (status = 200, description = "Avatar \
-        upload URL allocated", body = HttpBody<AllocTeamAvatarVal>),
+        upload URL allocated", body = HttpBody<AllocTeamAvatarPayload>),
         (status = 403, description = "No perm to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
@@ -236,8 +234,8 @@ pub async fn alloc_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocTeamAvatarInstr>,
-) -> HttpResult<AllocTeamAvatarVal> {
+    Json(instr): Json<AllocTeamAvatarBody>,
+) -> HttpResult<AllocTeamAvatarPayload> {
     //
     Ok(
         team_usecase::alloc_avatar::<_, RdbContext<ReptRead>, RdbRepo, _>(
@@ -249,10 +247,10 @@ pub async fn alloc_avatar(
             ),
             user_token,
             team_id,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -262,7 +260,7 @@ pub async fn alloc_avatar(
     path = "/api/v1/teams/{team_id}/avatar/mark-uploaded",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = MarkTeamAvatarUploadedInstr,
+    request_body = MarkTeamAvatarUploadedBody,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "No perm to modify this team's avatar"),
@@ -274,14 +272,14 @@ pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkTeamAvatarUploadedInstr>,
+    Json(instr): Json<MarkTeamAvatarUploadedBody>,
 ) -> HttpNoContent {
     //
     team_usecase::mark_avatar_uploaded::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
-        instr,
+        instr.into(),
     )
     .await?;
 

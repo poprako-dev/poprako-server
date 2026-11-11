@@ -1,5 +1,4 @@
 //! Native translation exchange documents independent of response DTOs.
-
 use serde::Deserialize;
 
 /// Unit object exchanged by the `PopRaKo` translation port.
@@ -75,4 +74,11 @@ pub struct ChapterTranslationDocument {
 
     /// source pages and their translation units.
     pub pages: Vec<PageSourceTranslationDocument>,
+}
+
+impl ChapterTranslationDocument {
+    /// Parses a native translation exchange document.
+    pub fn parse(content: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(content)
+    }
 }

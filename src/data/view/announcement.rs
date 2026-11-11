@@ -1,18 +1,10 @@
 //! View DTOs for the announcement domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 
 /// Presentation-ready team announcement information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoView {
     /// Unique identifier.
     pub id: String,
@@ -21,7 +13,7 @@ pub struct AnnouncementInfoView {
     pub team_id: String,
     /// Authoring user identifier.
     pub user_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     /// Authoring user information, omitted when not requested.
     pub user: Option<UserInfoView>,
 

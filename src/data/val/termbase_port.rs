@@ -1,17 +1,9 @@
 //! Response DTOs for native terminology-base import and export.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::termbase_port::TermbaseTermView;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 
 /// Native portable terminology-base export document.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportTermbaseVal {
     /// Display name of the exported terminology base.
     pub name: String,
@@ -36,8 +28,6 @@ impl ExportTermbaseVal {
 }
 
 /// Result of importing one native terminology-base document.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct ImportTermbaseVal {
     /// Identifier of the created or merged terminology base.
@@ -51,8 +41,6 @@ pub struct ImportTermbaseVal {
 }
 
 /// Content-change counts for one atomic terminology append.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct AppendTermbaseVal {
     /// Number of newly inserted entries.

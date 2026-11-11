@@ -1,14 +1,7 @@
 //! Instr DTOs for the assignment invitation domain.
-
 //! Data transfer objects for assignment invitation use cases.
-
-use serde::Deserialize;
-
 #[cfg(not(debug_assertions))]
 use veil::Redact;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
 
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
@@ -16,9 +9,7 @@ use crate::value::role::RoleMask;
 /// Input parameters for listing invitations under one chapter.
 ///
 /// Example: `/api/v1/assignment-invitations?chapter_id=c_1&is_pending=true&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListAssignmentInvitationInfosInstr {
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
@@ -34,8 +25,7 @@ pub struct ListAssignmentInvitationInfosInstr {
 }
 
 /// Input parameters for creating an assignment invitation.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateAssignmentInvitationInstr {
     /// Identifier of the chapter to create the invitation for.
     pub chapter_id: String,
@@ -46,10 +36,8 @@ pub struct CreateAssignmentInvitationInstr {
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(Deserialize)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[cfg_attr(not(debug_assertions), derive(Redact))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationInstr {
     /// Secret invitation code to join with.
     #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]

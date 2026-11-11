@@ -1,5 +1,4 @@
 //! Chapter translation and artwork port handlers.
-
 // Shared translation export response helpers.
 mod export;
 
@@ -13,21 +12,21 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::chapter_port::{
+    AllocChapterArtworkBody, AllocChapterArtworkPayload,
+    ExportChapterArtworkPayload, ExportChapterTranslationQuery,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpRawBody, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpRawBody, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::chapter_port::{
-    AllocChapterArtworkInstr, ExportChapterTranslationInstr,
-    ImportChapterTranslationInstr, MarkChapterArtworkUploadedInstr,
-};
 
 #[cfg(feature = "swagger")]
-use crate::data::val::chapter_port::ExportChapterTranslationsVal;
+use crate::api::http::object::chapter_port::ExportChapterTranslationsPayload;
 
-use crate::data::val::chapter_port::{
-    AllocChapterArtworkVal, ExportChapterArtworkVal,
-    ImportChapterTranslationVal,
+use crate::api::http::object::chapter_port::{
+    ImportChapterTranslationBody, ImportChapterTranslationPayload,
+    MarkChapterArtworkUploadedBody,
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -44,10 +43,10 @@ use crate::usecase::chapter_port::{
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ImportChapterTranslationInstr,
+    request_body = ImportChapterTranslationPayload,
     responses(
         (status = 200, description = "Translations imported",
-            body = HttpBody<ImportChapterTranslationVal>),
+            body = HttpBody<ImportChapterTranslationPayload>),
         (status = 403, description = "No perm to import into this chapter"),
         (status = 422, description = "Invalid import content for the \
         selected format"),
@@ -58,8 +57,8 @@ pub async fn import_translation(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ImportChapterTranslationInstr>,
-) -> HttpResult<ImportChapterTranslationVal> {
+    Json(instr): Json<ImportChapterTranslationBody>,
+) -> HttpResult<ImportChapterTranslationPayload> {
     //
     Ok(
         chapter_port_import_translation_usecase::import_translation::<
@@ -69,11 +68,11 @@ pub async fn import_translation(
         >(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
-            instr,
+            instr.into(),
             chapter_id,
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -97,7 +96,7 @@ pub async fn import_translation(
     ),
     responses(
         (status = 200, description = "Selected translation exports",
-            body = ExportChapterTranslationsVal,
+            body = ExportChapterTranslationsPayload,
                 content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
@@ -107,7 +106,7 @@ pub async fn export_translation(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ExportChapterTranslationInstr>,
+    Query(instr): Query<ExportChapterTranslationQuery>,
 ) -> HttpResult<HttpRawBody> {
     //
     let body = export::export_payload(
@@ -142,7 +141,7 @@ pub async fn export_translation(
     responses(
         (status = 200,
             description = "Selected translation exports download",
-                body = ExportChapterTranslationsVal,
+                body = ExportChapterTranslationsPayload,
                     content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
@@ -152,7 +151,7 @@ pub async fn export_translation_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ExportChapterTranslationInstr>,
+    Query(instr): Query<ExportChapterTranslationQuery>,
 ) -> HttpResult<HttpRawBody> {
     //
     let filename = ["chapter_", &chapter_id].concat();
@@ -174,11 +173,11 @@ pub async fn export_translation_download(
     post, path = "/api/v1/chapters/{chapter_id}/artwork/alloc",
         tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = AllocChapterArtworkInstr,
+    request_body = AllocChapterArtworkPayload,
     responses(
         (status = 200, description = "Current \
         artwork version and optional PUT capability",
-            body = HttpBody<AllocChapterArtworkVal>),
+            body = HttpBody<AllocChapterArtworkPayload>),
         (status = 403, description = "Chapter artwork role required"),
         (status = 422, description = "Invalid allocation or frozen chapter"),
     ),
@@ -188,8 +187,8 @@ pub async fn alloc_artwork(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocChapterArtworkInstr>,
-) -> HttpResult<AllocChapterArtworkVal> {
+    Json(instr): Json<AllocChapterArtworkBody>,
+) -> HttpResult<AllocChapterArtworkPayload> {
     //
     Ok(chapter_port_artwork_usecase::alloc_artwork::<
         _,
@@ -205,10 +204,10 @@ pub async fn alloc_artwork(
         ),
         user_token,
         chapter_id,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// Optimistically confirms artwork and atomically completes typesetting/redraw.
@@ -216,7 +215,7 @@ pub async fn alloc_artwork(
     post, path = "/api/v1/chapters/{chapter_id}/artwork/mark-uploaded",
         tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = MarkChapterArtworkUploadedInstr,
+    request_body = MarkChapterArtworkUploadedBody,
     responses(
         (status = 204, description = "Current artwork confirmed and \
         typesetting completed"),
@@ -230,7 +229,7 @@ pub async fn mark_artwork_uploaded(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkChapterArtworkUploadedInstr>,
+    Json(instr): Json<MarkChapterArtworkUploadedBody>,
 ) -> HttpNoContent {
     //
     chapter_port_artwork_usecase::mark_artwork_uploaded::<
@@ -248,7 +247,7 @@ pub async fn mark_artwork_uploaded(
         ),
         user_token,
         chapter_id,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -263,7 +262,7 @@ pub async fn mark_artwork_uploaded(
     responses(
         (status = 200, description = "Artwork \
         identity and original download URL",
-            body = HttpBody<ExportChapterArtworkVal>),
+            body = HttpBody<ExportChapterArtworkPayload>),
         (status = 403, description = "Chapter export access required"),
         (status = 422, description = "Chapter artwork is unavailable"),
     ),
@@ -273,7 +272,7 @@ pub async fn export_artwork(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ExportChapterArtworkVal> {
+) -> HttpResult<ExportChapterArtworkPayload> {
     //
     Ok(chapter_port_artwork_usecase::export_artwork::<
         RdbContext<ReptRead>,
@@ -281,5 +280,5 @@ pub async fn export_artwork(
         _,
     >((harn.repo(), harn.obj_dept()), user_token, chapter_id)
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }

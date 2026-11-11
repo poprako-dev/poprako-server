@@ -1,17 +1,8 @@
 //! Instr DTOs for the term domain.
-
 //! Request and response DTOs for terminology-entry use cases.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::value::pagination::PubListLimit;
 
 /// Input parameters for creating a terminology entry.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermInstr {
     /// Parent terminology base identifier.
     pub termbase_id: String,
@@ -25,8 +16,6 @@ pub struct CreateTermInstr {
 }
 
 /// Input parameters for replacing terminology-entry fields.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermInfoInstr {
     /// Identifier of the terminology entry to update.
     pub id: String,

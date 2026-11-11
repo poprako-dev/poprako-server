@@ -9,6 +9,8 @@
 
 use super::*;
 
+use crate::value::member::MemberInclOpt;
+
 use axum::http::Uri;
 use axum::response::IntoResponse;
 

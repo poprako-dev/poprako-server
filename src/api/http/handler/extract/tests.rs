@@ -4,7 +4,6 @@
 )]
 
 //! HTTP rejection logging must work with the production INFO filter.
-
 use axum::Router;
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Extension, Json, Path, Query};
@@ -14,9 +13,9 @@ use axum::routing::{get, post};
 use axum_extra::extract::Query as MultiQuery;
 use serde::Deserialize;
 
+use crate::api::http::object::page_source::AllocChapterPageSourcesBody;
+use crate::api::http::object::unit::UnitEditBody;
 use crate::api::http::result::HttpError;
-use crate::data::instr::page_source::AllocChapterPageSourcesInstr;
-use crate::data::instr::unit::UnitEditInstr;
 use crate::result::ExpectedVariant;
 use crate::test_util::http_logging::capture_req;
 
@@ -120,7 +119,7 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
 async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
     let router = Router::new().route(
         "/units/save",
-        post(|Json(_): Json<Vec<UnitEditInstr>>| async { StatusCode::OK }),
+        post(|Json(_): Json<Vec<UnitEditBody>>| async { StatusCode::OK }),
     );
 
     let req = Request::builder()
@@ -156,7 +155,7 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
 async fn missing_required_json_field_is_logged_with_its_schema_name() {
     let router = Router::new().route(
         "/chapters/{chapter_id}/page-sources/alloc",
-        post(|Json(_): Json<AllocChapterPageSourcesInstr>| async {
+        post(|Json(_): Json<AllocChapterPageSourcesBody>| async {
             StatusCode::OK
         }),
     );

@@ -1,5 +1,4 @@
 //! Instr DTOs grouped by domain.
-
 /// Announcement instruction DTOs.
 pub mod announcement;
 /// Assignment instruction DTOs.
@@ -46,6 +45,3 @@ pub mod unit;
 pub mod user;
 /// Workset instruction DTOs.
 pub mod workset;
-
-#[cfg(test)]
-mod tests;

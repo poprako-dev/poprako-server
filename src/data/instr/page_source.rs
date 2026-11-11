@@ -1,19 +1,10 @@
 //! Instr DTOs for the page domain.
-
 //! Data transfer objects for page use cases.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::model::write::page_source::PageSourceImageSpec;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Input parameters for reserving all page images of a chapter.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocChapterPageSourcesInstr {
     /// Target chapter identifier.
     pub chapter_id: String,
@@ -22,12 +13,9 @@ pub struct AllocChapterPageSourcesInstr {
 }
 
 /// One page image in a complete chapter manifest.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct PageSourceImageInstr {
     /// Complete original filename. Omission or null replaces it with no name.
-    #[serde(default)]
     pub raw_ident: Option<String>,
 
     //
@@ -57,12 +45,9 @@ impl From<PageSourceImageInstr> for PageSourceImageSpec {
 }
 
 /// Input parameters for reserving one page image.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocPageSourceImageInstr {
     /// Complete original filename. Omission or null replaces it with no name.
-    #[serde(default)]
     pub raw_ident: Option<String>,
 
     //
@@ -75,12 +60,9 @@ pub struct AllocPageSourceImageInstr {
 }
 
 /// Input parameters for confirming a page image upload completed.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct MarkPageSourceImageUploadedInstr {
     /// Image version from the allocation, used as an idempotency guard.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 }
 

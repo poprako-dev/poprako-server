@@ -1,5 +1,4 @@
 //! Whole-chapter review import and read-only Chapter queries.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -7,11 +6,11 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
-use crate::api::http::result::{Accept as _, HttpResult};
+use crate::api::http::object::issue::{
+    ImportChapterIssuesBody, ImportChapterIssuesPayload, IssueInfoObj,
+};
+use crate::api::http::result::{AcceptInto as _, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::instr::issue::ImportChapterIssuesInstr;
-use crate::data::val::issue::ImportChapterIssuesVal;
-use crate::data::view::issue::IssueInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
@@ -22,10 +21,11 @@ use crate::usecase::issue as issue_usecase;
 #[cfg_attr(feature = "swagger", utoipa::path(
     post, path = "/api/v1/chapters/{chapter_id}/issues/import", tag = "issues",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ImportChapterIssuesInstr,
+    request_body = ImportChapterIssuesPayload,
     responses(
-        (status = 200, description = "Current \
-        review replaced completely", body = HttpBody<ImportChapterIssuesVal>),
+        (status = 200,
+        description = "Current review replaced completely",
+        body = HttpBody<ImportChapterIssuesPayload>),
         (status = 403, description = "Current REVIEWER assignment required; \
         administrator status alone does not authorize import"),
         (status = 422, description = "Missing Chapter, published Chapter, or \
@@ -37,18 +37,18 @@ pub async fn import_issue(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
-    Json(instr): Json<ImportChapterIssuesInstr>,
-) -> HttpResult<ImportChapterIssuesVal> {
+    Json(instr): Json<ImportChapterIssuesBody>,
+) -> HttpResult<ImportChapterIssuesPayload> {
     //
     Ok(
         issue_usecase::import_issue::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             token,
             chapter_id,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -58,7 +58,7 @@ pub async fn import_issue(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Ordered \
-        current Chapter issues", body = HttpBody<Vec<IssueInfoView>>),
+        current Chapter issues", body = HttpBody<Vec<IssueInfoObj>>),
         (status = 403, description = "Team membership or chapter assignment \
         required"),
         (status = 422, description = "Chapter not found"),
@@ -69,7 +69,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<Vec<IssueInfoView>> {
+) -> HttpResult<Vec<IssueInfoObj>> {
     //
     Ok(issue_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
@@ -77,5 +77,5 @@ pub async fn list_infos(
         chapter_id,
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
