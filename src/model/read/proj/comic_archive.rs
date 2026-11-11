@@ -1,5 +1,4 @@
 //! Snapshot and persisted-record types for immutable comic archives.
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;

@@ -4,7 +4,6 @@
 )]
 
 //! Validated identities and canonical locations from persisted construction data.
-
 use poprako_obj_dept::key::{ObjId, ObjKey, ObjKind};
 use poprako_obj_dept::model::record::{ObjKeyRecord, ObjMetaRecord};
 use poprako_obj_dept::rest::ObjDeptError;

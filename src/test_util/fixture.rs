@@ -1,5 +1,4 @@
 //! Shared model fixtures used across use-case tests.
-
 #![allow(
     clippy::expect_used,
     reason = "Test fixture setup fails immediately when password hashing fails"

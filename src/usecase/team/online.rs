@@ -1,5 +1,4 @@
 //! Team-scoped online-user lease use cases.
-
 #[cfg(test)]
 // Online-user use-case tests cover membership gates and team isolation.
 mod tests;

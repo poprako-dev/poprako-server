@@ -1,5 +1,4 @@
 //! RDB-backed page repository.
-
 // Transaction-scoped page operations.
 mod step_impl;
 

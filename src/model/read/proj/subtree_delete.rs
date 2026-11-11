@@ -1,5 +1,4 @@
 //! Minimal persisted projections for hierarchical mark-and-sweep deletion.
-
 /// A locked hierarchy root with the ancestry needed for permission checks and
 /// surviving-parent updates.
 pub enum SubtreeDeleteScope {

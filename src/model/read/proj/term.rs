@@ -1,5 +1,4 @@
 //! Domain models for terms stored inside terminology bases.
-
 use time::OffsetDateTime;
 
 /// A persisted terminology entry.

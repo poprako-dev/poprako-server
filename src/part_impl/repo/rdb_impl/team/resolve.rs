@@ -1,5 +1,4 @@
 //! Team ownership projection queries.
-
 use diesel::{ExpressionMethods as _, OptionalExtension as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};

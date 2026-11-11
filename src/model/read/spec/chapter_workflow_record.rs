@@ -1,5 +1,4 @@
 //! Query specification for chapter workflow record listings.
-
 use crate::value::pagination::PubListLimit;
 
 /// Pagination and ownership filter for chapter workflow records.

@@ -5,7 +5,6 @@
 )]
 
 //! Regression coverage for payload exclusion and ordinary use-case fields.
-
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};

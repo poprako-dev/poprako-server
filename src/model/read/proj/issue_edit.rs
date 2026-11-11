@@ -1,5 +1,4 @@
 //! Consistent review versions and category usage.
-
 /// Chapter-wide review identity and mutation ver.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct IssueEditReviewVer {

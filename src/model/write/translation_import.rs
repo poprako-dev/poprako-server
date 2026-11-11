@@ -1,5 +1,4 @@
 //! Internal normalized payloads for chapter translation import.
-
 /// Format-specific source state for one imported unit.
 pub enum UnitTranslationImportSource {
     /// `LabelPlus` stores one text payload without workflow-stage metadata.

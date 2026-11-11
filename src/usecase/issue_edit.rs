@@ -1,5 +1,4 @@
 //! Versioned annotation editing independent of delivery mechanisms.
-
 // Chapter write authorization.
 mod access;
 // Consistent document projections.

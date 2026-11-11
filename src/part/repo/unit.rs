@@ -1,5 +1,4 @@
 //! Repository capabilities for the Unit domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::unit::{

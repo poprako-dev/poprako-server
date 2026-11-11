@@ -4,7 +4,6 @@
 )]
 
 //! Hierarchy sweep policy tests independent of scheduling mechanics.
-
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 

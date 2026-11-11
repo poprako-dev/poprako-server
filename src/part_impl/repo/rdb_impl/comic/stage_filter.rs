@@ -1,5 +1,4 @@
 //! Stage selections for correlated Comic filtering.
-
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 

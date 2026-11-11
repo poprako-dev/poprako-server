@@ -1,5 +1,4 @@
 //! Byte-bounded permanent comic archive payload queries.
-
 use diesel::define_sql_function;
 use diesel::expression::BoxableExpression;
 use diesel::pg::Pg;

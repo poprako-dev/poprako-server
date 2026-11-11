@@ -1,5 +1,4 @@
 //! Image identity value types shared by page persistence and uploads.
-
 #[cfg(test)]
 mod tests;
 

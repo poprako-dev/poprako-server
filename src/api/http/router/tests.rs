@@ -4,7 +4,6 @@
 )]
 
 //! Routing failures must retain their status and warn at their source.
-
 use axum::body::Body;
 use axum::http::Request;
 use axum::middleware::Next;

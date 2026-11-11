@@ -1,5 +1,4 @@
 //! Object identifier discovery, URL snapshots, and nested model rendering.
-
 use std::collections::{HashMap, VecDeque};
 
 use poprako_orchestra::{Context, Run};

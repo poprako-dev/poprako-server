@@ -1,5 +1,4 @@
 //! Diesel-backed transaction coordinator.
-
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 mod tests;
 

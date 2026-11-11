@@ -1,5 +1,4 @@
 //! Mock immutable chapter workflow record repository operations.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 

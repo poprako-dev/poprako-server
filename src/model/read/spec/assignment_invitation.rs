@@ -1,5 +1,4 @@
 //! Domain models for chapter assignment invitations.
-
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing assignment invitations.

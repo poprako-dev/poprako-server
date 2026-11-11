@@ -1,5 +1,4 @@
 //! In-memory terminology-base repository operations.
-
 use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};

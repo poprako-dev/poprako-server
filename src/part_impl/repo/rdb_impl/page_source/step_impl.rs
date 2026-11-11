@@ -1,5 +1,4 @@
 //! RDB-backed page repository step implementations.
-
 use diesel::PgExpressionMethods as _;
 use diesel::dsl::{case_when, count};
 use diesel::expression::functions::declare_sql_function;

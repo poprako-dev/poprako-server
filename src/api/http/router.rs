@@ -4,7 +4,6 @@
 //! `/auth/login`, `/auth/logout`) and all protected business routes live
 //! under `/api/v1`. Protected routes are wrapped by the authorization
 //! middleware.
-
 // Versioned API route builders.
 mod v1;
 

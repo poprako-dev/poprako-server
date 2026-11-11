@@ -1,7 +1,6 @@
 //! Rate limiting middleware using the governor crate.
 //!
 //! Shares one configured token bucket across an application's routes.
-
 #[cfg(test)]
 mod tests;
 

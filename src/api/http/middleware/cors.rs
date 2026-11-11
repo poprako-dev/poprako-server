@@ -1,5 +1,4 @@
 //! Cross-origin browser access for the production web client.
-
 #[cfg(test)]
 mod tests;
 

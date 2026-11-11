@@ -1,5 +1,4 @@
 //! Pure Unit persistence planning and save token validation.
-
 #[cfg(test)]
 // Sparse persistence plan regression tests.
 mod tests;

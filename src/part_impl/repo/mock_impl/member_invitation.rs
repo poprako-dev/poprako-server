@@ -1,5 +1,4 @@
 //! Mock member-invitation repository operations.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 

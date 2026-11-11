@@ -1,5 +1,4 @@
 //! Domain models for team board comments.
-
 use crate::value::comment::CommentInclOpt;
 use crate::value::pagination::PubListLimit;
 

@@ -4,7 +4,6 @@
 )]
 
 //! PostgreSQL correctness coverage for hierarchy mark-and-sweep deletion.
-
 // Generate typed Unit insert records for each page in the requested subtree scale.
 fn subtree_unit_items(
     pages: &[PageSourceInsert],

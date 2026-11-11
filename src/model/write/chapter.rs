@@ -7,7 +7,6 @@
 //!
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
 //! [`StagePhase`]: crate::value::chapter::stage::StagePhase
-
 use crate::value::chapter::mask::StageMask;
 
 /// Mutable non-workflow fields for a chapter.

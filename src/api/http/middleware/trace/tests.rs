@@ -1,5 +1,4 @@
 //! HTTP response classification must not duplicate source error events.
-
 use std::time::Duration;
 
 use axum::http::StatusCode;

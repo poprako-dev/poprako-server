@@ -1,5 +1,4 @@
 //! Pure matching for authoritative chapter page manifests.
-
 #[cfg(test)]
 mod tests;
 

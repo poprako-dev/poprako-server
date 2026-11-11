@@ -1,5 +1,4 @@
 //! Diesel-backed operations for the database repository adapter.
-
 // Submit query macro that allocates a connection and calls a free function.
 #[macro_use]
 mod submit_query;

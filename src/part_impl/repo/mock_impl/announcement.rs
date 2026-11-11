@@ -1,5 +1,4 @@
 //! Mock announcement repository operations.
-
 use std::cmp::Reverse;
 
 use poprako_orchestra::Run;

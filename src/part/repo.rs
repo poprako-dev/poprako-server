@@ -23,7 +23,6 @@
 //! [`Nucl::coord`]: poprako_orchestra::Nucl::coord
 //! [`Run`]: poprako_orchestra::Run
 //! [`Step`]: poprako_orchestra::Step
-
 /// Announcement repository port.
 pub mod announcement;
 /// Assignment repository port.

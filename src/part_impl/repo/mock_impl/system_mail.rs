@@ -1,5 +1,4 @@
 //! Mock system mail repository operations.
-
 use std::cmp::Reverse;
 use std::collections::HashSet;
 

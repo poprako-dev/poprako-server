@@ -1,5 +1,4 @@
 //! Pure image upload size rules.
-
 #[cfg(test)]
 mod tests;
 

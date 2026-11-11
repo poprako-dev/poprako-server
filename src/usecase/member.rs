@@ -1,5 +1,4 @@
 //! Member use cases: create, join, list, role update, and deletion.
-
 // Member presentation assembly.
 mod view;
 

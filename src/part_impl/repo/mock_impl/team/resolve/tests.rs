@@ -1,5 +1,4 @@
 //! In-memory team ownership projection tests.
-
 use super::*;
 
 use poprako_orchestra::Nucl as _;

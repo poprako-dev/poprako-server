@@ -1,5 +1,4 @@
 //! Composite page repository operations.
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page_artwork::PageArtworkInfo;

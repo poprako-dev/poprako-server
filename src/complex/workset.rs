@@ -1,5 +1,4 @@
 //! Pure rules for workset entities.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::{

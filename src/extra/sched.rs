@@ -1,5 +1,4 @@
 //! Injected recurring tasks with isolated workers and bounded shutdown.
-
 // Worker capacity, replacement, and coordinated shutdown.
 mod supervisor;
 // Serial runner attempts, recovery, and cancellable delays.

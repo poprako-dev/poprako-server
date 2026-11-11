@@ -1,5 +1,4 @@
 //! Typed storage for the Chapter's single current review.
-
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 mod tests;
 

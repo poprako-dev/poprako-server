@@ -1,5 +1,4 @@
 //! RDB-backed unit repository.
-
 // Unit edit application and sequence mutation.
 mod edit;
 // Unit sequence reads and chain validation.

@@ -1,5 +1,4 @@
 //! Event delivery dispatcher for the asynchronous effect actor.
-
 use poprako_orchestra::Context;
 use tracing::instrument;
 

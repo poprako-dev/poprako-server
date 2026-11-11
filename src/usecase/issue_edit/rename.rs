@@ -1,5 +1,4 @@
 //! Atomic rename of the current chapter's category references.
-
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 

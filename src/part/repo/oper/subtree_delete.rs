@@ -1,5 +1,4 @@
 //! Typed operations for deleting hierarchy roots and their descendants.
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::subtree_delete::{

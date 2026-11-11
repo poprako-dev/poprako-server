@@ -1,5 +1,4 @@
 //! Consistent document assembly within the caller's transaction.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use poprako_obj_dept::ObjDeptView;

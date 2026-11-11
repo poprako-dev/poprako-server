@@ -8,7 +8,6 @@
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
-
 use crate::value::role::RoleMask;
 
 /// Mutable assignment role mask.

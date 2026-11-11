@@ -1,5 +1,4 @@
 //! Active hierarchy locking and atomic tombstone propagation.
-
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
 };

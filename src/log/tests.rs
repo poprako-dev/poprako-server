@@ -1,5 +1,4 @@
 //! Rejection output must not format private fields or enable unrelated noise.
-
 use std::fmt::{self, Debug};
 
 use diesel_async::pooled_connection::deadpool::BuildError;

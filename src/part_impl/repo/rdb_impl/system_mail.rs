@@ -1,5 +1,4 @@
 //! RDB-backed system mail repository — free query functions and thin trait impls.
-
 /// System mail RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;

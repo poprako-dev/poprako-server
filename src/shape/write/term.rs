@@ -1,6 +1,5 @@
 //! Batch plans borrowing import models and persisted terms through the write.
 //! Target lists copy references; append replacements own their merged comments.
-
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermEntryShape<'a> {

@@ -1,5 +1,4 @@
 //! RDB-backed chapter repository step implementations.
-
 use std::cmp::Reverse;
 
 use diesel::prelude::{

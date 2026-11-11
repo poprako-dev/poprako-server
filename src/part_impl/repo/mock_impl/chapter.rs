@@ -1,5 +1,4 @@
 //! In-memory chapter repository helpers.
-
 // Internal organization of the `orchestra` module.
 mod orchestra;
 

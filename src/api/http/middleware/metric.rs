@@ -1,5 +1,4 @@
 //! HTTP response metric middleware.
-
 #[cfg(test)]
 // Metrics middleware test fixtures stay with the middleware module.
 mod tests;

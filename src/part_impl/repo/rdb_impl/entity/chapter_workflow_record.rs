@@ -1,5 +1,4 @@
 //! Diesel entity types for immutable chapter workflow records.
-
 #[cfg(test)]
 mod tests;
 

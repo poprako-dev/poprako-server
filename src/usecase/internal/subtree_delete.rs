@@ -1,5 +1,4 @@
 //! Shared Chapter object cleanup inside caller-owned transactions.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use poprako_obj_dept::ObjDept;

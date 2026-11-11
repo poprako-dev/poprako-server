@@ -1,5 +1,4 @@
 //! Read-only lifecycle tests for assignment invitations.
-
 use super::*;
 
 #[tokio::test]

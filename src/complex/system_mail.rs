@@ -1,5 +1,4 @@
 //! Complex domain logic for [SystemMail] aggregates — ID generation for system-generated notification mails.
-
 use crate::util::next_business_id;
 use crate::value::business_id::BusinessIdKind;
 

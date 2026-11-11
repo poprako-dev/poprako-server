@@ -9,7 +9,6 @@
 //! a [`Mock`] that doubles as the repository.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
-
 // list(list)(positive): should return only current user's mails matching the read filter, excluding other users.
 // list(list)(positive): should apply pagination after sorting by created_at descending.
 // list(list)(positive): offset exceeding result count should return an empty vec.

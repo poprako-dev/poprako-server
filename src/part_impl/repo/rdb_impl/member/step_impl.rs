@@ -1,5 +1,4 @@
 //! RDB-backed member repository — free-query helper functions.
-
 use diesel::PgTextExpressionMethods as _;
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,

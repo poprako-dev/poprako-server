@@ -1,5 +1,4 @@
 //! Test helpers for assertions and time fixtures.
-
 mod logging_tests;
 
 pub mod fixture;

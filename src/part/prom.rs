@@ -1,5 +1,4 @@
 //! Deferred-action producer port.
-
 // Fixed consumption queues.
 mod topic;
 

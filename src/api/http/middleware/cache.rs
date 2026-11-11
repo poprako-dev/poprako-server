@@ -1,5 +1,4 @@
 //! Prevents HTTP clients and shared caches from storing API responses.
-
 #[cfg(test)]
 mod tests;
 

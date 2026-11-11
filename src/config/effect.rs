@@ -1,5 +1,4 @@
 //! Best-effort event queue configuration.
-
 use std::num::NonZeroUsize;
 
 use anyhow::ensure;

@@ -1,5 +1,4 @@
 //! Domain event types emitted during use case execution.
-
 /// Chapter-related event payload types.
 pub mod chapter;
 /// User-related event payload types.

@@ -1,5 +1,4 @@
 //! Repository traits for the member-invitation domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::member_invitation::{

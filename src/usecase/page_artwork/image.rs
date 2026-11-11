@@ -1,5 +1,4 @@
 //! Composite image allocation and exact-generation confirmation.
-
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 

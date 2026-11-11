@@ -1,5 +1,4 @@
 //! Bounded pagination values for ordinary public lists.
-
 #[cfg(test)]
 mod tests;
 

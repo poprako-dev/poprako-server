@@ -7,7 +7,6 @@
 //! Convert to [`PageSourceInfoView`] for presentation.
 //!
 //! [`PageSourceInfoView`]: crate::data::view::page_source::PageSourceInfoView
-
 use crate::value::image::{ImageExt, ImageHash};
 
 /// One page-image identity supplied to manifest planning.

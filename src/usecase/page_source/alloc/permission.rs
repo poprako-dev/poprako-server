@@ -1,5 +1,4 @@
 //! Transactional permission enforcement shared by source allocation flows.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use poprako_util::i18n::trl;

@@ -1,5 +1,4 @@
 //! Domain models for team membership.
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::team::TeamInfo;

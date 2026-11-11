@@ -1,5 +1,4 @@
 //! JWT-backed authentication token signer.
-
 #[cfg(test)]
 mod tests;
 

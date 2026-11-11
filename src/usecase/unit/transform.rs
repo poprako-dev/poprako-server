@@ -1,5 +1,4 @@
 //! Chapter-scoped literal Unit text transformation.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};

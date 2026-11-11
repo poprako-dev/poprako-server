@@ -1,5 +1,4 @@
 //! RDB-backed Unit edit application and sequence mutation.
-
 use std::collections::BTreeMap;
 
 use diesel::expression::functions::declare_sql_function;

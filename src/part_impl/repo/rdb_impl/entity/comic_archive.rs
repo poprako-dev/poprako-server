@@ -1,5 +1,4 @@
 //! Diesel items for immutable comic archive records.
-
 use diesel::Insertable;
 use time::OffsetDateTime;
 

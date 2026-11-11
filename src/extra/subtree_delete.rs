@@ -1,5 +1,4 @@
 //! Relational hierarchy sweep task for the generic scheduler.
-
 #[cfg(test)]
 mod tests;
 

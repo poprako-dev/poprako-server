@@ -1,5 +1,4 @@
 //! Mock implementation of assignment repository operations.
-
 // Internal organization of the `incl` module.
 mod incl;
 

@@ -1,5 +1,4 @@
 //! Chapter use cases — list, read, create, update, and deletion.
-
 /// Chapter deletion use cases.
 pub mod delete;
 /// Chapter workflow stage mutation use case.

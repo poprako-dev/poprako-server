@@ -1,5 +1,4 @@
 //! Pure rules for comic entities.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::assignment::perm as assignment_perm_complex;

@@ -1,5 +1,4 @@
 //! Domain models for team membership.
-
 use crate::value::role::RoleMask;
 
 /// The data needed to insert a new membership row.

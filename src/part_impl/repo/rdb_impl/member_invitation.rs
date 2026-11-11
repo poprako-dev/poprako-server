@@ -1,5 +1,4 @@
 //! RDB-backed member-invitation repository — free query functions and thin trait impls.
-
 /// Member invitation RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;

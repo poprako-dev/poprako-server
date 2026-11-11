@@ -1,5 +1,4 @@
 //! Complex domain logic for [User] aggregates — password hashing, ID generation, and avatar storage key construction.
-
 use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{

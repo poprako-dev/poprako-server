@@ -1,5 +1,4 @@
 //! Consistent review queries through typed Diesel expressions.
-
 use diesel::prelude::{
     ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };

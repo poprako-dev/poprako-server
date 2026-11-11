@@ -18,7 +18,6 @@
 //! | [`auth`]   | Authentication token signing |
 //!
 //! [`part_impl`]: super::part_impl
-
 /// Authentication port — token signing and verification.
 pub mod auth;
 /// Process-local lease and save coordination port.

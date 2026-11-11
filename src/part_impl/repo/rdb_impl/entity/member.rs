@@ -1,5 +1,4 @@
 //! Diesel entity types for the `t_member` table.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

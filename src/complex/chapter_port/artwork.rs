@@ -1,5 +1,4 @@
 //! Pure chapter artwork allocation and permission rules.
-
 use poprako_util::i18n::trl;
 
 use crate::config::artwork::ArtworkConfig;

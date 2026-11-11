@@ -1,5 +1,4 @@
 //! Authoritative composite manifests and their object obligations.
-
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 

@@ -1,5 +1,4 @@
 //! Team lifecycle and profile persistence.
-
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,

@@ -1,6 +1,5 @@
 //! Background event actor — receives events from the channel and dispatches
 //! them to the appropriate domain actor.
-
 use poprako_orchestra::Context;
 use tokio::sync::mpsc::Receiver;
 use tokio_util::sync::CancellationToken;

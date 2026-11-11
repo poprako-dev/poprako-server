@@ -1,5 +1,4 @@
 //! Announcement use cases.
-
 // Announcement presentation assembly.
 mod view;
 

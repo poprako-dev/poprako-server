@@ -1,5 +1,4 @@
 //! Review contents prepared for domain validation and replacement.
-
 use crate::model::shared::issue::IssueRect;
 
 /// One review issue before assigning a persisted identity and position.

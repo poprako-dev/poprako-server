@@ -4,7 +4,6 @@
 //! so that axum state extraction stays simple. The underlying usecase
 //! functions remain generic; they are monomorphized over these concrete
 //! adapters at the handler call sites.
-
 use crate::harn::Harn;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::auth::jwt_impl::JwtAuth;

@@ -4,7 +4,6 @@
 )]
 
 //! Physical snapshots and revision fencing through generated typed dispatch.
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 

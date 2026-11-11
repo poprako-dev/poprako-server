@@ -1,5 +1,4 @@
 //! Typed persistence for independent composite pages.
-
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 mod tests;
 

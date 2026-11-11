@@ -1,5 +1,4 @@
 //! Complex-domain opers for team comments.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::check_user_is_team_member;

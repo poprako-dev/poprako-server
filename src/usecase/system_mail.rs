@@ -1,5 +1,4 @@
 //! System mail use cases — list unread and mark as read for the current user.
-
 /// Chapter workflow notification use cases.
 pub mod chapter;
 /// Invitation notification use cases.

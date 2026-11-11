@@ -1,5 +1,4 @@
 //! Transactional automatic chapter-stage advancement helpers.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use crate::part::repo::chapter::ChapterRepo;

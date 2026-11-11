@@ -1,5 +1,4 @@
 //! Application-level error and result types used throughout the domain layer.
-
 // Error constructors emit diagnostics at the original failure boundary.
 #[macro_use]
 mod macros;

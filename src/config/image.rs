@@ -1,5 +1,4 @@
 //! Image-upload configuration.
-
 #![allow(
     clippy::struct_field_names,
     reason = "Configuration field names carry the mandatory `_limit_mib` unit suffix"

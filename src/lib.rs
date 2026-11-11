@@ -2,7 +2,6 @@
 
 //! Crate root: explicit public re-exports and internal module organization for
 //! the `PopRaKo` application core.
-
 // Shared error types and macros, declared first for application-wide lexical scope.
 #[macro_use]
 mod result;

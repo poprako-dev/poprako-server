@@ -1,5 +1,4 @@
 //! In-memory hierarchy mark-and-sweep operations.
-
 // Claims tombstones and physically removes their direct dependants.
 mod sweep;
 

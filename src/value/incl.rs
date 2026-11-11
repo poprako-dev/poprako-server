@@ -1,5 +1,4 @@
 //! Incl path planning shared by incl opt enums.
-
 #[cfg(test)]
 mod tests;
 

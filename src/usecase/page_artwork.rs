@@ -1,5 +1,4 @@
 //! Independent composite page listing and mutation.
-
 // Domain access loading shared by mutation entry points.
 mod access;
 // Shared upload allocation inside caller-owned transactions.

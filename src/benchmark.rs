@@ -1,5 +1,4 @@
 //! Benchmark-only access to CPU-intensive application operations.
-
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 

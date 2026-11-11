@@ -1,5 +1,4 @@
 //! In-memory workset repository operations.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 

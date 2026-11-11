@@ -1,5 +1,4 @@
 //! Diesel-backed terminology-base repository operations.
-
 /// Termbase RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;

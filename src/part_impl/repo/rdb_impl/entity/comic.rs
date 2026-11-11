@@ -8,7 +8,6 @@
 //! Diesel's generated `AsChangeset` implementation reports
 //! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
 //! Flattening it would change the unchanged, clear, and set update semantics.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

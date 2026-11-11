@@ -1,5 +1,4 @@
 //! User profile reads, locked reads, and updates.
-
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,

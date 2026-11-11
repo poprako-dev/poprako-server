@@ -1,5 +1,4 @@
 //! Complex domain logic for [Member] aggregates — ID generation and perm gates.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::{

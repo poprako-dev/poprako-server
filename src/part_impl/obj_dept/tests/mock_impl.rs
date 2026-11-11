@@ -1,5 +1,4 @@
 //! In-memory `ObjDept` operations used by server tests.
-
 #[cfg(test)]
 mod tests;
 

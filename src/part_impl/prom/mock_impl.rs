@@ -4,7 +4,6 @@
 )]
 
 //! Mock deferred-task recording and on-demand processing.
-
 mod defer;
 mod json;
 

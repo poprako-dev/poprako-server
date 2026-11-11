@@ -1,5 +1,4 @@
 //! RDB-backed member repository.
-
 // Transaction-scoped member operations.
 mod step_impl;
 

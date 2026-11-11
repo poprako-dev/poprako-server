@@ -1,5 +1,4 @@
 //! Diesel entity types for the `t_term` table.
-
 use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

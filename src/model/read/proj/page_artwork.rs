@@ -1,5 +1,4 @@
 //! Stable composite artwork page identities.
-
 use time::OffsetDateTime;
 
 /// One independently ordered composite page belonging to a Chapter.

@@ -1,5 +1,4 @@
 //! Domain models for team membership.
-
 use crate::value::member::MemberInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;

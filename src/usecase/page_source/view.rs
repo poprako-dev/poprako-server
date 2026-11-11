@@ -1,5 +1,4 @@
 //! source page presentation assembly.
-
 use std::collections::HashMap;
 
 use poprako_orchestra::{Context, OperRun as _};

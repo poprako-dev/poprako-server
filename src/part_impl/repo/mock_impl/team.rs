@@ -1,5 +1,4 @@
 //! Mock team repository operations.
-
 // In-memory team-ownership projections.
 mod resolve;
 

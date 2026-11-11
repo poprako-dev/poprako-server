@@ -1,5 +1,4 @@
 //! Test adapter that forces a real database failure after history was written.
-
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use poprako_orchestra::{Oper, Run, Step};

@@ -1,5 +1,4 @@
 //! Shared authorization under the caller's chapter lock.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use crate::complex::issue::perm as issue_perm_complex;

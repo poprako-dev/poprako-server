@@ -1,5 +1,4 @@
 //! source page image status, listing, allocation, and deletion.
-
 // source page presentation assembly.
 mod view;
 

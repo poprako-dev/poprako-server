@@ -1,5 +1,4 @@
 //! Domain models for member invitations.
-
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::pagination::PubListLimit;
 

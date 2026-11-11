@@ -1,5 +1,4 @@
 //! Terminology-base use cases.
-
 #[cfg(test)]
 // Unit tests for terminology base definitions and search access.
 mod tests;

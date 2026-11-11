@@ -8,7 +8,6 @@
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
-
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;

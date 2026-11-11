@@ -1,5 +1,4 @@
 //! Authentication token port.
-
 use crate::model::shared::user::UserToken;
 use crate::result::BaseRest;
 

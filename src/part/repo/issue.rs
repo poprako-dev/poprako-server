@@ -1,5 +1,4 @@
 //! Repository capabilities for the chapter's single current review.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};

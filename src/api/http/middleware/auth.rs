@@ -4,7 +4,6 @@
 //! falls back to the `Authorization: Bearer <token>` header. On success the
 //! decoded [`UserToken`] is inserted into request extensions for handlers.
 //! This middleware performs no database side-effects.
-
 #[cfg(test)]
 mod tests;
 

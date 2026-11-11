@@ -1,5 +1,4 @@
 //! HTTP request correlation and tracing middleware.
-
 #[cfg(test)]
 mod tests;
 

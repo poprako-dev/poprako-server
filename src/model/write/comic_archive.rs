@@ -1,5 +1,4 @@
 //! Snapshot and persisted-record types for immutable comic archives.
-
 use crate::model::read::proj::comic_archive::ComicArchiveInfo;
 
 /// Archive rows and the source IDs that must be deleted atomically.

@@ -1,5 +1,4 @@
 //! Comment use cases — list and create team board comments.
-
 // Comment presentation assembly.
 mod view;
 

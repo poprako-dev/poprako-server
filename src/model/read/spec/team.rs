@@ -1,5 +1,4 @@
 //! Domain models for team profile storage.
-
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing teams.

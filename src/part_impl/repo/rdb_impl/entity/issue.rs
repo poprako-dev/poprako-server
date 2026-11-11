@@ -1,5 +1,4 @@
 //! Typed Diesel records for current review issues.
-
 #[cfg(test)]
 mod tests;
 

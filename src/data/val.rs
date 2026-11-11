@@ -1,5 +1,4 @@
 //! Val DTOs grouped by domain.
-
 /// Announcement value DTOs.
 pub mod announcement;
 /// Assignment invitation value DTOs.

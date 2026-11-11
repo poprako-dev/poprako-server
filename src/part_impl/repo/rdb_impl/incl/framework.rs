@@ -15,7 +15,6 @@
 //! The generic [`populate`] function drives the whole pipeline: collect FKs → batch-load
 //! via [`batch_load`] → populate every owner. Works on `&mut [Owner]` (list) or
 //! `&mut Owner` (single item via `std::slice::from_mut`).
-
 use std::collections::HashMap;
 use std::future::Future;
 

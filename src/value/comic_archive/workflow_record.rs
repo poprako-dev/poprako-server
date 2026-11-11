@@ -1,5 +1,4 @@
 //! Strongly typed chapter workflow details retained in comic archives.
-
 use serde::Serialize;
 
 use crate::value::chapter::stage::{Stage, StagePhase};

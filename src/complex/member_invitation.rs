@@ -1,5 +1,4 @@
 //! Complex-domain opers for member invitations.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::{

@@ -4,7 +4,6 @@
 )]
 
 //! Artwork upload lifecycle, authorization, and transaction tests.
-
 use super::*;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;

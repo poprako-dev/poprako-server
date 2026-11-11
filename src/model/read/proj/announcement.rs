@@ -1,5 +1,4 @@
 //! Domain models for team announcements.
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::user::UserInfo;

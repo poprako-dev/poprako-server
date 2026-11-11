@@ -4,7 +4,6 @@
 //! Convert to [`ComicInfoView`] for presentation outside the domain layer.
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::team::TeamInfo;

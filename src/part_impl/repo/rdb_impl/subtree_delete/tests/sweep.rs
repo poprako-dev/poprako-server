@@ -1,5 +1,4 @@
 //! PostgreSQL hierarchy sweep scenarios.
-
 use super::*;
 
 use crate::config::repo::RepoConfig;

@@ -1,5 +1,4 @@
 //! In-memory comic archive repository operations for use-case tests.
-
 use std::collections::HashMap;
 
 use poprako_orchestra::Step;

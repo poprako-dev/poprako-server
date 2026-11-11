@@ -4,7 +4,6 @@
 )]
 
 //! Isolation, rollback, session restoration, and cancellation regressions.
-
 use std::future::pending;
 use std::time::Duration;
 

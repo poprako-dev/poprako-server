@@ -1,5 +1,4 @@
 //! Shared composite upload allocation inside caller-owned transactions.
-
 use poprako_orchestra::{Context, OperStep as _};
 use tracing::instrument;
 

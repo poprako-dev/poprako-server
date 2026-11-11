@@ -2,7 +2,6 @@
 //!
 //! The repository object executes standalone reads through [`poprako_orchestra::Run`] and
 //! advances writes and locks through the context supplied to [`poprako_orchestra::Step`].
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::member::{

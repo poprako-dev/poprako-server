@@ -1,5 +1,4 @@
 //! Shared conversion helpers for stored zero-based indexes and user-facing indexes.
-
 /// Convert a stored zero-based index into a user-facing one-based index.
 pub const fn stored_index_to_user_index(index: usize) -> usize {
     index + 1

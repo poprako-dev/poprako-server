@@ -1,5 +1,4 @@
 //! Real `PostgreSQL` coverage for sparse Unit persistence.
-
 use std::sync::{Arc, Mutex};
 
 use diesel::connection::InstrumentationEvent;

@@ -10,7 +10,6 @@
 //! and image pool. Failure flags simulate repository errors.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
-
 // Team avatar reservation, upload check, and cleanup behavior.
 mod avatar;
 

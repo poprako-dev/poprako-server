@@ -1,5 +1,4 @@
 //! Comic list rendering shares lookup state across its complete response graph.
-
 use crate::usecase::internal::page_source::PinnedChapterSnapshot;
 use crate::usecase::internal::view::{ComicListData, comic_list_val};
 

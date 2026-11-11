@@ -4,7 +4,6 @@
 )]
 
 //! Composite manifest reorder, object cleanup and rollback integration.
-
 use crate::part::obj_dept::PageArtworkImage;
 use crate::value::business_id::{ChapterId, PageArtworkId};
 use std::collections::BTreeMap;

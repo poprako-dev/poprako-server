@@ -1,5 +1,4 @@
 //! Bounded event bus producer, independent of its consumer lifecycle.
-
 // Event delivery dispatcher for the asynchronous effect actor.
 mod dispatch;
 

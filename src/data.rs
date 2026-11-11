@@ -5,7 +5,6 @@
 //! of a model `*Info` is an `*InfoView`, including list elements. Timestamps
 //! are converted to Unix milliseconds, and object URLs are resolved through
 //! `ObjDept` operation capabilities.
-
 /// Request instruction DTOs grouped by domain.
 pub mod instr;
 /// Direct response value DTOs grouped by domain.

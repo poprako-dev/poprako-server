@@ -1,5 +1,4 @@
 //! Request latency logging middleware.
-
 use std::time::Instant;
 
 use axum::extract::Request;

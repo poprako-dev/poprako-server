@@ -1,5 +1,4 @@
 //! Repository operations consumed by versioned review editing.
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::issue::IssueInfo;

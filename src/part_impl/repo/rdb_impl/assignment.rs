@@ -1,5 +1,4 @@
 //! RDB-backed assignment repository.
-
 // Shared list query builder for assignment read paths.
 mod list;
 

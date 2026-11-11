@@ -4,7 +4,6 @@
 )]
 
 //! Captures real HTTP responses and correlated logs with the production filter.
-
 use std::io::Write;
 use std::sync::{Arc, Mutex, OnceLock};
 

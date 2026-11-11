@@ -5,7 +5,6 @@
 )]
 
 //! Typed persistence, business validation boundaries and lifecycle tests.
-
 mod editor;
 
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};

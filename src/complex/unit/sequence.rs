@@ -1,5 +1,4 @@
 //! Pure reconstruction of complete persisted Unit chains.
-
 #[cfg(test)]
 mod tests;
 

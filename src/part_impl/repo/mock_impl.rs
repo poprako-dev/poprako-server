@@ -4,7 +4,6 @@
 )]
 
 //! In-memory repository and prom adapters for tests.
-
 // Mock helper for in-memory nucl-related types.
 mod nucl;
 // Fixture construction, kept separate from adapter state and dispatch.

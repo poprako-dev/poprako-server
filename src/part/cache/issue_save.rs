@@ -1,5 +1,4 @@
 //! Process-local coordination of immutable annotation save batches.
-
 use uuid::Uuid;
 
 use crate::value::issue_save::IssueSaveReceipt;

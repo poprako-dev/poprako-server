@@ -1,5 +1,4 @@
 //! RDB-backed user repository.
-
 // Account creation, credentials, and activity.
 mod account;
 // Profile reads, locks, and updates.

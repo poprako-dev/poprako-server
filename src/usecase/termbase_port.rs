@@ -1,5 +1,4 @@
 //! Native terminology-base import and export use cases.
-
 #[cfg(test)]
 // Unit tests for native terminology-base import, merge, and export.
 mod tests;

@@ -1,6 +1,5 @@
 //! Borrowed unit write payloads.
 //! Owners remain alive through persistence; existing data is not copied.
-
 use std::collections::BTreeMap;
 
 use crate::model::write::unit::UnitEdit;

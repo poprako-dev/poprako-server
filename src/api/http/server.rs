@@ -1,5 +1,4 @@
 //! HTTP server bootstrap and graceful shutdown.
-
 use std::future::pending;
 use std::net::SocketAddr;
 use std::sync::Arc;

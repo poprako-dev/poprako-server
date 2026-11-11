@@ -1,5 +1,4 @@
 //! Large-history and counter-semantics coverage for Unit persistence.
-
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};

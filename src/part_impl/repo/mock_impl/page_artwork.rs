@@ -1,5 +1,4 @@
 //! In-memory composite manifests with rollback through MockContext.
-
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;

@@ -1,6 +1,5 @@
 //! Borrowed comic write payloads.
 //! Owners remain alive through persistence; existing data is not copied.
-
 /// The data needed to insert a new comic row.
 ///
 /// Existing foreign identifiers borrow their caller-owned storage.

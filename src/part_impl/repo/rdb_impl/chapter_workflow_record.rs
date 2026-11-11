@@ -1,5 +1,4 @@
 //! RDB operations for immutable chapter workflow records.
-
 /// RDB integration tests for immutable chapter workflow records.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;

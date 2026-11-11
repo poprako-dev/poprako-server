@@ -1,5 +1,4 @@
 //! RDB-backed Unit sequence reads and chain validation.
-
 use std::collections::{HashMap, HashSet};
 
 use diesel::expression::functions::declare_sql_function;

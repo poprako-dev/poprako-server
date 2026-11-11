@@ -1,5 +1,4 @@
 //! Domain models for system mail notifications.
-
 use time::OffsetDateTime;
 
 /// A system mail record as stored in the database.

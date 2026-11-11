@@ -1,5 +1,4 @@
 //! Typed database snapshots for Chapter creation transaction assertions.
-
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;

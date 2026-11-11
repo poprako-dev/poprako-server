@@ -1,5 +1,4 @@
 //! Immutable chapter workflow record kinds, payloads, and origins.
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]

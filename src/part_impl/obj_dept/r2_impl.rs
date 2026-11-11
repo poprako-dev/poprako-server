@@ -1,5 +1,4 @@
 //! Cloudflare R2 support for the `ObjDept` implementation.
-
 #[cfg(test)]
 // Executes lightweight unit tests for URL generation and upload content handling.
 mod tests;

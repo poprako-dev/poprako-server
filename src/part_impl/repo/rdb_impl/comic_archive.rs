@@ -1,5 +1,4 @@
 //! RDB-backed atomic comic archive repository.
-
 // Persistent archive commit operation.
 mod commit;
 // Permanent archive payload query.

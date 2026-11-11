@@ -1,5 +1,4 @@
 //! Scheduling contracts for injected tasks and their independent runners.
-
 use async_trait::async_trait;
 use tokio_util::sync::CancellationToken;
 

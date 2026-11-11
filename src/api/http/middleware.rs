@@ -1,6 +1,5 @@
 //! HTTP middleware: authorization token verification and request latency
 //! logging.
-
 /// Authorization token middleware.
 pub mod auth;
 /// Response cache prevention middleware.

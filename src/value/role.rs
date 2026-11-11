@@ -1,5 +1,4 @@
 //! Newtype wrappers for role-based perm bitmasks.
-
 // Test fixtures for role conversion, perm, and serde behavior.
 #[cfg(test)]
 mod tests;

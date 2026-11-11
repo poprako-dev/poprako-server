@@ -1,5 +1,4 @@
 //! Domain models for member invitations.
-
 use crate::value::role::RoleMask;
 
 /// The data needed to insert a member invitation row.

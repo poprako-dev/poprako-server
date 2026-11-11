@@ -1,5 +1,4 @@
 //! `LabelPlus` text structure validation and page-unit assembly.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};

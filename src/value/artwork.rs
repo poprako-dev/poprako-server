@@ -1,5 +1,4 @@
 //! Chapter artwork object identities and content hashes.
-
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 

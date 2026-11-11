@@ -1,5 +1,4 @@
 //! Linear-time linked-sequence planning for Unit edits.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::trl;

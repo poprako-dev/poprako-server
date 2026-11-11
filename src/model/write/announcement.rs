@@ -1,5 +1,4 @@
 //! Domain models for team announcements.
-
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementEntry {

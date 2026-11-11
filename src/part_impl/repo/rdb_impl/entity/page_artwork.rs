@@ -1,5 +1,4 @@
 //! Typed composite page records.
-
 use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

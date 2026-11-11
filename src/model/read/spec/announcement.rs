@@ -1,5 +1,4 @@
 //! Domain models for team announcements.
-
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::pagination::PubListLimit;
 

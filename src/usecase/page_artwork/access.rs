@@ -1,5 +1,4 @@
 //! Coordinated composite page write access.
-
 use poprako_orchestra::{Context, OperStep as _};
 
 use crate::complex::page_artwork as page_artwork_complex;

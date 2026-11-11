@@ -4,7 +4,6 @@
 )]
 
 //! Mock implementation of [TokenAuth] for testing token signing with deterministic output.
-
 use poprako_util::i18n::trl;
 
 use crate::model::shared::user::UserToken;

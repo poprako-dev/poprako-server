@@ -1,5 +1,4 @@
 //! Domain models for team- and comic-scoped terminology bases.
-
 use time::OffsetDateTime;
 
 /// A persisted terminology base.

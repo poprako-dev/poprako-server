@@ -1,5 +1,4 @@
 //! Mock implementation of `PageSourceRepo`.
-
 // Internal organization of the `orchestra` module.
 mod orchestra;
 

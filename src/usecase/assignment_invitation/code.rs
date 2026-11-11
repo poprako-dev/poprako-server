@@ -1,5 +1,4 @@
 //! Assignment invitation identifier and code generation helpers.
-
 use crate::util::{next_business_id, next_snowflake_id};
 use crate::value::business_id::BusinessIdKind;
 

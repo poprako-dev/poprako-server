@@ -4,7 +4,6 @@
 //! Convert to [`ComicInfoView`] for presentation outside the domain layer.
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
-
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::pagination::PubListLimit;

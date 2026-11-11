@@ -1,5 +1,4 @@
 //! Pure composite page manifest validation.
-
 /// Composite page write permission rules.
 pub mod perm;
 

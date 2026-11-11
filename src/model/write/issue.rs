@@ -1,5 +1,4 @@
 //! Complete replacement parameters for the single current chapter review.
-
 use crate::model::shared::issue::IssueRect;
 
 /// One issue to insert after validating the entire chapter input.

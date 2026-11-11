@@ -1,5 +1,4 @@
 //! Diesel-backed hierarchy mark-and-sweep operations.
-
 // Locks active roots and atomically marks aggregate descendants.
 mod mark;
 // Claims tombstones and physically removes their direct dependants.

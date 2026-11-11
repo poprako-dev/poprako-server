@@ -1,5 +1,4 @@
 //! Production logging with structured, redacted Axum rejection diagnostics.
-
 #[cfg(test)]
 mod tests;
 

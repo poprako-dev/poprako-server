@@ -1,5 +1,4 @@
 //! Repository traits for the system mail domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::system_mail::{
