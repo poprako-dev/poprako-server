@@ -1,5 +1,4 @@
 //! Runtime policy for the hierarchy cleanup task.
-
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -18,13 +17,13 @@ pub struct SubtreeDeleteConfig {
 
     /// Maximum duration of one cleanup attempt.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub timeout_secs: Duration,
+    pub timeout: Duration,
     /// Delay when no cleanup work remains.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub idle_interval_secs: Duration,
+    pub idle_interval: Duration,
     /// Delay after a failed attempt or worker exit.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub retry_interval_secs: Duration,
+    pub retry_interval: Duration,
 }
 
 impl SubtreeDeleteConfig {
@@ -35,9 +34,9 @@ impl SubtreeDeleteConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("timeout_secs", self.timeout_secs),
-            ("idle_interval_secs", self.idle_interval_secs),
-            ("retry_interval_secs", self.retry_interval_secs),
+            ("timeout", self.timeout),
+            ("idle_interval", self.idle_interval),
+            ("retry_interval", self.retry_interval),
         ] {
             //
             ensure!(
@@ -56,9 +55,9 @@ impl SubtreeDeleteConfig {
         SchedTaskConfig {
             name: "subtree_delete",
             concurrency: self.concurrency,
-            timeout: self.timeout_secs,
-            idle_interval_secs: self.idle_interval_secs,
-            retry_interval_secs: self.retry_interval_secs,
+            timeout: self.timeout,
+            idle_interval: self.idle_interval,
+            retry_interval: self.retry_interval,
         }
     }
 }
@@ -71,9 +70,9 @@ impl Default for SubtreeDeleteConfig {
 
         Self {
             concurrency: NonZeroUsize::MIN.saturating_add(1),
-            timeout_secs: task.timeout,
-            idle_interval_secs: task.idle_interval_secs,
-            retry_interval_secs: task.retry_interval_secs,
+            timeout: task.timeout,
+            idle_interval: task.idle_interval,
+            retry_interval: task.retry_interval,
         }
     }
 }

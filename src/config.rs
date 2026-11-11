@@ -1,6 +1,5 @@
 //! Application configuration and runtime policies.
-
-// Integer-second decoding shared by runtime duration policies.
+// Unit-bearing duration-string decoding shared by runtime policies.
 mod duration;
 // Best-effort event queue configuration.
 mod effect;

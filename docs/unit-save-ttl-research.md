@@ -16,7 +16,7 @@ The save use case previously called `record` again after successful replay,
 which would restart Moka's TTL despite the lookup itself being read-only. The
 implementation now records only a newly committed save; a retained replay returns
 the existing mapping without reinsertion. The default is configured through
-`cache.unit_save_ttl_secs`.
+`cache.unit_save_ttl`.
 [Save use case](../src/usecase/unit.rs),
 [cache configuration](../src/config/cache.rs).
 

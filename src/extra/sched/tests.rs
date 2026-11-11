@@ -4,7 +4,6 @@
 )]
 
 //! Injected task, runner recovery, scheduling, and shutdown regressions.
-
 use std::collections::VecDeque;
 use std::future::pending;
 use std::num::NonZeroUsize;
@@ -204,12 +203,12 @@ fn defaults_bound_attempts_and_shutdown() {
 
     assert_eq!(config.timeout, Duration::from_mins(5));
 
-    assert_eq!(config.idle_interval_secs, Duration::from_secs(5));
+    assert_eq!(config.idle_interval, Duration::from_secs(5));
 
-    assert_eq!(config.retry_interval_secs, Duration::from_secs(5));
+    assert_eq!(config.retry_interval, Duration::from_secs(5));
 
     assert_eq!(
-        SchedConfig::default().shutdown_grace_secs,
+        SchedConfig::default().shutdown_grace,
         Duration::from_secs(30)
     );
 }
@@ -302,7 +301,7 @@ async fn continue_is_immediate_and_wait_uses_idle_interval() {
     ]);
 
     let config: crate::AppConfig = toml::from_str(
-        "[subtree_delete]\nconcurrency = 1\nidle_interval_secs = 7",
+        "[subtree_delete]\nconcurrency = 1\nidle_interval = \"7s\"",
     )
     .unwrap();
 
@@ -359,9 +358,9 @@ async fn errors_and_panics_retry_without_losing_workers() {
 
         let (mut task, probe) = task(vec![action]);
 
-        task.config.retry_interval_secs = Duration::from_secs(3);
+        task.config.retry_interval = Duration::from_secs(3);
 
-        task.config.idle_interval_secs = Duration::from_mins(1);
+        task.config.idle_interval = Duration::from_mins(1);
 
         probe.creation_panics.store(scenario == 2, Ordering::SeqCst);
 
@@ -418,7 +417,7 @@ async fn timeout_drops_the_attempt_before_recreating_runner() {
 
     task.config.timeout = Duration::from_secs(10);
 
-    task.config.retry_interval_secs = Duration::from_secs(3);
+    task.config.retry_interval = Duration::from_secs(3);
 
     let desc = start(vec![Box::new(task)]);
 
@@ -463,7 +462,7 @@ async fn shutdown_uses_one_deadline_for_all_workers() {
     task.config.concurrency = NonZeroUsize::new(3).unwrap();
 
     let config: crate::AppConfig =
-        toml::from_str("[sched]\nshutdown_grace_secs = 8").unwrap();
+        toml::from_str("[sched]\nshutdown_grace = \"8s\"").unwrap();
 
     let desc = Sched::new(vec![Box::new(task)], config.sched).run_detached();
 
@@ -536,7 +535,7 @@ async fn shutdown_finishes_current_work_without_another_round() {
 async fn idle_wait_and_descriptor_drop_are_cancellable() {
     let (mut task, probe) = task(vec![]);
 
-    task.config.idle_interval_secs = Duration::from_hours(1);
+    task.config.idle_interval = Duration::from_hours(1);
 
     let desc = start(vec![Box::new(task)]);
 

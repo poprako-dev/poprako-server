@@ -148,7 +148,7 @@ async fn create_admin_creates_pending_invitation() {
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
     let config = InvitationConfig {
-        member_ttl_secs: std::time::Duration::from_secs(37),
+        member_ttl: std::time::Duration::from_secs(37),
         ..InvitationConfig::default()
     };
 
@@ -193,12 +193,12 @@ async fn create_admin_creates_pending_invitation() {
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            >= before + config.member_ttl_secs
+            >= before + config.member_ttl
     );
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            <= test_util::now() + config.member_ttl_secs
+            <= test_util::now() + config.member_ttl
     );
 }
 

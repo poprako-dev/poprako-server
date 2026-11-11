@@ -1,5 +1,4 @@
 //! Process-local online-user lease cache adapter operations.
-
 #[cfg(test)]
 // Online-user adapter tests use explicit instants without sleeping.
 mod tests;
@@ -90,7 +89,7 @@ impl MemOnlineUserCache {
 impl Default for MemOnlineUserCache {
     // Use the same lease policy as a cache adapter with default configuration.
     fn default() -> Self {
-        Self::new(CacheConfig::default().online_user_ttl_secs)
+        Self::new(CacheConfig::default().online_user_ttl)
     }
 }
 

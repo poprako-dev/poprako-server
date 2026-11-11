@@ -75,18 +75,20 @@ defines the workspace; `src/lib.rs` defines the server module graph;
   from the composition root. Environment-variable configuration is separate.
 - Document every TOML configuration item with an English comment explaining
   its purpose, unit where applicable, default, and any deliberate override.
-- Include units consistently in numeric configuration keys: `_mib` for MiB,
-  `_secs` for seconds, and `_per_second` for rates. Rust `Duration` fields
-  carry their unit in the type and use explicitly unit-bearing TOML names.
+- Duration configuration values are unit-bearing strings such as `30s`, `5m`,
+  or `30d`, so duration keys carry no `_secs` suffix in either TOML or Rust.
+  Other numeric keys include their unit: `_mib` for MiB and `_per_second` for
+  rates.
 - Keep configuration names canonical. Do not add legacy aliases; reject
   unknown fields so obsolete keys cannot silently fall back to defaults.
 
-- For non-trivial work: plan → implement → review with targeted validation.
+- For non-trivial work: plan → implement → review with the fixed validation
+  commands below.
   Read nearby active code and business references before choosing contracts.
 - Load the relevant skills below before editing their areas. Keep changes
   limited to the layers the requested behavior needs.
-- After editing Rust, run the three canonical Rust checks below, plus tests
-  appropriate to the affected code.
+- After editing Rust, run the three canonical Rust checks below, plus the
+  test suite through `just test`.
 - Run custom repository linters only when requested or when validating a CI
   entry point. Basic CI checks: `sh scripts/ci-check.sh`. Full pre-commit CI:
   `sh scripts/ci-local.sh`. A basic check is not a substitute for the full gate.

@@ -1,5 +1,4 @@
 //! Process-local cache retention policies.
-
 use std::num::{NonZeroU32, NonZeroU64};
 use std::time::Duration;
 
@@ -16,7 +15,7 @@ pub struct CacheConfig {
     pub issue_save_limit_mib: NonZeroU32,
     /// Maximum receipt retention; replay does not renew it.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub issue_save_ttl_secs: Duration,
+    pub issue_save_ttl: Duration,
 
     /// Estimated memory budget for completed Unit saves, in MiB.
     pub unit_save_limit_mib: NonZeroU32,
@@ -24,11 +23,11 @@ pub struct CacheConfig {
     pub unit_save_token_budget: NonZeroU64,
     /// Maximum retention after a successful Unit save; replay does not renew it.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub unit_save_ttl_secs: Duration,
+    pub unit_save_ttl: Duration,
 
     /// Lease duration after a successful online-user refresh.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub online_user_ttl_secs: Duration,
+    pub online_user_ttl: Duration,
 }
 
 impl CacheConfig {
@@ -59,23 +58,21 @@ impl CacheConfig {
         );
 
         ensure!(
-            !self.unit_save_ttl_secs.is_zero()
-                && self.unit_save_ttl_secs
-                    <= Duration::from_hours(1000 * 365 * 24),
-            "cache.unit_save_ttl_secs must be positive and at most 31536000000 \
-                (Moka's 1000-year limit)"
+            !self.unit_save_ttl.is_zero()
+                && self.unit_save_ttl <= Duration::from_hours(1000 * 365 * 24),
+            "cache.unit_save_ttl must be positive and at most 1000 years \
+                (Moka's limit)"
         );
 
         ensure!(
-            !self.issue_save_ttl_secs.is_zero()
-                && self.issue_save_ttl_secs
-                    <= Duration::from_hours(1000 * 365 * 24),
-            "cache.issue_save_ttl_secs must be positive and at most 31536000000"
+            !self.issue_save_ttl.is_zero()
+                && self.issue_save_ttl <= Duration::from_hours(1000 * 365 * 24),
+            "cache.issue_save_ttl must be positive and at most 1000 years"
         );
 
         ensure!(
-            !self.online_user_ttl_secs.is_zero(),
-            "cache.online_user_ttl_secs must be positive"
+            !self.online_user_ttl.is_zero(),
+            "cache.online_user_ttl must be positive"
         );
 
         Ok(())
@@ -87,11 +84,11 @@ impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             issue_save_limit_mib: NonZeroU32::MIN.saturating_add(15),
-            issue_save_ttl_secs: Duration::from_hours(30 * 24),
+            issue_save_ttl: Duration::from_hours(30 * 24),
             unit_save_limit_mib: NonZeroU32::MIN.saturating_add(255),
             unit_save_token_budget: NonZeroU64::MIN.saturating_add(499_999),
-            unit_save_ttl_secs: Duration::from_hours(30 * 24),
-            online_user_ttl_secs: Duration::from_mins(10),
+            unit_save_ttl: Duration::from_hours(30 * 24),
+            online_user_ttl: Duration::from_mins(10),
         }
     }
 }

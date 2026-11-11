@@ -19,7 +19,7 @@ async fn replay_does_not_extend_token_lifetime() {
     let (mock, _) = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
     let config = CacheConfig {
-        unit_save_ttl_secs: Duration::from_secs(2),
+        unit_save_ttl: Duration::from_secs(2),
         ..CacheConfig::default()
     };
 

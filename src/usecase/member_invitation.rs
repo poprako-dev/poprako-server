@@ -1,5 +1,4 @@
 //! Member invitation use cases.
-
 // Member-invitation presentation assembly.
 mod view;
 
@@ -186,7 +185,7 @@ where
             let purge_task = Task {
                 id: &purge_task_id,
                 payload: &purge_payload,
-                delay: Some(invitation_config.member_ttl_secs),
+                delay: Some(invitation_config.member_ttl),
             };
 
             Defer::new(purge_task).step_on(prom, context).await?;

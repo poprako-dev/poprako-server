@@ -1,5 +1,4 @@
 //! Assignment invitation creation tests.
-
 use super::*;
 
 #[tokio::test]
@@ -17,7 +16,7 @@ async fn create_reviewer_creates_pending_invitation() {
     );
 
     let config = InvitationConfig {
-        assignment_ttl_secs: std::time::Duration::from_secs(37),
+        assignment_ttl: std::time::Duration::from_secs(37),
         ..InvitationConfig::default()
     };
 
@@ -72,11 +71,11 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            >= before + config.assignment_ttl_secs
+            >= before + config.assignment_ttl
     );
 
     assert!(
         snapshot.prom_records.first().unwrap().visible_at()
-            <= now() + config.assignment_ttl_secs
+            <= now() + config.assignment_ttl
     );
 }

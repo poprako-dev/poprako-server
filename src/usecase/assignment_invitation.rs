@@ -217,7 +217,7 @@ where
             let purge_task = Task {
                 id: &purge_task_id,
                 payload: &purge_payload,
-                delay: Some(invitation_config.assignment_ttl_secs),
+                delay: Some(invitation_config.assignment_ttl),
             };
 
             Defer::new(purge_task).step_on(prom, context).await?;

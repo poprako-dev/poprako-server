@@ -1,5 +1,4 @@
 //! Serial runner attempts with isolated failures and cancellable delays.
-
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,6 +10,48 @@ use tracing::instrument;
 
 use crate::config::sched::SchedTaskConfig;
 use crate::extra::sched::task::{SchedNext, SchedTask};
+
+// Why one isolated attempt produced no scheduling decision.
+#[derive(Clone, Copy)]
+enum AttemptFault {
+    /// The runner reported an ordinary error and stays reusable.
+    Failed,
+
+    /// The attempt panicked, so its runner is discarded.
+    Panicked,
+
+    /// The attempt exceeded its timeout, so its runner is discarded.
+    TimedOut,
+}
+
+impl AttemptFault {
+    // Whether recovering from this fault requires a fresh runner.
+    const fn replaces_runner(self) -> bool {
+        matches!(self, Self::Panicked | Self::TimedOut)
+    }
+
+    // Records the fault at the level matching its severity.
+    fn report(self) {
+        //
+        match self {
+            //
+            Self::Failed => tracing::warn!(
+                operation = "retry_sched_task",
+                "scheduler attempt failed; retrying",
+            ),
+
+            Self::Panicked => tracing::error!(
+                operation = "run_sched_task",
+                "scheduler attempt panicked; replacing runner",
+            ),
+
+            Self::TimedOut => tracing::warn!(
+                operation = "run_sched_task",
+                "scheduler attempt timed out; replacing runner",
+            ),
+        }
+    }
+}
 
 /// Waits for the startup delay, then owns one runner until cancellation.
 pub async fn run(
@@ -58,17 +99,16 @@ async fn run_worker(
     token: CancellationToken,
 ) {
     //
-    let mut runner = None;
-
     loop {
         //
         if token.is_cancelled() {
             return;
         }
 
-        if runner.is_none() {
-            //
-            let Ok(created) = catch_unwind(AssertUnwindSafe(|| task.runner()))
+        // The runner's scope lasts until an isolation fault discards it.
+        {
+            let Ok(mut current) =
+                catch_unwind(AssertUnwindSafe(|| task.runner()))
             else {
                 //
                 tracing::error!(
@@ -76,72 +116,63 @@ async fn run_worker(
                     "scheduler runner creation panicked; retrying",
                 );
 
-                if wait(&token, config.retry_interval_secs).await {
+                if wait(&token, config.retry_interval).await {
                     return;
                 }
 
                 continue;
             };
 
-            runner = Some(created);
-        }
+            if token.is_cancelled() {
+                return;
+            }
 
-        if token.is_cancelled() {
-            return;
-        }
-
-        let Some(current) = runner.as_mut() else {
-            continue;
-        };
-
-        let attempt =
-            AssertUnwindSafe(async { current.run(token.clone()).await })
+            loop {
+                //
+                let attempt = AssertUnwindSafe(async {
+                    current.run(token.clone()).await
+                })
                 .catch_unwind();
 
-        let attempt_rest = timeout(config.timeout, attempt).await;
+                // Peel timeout and panic isolation so only the attempt
+                // decision remains.
+                let settled = match timeout(config.timeout, attempt).await {
+                    //
+                    Ok(Ok(decision)) => {
+                        decision.map_err(|_| AttemptFault::Failed)
+                    }
 
-        let delay = match attempt_rest {
-            //
-            Ok(Ok(Ok(SchedNext::Continue))) => Duration::ZERO,
+                    Ok(Err(_)) => Err(AttemptFault::Panicked),
 
-            Ok(Ok(Ok(SchedNext::Wait))) => config.idle_interval_secs,
+                    Err(_) => Err(AttemptFault::TimedOut),
+                };
 
-            Ok(Ok(Err(_))) => {
-                //
-                tracing::warn!(
-                    operation = "retry_sched_task",
-                    "scheduler attempt failed; retrying",
-                );
+                let delay = match settled {
+                    //
+                    Ok(SchedNext::Continue) => Duration::ZERO,
 
-                config.retry_interval_secs
+                    Ok(SchedNext::Wait) => config.idle_interval,
+
+                    Err(fault) => {
+                        //
+                        fault.report();
+
+                        if fault.replaces_runner() {
+                            break;
+                        }
+
+                        config.retry_interval
+                    }
+                };
+
+                if wait(&token, delay).await {
+                    return;
+                }
             }
+        }
 
-            Ok(Err(_)) => {
-                //
-                tracing::error!(
-                    operation = "run_sched_task",
-                    "scheduler attempt panicked; replacing runner",
-                );
-
-                runner = None;
-
-                config.retry_interval_secs
-            }
-
-            Err(_) => {
-                //
-                tracing::warn!(
-                    operation = "run_sched_task",
-                    "scheduler attempt timed out; replacing runner",
-                );
-
-                runner = None;
-
-                config.retry_interval_secs
-            }
-        };
-
-        if wait(&token, delay).await {
+        // The discarded runner is gone before its replacement delay starts.
+        if wait(&token, config.retry_interval).await {
             return;
         }
     }

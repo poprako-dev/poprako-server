@@ -1,5 +1,4 @@
 //! Expiration delays for newly created invitations.
-
 use std::time::Duration;
 
 use anyhow::ensure;
@@ -14,10 +13,10 @@ use crate::config::duration;
 pub struct InvitationConfig {
     /// Delay before cleaning up an unconsumed member invitation.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub member_ttl_secs: Duration,
+    pub member_ttl: Duration,
     /// Delay before cleaning up an unconsumed assignment invitation.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub assignment_ttl_secs: Duration,
+    pub assignment_ttl: Duration,
 }
 
 impl InvitationConfig {
@@ -28,8 +27,8 @@ impl InvitationConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("member_ttl_secs", self.member_ttl_secs),
-            ("assignment_ttl_secs", self.assignment_ttl_secs),
+            ("member_ttl", self.member_ttl),
+            ("assignment_ttl", self.assignment_ttl),
         ] {
             //
             ensure!(
@@ -55,8 +54,8 @@ impl Default for InvitationConfig {
     // Supplies the default runtime policy.
     fn default() -> Self {
         Self {
-            member_ttl_secs: Duration::from_hours(120),
-            assignment_ttl_secs: Duration::from_hours(72),
+            member_ttl: Duration::from_hours(120),
+            assignment_ttl: Duration::from_hours(72),
         }
     }
 }

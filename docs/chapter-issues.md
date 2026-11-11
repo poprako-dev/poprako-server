@@ -136,7 +136,7 @@ Writes lock the chapter and verify current REVIEWER assignment and unpublished
 state, including before returning a cached retry result. Reads use finished-page access.
 
 Save receipts are process-local, bounded by `cache.issue_save_limit_mib` (16 MiB
-by default) with `cache.issue_save_ttl_secs` (30 days by default). A receipt binds
+by default) with `cache.issue_save_ttl` (30 days by default). A receipt binds
 its UUID to the actor, page and exact submitted payload. Successful retries return
 the current document and the same created-ID mappings without replaying old contents.
 The cache memory weight includes the mapping strings. Receipts are recorded only

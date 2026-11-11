@@ -1,5 +1,4 @@
 //! Shared process-local cache adapter.
-
 // Bounded annotation save receipts and exclusion guards.
 mod issue_save;
 // Team-partitioned online-user leases.
@@ -32,7 +31,7 @@ impl MemCache {
     #[must_use]
     pub fn new(config: CacheConfig) -> Self {
         Self {
-            online_users: MemOnlineUserCache::new(config.online_user_ttl_secs),
+            online_users: MemOnlineUserCache::new(config.online_user_ttl),
             unit_saves: MemUnitSaveCache::new(config),
             issue_saves: MemIssueSaveCache::new(config),
         }

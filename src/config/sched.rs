@@ -1,5 +1,4 @@
 //! Background task scheduling and shutdown policies.
-
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -18,9 +17,9 @@ pub struct SchedTaskConfig {
     /// Maximum duration of one attempt, including all work inside its runner.
     pub timeout: Duration,
     /// Delay after a successful attempt requests an idle wait.
-    pub idle_interval_secs: Duration,
+    pub idle_interval: Duration,
     /// Delay after an error, panic, timeout, or unexpected worker exit.
-    pub retry_interval_secs: Duration,
+    pub retry_interval: Duration,
 }
 
 impl Default for SchedTaskConfig {
@@ -30,8 +29,8 @@ impl Default for SchedTaskConfig {
             name: "sched_task",
             concurrency: NonZeroUsize::MIN,
             timeout: Duration::from_mins(5),
-            idle_interval_secs: Duration::from_secs(5),
-            retry_interval_secs: Duration::from_secs(5),
+            idle_interval: Duration::from_secs(5),
+            retry_interval: Duration::from_secs(5),
         }
     }
 }
@@ -42,14 +41,14 @@ impl Default for SchedTaskConfig {
 pub struct SchedConfig {
     /// Shared grace period measured from cancellation, not from each join.
     #[serde(deserialize_with = "duration::deserialize")]
-    pub shutdown_grace_secs: Duration,
+    pub shutdown_grace: Duration,
 }
 
 impl Default for SchedConfig {
     // Allow in-flight work to finish before aborting all remaining workers.
     fn default() -> Self {
         Self {
-            shutdown_grace_secs: Duration::from_secs(30),
+            shutdown_grace: Duration::from_secs(30),
         }
     }
 }
