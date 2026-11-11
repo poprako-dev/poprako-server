@@ -18,7 +18,7 @@ pub struct UserInfoRecord {
     pub f_nickname: String,
     pub f_qid: String,
 
-    f_is_sadmin: bool,
+    pub f_is_sadmin: bool,
 
     pub f_last_active_at: OffsetDateTime,
 

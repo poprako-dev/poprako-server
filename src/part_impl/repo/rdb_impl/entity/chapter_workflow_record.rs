@@ -177,8 +177,8 @@ pub struct ChapterWorkflowRecordInfoRecord {
     pub f_id: String,
 
     pub f_chapter_id: String,
-    f_actor_user_id: Option<String>,
-    f_kind: String,
+    pub f_actor_user_id: Option<String>,
+    pub f_kind: String,
     pub f_payload: serde_json::Value,
     pub f_created_at: OffsetDateTime,
 }
@@ -236,8 +236,8 @@ pub struct ChapterWorkflowRecordItem<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
-    f_actor_user_id: Option<&'a str>,
-    f_kind: String,
+    pub f_actor_user_id: Option<&'a str>,
+    pub f_kind: String,
     pub f_payload: serde_json::Value,
     pub f_created_at: OffsetDateTime,
 }

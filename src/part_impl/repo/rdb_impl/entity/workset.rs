@@ -34,7 +34,7 @@ pub struct WorksetInfoRecord {
     pub f_name: String,
     pub f_description: Option<String>,
 
-    f_comic_count: i32,
+    pub f_comic_count: i32,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -104,8 +104,8 @@ pub struct WorksetPack<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 
-    f_comic_count: Option<i32>,
-    f_comic_next_index: Option<i32>,
+    pub f_comic_count: Option<i32>,
+    pub f_comic_next_index: Option<i32>,
 
     pub f_updated_at: OffsetDateTime,
 }

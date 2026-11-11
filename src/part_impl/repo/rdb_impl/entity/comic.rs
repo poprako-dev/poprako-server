@@ -29,17 +29,17 @@ use crate::shape::write::comic::ComicEntryShape;
 pub struct ComicInfoRecord {
     pub f_id: String,
 
-    f_workset_id: String,
+    pub f_workset_id: String,
     pub f_index: i32,
 
     pub f_title: String,
-    f_author: String,
+    pub f_author: String,
     pub f_description: Option<String>,
-    f_chapter_count: i32,
+    pub f_chapter_count: i32,
     pub f_creator_id: String,
 
     pub f_last_active_at: OffsetDateTime,
-    f_archived_at: Option<OffsetDateTime>,
+    pub f_archived_at: Option<OffsetDateTime>,
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -82,13 +82,13 @@ impl TryFrom<ComicInfoRecord> for ComicInfo {
 pub struct ComicItem<'a> {
     pub f_id: &'a str,
 
-    f_workset_id: &'a str,
+    pub f_workset_id: &'a str,
     pub f_index: i32,
 
     pub f_title: &'a str,
-    f_author: &'a str,
+    pub f_author: &'a str,
     pub f_description: Option<&'a str>,
-    f_composed_title: String,
+    pub f_composed_title: String,
 
     pub f_creator_id: &'a str,
 
@@ -130,12 +130,12 @@ impl<'a> TryFrom<&'a ComicEntryShape<'_>> for ComicItem<'a> {
 #[diesel(table_name = t_comic)]
 pub struct ComicPack<'a> {
     pub f_title: Option<&'a str>,
-    f_author: Option<&'a str>,
+    pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
-    f_composed_title: Option<String>,
+    pub f_composed_title: Option<String>,
 
-    f_chapter_count: Option<i32>,
-    f_chapter_next_index: Option<i32>,
+    pub f_chapter_count: Option<i32>,
+    pub f_chapter_next_index: Option<i32>,
 
     pub f_last_active_at: Option<OffsetDateTime>,
 

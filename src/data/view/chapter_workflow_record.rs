@@ -31,7 +31,7 @@ pub struct ChapterWorkflowRecordInfoView {
     pub actor_user_id: Option<String>,
 
     /// Strongly typed, language-neutral event data for client-side rendering.
-    event: ChapterWorkflowRecordEventView,
+    pub event: ChapterWorkflowRecordEventView,
 
     /// Record creation time in Unix milliseconds.
     pub created_at: i64,

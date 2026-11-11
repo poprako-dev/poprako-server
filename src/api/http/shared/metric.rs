@@ -33,18 +33,18 @@ pub struct MetricTotal {
     /// Total request count in the current sliding window.
     pub total: u64,
     /// Mean latency across all requests in the window, in milliseconds.
-    average_latency_ms: f64,
+    pub average_latency_ms: f64,
 
     /// Accumulated latency in microseconds used to compute the average.
     #[serde(skip)]
-    total_latency_micros: u64,
+    pub total_latency_micros: u64,
 
     /// Count of 4xx/5xx responses grouped by their HTTP status code.
-    by_error: HashMap<u16, u64>,
+    pub by_error: HashMap<u16, u64>,
     /// Count of requests grouped by the matched route template.
     pub by_path: HashMap<String, u64>,
     /// Per-minute breakdown for the most recent 30 minutes.
-    minutes: Vec<MetricMinute>,
+    pub minutes: Vec<MetricMinute>,
 }
 
 impl MetricTotal {
@@ -66,11 +66,11 @@ impl MetricTotal {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricMinute {
     /// Unix timestamp truncated to minute granularity.
-    minute: u64,
+    pub minute: u64,
     /// Request count recorded in this minute.
     pub total: u64,
     /// Mean latency for requests in this minute, in milliseconds.
-    average_latency_ms: f64,
+    pub average_latency_ms: f64,
 }
 
 impl MetricMinute {

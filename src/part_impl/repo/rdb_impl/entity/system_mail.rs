@@ -15,12 +15,12 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 pub struct SystemMailInfoRecord {
     pub f_id: String,
 
-    f_receiver_id: String,
+    pub f_receiver_id: String,
 
     pub f_title: String,
     pub f_content: String,
 
-    f_read: bool,
+    pub f_read: bool,
 
     pub f_created_at: OffsetDateTime,
 }
@@ -46,7 +46,7 @@ impl From<SystemMailInfoRecord> for SystemMailInfo {
 pub struct SystemMailItem<'a> {
     pub f_id: &'a str,
 
-    f_receiver_id: &'a str,
+    pub f_receiver_id: &'a str,
 
     pub f_title: &'a str,
     pub f_content: &'a str,

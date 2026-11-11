@@ -72,7 +72,7 @@ pub struct ComicInfoView {
     pub last_active_at: i64,
 
     /// Whether this comic has been archived and is no longer writable.
-    is_archived: bool,
+    pub is_archived: bool,
     /// Timestamp when the comic was archived, when applicable.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub archived_at: Option<i64>,

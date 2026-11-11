@@ -21,27 +21,27 @@ pub struct ChapterInfoRecord {
 
     pub f_comic_id: String,
 
-    f_is_pinned: bool,
+    pub f_is_pinned: bool,
     pub f_index: i32,
-    f_subtitle: String,
+    pub f_subtitle: String,
 
-    f_page_source_count: i32,
+    pub f_page_source_count: i32,
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
     pub f_proofread_unit_count: i32,
 
-    f_uploaded_at: Option<OffsetDateTime>,
-    f_translating_at: Option<OffsetDateTime>,
-    f_translated_at: Option<OffsetDateTime>,
-    f_proofreading_at: Option<OffsetDateTime>,
-    f_proofread_at: Option<OffsetDateTime>,
-    f_typesetting_at: Option<OffsetDateTime>,
-    f_typeset_at: Option<OffsetDateTime>,
-    f_reviewed_at: Option<OffsetDateTime>,
-    f_published_at: Option<OffsetDateTime>,
+    pub f_uploaded_at: Option<OffsetDateTime>,
+    pub f_translating_at: Option<OffsetDateTime>,
+    pub f_translated_at: Option<OffsetDateTime>,
+    pub f_proofreading_at: Option<OffsetDateTime>,
+    pub f_proofread_at: Option<OffsetDateTime>,
+    pub f_typesetting_at: Option<OffsetDateTime>,
+    pub f_typeset_at: Option<OffsetDateTime>,
+    pub f_reviewed_at: Option<OffsetDateTime>,
+    pub f_published_at: Option<OffsetDateTime>,
 
     #[diesel(column_name = f_confirmed_artwork_version)]
-    f_confirmed_artwork_ver: Option<i64>,
+    pub f_confirmed_artwork_ver: Option<i64>,
 
     pub f_creator_id: String,
 
@@ -57,7 +57,7 @@ pub struct ChapterUnitEditScopeRecord {
 
     pub f_comic_id: String,
 
-    f_published_at: Option<OffsetDateTime>,
+    pub f_published_at: Option<OffsetDateTime>,
 }
 
 impl From<ChapterUnitEditScopeRecord> for ChapterUnitEditScope {
@@ -130,9 +130,9 @@ pub struct ChapterItem<'a> {
 
     pub f_comic_id: &'a str,
 
-    f_is_pinned: bool,
+    pub f_is_pinned: bool,
     pub f_index: i32,
-    f_subtitle: &'a str,
+    pub f_subtitle: &'a str,
 
     pub f_creator_id: &'a str,
 
@@ -164,19 +164,19 @@ impl<'a> TryFrom<&'a ChapterEntryShape<'_>> for ChapterItem<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterPack<'a> {
-    f_is_pinned: Option<bool>,
-    f_subtitle: Option<&'a str>,
-    f_uploaded_at: Option<Option<OffsetDateTime>>,
-    f_translating_at: Option<Option<OffsetDateTime>>,
-    f_translated_at: Option<Option<OffsetDateTime>>,
-    f_proofreading_at: Option<Option<OffsetDateTime>>,
-    f_proofread_at: Option<Option<OffsetDateTime>>,
-    f_typesetting_at: Option<Option<OffsetDateTime>>,
-    f_typeset_at: Option<Option<OffsetDateTime>>,
-    f_reviewed_at: Option<Option<OffsetDateTime>>,
-    f_published_at: Option<Option<OffsetDateTime>>,
+    pub f_is_pinned: Option<bool>,
+    pub f_subtitle: Option<&'a str>,
+    pub f_uploaded_at: Option<Option<OffsetDateTime>>,
+    pub f_translating_at: Option<Option<OffsetDateTime>>,
+    pub f_translated_at: Option<Option<OffsetDateTime>>,
+    pub f_proofreading_at: Option<Option<OffsetDateTime>>,
+    pub f_proofread_at: Option<Option<OffsetDateTime>>,
+    pub f_typesetting_at: Option<Option<OffsetDateTime>>,
+    pub f_typeset_at: Option<Option<OffsetDateTime>>,
+    pub f_reviewed_at: Option<Option<OffsetDateTime>>,
+    pub f_published_at: Option<Option<OffsetDateTime>>,
 
-    f_page_source_count: Option<i32>,
+    pub f_page_source_count: Option<i32>,
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
     pub f_proofread_unit_count: Option<i32>,

@@ -21,7 +21,7 @@ pub struct TermbaseInfoRecord {
     pub f_name: String,
     pub f_description: Option<String>,
 
-    f_term_count: i32,
+    pub f_term_count: i32,
 
     pub f_creator_id: String,
 
