@@ -18,8 +18,8 @@ from rust_style_lint.base import IGNORED_SOURCE_PARENTS
 
 CHECKER_DIR = Path(__file__).resolve().parent
 ALIASES = {"model-struct-qualification", "data-struct-qualification"}
-SELF_TESTS = {"defer-oper-inline", "oper-inline", "diesel-type-safety", "layer-dependency", "model-shape-boundaries", "line-width", "configuration", "usecase-central-coverage", "type-suffix-layer", "minimum-pub", "serde-rename-ban", "struct-field-visibility"}
-WORKSPACE_CHECKERS = {"line-width", "configuration", "minimum-pub"}
+SELF_TESTS = {"defer-oper-inline", "oper-inline", "diesel-type-safety", "layer-dependency", "model-shape-boundaries", "line-width", "configuration", "usecase-central-coverage", "type-suffix-layer", "minimum-pub", "serde-rename-ban", "serde-scope", "struct-field-visibility"}
+WORKSPACE_CHECKERS = {"line-width", "configuration", "minimum-pub", "serde-scope"}
 
 
 def crate_roots(root: Path) -> list[Path]:

@@ -63,6 +63,7 @@ allow_public_fields = [
     "config",
     "value",
     "api::http::handler",
+    "api::http::object",
     "api::http::shared::metric",
     "complex::page::manifest",
     "part::image",

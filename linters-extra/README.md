@@ -31,6 +31,11 @@ conversions remain allowed. Pica wire modules and enum values containing dots
 or hyphens are the only exceptions. See
 [serde-rename-ban/FORMAT.md](serde-rename-ban/FORMAT.md).
 
+`serde-scope` keeps `serde`, `serde_json`, and `utoipa` out of the domain
+layers and requires HTTP wire types to live in `src/api/http/object`. Its
+migration baseline records the violations that remain while domains are moved
+one at a time. See [serde-scope/FORMAT.md](serde-scope/FORMAT.md).
+
 Project rules run in one Python process. During that read-only run, masked
 production sources are reused across rules, and an LRU cache retains up to
 1024 Rust syntax trees keyed by their exact source bytes. Each caller receives
