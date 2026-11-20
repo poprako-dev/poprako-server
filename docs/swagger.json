@@ -8398,11 +8398,11 @@
             "type": "object",
             "description": "Summary returned after importing chapter translations.",
             "required": [
-              "imported_page_count",
+              "imported_page_source_count",
               "imported_unit_count"
             ],
             "properties": {
-              "imported_page_count": {
+              "imported_page_source_count": {
                 "type": "integer",
                 "description": "Number of pages whose visible Unit content changed.",
                 "minimum": 0
@@ -11231,11 +11231,11 @@
         "type": "object",
         "description": "Summary returned after importing chapter translations.",
         "required": [
-          "imported_page_count",
+          "imported_page_source_count",
           "imported_unit_count"
         ],
         "properties": {
-          "imported_page_count": {
+          "imported_page_source_count": {
             "type": "integer",
             "description": "Number of pages whose visible Unit content changed.",
             "minimum": 0

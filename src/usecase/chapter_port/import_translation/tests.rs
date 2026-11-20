@@ -303,7 +303,7 @@ async fn import_label_plus_material_updates_units_and_counts() {
         .find(|chapter_info| chapter_info.id == "chapter--00000000001")
         .unwrap();
 
-    assert_eq!(imported.imported_page_count, 9);
+    assert_eq!(imported.imported_page_source_count, 9);
 
     assert_eq!(imported.imported_unit_count, 65);
 
@@ -455,7 +455,7 @@ async fn import_replaces_units_and_clears_empty_page_sources() {
         })
         .count();
 
-    assert_eq!(imported.imported_page_count, 2);
+    assert_eq!(imported.imported_page_source_count, 2);
     assert_eq!(imported.imported_unit_count, 1);
     assert_eq!(visible_page_source_one.len(), 1);
     assert_eq!(
@@ -507,7 +507,7 @@ async fn import_keep_preserves_visible_page_source_units() {
         .filter(|unit_info| unit_info.hidden_at.is_none())
         .collect::<Vec<_>>();
 
-    assert_eq!(imported.imported_page_count, 0);
+    assert_eq!(imported.imported_page_source_count, 0);
     assert_eq!(imported.imported_unit_count, 0);
     assert_eq!(visible_units.len(), 2);
     assert_eq!(
@@ -570,7 +570,7 @@ async fn import_keep_reuses_page_source_with_only_hidden_units() {
         })
         .collect::<Vec<_>>();
 
-    assert_eq!(imported.imported_page_count, 1);
+    assert_eq!(imported.imported_page_source_count, 1);
     assert_eq!(imported.imported_unit_count, 1);
     assert_eq!(visible_page_source_two.len(), 1);
     assert_eq!(

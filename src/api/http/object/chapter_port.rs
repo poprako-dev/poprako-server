@@ -269,7 +269,7 @@ impl Wire for ChapterPageSourceRawIdentVal {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationPayload {
     /// Number of pages whose visible Unit content changed.
-    pub imported_page_count: usize,
+    pub imported_page_source_count: usize,
     /// Number of Units created from the imported source.
     pub imported_unit_count: usize,
 }
@@ -278,7 +278,7 @@ impl From<ImportChapterTranslationVal> for ImportChapterTranslationPayload {
     // Converts the value between the use-case and wire shapes.
     fn from(value: ImportChapterTranslationVal) -> Self {
         Self {
-            imported_page_count: value.imported_page_count,
+            imported_page_source_count: value.imported_page_source_count,
             imported_unit_count: value.imported_unit_count,
         }
     }

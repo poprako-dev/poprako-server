@@ -160,7 +160,7 @@ where
             .await?;
 
             let import_val = ImportChapterTranslationVal {
-                imported_page_count,
+                imported_page_source_count: imported_page_count,
                 imported_unit_count,
             };
 
@@ -169,7 +169,7 @@ where
                 Some(token.user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
-                    imported_page_count: import_val.imported_page_count,
+                    imported_page_count: import_val.imported_page_source_count,
                     imported_unit_count: import_val.imported_unit_count,
                 },
             );

@@ -26,7 +26,7 @@ pub struct ChapterPageSourceRawIdentVal {
 /// Summary returned after importing chapter translations.
 pub struct ImportChapterTranslationVal {
     /// Number of pages whose visible Unit content changed.
-    pub imported_page_count: usize,
+    pub imported_page_source_count: usize,
     /// Number of Units created from the imported source.
     pub imported_unit_count: usize,
 }
