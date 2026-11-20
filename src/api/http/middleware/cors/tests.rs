@@ -21,10 +21,7 @@ use tower::ServiceExt as _;
 async fn cors_handles_web_client_preflight_before_api_authorization() {
     //
     let router = Router::new()
-        .route(
-            "/api/v1/system-mails",
-            get(|| async { StatusCode::NO_CONTENT }),
-        )
+        .route("/api/v1/system-mails", get(async || StatusCode::NO_CONTENT))
         .layer(cors(CorsOrigin::default().header()));
 
     let req = Request::builder()
@@ -81,7 +78,7 @@ async fn configured_origin_controls_preflight_access() {
         .expect("local browser origin should be valid");
 
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .layer(cors(origin.header()));
 
     for (request_origin, allowed) in [

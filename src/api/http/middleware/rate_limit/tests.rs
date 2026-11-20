@@ -22,8 +22,8 @@ fn router() -> Router {
     };
 
     Router::new()
-        .route("/first", get(|| async { StatusCode::OK }))
-        .route("/second", get(|| async { StatusCode::OK }))
+        .route("/first", get(async || StatusCode::OK))
+        .route("/second", get(async || StatusCode::OK))
         .layer(from_fn_with_state(new(config), rate_limit))
 }
 

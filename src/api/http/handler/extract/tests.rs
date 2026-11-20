@@ -31,13 +31,30 @@ struct RepeatedInput {
 
 fn extractor_router() -> Router {
     Router::new()
-        .route("/json", post(|Json(value): Json<Input>| async move { value.id.to_string() }))
-        .route("/query", get(|Query(value): Query<Input>| async move { value.id.to_string() }))
-        .route("/multi", get(|MultiQuery(value): MultiQuery<RepeatedInput>| async move { value.id.len().to_string() }))
-        .route("/path/{id}", get(|Path(id): Path<u32>| async move { id.to_string() }))
-        .route("/extension", get(|Extension(_): Extension<u32>| async { StatusCode::OK }))
-        .route("/string", post(|_: String| async { StatusCode::OK }))
-        .route("/bytes", post(|_: axum::body::Bytes| async { StatusCode::OK }))
+        .route(
+            "/json",
+            post(async |Json(value): Json<Input>| value.id.to_string()),
+        )
+        .route(
+            "/query",
+            get(async |Query(value): Query<Input>| value.id.to_string()),
+        )
+        .route(
+            "/multi",
+            get(async |MultiQuery(value): MultiQuery<RepeatedInput>| {
+                value.id.len().to_string()
+            }),
+        )
+        .route(
+            "/path/{id}",
+            get(async |Path(id): Path<u32>| id.to_string()),
+        )
+        .route(
+            "/extension",
+            get(async |Extension(_): Extension<u32>| StatusCode::OK),
+        )
+        .route("/string", post(async |_: String| StatusCode::OK))
+        .route("/bytes", post(async |_: axum::body::Bytes| StatusCode::OK))
         .layer(DefaultBodyLimit::max(128))
 }
 
@@ -76,7 +93,7 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
 
     runtime.block_on(async {
         let router = extractor_router().route_layer(axum::middleware::from_fn(
-            |req: Request<Body>, next: axum::middleware::Next| async move {
+            async |req: Request<Body>, next: axum::middleware::Next| {
                 // Another test reaches the rejection while capture is active.
                 std::thread::spawn(|| {
                     let uri = "/multi?id=private-sentinel".parse().unwrap();
@@ -119,7 +136,7 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
 async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
     let router = Router::new().route(
         "/units/save",
-        post(|Json(_): Json<Vec<UnitEditBody>>| async { StatusCode::OK }),
+        post(async |Json(_): Json<Vec<UnitEditBody>>| StatusCode::OK),
     );
 
     let req = Request::builder()
@@ -155,9 +172,7 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
 async fn missing_required_json_field_is_logged_with_its_schema_name() {
     let router = Router::new().route(
         "/chapters/{chapter_id}/page-sources/alloc",
-        post(|Json(_): Json<AllocChapterPageSourcesBody>| async {
-            StatusCode::OK
-        }),
+        post(async |Json(_): Json<AllocChapterPageSourcesBody>| StatusCode::OK),
     );
 
     let req = Request::builder()
@@ -388,7 +403,7 @@ async fn valid_repeated_queries_keep_every_value_without_warning() {
 async fn business_and_framework_422_have_distinct_diagnostics() {
     let router = Router::new().route(
         "/input",
-        post(|Json(_): Json<Input>| async {
+        post(async |Json(_): Json<Input>| {
             HttpError::from(expected_error! {
                 ExpectedVariant::Args,
                 message: "business validation failed".into();

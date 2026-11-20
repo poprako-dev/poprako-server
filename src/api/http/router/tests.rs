@@ -24,7 +24,7 @@ async fn route_and_method_rejections_record_one_correlated_warning() {
         ),
     ] {
         let router = Router::new()
-            .route("/known", get(|| async { StatusCode::OK }))
+            .route("/known", get(async || StatusCode::OK))
             .fallback(not_found)
             .method_not_allowed_fallback(method_not_allowed);
 
@@ -52,7 +52,7 @@ async fn route_and_method_rejections_record_one_correlated_warning() {
 #[tokio::test]
 async fn method_rejection_preserves_allow_header() {
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .method_not_allowed_fallback(method_not_allowed);
 
     let req = Request::builder()
@@ -71,9 +71,9 @@ async fn method_rejection_preserves_allow_header() {
 #[tokio::test]
 async fn protected_method_fallback_keeps_authorization_before_routing() {
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .method_not_allowed_fallback(method_not_allowed)
-        .layer(from_fn(|_: Request<Body>, _: Next| async {
+        .layer(from_fn(async |_: Request<Body>, _: Next| {
             crate::api::http::result::HttpError::from(expected_error! {
                 crate::result::ExpectedVariant::Auth,
                 message: "authentication required".into();

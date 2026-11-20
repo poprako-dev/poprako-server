@@ -25,7 +25,7 @@ async fn cache_policy_overrides_existing_headers_and_preserves_response() {
         let router = Router::new()
             .route(
                 "/known",
-                get(move || async move {
+                get(async move || {
                     (status, [(CACHE_CONTROL, "public, max-age=3600")], "body")
                 }),
             )
@@ -61,7 +61,7 @@ async fn cache_policy_covers_routing_rejections_and_cors_preflight() {
         ("/known", "OPTIONS", StatusCode::OK),
     ] {
         let router = Router::new()
-            .route("/known", get(|| async { StatusCode::OK }))
+            .route("/known", get(async || StatusCode::OK))
             .layer(cors(CorsOrigin::default().header()))
             .layer(map_response(disable_cache));
 

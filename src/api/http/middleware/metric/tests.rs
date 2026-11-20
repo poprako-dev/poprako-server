@@ -22,7 +22,7 @@ async fn records_matched_route_template() {
     let router = Router::new()
         .route(
             "/metric-test/items/{item_id}",
-            get(|| async { StatusCode::NO_CONTENT }),
+            get(async || StatusCode::NO_CONTENT),
         )
         .layer(from_fn(record_resp_metric));
 

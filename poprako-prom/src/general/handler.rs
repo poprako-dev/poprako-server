@@ -49,7 +49,7 @@ pub trait Handler {
 ///     fn topic(&self) -> &'static str { "refresh" }
 /// }
 ///
-/// let handler = Dispatcher::new((), |(), payload: Refresh| async move {
+/// let handler = Dispatcher::new((), async |(), payload: Refresh| {
 ///     let _id = payload.id;
 ///
 ///     DispatchFlow::Complete

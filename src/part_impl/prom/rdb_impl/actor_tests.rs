@@ -118,7 +118,7 @@ async fn dispatch_uses_injected_repo() {
 
     let actor = PromActor::new(
         (),
-        Dispatcher::new(mock.clone(), |mock, payload| async move {
+        Dispatcher::new(mock.clone(), async |mock, payload| {
             dispatch::dispatch::<MockContext, _, _, _, _>(
                 (&mock, &mock, &mock, &mock),
                 payload,
@@ -513,7 +513,7 @@ pub async fn writer_and_consumer_lifecycles_are_independent(
         ),
         Dispatcher::new(
             (nucl.clone(), repo.clone(), dept.view(), Mock::new()),
-            |(nucl, repo, view, bus), payload| async move {
+            async |(nucl, repo, view, bus), payload| {
                 dispatch::dispatch((&nucl, &repo, &view, &bus), payload).await
             },
         ),

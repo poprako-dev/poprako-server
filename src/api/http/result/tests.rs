@@ -98,7 +98,7 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
     ] {
         let router = Router::new().route(
             "/error",
-            get(move || async move {
+            get(async move || {
                 Err::<(), _>(HttpError::from(expected_error! {
                     variant,
                     message: "source diagnostic".into();
@@ -148,19 +148,19 @@ async fn sdk_client_errors_keep_original_diagnostics_at_warning_level() {
         ),
     ] {
         let router = Router::new()
-            .route("/auth", get(|| async {
+            .route("/auth", get(async || {
                 let auth = JwtAuth::new("test-signing-secret", 1).unwrap();
 
                 let source = auth.verify_token("private-invalid-token").err().unwrap();
 
                 Err::<(), _>(HttpError::from(source))
             }))
-            .route("/conflict", get(|| async {
+            .route("/conflict", get(async || {
                 let source = DieselError::DatabaseError(DatabaseErrorKind::SerializationFailure, Box::new("conflicting write".to_owned()));
 
                 Err::<(), _>(HttpError::from(crate::shared::result::diesel(source)))
             }))
-            .route("/mismatch", get(|| async {
+            .route("/mismatch", get(async || {
                 crate::api::http::handler::util::ensure_path_matches_body_id("one", "two")
             }));
 
@@ -200,7 +200,7 @@ async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
     ] {
         let router = Router::new().route(
             "/failure",
-            get(move || async move {
+            get(async move || {
                 if retryable {
                     return Err::<(), _>(HttpError::from(retryable_error! {
                         message: "retry request".into();

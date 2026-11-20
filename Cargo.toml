@@ -39,6 +39,9 @@ uuid = "1.29.2"
 [workspace.lints.rust]
 warnings = "deny"
 unsafe_code = "forbid"
+# Async closures are stable, so a closure whose whole body is an `async` block
+# must be written as one; the lint is allow-by-default.
+closure_returning_async_block = "deny"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

@@ -100,7 +100,7 @@ fn unavailable_dependency_failure_remains_retryable_for_worker() {
 async fn actor_runs_both_loops_immediately_then_waits_thirty_seconds() {
     let prom = MockProm::with_task(task());
 
-    let actor = ObjDeptActor::new(prom.clone(), |_task| async {
+    let actor = ObjDeptActor::new(prom.clone(), async |_task| {
         Ok(ObjTaskAction::Complete)
     });
 
@@ -207,7 +207,7 @@ async fn yield_until_idle() {
 // join_reports_supervisor_failure(ObjDeptActorDesc::join)(negative): a cancelled supervisor remains observable to its owner.
 #[tokio::test]
 async fn join_reports_supervisor_failure() {
-    let actor = ObjDeptActor::new(MockProm::with_task(task()), |_task| async {
+    let actor = ObjDeptActor::new(MockProm::with_task(task()), async |_task| {
         Ok(ObjTaskAction::Complete)
     })
     .run_detached();

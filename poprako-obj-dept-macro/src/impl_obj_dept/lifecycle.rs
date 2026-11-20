@@ -306,7 +306,7 @@ fn persist_allocs(obj: &Ident, obj_module: &Ident) -> TokenStream {
         for chunk in planned.chunks(20) {
             //
             let pool_futures = chunk.iter().map(
-                |(spec, key, _, _)| async move {
+                async |(spec, key, _, _)| {
                     //
                     let pool_slot = self
                         .pool()
