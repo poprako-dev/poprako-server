@@ -161,7 +161,7 @@ pub async fn update_password(
     tag = "users",
     params(("user_id" = String, Path,
         description = "Target user ID (must match authenticated user)")),
-    request_body = AllocUserAvatarPayload,
+    request_body = AllocUserAvatarBody,
     responses(
         (status = 200, description = "Avatar \
         upload URL allocated", body = HttpBody<AllocUserAvatarPayload>),

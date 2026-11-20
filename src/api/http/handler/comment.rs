@@ -24,7 +24,7 @@ use crate::usecase::comment as comment_usecase;
     post,
     path = "/api/v1/comments",
     tag = "comments",
-    request_body = CreateCommentPayload,
+    request_body = CreateCommentBody,
     responses(
         (status = 201, description = "Comment \
         created", body = HttpBody<CreateCommentPayload>),

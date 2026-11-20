@@ -192,7 +192,7 @@ pub async fn delete(
     path = "/api/v1/chapters/{chapter_id}/page-sources/alloc",
     tag = "page-sources",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = AllocChapterPageSourcesPayload,
+    request_body = AllocChapterPageSourcesBody,
     responses(
         (status = 200,
         description = "PageSource upload slots allocated",

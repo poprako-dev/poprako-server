@@ -30,7 +30,7 @@ use crate::usecase::member_invitation as member_invitation_usecase;
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
-    request_body = CreateMemberInvitationPayload,
+    request_body = CreateMemberInvitationBody,
     responses(
         (status = 201, description = "Invitation created",
             body = HttpBody<CreateMemberInvitationPayload>),

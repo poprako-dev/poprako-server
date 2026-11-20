@@ -43,7 +43,7 @@ use crate::usecase::chapter_port::{
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ImportChapterTranslationPayload,
+    request_body = ImportChapterTranslationBody,
     responses(
         (status = 200, description = "Translations imported",
             body = HttpBody<ImportChapterTranslationPayload>),
@@ -173,7 +173,7 @@ pub async fn export_translation_download(
     post, path = "/api/v1/chapters/{chapter_id}/artwork/alloc",
         tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = AllocChapterArtworkPayload,
+    request_body = AllocChapterArtworkBody,
     responses(
         (status = 200, description = "Current \
         artwork version and optional PUT capability",

@@ -221,7 +221,7 @@ pub async fn update_info(
     path = "/api/v1/teams/{team_id}/avatar/alloc",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = AllocTeamAvatarPayload,
+    request_body = AllocTeamAvatarBody,
     responses(
         (status = 200, description = "Avatar \
         upload URL allocated", body = HttpBody<AllocTeamAvatarPayload>),

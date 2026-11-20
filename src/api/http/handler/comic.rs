@@ -90,7 +90,7 @@ pub async fn export_archives(
     post,
     path = "/api/v1/comics",
     tag = "comics",
-    request_body = CreateComicPayload,
+    request_body = CreateComicBody,
     responses(
         (status = 201, description = "Comic \
         created", body = HttpBody<CreateComicPayload>),
@@ -235,7 +235,7 @@ pub async fn update_info(
     path = "/api/v1/comics/{comic_id}/cover/alloc",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = AllocComicCoverPayload,
+    request_body = AllocComicCoverBody,
     responses(
         (status = 200, description = "Cover \
         upload URL allocated", body = HttpBody<AllocComicCoverPayload>),

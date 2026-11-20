@@ -21,7 +21,7 @@ use crate::usecase::issue as issue_usecase;
 #[cfg_attr(feature = "swagger", utoipa::path(
     post, path = "/api/v1/chapters/{chapter_id}/issues/import", tag = "issues",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ImportChapterIssuesPayload,
+    request_body = ImportChapterIssuesBody,
     responses(
         (status = 200,
         description = "Current review replaced completely",

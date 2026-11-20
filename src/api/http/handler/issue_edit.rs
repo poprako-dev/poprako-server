@@ -126,7 +126,7 @@ pub async fn list_variant_infos(
          Path,
          description = "Resource identity")),
 
-    request_body = RenameIssueEditVariantPayload,
+    request_body = RenameIssueEditVariantBody,
 
     responses(
         (status = 200,
@@ -183,7 +183,7 @@ pub async fn rename_variant(
          Query,
          description = "Immutable batch UUID")),
 
-    request_body = SavePageIssuesPayload,
+    request_body = SavePageIssuesBody,
 
     responses(
         (status = 200,

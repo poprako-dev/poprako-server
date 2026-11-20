@@ -28,7 +28,7 @@ use crate::usecase::termbase as termbase_usecase;
     post,
     path = "/api/v1/termbases",
     tag = "termbases",
-    request_body = CreateTermbasePayload,
+    request_body = CreateTermbaseBody,
     responses(
         (status = 201, description = "Termbase created",
             body = HttpBody<CreateTermbasePayload>),

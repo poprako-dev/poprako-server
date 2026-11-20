@@ -30,7 +30,7 @@ use crate::usecase::auth as auth_usecase;
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
-    request_body = RegisterAuthPayload,
+    request_body = RegisterAuthBody,
     responses(
         (
             status = 201,
@@ -71,7 +71,7 @@ pub async fn register(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
-    request_body = LoginAuthPayload,
+    request_body = LoginAuthBody,
     responses(
         (status = 200, description = "Login \
         successful, sets auth cookie", body = HttpBody<LoginAuthPayload>),

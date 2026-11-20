@@ -28,7 +28,7 @@ use crate::usecase::workset as workset_usecase;
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
-    request_body = CreateWorksetPayload,
+    request_body = CreateWorksetBody,
     responses(
         (status = 201, description = "Workset \
         created", body = HttpBody<CreateWorksetPayload>),

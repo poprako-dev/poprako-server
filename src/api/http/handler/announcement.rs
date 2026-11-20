@@ -29,7 +29,7 @@ use crate::usecase::announcement as announcement_usecase;
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
-    request_body = CreateAnnouncementPayload,
+    request_body = CreateAnnouncementBody,
     responses(
         (status = 201, description = "Announcement created",
             body = HttpBody<CreateAnnouncementPayload>),

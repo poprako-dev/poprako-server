@@ -35,7 +35,7 @@ use crate::usecase::chapter::{
     post,
     path = "/api/v1/chapters",
     tag = "chapters",
-    request_body = CreateChapterPayload,
+    request_body = CreateChapterBody,
     responses(
         (status = 201, description = "Chapter \
         created", body = HttpBody<CreateChapterPayload>),

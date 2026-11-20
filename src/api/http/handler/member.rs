@@ -32,7 +32,7 @@ use crate::usecase::member as member_usecase;
     post,
     path = "/api/v1/members",
     tag = "members",
-    request_body = CreateMemberPayload,
+    request_body = CreateMemberBody,
     responses(
         (status = 201, description = "Member \
         created", body = HttpBody<CreateMemberPayload>),

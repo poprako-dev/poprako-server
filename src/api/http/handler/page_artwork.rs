@@ -61,7 +61,7 @@ pub async fn list_infos(
     post, path = "/api/v1/chapters/{chapter_id}/page-artworks/alloc",
         tag = "page-artworks",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-        request_body = AllocChapterPageArtworksPayload,
+        request_body = AllocChapterPageArtworksBody,
     responses((status = 200, description = "Composite allocations",
         body = HttpBody<AllocChapterPageArtworksPayload>),
         (status = 403, description = "Composite write access required"),

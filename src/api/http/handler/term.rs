@@ -27,7 +27,7 @@ use crate::usecase::term as term_usecase;
     post,
     path = "/api/v1/terms",
     tag = "terms",
-    request_body = CreateTermPayload,
+    request_body = CreateTermBody,
     responses(
         (status = 201, description = "Term \
         created", body = HttpBody<CreateTermPayload>),

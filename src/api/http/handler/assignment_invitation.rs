@@ -31,7 +31,7 @@ use crate::usecase::assignment_invitation::join as assignment_invitation_join_us
     tag = "assignment-invitations",
     description = "Requires owning-team administrator membership, without a \
     chapter assignment. Invitations contain worker roles only.",
-    request_body = CreateAssignmentInvitationPayload,
+    request_body = CreateAssignmentInvitationBody,
     responses(
         (status = 201, description = "Invitation created",
             body = HttpBody<CreateAssignmentInvitationPayload>),
