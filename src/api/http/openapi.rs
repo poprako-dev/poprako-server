@@ -23,7 +23,8 @@ use crate::api::http::object::chapter::{
 };
 use crate::api::http::object::chapter_port::{
     ChapterTranslationFormatBody, ChapterTranslationImportModeBody,
-    ChapterTranslationPortObj, ImportChapterTranslationPayload,
+    ChapterTranslationImportTargetBody, ChapterTranslationPortObj,
+    ImportChapterTranslationBody, ImportChapterTranslationPayload,
 };
 use crate::api::http::object::chapter_workflow_record::{
     ChapterWorkflowRecordEventObj, ChapterWorkflowRecordInfoObj,
@@ -273,6 +274,8 @@ use crate::value::unit::UnitTextPart;
         UnitTranslationPortObj,
         ChapterTranslationFormatBody,
         ChapterTranslationImportModeBody,
+        ChapterTranslationImportTargetBody,
+        ImportChapterTranslationBody,
         ImportChapterTranslationPayload,
         PageSourceInfoObj,
         PageSourceImageBody,

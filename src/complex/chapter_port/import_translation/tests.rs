@@ -112,8 +112,7 @@ fn build_unit_create_produces_a_complete_create() {
         pages.first().unwrap().units.first().unwrap(),
         "unit--98124474837".to_string(),
         "proofreader-1",
-        false,
-        true,
+        ChapterTranslationImportTarget::Proofread,
     );
 
     assert!(matches!(

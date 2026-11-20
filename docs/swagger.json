@@ -5898,6 +5898,15 @@
           "overwrite"
         ]
       },
+      "ChapterTranslationImportTargetBody": {
+        "type": "string",
+        "description": "Text fields selected by a chapter translation import request.",
+        "enum": [
+          "translation",
+          "proofread",
+          "both"
+        ]
+      },
       "ChapterTranslationPortObj": {
         "type": "object",
         "description": "JSON document exchanged by the `PopRaKo` translation port.",
@@ -11210,6 +11219,7 @@
         "required": [
           "format",
           "mode",
+          "target",
           "content"
         ],
         "properties": {
@@ -11224,6 +11234,10 @@
           "mode": {
             "$ref": "#/components/schemas/ChapterTranslationImportModeBody",
             "description": "source page-content strategy used while applying the imported source."
+          },
+          "target": {
+            "$ref": "#/components/schemas/ChapterTranslationImportTargetBody",
+            "description": "Text fields written by this import."
           }
         }
       },

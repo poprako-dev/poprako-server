@@ -7,6 +7,13 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 #[tokio::test]
 async fn annotation_only_import_starts_translation_for_either_editor() {
     for role in [RoleField::TRANSLATOR, RoleField::PROOFREADER] {
+        //
+        let target = if role == RoleField::TRANSLATOR {
+            ChapterTranslationImportTarget::Translation
+        } else {
+            ChapterTranslationImportTarget::Proofread
+        };
+
         let mock = Mock::new();
 
         seed_base(&mock, 1, 0, 0);
@@ -29,6 +36,7 @@ async fn annotation_only_import_starts_translation_for_either_editor() {
             ImportChapterTranslationInstr {
                 format: TranslationFormat::LabelPlus.into(),
                 mode: ChapterTranslationImportMode::Overwrite.into(),
+                target: target.into(),
                 content: content.into(),
             },
             "chapter--00000000001".into(),

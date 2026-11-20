@@ -10,8 +10,8 @@ use crate::api::http::object::upload::UploadHeaderObj;
 use crate::api::http::result::Wire;
 use crate::data::instr::chapter_port::{
     AllocChapterArtworkInstr, ChapterTranslationFormatInstr,
-    ChapterTranslationImportModeInstr, ImportChapterTranslationInstr,
-    MarkChapterArtworkUploadedInstr,
+    ChapterTranslationImportModeInstr, ChapterTranslationImportTargetInstr,
+    ImportChapterTranslationInstr, MarkChapterArtworkUploadedInstr,
 };
 use crate::data::val::chapter_port::{
     AllocChapterArtworkVal, ChapterPageSourceRawIdentVal,
@@ -133,6 +133,40 @@ impl From<ChapterTranslationImportModeBody>
     }
 }
 
+/// Text fields selected by a chapter translation import request.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ChapterTranslationImportTargetBody {
+    /// Write translated text only.
+    Translation,
+
+    /// Write proofread text only.
+    Proofread,
+
+    /// Write both translation and proofread text.
+    Both,
+}
+
+impl From<ChapterTranslationImportTargetBody>
+    for ChapterTranslationImportTargetInstr
+{
+    // Converts the value between the use-case and wire shapes.
+    fn from(value: ChapterTranslationImportTargetBody) -> Self {
+        //
+        match value {
+            //
+            ChapterTranslationImportTargetBody::Translation => {
+                Self::Translation
+            }
+
+            ChapterTranslationImportTargetBody::Proofread => Self::Proofread,
+
+            ChapterTranslationImportTargetBody::Both => Self::Both,
+        }
+    }
+}
+
 /// Request body for importing chapter translations.
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -142,6 +176,9 @@ pub struct ImportChapterTranslationBody {
 
     /// source page-content strategy used while applying the imported source.
     pub mode: ChapterTranslationImportModeBody,
+
+    /// Text fields written by this import.
+    pub target: ChapterTranslationImportTargetBody,
 
     /// Raw translation content string.
     pub content: String,
@@ -153,6 +190,7 @@ impl From<ImportChapterTranslationBody> for ImportChapterTranslationInstr {
         Self {
             format: value.format.into(),
             mode: value.mode.into(),
+            target: value.target.into(),
             content: value.content,
         }
     }

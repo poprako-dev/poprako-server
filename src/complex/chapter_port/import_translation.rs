@@ -17,6 +17,7 @@ use crate::model::write::translation_import::{
 };
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::chapter_port::ChapterTranslationImportTarget;
 use crate::value::chapter_port::document::ChapterTranslationDocument;
 use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
@@ -49,14 +50,28 @@ pub fn build_unit_create(
     parsed_unit: &UnitTranslationImport,
     unit_id: String,
     user_id: &str,
-    can_translate: bool,
-    can_proofread: bool,
+    target: ChapterTranslationImportTarget,
 ) -> UnitEdit {
     //
-    let (translation, revision) = (
-        build_translation(parsed_unit, user_id, can_translate),
-        build_revision(parsed_unit, user_id, can_proofread),
-    );
+    let translation = match target {
+        //
+        ChapterTranslationImportTarget::Translation
+        | ChapterTranslationImportTarget::Both => {
+            build_translation(parsed_unit, user_id)
+        }
+
+        ChapterTranslationImportTarget::Proofread => None,
+    };
+
+    let revision = match target {
+        //
+        ChapterTranslationImportTarget::Proofread
+        | ChapterTranslationImportTarget::Both => {
+            build_revision(parsed_unit, user_id)
+        }
+
+        ChapterTranslationImportTarget::Translation => None,
+    };
 
     UnitEdit::Create {
         id: unit_id,
@@ -209,17 +224,12 @@ fn convert_poprako_document(
     accept!(pages)
 }
 
-// Build translated text when the current user has translator permission.
+// Build translated text from the parsed import source.
 fn build_translation(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
-    can_translate: bool,
 ) -> Option<UnitTranslation> {
     //
-    if !can_translate {
-        return None;
-    }
-
     let translated_text = match &parsed_unit.source {
         //
         UnitTranslationImportSource::LabelPlus { text } => text.clone(),
@@ -235,17 +245,12 @@ fn build_translation(
     })
 }
 
-// Build proofread text when the current user has proofreader permission.
+// Build proofread text from the parsed import source.
 fn build_revision(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
-    can_proofread: bool,
 ) -> Option<UnitRevision> {
     //
-    if !can_proofread {
-        return None;
-    }
-
     let (proofread_text, is_proofread) = match &parsed_unit.source {
         //
         UnitTranslationImportSource::LabelPlus { text } => {

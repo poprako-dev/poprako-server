@@ -25,6 +25,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::test_util::http_logging::capture_dispatch;
 use crate::test_util::{assert_expected_message, assert_expected_variant};
+use crate::value::chapter_port::ChapterTranslationImportTarget;
 use crate::value::role::RoleField;
 
 #[derive(Default)]
@@ -312,6 +313,7 @@ fn permission_message_remapping_preserves_one_source_event() {
     let (result, events) = capture(LevelFilter::WARN, || {
         chapter_port_perm_complex::ensure_user_can_import_translation(
             &assignment_info,
+            ChapterTranslationImportTarget::Translation,
         )
     });
 

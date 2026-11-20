@@ -9,6 +9,8 @@
 
 // Annotation-only imports and workflow regressions.
 mod notes;
+// Import target selection across the supported formats.
+mod target;
 
 use super::*;
 
@@ -28,7 +30,8 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::mask::StageMask;
 use crate::value::chapter_port::{
-    ChapterTranslationImportMode, TranslationFormat,
+    ChapterTranslationImportMode, ChapterTranslationImportTarget,
+    TranslationFormat,
 };
 use crate::value::role::{RoleField, RoleMask};
 
@@ -271,6 +274,7 @@ async fn import_label_plus_material_updates_units_and_counts() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter--00000000001".into(),
@@ -331,6 +335,7 @@ async fn import_label_plus_material_updates_units_and_counts() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter--00000000001".into(),
@@ -382,6 +387,7 @@ async fn import_rejects_page_source_count_mismatch_without_mutation() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter--00000000001".into(),
@@ -430,6 +436,7 @@ async fn import_replaces_units_and_clears_empty_page_sources() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Overwrite.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
         },
         "chapter--00000000001".into(),
@@ -493,6 +500,7 @@ async fn import_keep_preserves_visible_page_source_units() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Keep.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
         },
         "chapter--00000000001".into(),
@@ -553,6 +561,7 @@ async fn import_keep_reuses_page_source_with_only_hidden_units() {
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
             mode: ChapterTranslationImportMode::Keep.into(),
+            target: ChapterTranslationImportTarget::Proofread.into(),
             content: LABEL_PLUS_WITH_POPULATED_SECOND_PAGE.into(),
         },
         "chapter--00000000001".into(),

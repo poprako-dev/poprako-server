@@ -11,7 +11,6 @@ use crate::complex::chapter_port::{
     import_translation as chapter_translation_import_complex,
     perm as chapter_port_perm_complex,
 };
-use crate::complex::unit::perm as unit_perm_complex;
 use crate::complex::{chapter as chapter_complex, unit as unit_complex};
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
@@ -44,12 +43,12 @@ use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShap
 use crate::usecase::stage as stage_usecase;
 use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::{
-    ChapterTranslationImportMode, TranslationFormat,
+    ChapterTranslationImportMode, ChapterTranslationImportTarget,
+    TranslationFormat,
 };
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
-use crate::value::unit::UnitEditPerm;
 
 /// Imports chapter translation content through the Unit edit pipeline.
 #[instrument(
@@ -59,6 +58,7 @@ use crate::value::unit::UnitEditPerm;
         actor_user_id = %token.user_id,
         format = ?instr.format,
         mode = ?instr.mode,
+        target = ?instr.target,
         content_byte_len = instr.content.len(),
     ),
 )]
@@ -81,7 +81,7 @@ where
         + Send
         + Sync,
 {
-    let (edit_perm, format, mode, imported_page_sources, stages) =
+    let (format, mode, target, imported_page_sources, stages) =
         prepare_import(repo, &token, &instr, &chapter_id).await?;
 
     let val = nucl
@@ -109,7 +109,7 @@ where
 
             let import_settings = ImportSettings {
                 user_id: &token.user_id,
-                edit_perm,
+                target,
                 mode,
             };
 
@@ -206,9 +206,9 @@ async fn prepare_import<C, R>(
     instr: &ImportChapterTranslationInstr,
     chapter_id: &str,
 ) -> BaseRest<(
-    UnitEditPerm,
     TranslationFormat,
     ChapterTranslationImportMode,
+    ChapterTranslationImportTarget,
     Vec<PageSourceTranslationImport>,
     Vec<Stage>,
 )>
@@ -234,15 +234,26 @@ where
         }
     })?;
 
-    chapter_port_perm_complex::ensure_user_can_import_translation(
-        &assignment_info,
-    )?;
-
-    let edit_perm = unit_perm_complex::edit_perm(Some(&assignment_info));
-
     let format = TranslationFormat::from(instr.format);
 
     let mode = ChapterTranslationImportMode::from(instr.mode);
+
+    let target = ChapterTranslationImportTarget::from(instr.target);
+
+    chapter_port_perm_complex::ensure_user_can_import_translation(
+        &assignment_info,
+        target,
+    )?;
+
+    if target == ChapterTranslationImportTarget::Both
+        && format == TranslationFormat::LabelPlus
+    {
+        return Err(expected_error! {
+            ExpectedVariant::Args,
+            message: trl("error-chapter-import-both-label-plus");
+            "LabelPlus import cannot target both text fields",
+        });
+    }
 
     let imported_page_sources = match format {
         //
@@ -258,7 +269,7 @@ where
         }
     };
 
-    let mut stages = import_stages(edit_perm);
+    let mut stages = import_stages(target);
 
     if !stages.contains(&Stage::Translate)
         && imported_page_sources
@@ -274,15 +285,15 @@ where
         stages.insert(0, Stage::Translate);
     }
 
-    accept!((edit_perm, format, mode, imported_page_sources, stages))
+    accept!((format, mode, target, imported_page_sources, stages))
 }
 
 // Carries the actor and strategy through each page import.
 struct ImportSettings<'a> {
     // User responsible for imported Unit edits.
     user_id: &'a str,
-    // Fields the user may import.
-    edit_perm: UnitEditPerm,
+    // Text fields written by this import.
+    target: ChapterTranslationImportTarget,
     // Strategy for existing Unit content.
     mode: ChapterTranslationImportMode,
 }
@@ -344,16 +355,16 @@ where
     ))
 }
 
-// Selects workflow stages that the importing assignment can edit.
-fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
+// Selects workflow stages advanced by the imported text fields.
+fn import_stages(target: ChapterTranslationImportTarget) -> Vec<Stage> {
     //
     let mut stages = Vec::with_capacity(2);
 
-    if edit_perm.can_translate {
+    if target.includes_translation() {
         stages.push(Stage::Translate);
     }
 
-    if edit_perm.can_proofread {
+    if target.includes_proofread() {
         stages.push(Stage::Proofread);
     }
 
@@ -454,7 +465,7 @@ where
         repo,
         context,
         (&page_source_scope.id, &orders, imported_page),
-        (import_settings.user_id, import_settings.edit_perm),
+        (import_settings.user_id, import_settings.target),
     )
     .await?;
 
@@ -524,7 +535,7 @@ async fn apply_imported_units<C, R>(
         &[UnitOrder],
         &PageSourceTranslationImport,
     ),
-    (user_id, edit_perm): (&str, UnitEditPerm),
+    (user_id, target): (&str, ChapterTranslationImportTarget),
 ) -> BaseRest<UnitCountMetrics>
 where
     C: Context,
@@ -534,8 +545,7 @@ where
         return accept!(UnitCountMetrics::default());
     };
 
-    let edits =
-        build_page_source_edits(&imported_page.units, user_id, edit_perm);
+    let edits = build_page_source_edits(&imported_page.units, user_id, target);
 
     let base_ids = orders.iter().map(|order| order.id.as_str());
 
@@ -556,7 +566,7 @@ where
 fn build_page_source_edits(
     imported_units: &[UnitTranslationImport],
     user_id: &str,
-    edit_perm: UnitEditPerm,
+    target: ChapterTranslationImportTarget,
 ) -> Vec<UnitEdit> {
     //
     imported_units
@@ -567,8 +577,7 @@ fn build_page_source_edits(
                 imported_unit,
                 unit_complex::gen_id(),
                 user_id,
-                edit_perm.can_translate,
-                edit_perm.can_proofread,
+                target,
             )
         })
         .collect()
