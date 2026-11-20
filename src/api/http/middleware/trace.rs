@@ -18,12 +18,12 @@ use tower_http::trace::{
 use tracing::Span;
 
 /// Builds the request-ID propagation layer.
-pub fn propagate_req_id() -> PropagateRequestIdLayer {
+pub const fn propagate_req_id() -> PropagateRequestIdLayer {
     PropagateRequestIdLayer::x_request_id()
 }
 
 /// Builds the request-ID generation layer.
-pub fn set_req_id() -> SetRequestIdLayer<MakeRequestUuid> {
+pub const fn set_req_id() -> SetRequestIdLayer<MakeRequestUuid> {
     SetRequestIdLayer::x_request_id(MakeRequestUuid)
 }
 

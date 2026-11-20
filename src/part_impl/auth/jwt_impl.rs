@@ -58,8 +58,28 @@ impl JwtAuth {
         };
 
         let (encoding_key, decoding_key) = (
-            EncodingKey::from_secret(secret.as_bytes()),
-            DecodingKey::from_secret(secret.as_bytes()),
+            EncodingKey::from_secret(secret.as_bytes()).map_err(|error| {
+                //
+                unrecoverable_error! {
+                    message: format!(
+                        "[JwtAuth::new] JWT encoding key rejected: {}",
+                        error,
+                    );
+                    sdk_error = ?error,
+                    "JWT SDK error",
+                }
+            })?,
+            DecodingKey::from_secret(secret.as_bytes()).map_err(|error| {
+                //
+                unrecoverable_error! {
+                    message: format!(
+                        "[JwtAuth::new] JWT decoding key rejected: {}",
+                        error,
+                    );
+                    sdk_error = ?error,
+                    "JWT SDK error",
+                }
+            })?,
         );
 
         accept!(Self {

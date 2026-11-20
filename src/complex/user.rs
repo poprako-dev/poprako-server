@@ -1,9 +1,7 @@
 //! Complex domain logic for [User] aggregates — password hashing, ID generation, and avatar storage key construction.
 use argon2::Argon2;
-use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::{
-    PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
-};
+use argon2::password_hash::phc::PasswordHash;
+use argon2::password_hash::{PasswordHasher as _, PasswordVerifier as _};
 
 use crate::result::BaseRest;
 use crate::util::next_business_id;
@@ -79,10 +77,8 @@ pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.
 fn hash_password_sync(password: &str) -> BaseRest<String> {
     //
-    let salt = SaltString::generate(OsRng);
-
     Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
+        .hash_password(password.as_bytes())
         .map(|h| h.to_string())
         .map_err(|error| {
             //
