@@ -7,6 +7,8 @@ use crate::complex::util::{
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::value::chapter_port::ChapterTranslationImportTarget;
+use crate::value::role::RoleField;
 
 /// Concrete evidence that grants chapter export access.
 pub enum ChapterExportAccess<'a> {
@@ -61,14 +63,15 @@ pub fn ensure_user_can_export_translation(
     }
 }
 
-/// Verify the caller may import chapter translations.
+/// Verify the caller may import the selected chapter translation target.
 pub fn ensure_user_can_import_translation(
     assignment_info: &AssignmentInfo,
+    target: ChapterTranslationImportTarget,
 ) -> BaseRest<()> {
     //
     match check_user_is_chapter_translator_or_proofreader(assignment_info) {
         //
-        Ok(()) => accept!(()),
+        Ok(()) => {}
 
         Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
@@ -77,13 +80,40 @@ pub fn ensure_user_can_import_translation(
             //
             let error_message = trl("error-chapter-port-import-perm-required");
 
-            // The permission helper already recorded this failure.
-            Err(BaseError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 message: error_message,
-            })
+            });
         }
 
-        Err(e) => Err(e),
+        Err(e) => return Err(e),
     }
+
+    let allowed = match target {
+        //
+        ChapterTranslationImportTarget::Translation => {
+            assignment_info.roles.has_any_role(&[RoleField::TRANSLATOR])
+        }
+
+        ChapterTranslationImportTarget::Proofread => assignment_info
+            .roles
+            .has_any_role(&[RoleField::PROOFREADER]),
+
+        ChapterTranslationImportTarget::Both => assignment_info
+            .roles
+            .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER]),
+    };
+
+    if allowed {
+        return accept!(());
+    }
+
+    Err(expected_error! {
+        ExpectedVariant::Perm,
+        message: trl("error-chapter-port-import-target-perm-required");
+        target = ?target,
+        chapter_id = %assignment_info.chapter_id,
+        user_id = %assignment_info.user_id,
+        "chapter import target permission required",
+    })
 }

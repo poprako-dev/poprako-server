@@ -2,7 +2,8 @@
 //! Data transfer objects for chapter import/export port use cases.
 use crate::value::artwork::ArtworkHash;
 use crate::value::chapter_port::{
-    ChapterTranslationImportMode, TranslationFormat,
+    ChapterTranslationImportMode, ChapterTranslationImportTarget,
+    TranslationFormat,
 };
 
 /// Translation format used by chapter translation HTTP inputs.
@@ -77,6 +78,55 @@ impl From<ChapterTranslationImportMode> for ChapterTranslationImportModeInstr {
     }
 }
 
+/// Text fields selected by a chapter translation import request.
+#[derive(Debug, Clone, Copy)]
+pub enum ChapterTranslationImportTargetInstr {
+    /// Write translated text only.
+    Translation,
+
+    /// Write proofread text only.
+    Proofread,
+
+    /// Write both translation and proofread text.
+    Both,
+}
+
+impl From<ChapterTranslationImportTargetInstr>
+    for ChapterTranslationImportTarget
+{
+    // Converts the transport import target into the domain value.
+    fn from(target: ChapterTranslationImportTargetInstr) -> Self {
+        //
+        match target {
+            //
+            ChapterTranslationImportTargetInstr::Translation => {
+                Self::Translation
+            }
+
+            ChapterTranslationImportTargetInstr::Proofread => Self::Proofread,
+
+            ChapterTranslationImportTargetInstr::Both => Self::Both,
+        }
+    }
+}
+
+impl From<ChapterTranslationImportTarget>
+    for ChapterTranslationImportTargetInstr
+{
+    // Converts the domain import target into the transport value.
+    fn from(target: ChapterTranslationImportTarget) -> Self {
+        //
+        match target {
+            //
+            ChapterTranslationImportTarget::Translation => Self::Translation,
+
+            ChapterTranslationImportTarget::Proofread => Self::Proofread,
+
+            ChapterTranslationImportTarget::Both => Self::Both,
+        }
+    }
+}
+
 /// Request body for importing chapter translations.
 pub struct ImportChapterTranslationInstr {
     /// The translation format (e.g., JSON, SRT).
@@ -84,6 +134,9 @@ pub struct ImportChapterTranslationInstr {
 
     /// source page-content strategy used while applying the imported source.
     pub mode: ChapterTranslationImportModeInstr,
+
+    /// Text fields written by this import.
+    pub target: ChapterTranslationImportTargetInstr,
 
     /// Raw translation content string.
     pub content: String,

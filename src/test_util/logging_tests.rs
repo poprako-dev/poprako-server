@@ -18,7 +18,7 @@ use tracing_subscriber::layer::{Context, SubscriberExt as _};
 
 use crate::data::instr::chapter_port::{
     ChapterTranslationFormatInstr, ChapterTranslationImportModeInstr,
-    ImportChapterTranslationInstr,
+    ChapterTranslationImportTargetInstr, ImportChapterTranslationInstr,
 };
 use crate::data::instr::termbase_port::{ImportTermInstr, ImportTermbaseInstr};
 use crate::data::instr::unit::{
@@ -70,6 +70,16 @@ where
     }
 }
 
+// Build a chapter-import instruction carrying the bulk payload sentinel.
+fn import_translation_instr(content: &str) -> ImportChapterTranslationInstr {
+    ImportChapterTranslationInstr {
+        format: ChapterTranslationFormatInstr::LabelPlus,
+        mode: ChapterTranslationImportModeInstr::Keep,
+        target: ChapterTranslationImportTargetInstr::Proofread,
+        content: content.into(),
+    }
+}
+
 // Bulk payloads stay out of spans while ordinary search fields remain visible.
 #[tokio::test]
 async fn instruction_spans_exclude_bulk_payloads() {
@@ -88,11 +98,7 @@ async fn instruction_spans_exclude_bulk_payloads() {
 
     async {
         //
-        let instr = ImportChapterTranslationInstr {
-            format: ChapterTranslationFormatInstr::LabelPlus,
-            mode: ChapterTranslationImportModeInstr::Keep,
-            content: content.into(),
-        };
+        let instr = import_translation_instr(content);
 
         assert!(
             chapter_port_import_translation_usecase::import_translation(

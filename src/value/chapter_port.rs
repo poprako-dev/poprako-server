@@ -17,6 +17,31 @@ pub enum ChapterTranslationImportMode {
     Overwrite,
 }
 
+/// Text fields written by one chapter translation import.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChapterTranslationImportTarget {
+    /// Write translated text only.
+    Translation,
+
+    /// Write proofread text only.
+    Proofread,
+
+    /// Write both translation and proofread text.
+    Both,
+}
+
+impl ChapterTranslationImportTarget {
+    /// Returns whether translated text is imported.
+    pub const fn includes_translation(self) -> bool {
+        matches!(self, Self::Translation | Self::Both)
+    }
+
+    /// Returns whether proofread text is imported.
+    pub const fn includes_proofread(self) -> bool {
+        matches!(self, Self::Proofread | Self::Both)
+    }
+}
+
 /// Translation format used by a chapter port.
 ///
 /// Determines the tooling and schema for the chapter's translation files.
