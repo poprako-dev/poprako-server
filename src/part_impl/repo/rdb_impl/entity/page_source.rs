@@ -8,7 +8,6 @@
 //! Diesel's generated `AsChangeset` implementation reports
 //! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
 //! Flattening it would change the unchanged, clear, and set update semantics.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
@@ -16,9 +15,7 @@ use crate::model::read::proj::page_source::{
     PageSourceInfo, PageSourceRawIdentInfo, PageSourceUnitScope,
 };
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page_source::{
-    PageSourceEntry, PageSourceManifestEntry,
-};
+use crate::model::write::page_source::PageSourceManifestEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
@@ -26,6 +23,18 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_page_source, t_page_source_raw_ident,
 };
 use crate::result::BaseError;
+
+/// The data needed to insert one page row.
+#[cfg_attr(test, derive(Clone))]
+pub struct PageSourceInsert {
+    /// The unique identifier for the new page record.
+    pub id: String,
+
+    /// Foreign key of the parent chapter to insert this page into.
+    pub chapter_id: String,
+    /// Zero-based ordinal position for this page within the chapter.
+    pub index: usize,
+}
 
 /// Raw database record for the `t_page_source` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
@@ -126,11 +135,11 @@ pub struct PageSourceItem<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a PageSourceEntry> for PageSourceItem<'a> {
+impl<'a> TryFrom<&'a PageSourceInsert> for PageSourceItem<'a> {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    fn try_from(entry: &'a PageSourceEntry) -> Result<Self, Self::Error> {
+    fn try_from(entry: &'a PageSourceInsert) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 

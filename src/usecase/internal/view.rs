@@ -1,5 +1,4 @@
 //! Complete request-scoped response hydration and presentation.
-
 // Object discovery, URL loading, and nested rendering implementation.
 mod snapshot;
 

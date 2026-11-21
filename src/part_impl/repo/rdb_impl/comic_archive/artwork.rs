@@ -1,5 +1,4 @@
 //! Locked independent composite pages for immutable archives.
-
 use std::collections::HashMap;
 
 use diesel::prelude::{

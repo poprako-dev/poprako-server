@@ -10,7 +10,7 @@ use axum::body::Body;
 use axum::http::Request;
 use axum::routing::get;
 
-use crate::test_util::http_logging::capture_request;
+use crate::test_util::http_logging::capture_req;
 
 // is_loopback(is_loopback)(positive): IPv4 and IPv6 loopback callers are accepted.
 // is_loopback(is_loopback)(negative): non-loopback callers are rejected.
@@ -38,13 +38,13 @@ async fn private_health_endpoints_warn_on_non_loopback_rejections() {
             .route("/health", get(check_health))
             .route("/metrics", get(detailed_metrics));
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri(uri)
             .extension(ConnectInfo(SocketAddr::from(([203, 0, 113, 1], 8080))))
             .body(Body::empty())
             .unwrap();
 
-        let (status, body, logs) = capture_request(router, request).await;
+        let (status, body, logs) = capture_req(router, req).await;
 
         assert_eq!(status, StatusCode::NOT_FOUND);
 
@@ -60,13 +60,13 @@ async fn private_health_endpoints_warn_on_non_loopback_rejections() {
 async fn missing_metrics_recorder_warns_once_at_source() {
     let router = Router::new().route("/metrics", get(detailed_metrics));
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/metrics")
         .extension(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))))
         .body(Body::empty())
         .unwrap();
 
-    let (status, body, logs) = capture_request(router, request).await;
+    let (status, body, logs) = capture_req(router, req).await;
 
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
 

@@ -57,6 +57,9 @@ class LintPolicyTest(unittest.TestCase):
 
         for tool, rules in policy.items():
             for name, setting in rules.items():
+                if tool == "clippy" and name in POLICY.REQUIRED_ALLOWED_CLIPPY:
+                    continue
+
                 with self.subTest(tool=tool, rule=name):
                     before = f'{name} = "{setting}"'
                     after = f'{name} = "allow"'
@@ -68,6 +71,32 @@ class LintPolicyTest(unittest.TestCase):
                     self.assertIn(before, original)
                     self.root_manifest.write_text(original.replace(before, after, 1))
                     self.assertTrue(POLICY.inspect_policy(self.metadata))
+
+        self.root_manifest.write_text(original)
+
+    def test_required_allowed_rule_rejects_enablement(self):
+        original = self.root_manifest.read_text()
+
+        for name in POLICY.REQUIRED_ALLOWED_CLIPPY:
+            with self.subTest(rule=name):
+                self.root_manifest.write_text(
+                    original.replace(f'{name} = "allow"', f'{name} = "deny"', 1)
+                )
+                errors = POLICY.inspect_policy(self.metadata)
+                self.assertTrue(any(name in error for error in errors))
+
+        self.root_manifest.write_text(original)
+
+    def test_required_allowed_rule_must_be_present(self):
+        original = self.root_manifest.read_text()
+
+        for name in POLICY.REQUIRED_ALLOWED_CLIPPY:
+            with self.subTest(rule=name):
+                self.root_manifest.write_text(
+                    original.replace(f'{name} = "allow"\n', "", 1)
+                )
+                errors = POLICY.inspect_policy(self.metadata)
+                self.assertTrue(any(name in error for error in errors))
 
         self.root_manifest.write_text(original)
 

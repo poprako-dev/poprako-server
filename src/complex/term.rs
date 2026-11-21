@@ -1,5 +1,4 @@
 //! Terminology-entry construction and validation rules.
-
 #[cfg(test)]
 mod tests;
 

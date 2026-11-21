@@ -4,7 +4,6 @@
 //! falls back to the `Authorization: Bearer <token>` header. On success the
 //! decoded [`UserToken`] is inserted into request extensions for handlers.
 //! This middleware performs no database side-effects.
-
 #[cfg(test)]
 mod tests;
 
@@ -25,11 +24,11 @@ use crate::part::auth::TokenAuth as _;
 /// side-effects — it only concerns itself with authentication.
 pub async fn authorize(
     State(harn): State<AppHarn>,
-    mut request: Request,
+    mut req: Request,
     next: Next,
 ) -> Response {
     //
-    let raw_token = extract_token(&request);
+    let raw_token = extract_token(&req);
 
     let user_token = match harn.auth().verify_token(raw_token) {
         //
@@ -38,18 +37,18 @@ pub async fn authorize(
         Err(error) => return HttpError::from(error).into_response(),
     };
 
-    request.extensions_mut().insert(user_token);
+    req.extensions_mut().insert(user_token);
 
-    next.run(request).await
+    next.run(req).await
 }
 
 /// Borrows the raw token from the request headers, or returns an empty slice.
 ///
 /// Prefers the `authorization-token` cookie; falls back to the `Authorization`
 /// header, stripping the `Bearer ` prefix when present.
-pub fn extract_token(request: &Request) -> &str {
+pub fn extract_token(req: &Request) -> &str {
     //
-    if let Some(cookie) = request.headers().get(header::COOKIE)
+    if let Some(cookie) = req.headers().get(header::COOKIE)
         && let Ok(cookie_str) = cookie.to_str()
     {
         for part in cookie_str.split(';') {
@@ -64,7 +63,7 @@ pub fn extract_token(request: &Request) -> &str {
         }
     }
 
-    if let Some(auth) = request.headers().get(header::AUTHORIZATION)
+    if let Some(auth) = req.headers().get(header::AUTHORIZATION)
         && let Ok(auth_str) = auth.to_str()
     {
         return auth_str

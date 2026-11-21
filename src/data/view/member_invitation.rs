@@ -1,10 +1,4 @@
 //! View DTOs for the member-invitation domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::value::role::RoleMask;
@@ -15,8 +9,6 @@ use crate::value::role::RoleMask;
 /// model carries no timestamps).
 ///
 /// [`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoView {
     /// Unique identifier.
     pub id: String,
@@ -27,7 +19,6 @@ pub struct MemberInvitationInfoView {
     /// Identifier of the user who created the invitation.
     pub invitor_id: String,
     /// Resolved invitor user information, present only when requested via incl.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoView>,
 
     /// QQ ID of the person being invited.

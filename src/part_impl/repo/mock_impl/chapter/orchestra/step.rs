@@ -28,7 +28,6 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -39,8 +38,6 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             return accept!(false);
         }
 
-        // Internal implementation detail.
-        // Internal implementation detail.
         let Some(chapter_index) = context
             .state
             .chapters
@@ -145,7 +142,6 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -163,7 +159,6 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -203,7 +198,6 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -221,7 +215,6 @@ impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         _: &mut MockContext,
@@ -239,7 +232,6 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -262,7 +254,6 @@ impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -280,7 +271,6 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -291,8 +281,6 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
             return Err(expected("error-chapter-not-found"));
         }
 
-        // Internal implementation detail.
-        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -322,7 +310,6 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -333,8 +320,6 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
             return Err(expected("error-chapter-not-found"));
         }
 
-        // Internal implementation detail.
-        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -358,7 +343,6 @@ impl<'a> Step<SetChapterPageSourceCountMetrics<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -369,8 +353,6 @@ impl<'a> Step<SetChapterPageSourceCountMetrics<'a>, MockContext> for Mock {
             return Err(expected("error-chapter-not-found"));
         }
 
-        // Internal implementation detail.
-        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -400,7 +382,6 @@ impl<'a> Step<AdjustChapterUnitCountDelta<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -411,8 +392,6 @@ impl<'a> Step<AdjustChapterUnitCountDelta<'a>, MockContext> for Mock {
             return Err(expected("error-chapter-not-found"));
         }
 
-        // Internal implementation detail.
-        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -449,15 +428,12 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UnpinOtherChapters<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         for chapter_info in &mut context.state.chapters {
             //
             if context.state.deleted_chapter_ids.contains(&chapter_info.id) {

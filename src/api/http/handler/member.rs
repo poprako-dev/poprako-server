@@ -1,5 +1,4 @@
 //! Member handlers: create, join, list, role update, and deletion.
-
 #[cfg(test)]
 // Member handler tests validate request parameter shape and response mapping.
 mod tests;
@@ -7,65 +6,36 @@ mod tests;
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::member::{
+    CreateMemberBody, CreateMemberPayload, JoinTeamBody, ListMemberInfosQuery,
+    MemberInfoObj, MemberMeListQuery, UpdateMemberRolesBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::member::{
-    CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
-    UpdateMemberRolesInstr,
-};
-use crate::data::val::member::CreateMemberVal;
-use crate::data::view::member::MemberInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::member as member_usecase;
-use crate::value::member::MemberInclOpt;
-use crate::value::pagination::PubListLimit;
-
-/// Query for the current-user memberships list endpoint (`/members/me`).
-///
-/// `incl` embeds related rows into each item.
-///
-/// Example: `?incl=user&incl=team&offset=0&limit=20`.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-#[cfg_attr(test, derive(Debug))]
-pub struct MemberMeListQuery {
-    /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInclOpt>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/members` — create a member under a team.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/members",
     tag = "members",
-    request_body = CreateMemberInstr,
+    request_body = CreateMemberBody,
     responses(
         (status = 201, description = "Member \
-        created", body = HttpBody<CreateMemberVal>),
+        created", body = HttpBody<CreateMemberPayload>),
         (status = 403, description = "No perm to create members in this team"),
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
@@ -75,16 +45,16 @@ pub struct MemberMeListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateMemberInstr>,
-) -> HttpResult<CreateMemberVal> {
+    Json(instr): Json<CreateMemberBody>,
+) -> HttpResult<CreateMemberPayload> {
     //
     Ok(member_usecase::create::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
@@ -98,10 +68,10 @@ pub async fn create(
     related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&\
     role=1&incl=user`, \
     `/api/v1/members?owner_id=u_1&incl=team`.",
-    params(ListMemberInfosInstr),
+    params(ListMemberInfosQuery),
     responses(
         (status = 200, description = "Members \
-        listed", body = HttpBody<Vec<MemberInfoView>>),
+        listed", body = HttpBody<Vec<MemberInfoObj>>),
         (status = 422, description = "Exactly one of owner_id or team_id is \
         required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No perm to list members in this team"),
@@ -111,18 +81,21 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ListMemberInfosInstr>,
-) -> HttpResult<Vec<MemberInfoView>> {
+    Query(instr): Query<ListMemberInfosQuery>,
+) -> HttpResult<Vec<MemberInfoObj>> {
     //
-    Ok(
+    let member_infos =
         member_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
-    )
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<MemberInfoObj>>();
+
+    Ok(member_infos.accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
@@ -133,7 +106,7 @@ pub async fn list_infos(
     params(MemberMeListQuery),
     responses(
         (status = 200, description = "Current \
-        user memberships", body = HttpBody<Vec<MemberInfoView>>),
+        user memberships", body = HttpBody<Vec<MemberInfoObj>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -142,27 +115,30 @@ pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberMeListQuery>,
-) -> HttpResult<Vec<MemberInfoView>> {
+) -> HttpResult<Vec<MemberInfoObj>> {
     //
-    let instr = ListMemberInfosInstr {
+    let instr = ListMemberInfosQuery {
         owner_id: Some(user_token.user_id.clone()),
         team_id: None,
         fuzzy_nickname: None,
         role: None,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };
 
-    Ok(
+    let member_infos =
         member_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
-    )
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<MemberInfoObj>>();
+
+    Ok(member_infos.accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
@@ -171,7 +147,7 @@ pub async fn list_my_infos(
     path = "/api/v1/members/{member_id}/roles",
     tag = "members",
     params(("member_id" = String, Path, description = "Member ID")),
-    request_body = UpdateMemberRolesInstr,
+    request_body = UpdateMemberRolesBody,
     responses(
         (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -187,7 +163,7 @@ pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateMemberRolesInstr>,
+    Json(instr): Json<UpdateMemberRolesBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&member_id, &instr.id)?;
@@ -195,7 +171,7 @@ pub async fn update_roles(
     member_usecase::update_roles::<_, RdbContext<Serial>, RdbRepo>(
         (harn.nucl().serial(), harn.repo()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 
@@ -239,10 +215,10 @@ pub async fn delete(
     post,
     path = "/api/v1/members/join",
     tag = "members",
-    request_body = JoinTeamInstr,
+    request_body = JoinTeamBody,
     responses(
         (status = 201, description = "Joined \
-        team", body = HttpBody<MemberInfoView>),
+        team", body = HttpBody<MemberInfoObj>),
         (status = 422, description = "Invitation does not target this user \
         or already a member"),
         (status = 404, description = "Invitation code not found"),
@@ -252,16 +228,16 @@ pub async fn delete(
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<JoinTeamInstr>,
-) -> HttpResult<MemberInfoView> {
+    Json(instr): Json<JoinTeamBody>,
+) -> HttpResult<MemberInfoObj> {
     //
     Ok(
         member_usecase::join_team::<_, RdbContext<ReptRead>, RdbRepo, _>(
             (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::CREATED),
+        .accept_into(StatusCode::CREATED),
     )
 }

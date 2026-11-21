@@ -1,5 +1,4 @@
 //! Repository trait for the page domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::page_source::{

@@ -1,5 +1,4 @@
 //! Assignment handlers: list, join, role update, and deletion.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
@@ -10,15 +9,14 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::assignment::{
+    AssignmentInfoObj, JoinChapterAssignmentBody, ListAssignmentInfosQuery,
+    UpdateAssignmentRolesBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::assignment::{
-    JoinChapterAssignmentInstr, ListAssignmentInfosInstr,
-    UpdateAssignmentRolesInstr,
-};
-use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
@@ -38,10 +36,10 @@ use crate::usecase::assignment::update_roles as assignment_update_roles_usecase;
     `/api/v1/assignments?chapter_id=c_1&role=1&\
     incl=chapter.comic.workset.team`, \
     `/api/v1/assignments?owner_id=u_1&incl=user`.",
-    params(ListAssignmentInfosInstr),
+    params(ListAssignmentInfosQuery),
     responses(
         (status = 200, description = "Assignments listed",
-            body = HttpBody<Vec<AssignmentInfoView>>),
+            body = HttpBody<Vec<AssignmentInfoObj>>),
         (status = 422, description = "Exactly one of chapter_id or owner_id \
         is required"),
         (status = 403, description = "No perm to list these assignments"),
@@ -51,17 +49,17 @@ use crate::usecase::assignment::update_roles as assignment_update_roles_usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(instr): Query<ListAssignmentInfosInstr>,
-) -> HttpResult<Vec<AssignmentInfoView>> {
+    Query(instr): Query<ListAssignmentInfosQuery>,
+) -> HttpResult<Vec<AssignmentInfoObj>> {
     //
     Ok(
         assignment_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -77,7 +75,7 @@ pub async fn list_infos(
     description = "Owning-team administrators may assign worker roles without \
     a chapter assignment. Other callers may only reduce their own roles. ADMIN \
     is not assignable.",
-    request_body = UpdateAssignmentRolesInstr,
+    request_body = UpdateAssignmentRolesBody,
     responses(
         (status = 204, description = "Assignment roles updated"),
         (status = 422, description = "Path ids do not match body ids"),
@@ -90,7 +88,7 @@ pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path((chapter_id, user_id)): Path<(String, String)>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateAssignmentRolesInstr>,
+    Json(instr): Json<UpdateAssignmentRolesBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
@@ -101,7 +99,11 @@ pub async fn update_roles(
         _,
         RdbContext<ReptRead>,
         RdbRepo,
-    >((harn.nucl().rept_read(), harn.repo()), user_token, instr)
+    >(
+        (harn.nucl().rept_read(), harn.repo()),
+        user_token,
+        instr.into(),
+    )
     .await?;
 
     Ok(no_content())
@@ -141,10 +143,10 @@ pub async fn delete(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",
-    request_body = JoinChapterAssignmentInstr,
+    request_body = JoinChapterAssignmentBody,
     responses(
         (status = 201, description = "Joined \
-        assignment", body = HttpBody<AssignmentInfoView>),
+        assignment", body = HttpBody<AssignmentInfoObj>),
         (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -153,16 +155,16 @@ pub async fn delete(
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<JoinChapterAssignmentInstr>,
-) -> HttpResult<AssignmentInfoView> {
+    Json(instr): Json<JoinChapterAssignmentBody>,
+) -> HttpResult<AssignmentInfoObj> {
     //
     Ok(
         assignment_usecase::join::<_, RdbContext<ReptRead>, RdbRepo>(
             (harn.nucl().rept_read(), harn.repo()),
             user_token,
-            instr,
+            instr.into(),
         )
         .await?
-        .accept(StatusCode::CREATED),
+        .accept_into(StatusCode::CREATED),
     )
 }

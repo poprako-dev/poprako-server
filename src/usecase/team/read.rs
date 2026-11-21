@@ -1,5 +1,4 @@
 //! Non-transactional team read use cases.
-
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 

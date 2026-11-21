@@ -1,5 +1,4 @@
 //! Bounded annotation save tokens with fixed lock stripes.
-
 use std::array::from_fn;
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher as _;

@@ -1,17 +1,9 @@
 //! View DTOs for the term domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::term::TermInfo;
 
 /// Presentation-ready terminology-entry information.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermInfoView {
     /// Unique identifier of the terminology entry.
     pub id: String,
@@ -23,7 +15,7 @@ pub struct TermInfoView {
     pub source: String,
     /// Target-language translations.
     pub targets: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+
     /// Optional annotation; absent when the entry has no comment.
     pub comment: Option<String>,
 

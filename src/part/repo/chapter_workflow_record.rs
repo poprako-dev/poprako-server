@@ -1,5 +1,4 @@
 //! Repository capability for immutable chapter workflow records.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::chapter_workflow_record::{

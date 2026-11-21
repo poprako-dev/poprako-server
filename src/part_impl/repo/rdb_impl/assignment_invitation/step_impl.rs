@@ -1,5 +1,4 @@
 //! RDB-backed assignment invitation repository step implementations.
-
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,

@@ -1,5 +1,4 @@
 //! HTTP server configuration.
-
 use std::num::NonZeroU32;
 use std::time::Duration;
 

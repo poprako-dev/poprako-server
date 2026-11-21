@@ -1,29 +1,11 @@
 //! Shared handler helpers: path/body id consistency, token target checks, and
 //! reusable query extractors.
 
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
-
 use poprako_util::i18n::trl;
 
 use crate::api::http::result::HttpError;
 use crate::model::shared::user::UserToken;
 use crate::result::ExpectedVariant;
-use crate::value::pagination::PubListLimit;
-
-/// Pagination query parameters for nested list endpoints where the parent id
-/// is carried by the path.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct Pagination {
-    /// Zero-based offset for paginated results.
-    pub offset: u32,
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// Ensures a path id matches the body id, returning `422` on mismatch.
 pub fn ensure_path_matches_body_id(

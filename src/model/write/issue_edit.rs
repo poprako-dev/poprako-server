@@ -1,5 +1,4 @@
 //! Finished page replacement and chapter category rename commands.
-
 use crate::model::write::issue::IssueEntry;
 
 /// Complete final contents of a single page.

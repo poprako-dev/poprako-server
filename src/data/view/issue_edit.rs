@@ -1,17 +1,9 @@
 //! Layer-independent annotation presentation for the editor.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::issue::IssueRectView;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::issue_edit::IssueEditVariantCount;
 
 /// One editable page annotation.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueEditView {
     /// Stable identity.
     pub id: String,
@@ -44,8 +36,6 @@ impl From<IssueInfo> for IssueEditView {
 }
 
 /// Usage of a category within the current chapter.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueEditVariantCountView {
     /// Category name.
     pub variant: String,

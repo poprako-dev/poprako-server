@@ -1,5 +1,4 @@
 //! Delivery mapping from persisted Prom tasks to domain use cases.
-
 use poprako_orchestra::{Context, Nucl};
 
 use poprako_obj_dept::ObjDeptView;

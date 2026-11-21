@@ -1,5 +1,4 @@
 //! Image identity value types shared by page persistence and uploads.
-
 #[cfg(test)]
 mod tests;
 
@@ -102,13 +101,13 @@ impl ImageHash {
         &self.0
     }
 
-    /// Returns canonical padded RFC 4648 Base64.
-    pub fn to_base64(&self) -> String {
+    // Returns canonical padded RFC 4648 Base64.
+    fn to_base64(&self) -> String {
         STANDARD.encode(self.0)
     }
 
-    /// Parses a canonical padded RFC 4648 Base64 SHA-256 hash.
-    pub fn parse_rfc4648(encoded: &str) -> Option<Self> {
+    // Parses a canonical padded RFC 4648 Base64 SHA-256 hash.
+    fn parse_rfc4648(encoded: &str) -> Option<Self> {
         //
         if encoded.len() != 44 {
             return None;

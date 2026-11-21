@@ -1,5 +1,4 @@
 //! Mock member repository operations for in-memory testing.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -19,7 +18,6 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::value::member::MemberInclOpt;
 
-// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     //
     state
@@ -29,7 +27,6 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-// Internal implementation of `find_team`.
 fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
     //
     state
@@ -54,15 +51,12 @@ fn get_member_by_id(state: &MockState, id: &str) -> BaseRest<MemberInfo> {
         .ok_or_else(|| expected("error-member-not-found"))
 }
 
-// Internal implementation of `apply_user_incl`.
 fn apply_user_incl(
     state: &MockState,
     member_info: &mut MemberInfo,
     include_user: bool,
 ) {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     member_info.user = None;
 
     if include_user {
@@ -70,15 +64,12 @@ fn apply_user_incl(
     }
 }
 
-// Internal implementation of `apply_team_incl`.
 fn apply_team_incl(
     state: &MockState,
     member_info: &mut MemberInfo,
     include_team: bool,
 ) {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     member_info.team = None;
 
     if include_team {
@@ -92,8 +83,6 @@ fn create_member(
     entry: &MemberEntry,
 ) -> BaseRest<MemberInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state.deleted_team_ids.contains(&entry.team_id) {
         return Err(expected("error-team-not-found"));
     }
@@ -124,7 +113,6 @@ fn create_member(
     accept!(member)
 }
 
-// Internal implementation of `find_member_by_user_id_and_team_id`.
 fn find_member_by_user_id_and_team_id(
     state: &MockState,
     user_id: &str,
@@ -148,14 +136,11 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
     ) -> BaseRest<Option<MemberInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(find_member_by_user_id_and_team_id(
@@ -166,15 +151,12 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
     }
 }
 
-// Internal implementation of `get_member_info`.
 fn get_member_info(
     state: &MockState,
     id: &str,
     incls: &[MemberInclOpt],
 ) -> BaseRest<MemberInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut member_info = get_member_by_id(state, id)?;
 
     let include_user = incls.contains(&MemberInclOpt::User);
@@ -188,27 +170,22 @@ fn get_member_info(
     accept!(member_info)
 }
 
-// Internal implementation of `list_member_infos`.
 fn list_member_infos(
     state: &MockState,
     spec: &MemberListSpec,
 ) -> Vec<MemberInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let (offset, limit, incls, mut member_infos) = match spec {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         MemberListSpec::User {
             owner_id,
-            incl_opt,
+            incl,
             offset,
             limit,
         } => (
             *offset,
             limit.get(),
-            incl_opt,
+            incl,
             state
                 .members
                 .iter()
@@ -224,13 +201,13 @@ fn list_member_infos(
             team_id,
             fuzzy_nickname: _,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         } => (
             *offset,
             limit.get(),
-            incl_opt,
+            incl,
             state
                 .members
                 .iter()
@@ -261,8 +238,6 @@ fn list_member_infos(
 
     for member_info in &mut member_infos {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         apply_user_incl(state, member_info, include_user);
 
         apply_team_incl(state, member_info, include_team);
@@ -284,8 +259,6 @@ fn list_member_infos(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, member_infos.len());
 
         (*member_infos.get(offset..end).unwrap()).to_vec()
@@ -298,14 +271,11 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListMemberInfos<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         let ListMemberInfos::Spec { spec } = oper;
@@ -320,11 +290,8 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &GetMemberInfo<'a, 'b>) -> BaseRest<MemberInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_member_info(&state, oper.id, oper.incls)
@@ -339,7 +306,6 @@ impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -357,7 +323,6 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -366,12 +331,8 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
         //
         match oper {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             UpdateMember::UserNickname { repl } => {
                 //
-                // Internal implementation detail.
-                // Internal implementation detail.
                 context
                     .state
                     .members
@@ -388,8 +349,6 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 
             UpdateMember::Role { update } => {
                 //
-                // Internal implementation detail.
-                // Internal implementation detail.
                 let member_info = context
                     .state
                     .members
@@ -413,7 +372,6 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -434,7 +392,6 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -457,7 +414,6 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -475,7 +431,6 @@ impl<'a> Step<LockTeamMemberInfos<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -502,15 +457,12 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteMember<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let position = context
             .state
             .members

@@ -1,5 +1,4 @@
 //! Domain models for chapter assignment invitations.
-
 use time::OffsetDateTime;
 
 use crate::value::role::RoleMask;

@@ -1,5 +1,4 @@
 //! Mock team repository operations.
-
 // In-memory team-ownership projections.
 mod resolve;
 
@@ -20,11 +19,8 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest};
 
-// Internal implementation of `create_team`.
 fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state.teams.iter().any(|team_info| team_info.id == entry.id) {
         return Err(expected("error-already-exists"));
     }
@@ -44,7 +40,6 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     accept!(team_info)
 }
 
-// Internal implementation of `get_team_info`.
 fn get_team_info(state: &MockState, id: &str) -> BaseRest<TeamInfo> {
     //
     state
@@ -57,14 +52,11 @@ fn get_team_info(state: &MockState, id: &str) -> BaseRest<TeamInfo> {
         .ok_or_else(|| expected("error-team-not-found"))
 }
 
-// Internal implementation of `list_team_infos`.
 fn list_team_infos(
     state: &MockState,
     oper: &ListTeamInfos<'_>,
 ) -> Vec<TeamInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut team_infos = state
         .teams
         .iter()
@@ -93,19 +85,14 @@ fn list_team_infos(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, team_infos.len());
 
         (*team_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
-// Internal implementation of `update_team`.
 fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state.deleted_team_ids.contains(&oper.repl.id) {
         return Err(expected("error-team-not-found"));
     }
@@ -131,11 +118,8 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &CreateTeam<'a>) -> BaseRest<TeamInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         create_team(&mut state, oper.entry)
@@ -148,11 +132,8 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &GetTeamInfo<'a>) -> BaseRest<TeamInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_team_info(&state, oper.id)
@@ -165,11 +146,8 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &ListTeamInfos<'a>) -> BaseRest<Vec<TeamInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_team_infos(&state, oper))
@@ -182,11 +160,8 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(&self, oper: &UpdateTeam<'a>) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         update_team(&mut state, oper)
@@ -201,15 +176,12 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateTeam<'a>,
     ) -> BaseRest<TeamInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         if context.create_team_failure {
             //
             return Err(BaseError::Unrecoverable {
@@ -229,7 +201,6 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -247,7 +218,6 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -265,15 +235,12 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &LockTeam<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         get_team_info(&context.state, oper.id)?;
 
         accept!(())
@@ -288,15 +255,12 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocTeamWorksetIndex<'a>,
     ) -> BaseRest<usize> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         // verify the team exists
         if context.state.deleted_team_ids.contains(oper.id) {
             return Err(expected("error-team-not-found"));

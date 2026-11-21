@@ -1,5 +1,4 @@
 //! Comic-cover optimistic upload availability.
-
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 

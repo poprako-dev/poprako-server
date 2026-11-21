@@ -1,5 +1,4 @@
 //! Diesel entity types for the `t_assignment` table.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
@@ -185,13 +184,13 @@ impl AssignmentPack {
 /// Timestamps for each role on an assignment, used to build the role-timestamp
 /// mapping for `AssignmentPack` or `AssignmentEntryShape`.
 pub struct AssignmentRoleTimestamps {
-    pub f_raw_provider: Option<OffsetDateTime>,
-    pub f_translator: Option<OffsetDateTime>,
-    pub f_proofreader: Option<OffsetDateTime>,
-    pub f_typesetter: Option<OffsetDateTime>,
-    pub f_redrawer: Option<OffsetDateTime>,
-    pub f_reviewer: Option<OffsetDateTime>,
-    pub f_publisher: Option<OffsetDateTime>,
+    f_raw_provider: Option<OffsetDateTime>,
+    f_translator: Option<OffsetDateTime>,
+    f_proofreader: Option<OffsetDateTime>,
+    f_typesetter: Option<OffsetDateTime>,
+    f_redrawer: Option<OffsetDateTime>,
+    f_reviewer: Option<OffsetDateTime>,
+    f_publisher: Option<OffsetDateTime>,
 }
 
 impl AssignmentRoleTimestamps {

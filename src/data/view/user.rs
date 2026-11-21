@@ -1,13 +1,4 @@
 //! View DTOs for the user domain.
-
-#[cfg(test)]
-mod tests;
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::obj_url::ObjUrlView;
@@ -17,8 +8,6 @@ use crate::model::read::proj::user::UserInfo;
 ///
 /// Converts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an
 /// avatar origin and thumbnail URLs already resolved by the use-case layer.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoView {
     /// Unique user identifier.
     pub id: String,
@@ -30,12 +19,8 @@ pub struct UserInfoView {
 
     /// Resolved signed download URL for the avatar image, or [`None`] if
     /// no avatar has been uploaded.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
     pub avatar_url: Option<ObjUrlView>,
     /// Resolved signed download URL for the avatar thumbnail, when available.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger", schema(value_type = Option<String>))]
     pub avatar_thumbnail_url: Option<ObjUrlView>,
 
     /// Whether this user has super-admin privileges.

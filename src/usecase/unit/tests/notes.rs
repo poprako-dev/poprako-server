@@ -3,13 +3,17 @@
 
 use super::*;
 
+use crate::api::http::object::unit::UnitEditBody;
+
 use serde_json::{Value, json};
 
 use crate::value::chapter::stage::{Stage, StagePhase};
 
 // Decode a public edit payload for the annotation lifecycle.
 fn edit(value: Value) -> UnitEditInstr {
-    serde_json::from_value(value).unwrap()
+    let body: UnitEditBody = serde_json::from_value(value).unwrap();
+
+    body.into()
 }
 
 // Save one annotation operation through the public use case.

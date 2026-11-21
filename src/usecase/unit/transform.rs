@@ -1,5 +1,4 @@
 //! Chapter-scoped literal Unit text transformation.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
@@ -54,60 +53,6 @@ pub fn invalid_unit_transform(
         reason,
         "invalid chapter unit transform",
     }
-}
-
-/// Adds one page counter delta to a Chapter-level aggregate.
-pub const fn add_count_delta(
-    total: &mut UnitCountDelta,
-    delta: UnitCountDelta,
-) {
-    //
-    total.total += delta.total;
-
-    total.translated += delta.translated;
-
-    total.proofread += delta.proofread;
-}
-
-/// Builds the current content edits selected for one source page.
-pub fn build_page_source_edits(
-    page_source_id: &str,
-    part: UnitTextPart,
-    unit_transforms: &[UnitTransform],
-    unit_infos: &HashMap<&str, &UnitInfo>,
-    user_id: &str,
-) -> BaseRest<Vec<UnitEdit>> {
-    //
-    let mut edits = Vec::new();
-
-    for unit_transform in unit_transforms {
-        //
-        let Some(unit_info) = unit_infos.get(unit_transform.unit_id.as_str())
-        else {
-            continue;
-        };
-
-        if unit_info.page_source_id != page_source_id
-            || unit_info.hidden_at.is_some()
-        {
-            continue;
-        }
-
-        let edit = unit_complex::build_transform_edit(
-            unit_info,
-            part,
-            unit_transform,
-            user_id,
-        )?;
-
-        let Some(edit) = edit else {
-            continue;
-        };
-
-        edits.push(edit);
-    }
-
-    accept!(edits)
 }
 
 // Groups the Chapter-scoped models used by a Unit transformation.
@@ -372,6 +317,16 @@ struct TransformChanges<'a> {
     applied_edits: &'a [UnitEdit],
 }
 
+// Adds one page counter delta to a Chapter-level aggregate.
+const fn add_count_delta(total: &mut UnitCountDelta, delta: UnitCountDelta) {
+    //
+    total.total += delta.total;
+
+    total.translated += delta.translated;
+
+    total.proofread += delta.proofread;
+}
+
 // Applies Chapter aggregates and workflow effects after Unit edits.
 async fn finish_transform<C, R>(
     repo: &R,
@@ -426,4 +381,45 @@ where
     .await?;
 
     accept!(())
+}
+
+// Builds the current content edits selected for one source page.
+fn build_page_source_edits(
+    page_source_id: &str,
+    part: UnitTextPart,
+    unit_transforms: &[UnitTransform],
+    unit_infos: &HashMap<&str, &UnitInfo>,
+    user_id: &str,
+) -> BaseRest<Vec<UnitEdit>> {
+    //
+    let mut edits = Vec::new();
+
+    for unit_transform in unit_transforms {
+        //
+        let Some(unit_info) = unit_infos.get(unit_transform.unit_id.as_str())
+        else {
+            continue;
+        };
+
+        if unit_info.page_source_id != page_source_id
+            || unit_info.hidden_at.is_some()
+        {
+            continue;
+        }
+
+        let edit = unit_complex::build_transform_edit(
+            unit_info,
+            part,
+            unit_transform,
+            user_id,
+        )?;
+
+        let Some(edit) = edit else {
+            continue;
+        };
+
+        edits.push(edit);
+    }
+
+    accept!(edits)
 }

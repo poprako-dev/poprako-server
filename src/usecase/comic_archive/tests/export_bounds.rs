@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 use super::*;
-use crate::model::read::proj::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comic_archive::ComicArchiveInfo;
 
 const TEAM_ID: &str = "team--00000000001";
 
@@ -20,7 +20,7 @@ fn seed_record(mock: &Mock, id: &str, month: &str, payload: String) {
         .lock()
         .unwrap()
         .comic_archives
-        .push(ComicArchiveRecord {
+        .push(ComicArchiveInfo {
             id: id.into(),
             team_id: TEAM_ID.into(),
             source_comic_id: format!("source-{id}"),
@@ -54,7 +54,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec![month.clone()],
+            month: vec![month.clone()],
         },
     )
     .await
@@ -108,7 +108,7 @@ async fn export_preserves_complete_selected_months_across_chunks() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-03".into(), "2025-01".into()],
+            month: vec!["2025-03".into(), "2025-01".into()],
         },
     )
     .await
@@ -159,7 +159,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -177,7 +177,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -191,7 +191,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         "another-team".into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-01".into()],
+            month: vec!["2025-01".into()],
         },
     )
     .await
@@ -207,7 +207,7 @@ async fn export_failure_releases_admission_and_preserves_permission_errors() {
         token(),
         TEAM_ID.into(),
         ExportComicArchivesInstr {
-            months: vec!["2025-03".into()],
+            month: vec!["2025-03".into()],
         },
     )
     .await

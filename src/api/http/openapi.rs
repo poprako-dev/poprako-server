@@ -3,131 +3,99 @@
 //! Handler-level `#[utoipa::path]` attributes specify full paths (including
 //! the `/api/v1` prefix). Swagger UI and the OpenAPI JSON are mounted in debug
 //! builds only, outside `/api/v1`.
-
 use utoipa::OpenApi;
 
 use crate::api::http::handler;
+use crate::api::http::object::announcement::{
+    AnnouncementInfoObj, CreateAnnouncementPayload, UpdateAnnouncementInfoBody,
+};
+use crate::api::http::object::assignment::{
+    AssignmentInfoObj, JoinChapterAssignmentBody, UpdateAssignmentRolesBody,
+};
+use crate::api::http::object::assignment_invitation::{
+    AssignmentInvitationInfoObj, CreateAssignmentInvitationPayload,
+    JoinAssignmentInvitationBody,
+};
+use crate::api::http::object::auth::{LoginAuthPayload, RegisterAuthPayload};
+use crate::api::http::object::chapter::{
+    ChapterInfoObj, ChapterStageBody, ChapterStageOperBody,
+    CreateChapterPayload, UpdateChapterInfoBody, UpdateChapterStageBody,
+};
+use crate::api::http::object::chapter_port::{
+    ChapterTranslationFormatBody, ChapterTranslationImportModeBody,
+    ChapterTranslationPortObj, ImportChapterTranslationPayload,
+};
+use crate::api::http::object::chapter_workflow_record::{
+    ChapterWorkflowRecordEventObj, ChapterWorkflowRecordInfoObj,
+    ChapterWorkflowRecordOriginObj, ChapterWorkflowRecordStageObj,
+    ChapterWorkflowRecordStagePhaseObj,
+    ChapterWorkflowRecordTranslationFormatObj,
+};
+use crate::api::http::object::comic::{
+    AllocComicCoverPayload, ComicInfoObj, CreateComicPayload,
+    MarkComicCoverUploadedBody, UpdateComicInfoBody,
+};
+use crate::api::http::object::comic_archive::ArchiveComicPayload;
+use crate::api::http::object::comic_list::ListComicInfosPayload;
+use crate::api::http::object::comment::{CommentInfoObj, CreateCommentPayload};
+use crate::api::http::object::issue::{
+    ImportChapterIssuesPayload, IssueBody, IssueInfoObj, IssueRectBody,
+    PageIssuesBody,
+};
+use crate::api::http::object::issue_edit::{
+    CreatedIssueIdPayload, SavePageIssuesPayload,
+};
+use crate::api::http::object::member::{
+    CreateMemberPayload, JoinTeamBody, MemberInfoObj, UpdateMemberRolesBody,
+};
+use crate::api::http::object::member_invitation::{
+    CreateMemberInvitationPayload, MemberInvitationInfoObj,
+    UpdateMemberInvitationRolesBody,
+};
+use crate::api::http::object::page_artwork::{
+    AllocChapterPageArtworksPayload, AllocPageArtworkImageBody,
+    AllocatedPageArtworkPayload, MarkPageArtworkImageUploadedBody,
+    PageArtworkImageBody, PageArtworkInfoObj,
+};
+use crate::api::http::object::page_source::{
+    AllocChapterPageSourcesPayload, AllocPageSourceImageBody,
+    AllocatedPageSourcePayload, MarkPageSourceImageUploadedBody,
+    PageSourceImageBody, PageSourceInfoObj, PageSourceUnitDiffStatsPayload,
+    PageSourceUnitFlaggedStatsPayload,
+};
+use crate::api::http::object::page_source_port::PageSourceTranslationPortObj;
+use crate::api::http::object::system_mail::{
+    MarkSystemMailReadBody, SystemMailInfoObj,
+};
+use crate::api::http::object::team::{
+    AllocTeamAvatarPayload, CreateTeamBody, MarkTeamAvatarUploadedBody,
+    TeamInfoObj, UpdateTeamInfoBody,
+};
+use crate::api::http::object::term::{
+    CreateTermPayload, TermInfoObj, UpdateTermInfoBody,
+};
+use crate::api::http::object::termbase::{
+    CreateTermbasePayload, TermbaseInfoObj, UpdateTermbaseInfoBody,
+};
+use crate::api::http::object::termbase_port::{
+    AppendTermbasePayload, AppendTermbaseTermBody, ExportTermbasePayload,
+    ImportTermBody, ImportTermbasePayload, TermbaseTermObj,
+};
+use crate::api::http::object::unit::{
+    ListPageSourceUnitInfosPayload, TransformChapterUnitsBody, UnitCoordBody,
+    UnitEditBody, UnitInfoObj, UnitRevisionBody, UnitTextTransformBody,
+    UnitTransformBody, UnitTranslationBody,
+};
+use crate::api::http::object::unit_port::UnitTranslationPortObj;
+use crate::api::http::object::upload::ImageUploadSlotObj;
+use crate::api::http::object::user::{
+    AllocUserAvatarPayload, MarkUserAvatarUploadedBody, UpdateUserInfoBody,
+    UpdateUserPasswordBody, UserInfoObj,
+};
+use crate::api::http::object::workset::{
+    CreateWorksetPayload, UpdateWorksetInfoBody, WorksetInfoObj,
+};
 use crate::api::http::result::HttpError;
-use crate::data::instr::announcement::{
-    CreateAnnouncementInstr, UpdateAnnouncementInfoInstr,
-};
-use crate::data::instr::assignment::{
-    JoinChapterAssignmentInstr, UpdateAssignmentRolesInstr,
-};
-use crate::data::instr::assignment_invitation::{
-    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
-};
-use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
-use crate::data::instr::chapter::{
-    ChapterStageInstr, ChapterStageOperInstr, CreateChapterInstr,
-    UpdateChapterInfoInstr, UpdateChapterStageInstr,
-};
-use crate::data::instr::chapter_port::{
-    ChapterTranslationFormatInstr, ChapterTranslationImportModeInstr,
-    ImportChapterTranslationInstr,
-};
-use crate::data::instr::comic::{
-    AllocComicCoverInstr, CreateComicInstr, MarkComicCoverUploadedInstr,
-    UpdateComicInfoInstr,
-};
-use crate::data::instr::comment::CreateCommentInstr;
-use crate::data::instr::issue::{
-    ImportChapterIssuesInstr, IssueInstr, IssueRectInstr, PageIssuesInstr,
-};
-use crate::data::instr::member::{
-    CreateMemberInstr, JoinTeamInstr, UpdateMemberRolesInstr,
-};
-use crate::data::instr::member_invitation::{
-    CreateMemberInvitationInstr, UpdateMemberInvitationRolesInstr,
-};
-use crate::data::instr::page_artwork::{
-    AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
-    MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
-};
-use crate::data::instr::page_source::{
-    AllocChapterPageSourcesInstr, AllocPageSourceImageInstr,
-    MarkPageSourceImageUploadedInstr, PageSourceImageInstr,
-};
-use crate::data::instr::system_mail::MarkSystemMailReadInstr;
-use crate::data::instr::team::{
-    AllocTeamAvatarInstr, CreateTeamInstr, MarkTeamAvatarUploadedInstr,
-    UpdateTeamInfoInstr,
-};
-use crate::data::instr::term::{CreateTermInstr, UpdateTermInfoInstr};
-use crate::data::instr::termbase::{
-    CreateTermbaseInstr, UpdateTermbaseInfoInstr,
-};
-use crate::data::instr::termbase_port::{
-    AppendTermbaseInstr, AppendTermbaseTermInstr, ImportTermInstr,
-    ImportTermbaseInstr,
-};
-use crate::data::instr::unit::{
-    TransformChapterUnitsInstr, UnitCoordInstr, UnitEditInstr,
-    UnitRevisionInstr, UnitTextTransformInstr, UnitTransformInstr,
-    UnitTranslationInstr,
-};
-use crate::data::instr::user::{
-    AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
-    UpdateUserPasswordInstr,
-};
-use crate::data::instr::workset::{CreateWorksetInstr, UpdateWorksetInfoInstr};
-use crate::data::val::announcement::CreateAnnouncementVal;
-use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
-use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
-use crate::data::val::chapter::CreateChapterVal;
-use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
-use crate::data::val::comic_archive::ArchiveComicVal;
-use crate::data::val::comic_list::ListComicInfosVal;
-use crate::data::val::comment::CreateCommentVal;
-use crate::data::val::issue::ImportChapterIssuesVal;
-use crate::data::val::issue_edit::{CreatedIssueIdVal, SavePageIssuesVal};
-use crate::data::val::member::CreateMemberVal;
-use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::val::page_artwork::{
-    AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
-};
-use crate::data::val::page_source::{
-    AllocChapterPageSourcesVal, AllocatedPageSourceVal,
-    PageSourceUnitDiffStatsVal, PageSourceUnitFlaggedStatsVal,
-};
-use crate::data::val::team::AllocTeamAvatarVal;
-use crate::data::val::term::CreateTermVal;
-use crate::data::val::termbase::CreateTermbaseVal;
-use crate::data::val::termbase_port::{
-    AppendTermbaseVal, ExportTermbaseVal, ImportTermbaseVal,
-};
-use crate::data::val::unit::ListPageSourceUnitInfosVal;
-use crate::data::val::user::AllocUserAvatarVal;
-use crate::data::val::workset::CreateWorksetVal;
-use crate::data::view::announcement::AnnouncementInfoView;
-use crate::data::view::assignment::AssignmentInfoView;
-use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
-use crate::data::view::chapter::ChapterInfoView;
-use crate::data::view::chapter_port::ChapterTranslationPortView;
-use crate::data::view::chapter_workflow_record::{
-    ChapterWorkflowRecordEventView, ChapterWorkflowRecordInfoView,
-    ChapterWorkflowRecordOriginView, ChapterWorkflowRecordStagePhaseView,
-    ChapterWorkflowRecordStageView, ChapterWorkflowRecordTranslationFormatView,
-};
-use crate::data::view::comic::ComicInfoView;
-use crate::data::view::comment::CommentInfoView;
-use crate::data::view::image::ImageUploadSlotView;
-use crate::data::view::issue::{IssueInfoView, IssueRectView};
-use crate::data::view::member::MemberInfoView;
-use crate::data::view::member_invitation::MemberInvitationInfoView;
-use crate::data::view::page_artwork::PageArtworkInfoView;
-use crate::data::view::page_source::PageSourceInfoView;
-use crate::data::view::page_source_port::PageSourceTranslationPortView;
-use crate::data::view::system_mail::SystemMailInfoView;
-use crate::data::view::team::TeamInfoView;
-use crate::data::view::term::TermInfoView;
-use crate::data::view::termbase::TermbaseInfoView;
-use crate::data::view::termbase_port::TermbaseTermView;
-use crate::data::view::unit::UnitInfoView;
-use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::data::view::user::UserInfoView;
-use crate::data::view::workset::WorksetInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
@@ -257,125 +225,105 @@ use crate::value::unit::UnitTextPart;
         handler::member_invitation::delete,
     ),
     components(schemas(
-        ImportChapterIssuesInstr, PageIssuesInstr, IssueInstr, IssueRectInstr,
-        ImportChapterIssuesVal,
-        SavePageIssuesVal,
-        CreatedIssueIdVal, IssueInfoView, IssueRectView,
-        AllocChapterPageArtworksInstr, AllocPageArtworkImageInstr,
-        MarkPageArtworkImageUploadedInstr, PageArtworkImageInstr,
-        AllocChapterPageArtworksVal, AllocatedPageArtworkVal,
-            PageArtworkInfoView,
+        ImportChapterIssuesPayload, PageIssuesBody, IssueBody, IssueRectBody,
+        SavePageIssuesPayload,
+        CreatedIssueIdPayload, IssueInfoObj,
+        AllocChapterPageArtworksPayload, AllocPageArtworkImageBody,
+        MarkPageArtworkImageUploadedBody, PageArtworkImageBody,
+        AllocatedPageArtworkPayload,
+            PageArtworkInfoObj,
         HttpError,
-        RegisterAuthInstr,
-        RegisterAuthVal,
-        LoginAuthInstr,
-        LoginAuthVal,
-        UserInfoView,
-        UpdateUserInfoInstr,
-        UpdateUserPasswordInstr,
-        AllocUserAvatarInstr,
-        AllocUserAvatarVal,
-        MarkUserAvatarUploadedInstr,
-        TeamInfoView,
-        CreateTeamInstr,
-        UpdateTeamInfoInstr,
-        AllocTeamAvatarInstr,
-        AllocTeamAvatarVal,
-        MarkTeamAvatarUploadedInstr,
-        WorksetInfoView,
-        CreateWorksetInstr,
-        CreateWorksetVal,
-        UpdateWorksetInfoInstr,
-        ComicInfoView,
+        RegisterAuthPayload,
+        LoginAuthPayload,
+        UserInfoObj,
+        UpdateUserInfoBody,
+        UpdateUserPasswordBody,
+        AllocUserAvatarPayload,
+        MarkUserAvatarUploadedBody,
+        TeamInfoObj,
+        CreateTeamBody,
+        UpdateTeamInfoBody,
+        AllocTeamAvatarPayload,
+        MarkTeamAvatarUploadedBody,
+        WorksetInfoObj,
+        CreateWorksetPayload,
+        UpdateWorksetInfoBody,
+        ComicInfoObj,
         ComicStatus,
-        ListComicInfosVal,
-        CreateComicInstr,
-        CreateComicVal,
-        UpdateComicInfoInstr,
-        AllocComicCoverInstr,
-        AllocComicCoverVal,
-        MarkComicCoverUploadedInstr,
-        ArchiveComicVal,
-        ChapterInfoView,
-        ChapterWorkflowRecordEventView,
-        ChapterWorkflowRecordInfoView,
-        ChapterWorkflowRecordOriginView,
-        ChapterWorkflowRecordStagePhaseView,
-        ChapterWorkflowRecordStageView,
-        ChapterWorkflowRecordTranslationFormatView,
-        CreateChapterInstr,
-        CreateChapterVal,
-        UpdateChapterInfoInstr,
-        ChapterStageInstr,
-        ChapterStageOperInstr,
-        UpdateChapterStageInstr,
-        ChapterTranslationPortView,
-        PageSourceTranslationPortView,
-        UnitTranslationPortView,
-        ChapterTranslationFormatInstr,
-        ChapterTranslationImportModeInstr,
-        ImportChapterTranslationInstr,
-        ImportChapterTranslationVal,
-        PageSourceInfoView,
-        PageSourceImageInstr,
-        ImageUploadSlotView,
-        AllocChapterPageSourcesInstr,
-        AllocChapterPageSourcesVal,
-        AllocPageSourceImageInstr,
-        AllocatedPageSourceVal,
-        MarkPageSourceImageUploadedInstr,
-        UnitInfoView,
-        ListPageSourceUnitInfosVal,
-        PageSourceUnitDiffStatsVal, PageSourceUnitFlaggedStatsVal,
-        UnitEditInstr,
-        UnitCoordInstr,
-        UnitTranslationInstr,
-        UnitRevisionInstr,
+        ListComicInfosPayload,
+        CreateComicPayload,
+        UpdateComicInfoBody,
+        AllocComicCoverPayload,
+        MarkComicCoverUploadedBody,
+        ArchiveComicPayload,
+        ChapterInfoObj,
+        ChapterWorkflowRecordEventObj,
+        ChapterWorkflowRecordInfoObj,
+        ChapterWorkflowRecordOriginObj,
+        ChapterWorkflowRecordStagePhaseObj,
+        ChapterWorkflowRecordStageObj,
+        ChapterWorkflowRecordTranslationFormatObj,
+        CreateChapterPayload,
+        UpdateChapterInfoBody,
+        ChapterStageBody,
+        ChapterStageOperBody,
+        UpdateChapterStageBody,
+        ChapterTranslationPortObj,
+        PageSourceTranslationPortObj,
+        UnitTranslationPortObj,
+        ChapterTranslationFormatBody,
+        ChapterTranslationImportModeBody,
+        ImportChapterTranslationPayload,
+        PageSourceInfoObj,
+        PageSourceImageBody,
+        ImageUploadSlotObj,
+        AllocChapterPageSourcesPayload,
+        AllocPageSourceImageBody,
+        AllocatedPageSourcePayload,
+        MarkPageSourceImageUploadedBody,
+        UnitInfoObj,
+        ListPageSourceUnitInfosPayload,
+        PageSourceUnitDiffStatsPayload, PageSourceUnitFlaggedStatsPayload,
+        UnitEditBody,
+        UnitCoordBody,
+        UnitTranslationBody,
+        UnitRevisionBody,
         UnitTextPart,
-        TransformChapterUnitsInstr,
-        UnitTransformInstr,
-        UnitTextTransformInstr,
-        AssignmentInfoView,
-        JoinChapterAssignmentInstr,
-        UpdateAssignmentRolesInstr,
-        AssignmentInvitationInfoView,
-        CreateAssignmentInvitationInstr,
-        CreateAssignmentInvitationVal,
-        JoinAssignmentInvitationInstr,
-        SystemMailInfoView,
-        MarkSystemMailReadInstr,
-        AnnouncementInfoView,
-        CreateAnnouncementInstr,
-        CreateAnnouncementVal,
-        UpdateAnnouncementInfoInstr,
-        CommentInfoView,
-        CreateCommentInstr,
-        CreateCommentVal,
-        TermbaseInfoView,
-        CreateTermbaseInstr,
-        CreateTermbaseVal,
-        UpdateTermbaseInfoInstr,
-        AppendTermbaseTermInstr,
-        AppendTermbaseInstr,
-        AppendTermbaseVal,
-        ImportTermInstr,
-        ImportTermbaseInstr,
-        TermbaseTermView,
-        ExportTermbaseVal,
-        ImportTermbaseVal,
-        TermInfoView,
-        CreateTermInstr,
-        CreateTermVal,
-        UpdateTermInfoInstr,
-        MemberInfoView,
-        CreateMemberInstr,
-        CreateMemberVal,
-        JoinTeamInstr,
-        UpdateMemberRolesInstr,
-        MemberInvitationInfoView,
-        CreateMemberInvitationInstr,
-        CreateMemberInvitationVal,
-        UpdateMemberInvitationRolesInstr,
+        TransformChapterUnitsBody,
+        UnitTransformBody,
+        UnitTextTransformBody,
+        AssignmentInfoObj,
+        JoinChapterAssignmentBody,
+        UpdateAssignmentRolesBody,
+        AssignmentInvitationInfoObj,
+        CreateAssignmentInvitationPayload,
+        JoinAssignmentInvitationBody,
+        SystemMailInfoObj,
+        MarkSystemMailReadBody,
+        AnnouncementInfoObj,
+        CreateAnnouncementPayload,
+        UpdateAnnouncementInfoBody,
+        CommentInfoObj,
+        CreateCommentPayload,
+        TermbaseInfoObj,
+        CreateTermbasePayload,
+        UpdateTermbaseInfoBody,
+        AppendTermbaseTermBody,
+        AppendTermbasePayload,
+        ImportTermBody,
+        ImportTermbasePayload,
+        TermbaseTermObj,
+        ExportTermbasePayload,
+        TermInfoObj,
+        CreateTermPayload,
+        UpdateTermInfoBody,
+        MemberInfoObj,
+        CreateMemberPayload,
+        JoinTeamBody,
+        UpdateMemberRolesBody,
+        MemberInvitationInfoObj,
+        CreateMemberInvitationPayload,
+        UpdateMemberInvitationRolesBody,
         ComicInclOpt,
         ComicWithOpt,
         ChapterInclOpt,

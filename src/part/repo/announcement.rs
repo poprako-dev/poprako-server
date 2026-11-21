@@ -1,5 +1,4 @@
 //! Repository traits for the announcement domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::announcement::{

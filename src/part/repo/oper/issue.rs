@@ -1,5 +1,4 @@
 //! Production capabilities for current review issues.
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::issue::IssueInfo;

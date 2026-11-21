@@ -5,7 +5,6 @@
 )]
 
 //! Error construction records one event without changing propagation semantics.
-
 mod failures;
 
 use std::cell::Cell;

@@ -7,7 +7,6 @@
 //!
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
 //! [`StagePhase`]: crate::value::chapter::stage::StagePhase
-
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -17,7 +16,7 @@ pub struct ChapterListSpec {
     pub comic_id: String,
     /// Flags controlling which optional associations (such as comic or creator
     /// data) are joined into results.
-    pub incl_opt: Vec<ChapterInclOpt>,
+    pub incl: Vec<ChapterInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

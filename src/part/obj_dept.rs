@@ -1,5 +1,4 @@
 //! Business-object markers registered with ObjDept.
-
 /// source page-image object association.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PageSourceImage;

@@ -1,5 +1,4 @@
 //! Shared process-local cache adapter.
-
 // Bounded annotation save receipts and exclusion guards.
 mod issue_save;
 // Team-partitioned online-user leases.

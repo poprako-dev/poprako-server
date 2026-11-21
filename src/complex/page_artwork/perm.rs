@@ -1,5 +1,4 @@
 //! Composite page write permissions.
-
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;

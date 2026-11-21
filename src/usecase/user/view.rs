@@ -1,5 +1,4 @@
 //! User presentation assembly.
-
 use poprako_orchestra::Context;
 
 use poprako_obj_dept::ObjDeptView;

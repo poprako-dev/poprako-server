@@ -1,5 +1,4 @@
 //! View DTOs grouped by domain.
-
 /// Announcement response views.
 pub mod announcement;
 /// Assignment response views.

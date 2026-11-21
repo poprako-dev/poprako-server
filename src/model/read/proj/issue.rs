@@ -1,5 +1,4 @@
 //! Read-only projection of the chapter's current review issues.
-
 use crate::model::shared::issue::IssueRect;
 
 /// One ordered issue belonging to a composite page in the current chapter review.

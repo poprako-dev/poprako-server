@@ -1,5 +1,4 @@
 //! Repository operations for immutable chapter workflow records.
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;

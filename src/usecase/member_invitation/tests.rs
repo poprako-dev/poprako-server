@@ -115,7 +115,7 @@ fn create_instr(
 fn list_instr(team_id: &str) -> ListMemberInvitationInfosInstr {
     // Build list instr that request pending invitations with pagination.
     ListMemberInvitationInfosInstr {
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         team_id: team_id.into(),
         is_pending: Some(true),
         offset: 0,

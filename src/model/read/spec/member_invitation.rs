@@ -1,5 +1,4 @@
 //! Domain models for member invitations.
-
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -10,7 +9,7 @@ pub struct MemberInvitationListSpec {
     /// Optional pending-state filter.
     pub is_pending: Option<bool>,
     /// Additional data to include in each result, such as the inviter user record.
-    pub incl_opt: Vec<MemberInvitationInclOpt>,
+    pub incl: Vec<MemberInvitationInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

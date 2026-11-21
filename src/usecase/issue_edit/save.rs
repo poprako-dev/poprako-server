@@ -1,5 +1,4 @@
 //! Version-checked page replacement with bounded retry receipts.
-
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -69,7 +68,7 @@ where
     for<'save> K::Guard<'save>: Send + Sync,
     O: ObjDeptView<PageArtworkImage, C> + Send + Sync,
 {
-    let fingerprint = request_fingerprint(&token.user_id, &page_id, &instr)?;
+    let fingerprint = req_fingerprint(&token.user_id, &page_id, &instr)?;
 
     let guard = cache.lock_issue_save(save_id).await;
 
@@ -178,23 +177,88 @@ where
 }
 
 // Hashes the actor, page and immutable payload.
-fn request_fingerprint(
+fn req_fingerprint(
     user_id: &str,
     page_id: &str,
     instr: &SavePageIssuesInstr,
 ) -> BaseRest<[u8; 32]> {
     //
-    let bytes =
-        serde_json::to_vec(&(user_id, page_id, instr)).map_err(|source| {
-            //
-            unrecoverable_error! {
-                message: "cannot fingerprint annotation batch".into();
-                sdk_error = ?source,
-                "annotation fingerprint serialization failed"
-            }
-        })?;
+    let mut hasher = Sha256::new();
 
-    accept!(Sha256::digest(bytes).into())
+    hash_str(&mut hasher, user_id);
+
+    hash_str(&mut hasher, page_id);
+
+    hash_str(&mut hasher, &instr.review_key);
+
+    hash_str(&mut hasher, &instr.revision);
+
+    match instr.image_ver {
+        //
+        Some(image_ver) => {
+            //
+            hasher.update([1]);
+
+            hasher.update(image_ver.to_le_bytes());
+        }
+
+        None => hasher.update([0]),
+    }
+
+    hasher.update((instr.issues.len() as u64).to_le_bytes());
+
+    for issue in &instr.issues {
+        //
+        match &issue.id {
+            //
+            Some(id) => {
+                //
+                hasher.update([1]);
+
+                hash_str(&mut hasher, id);
+            }
+
+            None => hasher.update([0]),
+        }
+
+        match &issue.local_id {
+            //
+            Some(local_id) => {
+                //
+                hasher.update([1]);
+
+                hash_str(&mut hasher, local_id);
+            }
+
+            None => hasher.update([0]),
+        }
+
+        hash_str(&mut hasher, &issue.variant);
+
+        match &issue.rect {
+            //
+            Some(rect) => {
+                //
+                hasher.update([1]);
+
+                hasher.update(rect.x_coord.to_le_bytes());
+
+                hasher.update(rect.y_coord.to_le_bytes());
+
+                hasher.update(rect.width.to_le_bytes());
+
+                hasher.update(rect.height.to_le_bytes());
+            }
+
+            None => hasher.update([0]),
+        }
+
+        hash_str(&mut hasher, &issue.note);
+    }
+
+    let fingerprint = Into::<[u8; 32]>::into(hasher.finalize());
+
+    accept!(fingerprint)
 }
 
 // Builds ordered entries from the submitted document.
@@ -306,4 +370,12 @@ where
     }
 
     accept!(())
+}
+
+// Appends one length-prefixed string to the fingerprint.
+fn hash_str(hasher: &mut Sha256, value: &str) {
+    //
+    hasher.update((value.len() as u64).to_le_bytes());
+
+    hasher.update(value.as_bytes());
 }

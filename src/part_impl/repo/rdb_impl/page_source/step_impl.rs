@@ -1,5 +1,4 @@
 //! RDB-backed page repository step implementations.
-
 use diesel::PgExpressionMethods as _;
 use diesel::dsl::{case_when, count};
 use diesel::expression::functions::declare_sql_function;
@@ -49,8 +48,7 @@ use crate::value::page_source::{
 
 #[declare_sql_function]
 extern "SQL" {
-    /// `PostgreSQL` text trim with an explicit character set.
-    // PostgreSQL text trim with an explicit character set.
+    // `PostgreSQL` text trim with an explicit character set.
     fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
 }
 

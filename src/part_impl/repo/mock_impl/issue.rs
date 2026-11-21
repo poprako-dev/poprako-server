@@ -1,12 +1,11 @@
 //! In-memory current review replacement and lifecycle cleanup.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::issue::IssueInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::issue::{ListIssueInfos, ReplaceChapterIssues};
-use crate::part_impl::repo::mock_impl::{Mock, MockContext};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState};
 use crate::result::{BaseError, BaseRest};
 
 // Remove all details of the locked Chapter's current review.
@@ -26,6 +25,44 @@ fn clear(context: &mut MockContext, chapter_id: &str) {
         .retain(|issue| !ids.contains(&issue.page_artwork_id.as_str()));
 }
 
+// Lists the Chapter's review issues ordered by their page artwork.
+fn list_ordered_issues(
+    state: &MockState,
+    oper: &ListIssueInfos<'_>,
+) -> Vec<IssueInfo> {
+    //
+    let mut issues = state
+        .issues
+        .iter()
+        .filter(|issue| {
+            //
+            state.page_artworks.iter().any(|info| {
+                //
+                if info.chapter_id != oper.chapter_id {
+                    return false;
+                }
+
+                info.id == issue.page_artwork_id
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    issues.sort_by_key(|issue| {
+        //
+        (
+            state
+                .page_artworks
+                .iter()
+                .find(|info| info.id == issue.page_artwork_id)
+                .map(|info| info.index),
+            issue.index,
+        )
+    });
+
+    issues
+}
+
 impl Run<ListIssueInfos<'_>> for Mock {
     // Application error returned by this operation.
     type Error = BaseError;
@@ -36,38 +73,7 @@ impl Run<ListIssueInfos<'_>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        let mut issues = state
-            .issues
-            .iter()
-            .filter(|issue| {
-                //
-                state.page_artworks.iter().any(|info| {
-                    //
-                    if info.chapter_id != oper.chapter_id {
-                        return false;
-                    }
-
-                    info.id == issue.page_artwork_id
-                })
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        issues.sort_by_key(|issue| {
-            //
-            (
-                state
-                    .page_artworks
-                    .iter()
-                    .find(|info| info.id == issue.page_artwork_id)
-                    .map(|info| info.index),
-                issue.index,
-            )
-        });
-
-        drop(state);
-
-        accept!(issues)
+        accept!(list_ordered_issues(&state, oper))
     }
 }
 

@@ -7,20 +7,7 @@
 //! Convert to [`PageSourceInfoView`] for presentation.
 //!
 //! [`PageSourceInfoView`]: crate::data::view::page_source::PageSourceInfoView
-
 use crate::value::image::{ImageExt, ImageHash};
-
-/// The data needed to insert one page row.
-#[cfg_attr(test, derive(Clone))]
-pub struct PageSourceEntry {
-    /// The unique identifier for the new page record.
-    pub id: String,
-
-    /// Foreign key of the parent chapter to insert this page into.
-    pub chapter_id: String,
-    /// Zero-based ordinal position for this page within the chapter.
-    pub index: usize,
-}
 
 /// One page-image identity supplied to manifest planning.
 pub struct PageSourceImageSpec {

@@ -221,7 +221,7 @@ fn page(id: &str, chapter_id: &str, _image_key: &str) -> PageSourceInfo {
 // Build list instr that filter by chapter id.
 fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosInstr {
     ListAssignmentInfosInstr {
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
         role: None,
@@ -233,7 +233,7 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosInstr {
 // Build list instr that filter by owner id.
 fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosInstr {
     ListAssignmentInfosInstr {
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         chapter_id: None,
         owner_id: Some(owner_id.into()),
         role: None,

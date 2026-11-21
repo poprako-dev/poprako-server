@@ -6,7 +6,7 @@
 use axum::http::Uri;
 use axum_extra::extract::Query;
 
-use crate::data::instr::comic::GetComicInfoInstr;
+use crate::api::http::object::comic::GetComicInfoQuery;
 use crate::value::comic::ComicInclOpt;
 
 // get_info(query)(positive): absent and repeated include parameters use the existing vocabulary.
@@ -15,19 +15,19 @@ fn comic_query_accepts_optional_and_repeated_includes() {
     let base_uri: Uri = "/api/v1/comics/comic--00000000001".parse().unwrap();
 
     let Query(base) =
-        Query::<GetComicInfoInstr>::try_from_uri(&base_uri).unwrap();
+        Query::<GetComicInfoQuery>::try_from_uri(&base_uri).unwrap();
 
-    assert!(base.incl_opt.is_empty());
+    assert!(base.incl.is_empty());
 
     let uri: Uri =
         "/api/v1/comics/comic--00000000001?incl=workset.team&incl=creator"
             .parse()
             .unwrap();
 
-    let Query(instr) = Query::<GetComicInfoInstr>::try_from_uri(&uri).unwrap();
+    let Query(instr) = Query::<GetComicInfoQuery>::try_from_uri(&uri).unwrap();
 
     assert_eq!(
-        instr.incl_opt,
+        instr.incl,
         vec![ComicInclOpt::WorksetTeam, ComicInclOpt::Creator]
     );
 }
@@ -39,5 +39,5 @@ fn comic_query_rejects_unknown_include() {
         .parse()
         .unwrap();
 
-    assert!(Query::<GetComicInfoInstr>::try_from_uri(&uri).is_err());
+    assert!(Query::<GetComicInfoQuery>::try_from_uri(&uri).is_err());
 }

@@ -34,28 +34,28 @@ chapter_artwork_limit_mib = 512
 queue_capacity = 1024
 
 [sched]
-# Shared shutdown grace in seconds. Default: 30; zero aborts pending work immediately.
-shutdown_grace_secs = 30
+# Shared shutdown grace as a duration string such as 30s or 1m. Default: 30s; zero aborts pending work immediately.
+shutdown_grace = "30s"
 
 [subtree_delete]
 # Independent hierarchy-cleanup workers. Default: 2; must be positive.
 concurrency = 2
-# Maximum cleanup attempt duration in seconds. Default: 300; must be positive.
-timeout_secs = 300
-# Delay after an idle cleanup attempt in seconds. Default: 5; must be positive.
-idle_interval_secs = 5
-# Delay after a failed attempt or worker exit in seconds. Default: 5; must be positive.
-retry_interval_secs = 5
+# Maximum cleanup attempt duration as a unit-bearing string. Default: 300s; must be positive.
+timeout = "300s"
+# Delay after an idle cleanup attempt as a unit-bearing string. Default: 5s; must be positive.
+idle_interval = "5s"
+# Delay after a failed attempt or worker exit as a unit-bearing string. Default: 5s; must be positive.
+retry_interval = "5s"
 
 [cache]
 # Estimated completed Unit-save cache budget in MiB. Default: 256; must be positive.
 unit_save_limit_mib = 256
 # Retained Unit-save token budget, enforced through entry weights. Default: 500000; must be positive.
 unit_save_token_budget = 500000
-# Maximum Unit-save token age in seconds; retries do not renew it. Default: 2592000 (30 days); range: 1..31536000000.
-unit_save_ttl_secs = 2592000
-# Online-user lease after each refresh, in seconds. Default: 600; must be positive.
-online_user_ttl_secs = 600
+# Maximum Unit-save token age as a unit-bearing string; retries do not renew it. Default: 30d; at most 1000 years.
+unit_save_ttl = "30d"
+# Online-user lease after each refresh as a unit-bearing string. Default: 10m; must be positive.
+online_user_ttl = "10m"
 
 [repo]
 # Maximum eligible Comics or Worksets claimed per sweep. Default: 64; must be positive.
@@ -64,7 +64,7 @@ subtree_sweep_batch_size = 64
 unit_order_query_batch_size = 512
 
 [invitation]
-# Pending member invitation cleanup delay in seconds. Default: 432000 (120 hours); must be positive.
-member_ttl_secs = 432000
-# Pending assignment invitation cleanup delay in seconds. Default: 259200 (72 hours); must be positive.
-assignment_ttl_secs = 259200
+# Pending member invitation cleanup delay as a unit-bearing string. Default: 120h; must be positive.
+member_ttl = "120h"
+# Pending assignment invitation cleanup delay as a unit-bearing string. Default: 72h; must be positive.
+assignment_ttl = "72h"

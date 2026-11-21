@@ -1,5 +1,4 @@
 //! Domain models for team- and comic-scoped terminology bases.
-
 use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for terminology-base lists.

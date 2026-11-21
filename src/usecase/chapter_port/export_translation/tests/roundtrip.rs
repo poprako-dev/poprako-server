@@ -1,11 +1,11 @@
 //! Compatibility between exported response views and native import documents.
-
+use crate::api::http::object::chapter_port::ChapterTranslationPortObj;
 use crate::complex::chapter_port::import_translation as chapter_translation_import_complex;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
-use crate::model::shared::translation_document::ChapterTranslationDocument;
 use crate::model::write::translation_import::UnitTranslationImportSource;
+use crate::value::chapter_port::document::ChapterTranslationDocument;
 
 // Build an unordered native export with independent annotations.
 fn document() -> ChapterTranslationPortView {
@@ -17,13 +17,13 @@ fn document() -> ChapterTranslationPortView {
         comic_title: "source title".into(),
         pages: vec![
             PageSourceTranslationPortView {
-                page_source_id: "source-page-1".into(),
-                page_source_index: 1,
+                page_id: "source-page-1".into(),
+                page_index: 1,
                 units: vec![UnitTranslationPortView {
                     unit_id: "source-unit-1".into(),
                     unit_index: 1,
-                    page_source_id: "source-page-1".into(),
-                    page_source_index: 1,
+                    page_id: "source-page-1".into(),
+                    page_index: 1,
                     x_coord: 0.4,
                     y_coord: 0.5,
                     is_bubble: false,
@@ -38,14 +38,14 @@ fn document() -> ChapterTranslationPortView {
                 }],
             },
             PageSourceTranslationPortView {
-                page_source_id: "source-page-0".into(),
-                page_source_index: 0,
+                page_id: "source-page-0".into(),
+                page_index: 0,
                 units: vec![
                     UnitTranslationPortView {
                         unit_id: "source-unit-1".into(),
                         unit_index: 1,
-                        page_source_id: "source-page-0".into(),
-                        page_source_index: 0,
+                        page_id: "source-page-0".into(),
+                        page_index: 0,
                         x_coord: 0.2,
                         y_coord: 0.3,
                         is_bubble: true,
@@ -61,8 +61,8 @@ fn document() -> ChapterTranslationPortView {
                     UnitTranslationPortView {
                         unit_id: "source-unit-2".into(),
                         unit_index: 0,
-                        page_source_id: "source-page-0".into(),
-                        page_source_index: 0,
+                        page_id: "source-page-0".into(),
+                        page_index: 0,
                         x_coord: 0.1,
                         y_coord: 0.2,
                         is_bubble: true,
@@ -85,7 +85,9 @@ fn document() -> ChapterTranslationPortView {
 fn export_view_roundtrips_native_import_and_sorts_indexes() {
     let document = document();
 
-    let original_json = serde_json::to_value(&document).unwrap();
+    let original_json =
+        serde_json::to_value(ChapterTranslationPortObj::from(document))
+            .unwrap();
 
     let native_document = serde_json::from_value::<ChapterTranslationDocument>(
         original_json.clone(),
@@ -94,9 +96,11 @@ fn export_view_roundtrips_native_import_and_sorts_indexes() {
 
     let exported_view = ChapterTranslationPortView::from(native_document);
 
-    assert_eq!(serde_json::to_value(&exported_view).unwrap(), original_json);
+    let exported_obj = ChapterTranslationPortObj::from(exported_view);
 
-    let content = serde_json::to_string(&exported_view).unwrap();
+    assert_eq!(serde_json::to_value(&exported_obj).unwrap(), original_json);
+
+    let content = serde_json::to_string(&exported_obj).unwrap();
 
     let pages =
         chapter_translation_import_complex::parse_poprako(&content).unwrap();

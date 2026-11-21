@@ -8,7 +8,6 @@
 //! Diesel's generated `AsChangeset` implementation reports
 //! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
 //! Flattening it would change the unchanged, clear, and set update semantics.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
@@ -35,8 +34,6 @@ pub struct WorksetInfoRecord {
     pub f_description: Option<String>,
 
     pub f_comic_count: i32,
-    pub f_comic_next_index: i32,
-
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -144,14 +141,6 @@ impl<'a> WorksetPack<'a> {
     pub const fn comic_count(mut self, val: i32) -> Self {
         //
         self.f_comic_count = Some(val);
-
-        self
-    }
-
-    #[must_use]
-    pub const fn comic_next_index(mut self, val: i32) -> Self {
-        //
-        self.f_comic_next_index = Some(val);
 
         self
     }

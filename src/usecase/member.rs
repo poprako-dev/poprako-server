@@ -1,7 +1,6 @@
 //! Member use cases: create, join, list, role update, and deletion.
-
-/// Member presentation assembly.
-pub mod view;
+// Member presentation assembly.
+mod view;
 
 #[cfg(test)]
 // Unit tests for team membership and invitation boundary conditions.

@@ -1,5 +1,4 @@
 //! Background task scheduling and shutdown policies.
-
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -41,10 +40,7 @@ impl Default for SchedTaskConfig {
 #[serde(default, deny_unknown_fields)]
 pub struct SchedConfig {
     /// Shared grace period measured from cancellation, not from each join.
-    #[serde(
-        rename = "shutdown_grace_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub shutdown_grace: Duration,
 }
 

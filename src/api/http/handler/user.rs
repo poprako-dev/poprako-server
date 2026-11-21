@@ -1,5 +1,4 @@
 //! User handlers: profile read/update and avatar upload flow.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -11,16 +10,14 @@ use crate::api::http::handler::util::{
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::user::{
+    AllocUserAvatarBody, AllocUserAvatarPayload, MarkUserAvatarUploadedBody,
+    UpdateUserInfoBody, UpdateUserPasswordBody, UserInfoObj,
+};
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::user::{
-    AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
-    UpdateUserPasswordInstr,
-};
-use crate::data::val::user::AllocUserAvatarVal;
-use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
@@ -34,7 +31,7 @@ use crate::usecase::user as user_usecase;
     tag = "users",
     responses(
         (status = 200, description = "Current \
-        user profile", body = HttpBody<UserInfoView>),
+        user profile", body = HttpBody<UserInfoObj>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -42,17 +39,20 @@ use crate::usecase::user as user_usecase;
 pub async fn get_my_info(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<UserInfoView> {
+) -> HttpResult<UserInfoObj> {
     //
     let id = user_token.user_id.clone();
 
-    Ok(user_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        user_token,
-        id,
-    )
-    .await?
-    .accept(StatusCode::OK))
+    let user_info_obj = UserInfoObj::from(
+        user_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            user_token,
+            id,
+        )
+        .await?,
+    );
+
+    Ok(user_info_obj.accept(StatusCode::OK))
 }
 
 /// `GET /api/v1/users/{user_id}` — a user's profile by id.
@@ -63,7 +63,7 @@ pub async fn get_my_info(
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
         (status = 200, description = "User \
-        profile retrieved", body = HttpBody<UserInfoView>),
+        profile retrieved", body = HttpBody<UserInfoObj>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
@@ -73,15 +73,18 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<UserInfoView> {
+) -> HttpResult<UserInfoObj> {
     //
-    Ok(user_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
-        (harn.repo(), harn.obj_dept()),
-        token,
-        user_id,
-    )
-    .await?
-    .accept(StatusCode::OK))
+    let user_info_obj = UserInfoObj::from(
+        user_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
+            (harn.repo(), harn.obj_dept()),
+            token,
+            user_id,
+        )
+        .await?,
+    );
+
+    Ok(user_info_obj.accept(StatusCode::OK))
 }
 
 /// `PUT /api/v1/users/{user_id}` — update a user's profile.
@@ -90,7 +93,7 @@ pub async fn get_info(
     path = "/api/v1/users/{user_id}",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
-    request_body = UpdateUserInfoInstr,
+    request_body = UpdateUserInfoBody,
     responses(
         (status = 204, description = "Profile updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -103,15 +106,15 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateUserInfoInstr>,
+    Json(body): Json<UpdateUserInfoBody>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&user_id, &instr.id)?;
+    ensure_path_matches_body_id(&user_id, &body.id)?;
 
     user_usecase::update_info::<_, RdbContext<ReptRead>, RdbRepo>(
         (harn.nucl().rept_read(), harn.repo()),
         user_token,
-        instr,
+        body.into(),
     )
     .await?;
 
@@ -125,7 +128,7 @@ pub async fn update_info(
     tag = "users",
     params(("user_id" = String, Path,
         description = "Target user ID (must match authenticated user)")),
-    request_body = UpdateUserPasswordInstr,
+    request_body = UpdateUserPasswordBody,
     responses(
         (status = 204, description = "Password updated"),
         (status = 401, description = "Current password is incorrect"),
@@ -137,14 +140,14 @@ pub async fn update_password(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateUserPasswordInstr>,
+    Json(body): Json<UpdateUserPasswordBody>,
 ) -> HttpNoContent {
     //
     user_usecase::update_password::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
         user_id,
-        instr,
+        body.into(),
     )
     .await?;
 
@@ -158,10 +161,10 @@ pub async fn update_password(
     tag = "users",
     params(("user_id" = String, Path,
         description = "Target user ID (must match authenticated user)")),
-    request_body = AllocUserAvatarInstr,
+    request_body = AllocUserAvatarBody,
     responses(
         (status = 200, description = "Avatar \
-        upload URL allocated", body = HttpBody<AllocUserAvatarVal>),
+        upload URL allocated", body = HttpBody<AllocUserAvatarPayload>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
@@ -170,12 +173,12 @@ pub async fn alloc_avatar(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocUserAvatarInstr>,
-) -> HttpResult<AllocUserAvatarVal> {
+    Json(body): Json<AllocUserAvatarBody>,
+) -> HttpResult<AllocUserAvatarPayload> {
     //
     ensure_current_user(&user_id, &user_token)?;
 
-    Ok(
+    let alloc_payload = AllocUserAvatarPayload::from(
         user_usecase::alloc_avatar::<_, RdbContext<ReptRead>, RdbRepo, _>(
             (
                 harn.nucl().rept_read(),
@@ -184,11 +187,12 @@ pub async fn alloc_avatar(
                 &harn.config().image,
             ),
             user_token,
-            instr,
+            body.into(),
         )
-        .await?
-        .accept(StatusCode::OK),
-    )
+        .await?,
+    );
+
+    Ok(alloc_payload.accept(StatusCode::OK))
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/mark-uploaded` — confirm an avatar upload.
@@ -198,7 +202,7 @@ pub async fn alloc_avatar(
     tag = "users",
     params(("user_id" = String, Path,
         description = "Target user ID (must match authenticated user)")),
-    request_body = MarkUserAvatarUploadedInstr,
+    request_body = MarkUserAvatarUploadedBody,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "Cannot confirm another user's avatar"),
@@ -209,14 +213,14 @@ pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkUserAvatarUploadedInstr>,
+    Json(body): Json<MarkUserAvatarUploadedBody>,
 ) -> HttpNoContent {
     //
     user_usecase::mark_avatar_uploaded::<RdbContext, _>(
         (harn.obj_dept(),),
         user_token,
         user_id,
-        instr,
+        body.into(),
     )
     .await?;
 

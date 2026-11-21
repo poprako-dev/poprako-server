@@ -10,7 +10,6 @@
 //! coordinator, repository, prom enqueuer, image pool, and event bus.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
-
 mod extra;
 
 // get_info(get_info)(positive): self and other-user reads preserve activity without emitting events.

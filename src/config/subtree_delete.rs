@@ -1,5 +1,4 @@
 //! Runtime policy for the hierarchy cleanup task.
-
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -17,22 +16,13 @@ pub struct SubtreeDeleteConfig {
     pub concurrency: NonZeroUsize,
 
     /// Maximum duration of one cleanup attempt.
-    #[serde(
-        rename = "timeout_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub timeout: Duration,
     /// Delay when no cleanup work remains.
-    #[serde(
-        rename = "idle_interval_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub idle_interval: Duration,
     /// Delay after a failed attempt or worker exit.
-    #[serde(
-        rename = "retry_interval_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub retry_interval: Duration,
 }
 
@@ -44,14 +34,15 @@ impl SubtreeDeleteConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("timeout_secs", self.timeout),
-            ("idle_interval_secs", self.idle_interval),
-            ("retry_interval_secs", self.retry_interval),
+            ("timeout", self.timeout),
+            ("idle_interval", self.idle_interval),
+            ("retry_interval", self.retry_interval),
         ] {
             //
             ensure!(
                 !duration.is_zero(),
-                "subtree_delete.{field} must be positive"
+                "subtree_delete.{} must be positive",
+                field
             );
         }
 

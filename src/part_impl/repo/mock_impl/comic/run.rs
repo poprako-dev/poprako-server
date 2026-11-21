@@ -56,31 +56,35 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
     // Apply mutable field updates and touch updated_at.
     async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
         //
-        let mut state = self.state.lock().unwrap();
+        {
+            //
+            // The state guard is released as soon as the update completes.
+            let mut state = self.state.lock().unwrap();
 
-        if state.deleted_comic_ids.contains(&oper.update.id) {
-            return Err(expected("error-comic-not-found"));
+            if state.deleted_comic_ids.contains(&oper.update.id) {
+                return Err(expected("error-comic-not-found"));
+            }
+
+            let Some(comic_index) = state
+                .comics
+                .iter()
+                .position(|comic| comic.id == oper.update.id)
+            else {
+                return Err(expected("error-comic-not-found"));
+            };
+
+            let comic = state.comics.get_mut(comic_index).unwrap();
+
+            comic.title = oper.update.trimmed_title().to_owned();
+
+            comic.author = oper.update.trimmed_author().to_owned();
+
+            comic.description =
+                oper.update.trimmed_description().map(str::to_owned);
+
+            state.comics.get_mut(comic_index).unwrap().updated_at = now();
         }
 
-        let comic = state
-            .comics
-            .iter_mut()
-            .find(|comic| comic.id == oper.update.id)
-            .ok_or_else(|| expected("error-comic-not-found"))?;
-
-        comic.title = oper.update.trimmed_title().to_owned();
-
-        comic.author = oper.update.trimmed_author().to_owned();
-
-        comic.description =
-            oper.update.trimmed_description().map(str::to_owned);
-
-        comic.updated_at = now();
-
-        let rest = accept!(());
-
-        drop(state);
-
-        rest
+        accept!(())
     }
 }

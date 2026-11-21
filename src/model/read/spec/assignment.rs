@@ -8,7 +8,6 @@
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
-
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
@@ -23,7 +22,7 @@ pub enum AssignmentListSpec {
         /// are returned when provided.
         role: Option<RoleField>,
         /// Flags controlling which optional associations are joined into results.
-        incl_opt: Vec<AssignmentInclOpt>,
+        incl: Vec<AssignmentInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -38,7 +37,7 @@ pub enum AssignmentListSpec {
         /// are returned when provided.
         role: Option<RoleField>,
         /// Flags controlling which optional associations are joined into results.
-        incl_opt: Vec<AssignmentInclOpt>,
+        incl: Vec<AssignmentInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.

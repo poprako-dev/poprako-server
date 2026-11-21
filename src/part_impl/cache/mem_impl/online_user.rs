@@ -1,5 +1,4 @@
 //! Process-local online-user lease cache adapter operations.
-
 #[cfg(test)]
 // Online-user adapter tests use explicit instants without sleeping.
 mod tests;
@@ -38,13 +37,8 @@ impl MemOnlineUserCache {
         }
     }
 
-    /// Refreshes one online-user deadline using an explicit clock instant.
-    pub fn mark_user_online_at(
-        &self,
-        team_id: &str,
-        user_id: &str,
-        now: Instant,
-    ) {
+    // Refreshes one online-user deadline using an explicit clock instant.
+    fn mark_user_online_at(&self, team_id: &str, user_id: &str, now: Instant) {
         //
         let Some(expires_at) = now.checked_add(self.ttl) else {
             return;
@@ -56,9 +50,9 @@ impl MemOnlineUserCache {
             .insert(user_id.into(), expires_at);
     }
 
-    /// Lists one team's active users using an explicit clock instant.
+    // Lists one team's active users using an explicit clock instant.
     #[must_use]
-    pub fn list_online_user_ids_at(
+    fn list_online_user_ids_at(
         &self,
         team_id: &str,
         now: Instant,

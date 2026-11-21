@@ -57,6 +57,14 @@ check:
 clippy:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+# Run the complete CI lint and validation suite.
+lint:
+    UV_CACHE_DIR="$PWD/.uv-cache" sh scripts/ci-check.sh
+
+# Run the workspace test suite using the CI arguments.
+test:
+    sh scripts/ci-test.sh
+
 # Run the local database-backed HTTP integration suite; it never runs in CI.
 ci-http:
     sh scripts/ci-http.sh

@@ -3,7 +3,6 @@ use super::*;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::result::BaseError;
 
-// Internal implementation of `create_edit`.
 fn create_edit(id: &str, text: &str) -> UnitEdit {
     UnitEdit::Create {
         id: id.to_string(),
@@ -27,7 +26,6 @@ fn create_edit(id: &str, text: &str) -> UnitEdit {
 #[test]
 fn apply_edits_soft_deletes_and_restores_a_unit() {
     //
-    // Internal implementation detail.
     let mut state = MockState::default();
 
     let create = create_edit("unit--00000000001", "translated");

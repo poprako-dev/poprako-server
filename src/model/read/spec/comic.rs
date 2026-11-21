@@ -4,7 +4,6 @@
 //! Convert to [`ComicInfoView`] for presentation outside the domain layer.
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
-
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::pagination::PubListLimit;
@@ -22,7 +21,7 @@ pub struct ComicListSpec {
     pub status: Option<ComicStatus>,
 
     /// Additional data to include in each result, such as the workset or creator.
-    pub incl_opt: Vec<ComicInclOpt>,
+    pub incl: Vec<ComicInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

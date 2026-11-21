@@ -1,5 +1,4 @@
 //! Domain models for user authentication and profile storage.
-
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserEntry {

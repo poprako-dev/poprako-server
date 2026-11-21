@@ -15,13 +15,11 @@ use crate::model::task::{ObjDeptPromTask, ObjTaskAction, validate_task};
 use crate::prom::ObjDeptProm;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
-/// Delay between idle polls.
-pub const POLL_INTERVAL: std::time::Duration =
-    std::time::Duration::from_secs(30);
+// Delay between idle polls.
+const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
 
-/// Maximum duration of one claimed attempt.
-pub const ATTEMPT_TIMEOUT: std::time::Duration =
-    std::time::Duration::from_mins(1);
+// Maximum duration of one claimed attempt.
+const ATTEMPT_TIMEOUT: std::time::Duration = std::time::Duration::from_mins(1);
 
 // Maps one adapter failure to its mechanical durable-task action.
 fn action_from_error(error: ObjDeptError) -> ObjTaskAction {
@@ -86,14 +84,16 @@ where
     F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send,
 {
     //
-    let action = match validate_task(task) {
+    let decision = match validate_task(task) {
         //
-        Ok(()) => match handler(task.clone()).await {
-            //
-            Ok(action) => action,
+        Ok(()) => handler(task.clone()).await,
 
-            Err(error) => action_from_error(error),
-        },
+        Err(error) => Err(error),
+    };
+
+    let action = match decision {
+        //
+        Ok(action) => action,
 
         Err(error) => action_from_error(error),
     };
@@ -128,11 +128,21 @@ where
             ) => claimed,
         };
 
+        let Ok(claimed) = claimed else {
+            //
+            tracing::error!(
+                operation = "claim_obj_task",
+                "ObjDept task claim timed out",
+            );
+
+            continue;
+        };
+
         let task = match claimed {
             //
-            Ok(Ok(Some(task))) => task,
+            Ok(Some(task)) => task,
 
-            Ok(Ok(None)) => {
+            Ok(None) => {
                 //
                 if !wait_poll(&token).await {
                     break;
@@ -141,7 +151,7 @@ where
                 continue;
             }
 
-            Ok(Err(error)) => {
+            Err(error) => {
                 //
                 tracing::error!(
                     operation = "claim_obj_task",
@@ -155,16 +165,6 @@ where
 
                 continue;
             }
-
-            Err(_) => {
-                //
-                tracing::error!(
-                    operation = "claim_obj_task",
-                    "ObjDept task claim timed out",
-                );
-
-                continue;
-            }
         };
 
         let attempt = run_attempt(&prom, &handler, &task);
@@ -174,31 +174,36 @@ where
             changed = tokio::time::timeout(ATTEMPT_TIMEOUT, attempt) => changed,
         };
 
+        let Ok(changed) = changed else {
+            //
+            tracing::error!(
+                task_id = task.id,
+                "ObjDept task attempt timed out",
+            );
+
+            continue;
+        };
+
         match changed {
             //
-            Ok(Ok(1)) => {}
+            Ok(1) => {}
 
-            Ok(Ok(0)) => tracing::warn!(
+            Ok(0) => tracing::warn!(
                 task_id = task.id,
                 claim_token = %task.claim_token,
                 "ObjDept task lost its execution credential",
             ),
 
-            Ok(Ok(updated_count)) => tracing::error!(
+            Ok(updated_count) => tracing::error!(
                 task_id = task.id,
                 updated_count,
                 "ObjDept task changed multiple rows",
             ),
 
-            Ok(Err(error)) => tracing::error!(
+            Err(error) => tracing::error!(
                 task_id = task.id,
                 sdk_error = ?error,
                 "ObjDept task update failed",
-            ),
-
-            Err(_) => tracing::error!(
-                task_id = task.id,
-                "ObjDept task attempt timed out",
             ),
         }
     }
@@ -219,20 +224,27 @@ where
             ) => reset,
         };
 
-        match reset {
+        let Ok(reset) = reset else {
             //
-            Ok(Ok(_)) => {}
+            tracing::error!(
+                operation = "reset_obj_tasks",
+                "ObjDept task reset timed out",
+            );
 
-            Ok(Err(error)) => tracing::error!(
+            if !wait_poll(&token).await {
+                break;
+            }
+
+            continue;
+        };
+
+        if let Err(error) = reset {
+            //
+            tracing::error!(
                 operation = "reset_obj_tasks",
                 sdk_error = ?error,
                 "ObjDept task reset failed",
-            ),
-
-            Err(_) => tracing::error!(
-                operation = "reset_obj_tasks",
-                "ObjDept task reset timed out",
-            ),
+            );
         }
 
         if !wait_poll(&token).await {

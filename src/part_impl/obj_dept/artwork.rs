@@ -1,5 +1,4 @@
 //! One-way physical mapping for validated artwork identities.
-
 use poprako_obj_dept::key::{ObjKind, ObjPath};
 
 use crate::part::obj_dept::ChapterArtwork;

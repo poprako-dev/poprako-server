@@ -181,7 +181,7 @@ where
 
     let comic_info = GetComicInfo {
         id: &id,
-        incls: &instr.incl_opt,
+        incls: &instr.incl,
     }
     .run_on(repo)
     .await?;

@@ -1,5 +1,4 @@
 //! Calendar-month values used by comic archive export.
-
 /// Composite page archive payloads.
 pub mod artwork;
 /// Archived chapter workflow-record payload values.
@@ -54,6 +53,13 @@ pub struct ArchivedComicPayload<'a> {
     pub chapters: Vec<ArchivedChapterPayload<'a>>,
 }
 
+impl ArchivedComicPayload<'_> {
+    /// Serializes this immutable comic payload for archive storage.
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
+}
+
 /// Immutable workset payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedWorksetPayload<'a> {
@@ -89,8 +95,7 @@ pub struct ArchivedChapterPayload<'a> {
     /// Subtitle or volume label displayed for this chapter.
     pub subtitle: &'a str,
     /// Total number of pages in this chapter at archiving time.
-    #[serde(rename = "page_count")]
-    pub page_source_count: usize,
+    pub page_count: usize,
     /// Total number of translation units across all pages.
     pub total_unit_count: usize,
     /// Number of units that have been translated.
@@ -171,8 +176,7 @@ pub struct ArchivedUserPayload<'a> {
 #[derive(Serialize)]
 pub struct ArchivedPageSourcePayload<'a> {
     /// Original database identifier of the page before archiving.
-    #[serde(rename = "source_page_id")]
-    pub source_page_source_id: &'a str,
+    pub source_page_id: &'a str,
     /// Display ordering index of the page within its chapter.
     pub index: usize,
     /// Total number of translation units on this page.

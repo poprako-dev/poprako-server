@@ -22,23 +22,23 @@ description: Apply PopRaKo Rust, PostgreSQL, and HTTP integration test conventio
 
 ## Validation
 
-Run from the repository root unless indicated. Start with affected tests,
-then broaden for changed shared ports, transactions, API, or error handling.
-Root AGENTS specifies mandatory Rust checks and the full pre-commit gate.
+Run from the repository root unless indicated. Root AGENTS specifies the
+mandatory Rust checks and the full pre-commit gate.
 
 | Scope | Command |
 | --- | --- |
-| Focused server tests | `cargo test -p poprako-server <test-filter>` |
-| Server tests | `cargo test -p poprako-server` |
-| Other crate tests | `cargo test -p <affected-crate>` |
-| Workspace tests | `sh scripts/ci-test.sh` |
-| Workspace compilation | `cargo check --workspace --all-targets --all-features` |
+| Workspace tests | `just test` |
+| Workspace compilation | `just check` |
 | TypeScript static checks | `pnpm run check` from `tests/integration-tests/` |
 | OpenAPI consistency | `sh scripts/ci-openapi-check.sh` |
 
-Feature-gated RDB tests require their relevant features and database fixtures;
-a default-feature test pass is not evidence that those tests ran. Inspect the
-touched module's `cfg` and setup before choosing the test command.
+The Rust recipes take no arguments. Never narrow a run with a package, target,
+feature, or test filter: a different argument set produces a new artifact
+fingerprint and forfeits reuse of the existing `target/` contents.
+
+Feature-gated RDB tests run under `just test`, which uses `--all-features` and
+passes no filter. Read the run output and confirm the touched tests actually
+executed; a passing suite that never reached them is not evidence.
 
 Database-backed HTTP runs use `sh scripts/api-integration-test.sh`. Follow
 the linked tests instructions for its disposable target and root approval

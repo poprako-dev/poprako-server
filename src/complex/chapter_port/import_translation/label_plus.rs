@@ -1,5 +1,4 @@
 //! `LabelPlus` text structure validation and page-unit assembly.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -12,27 +11,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
-/// Copies non-blank `LabelPlus` text while preserving whitespace and lines.
-pub fn normalize_label_plus_text(text: &str) -> Option<String> {
-    //
-    if text.trim().is_empty() {
-        return None;
-    }
-
-    Some(text.to_owned())
-}
-
-/// Construct the stable invalid-content error for `LabelPlus` input.
-pub fn invalid_label_plus_content(condition: &str) -> BaseError {
-    //
-    expected_error! {
-        ExpectedVariant::Args,
-        message: trl("error-invalid-chapter-import-content");
-        condition,
-        "chapter import content is invalid",
-    }
-}
-
 /// Internal representation of a `LabelPlus` unit header.
 pub struct LabelPlusUnit {
     /// 0-based index of the unit inside its page.
@@ -43,11 +21,6 @@ pub struct LabelPlusUnit {
     y_coord: f64,
     /// Whether the unit is a speech bubble.
     is_bubble: bool,
-}
-
-/// Remove only spaces and tabs that follow `LabelPlus` structure lines.
-pub fn trim_label_plus_structure_line(line: &str) -> &str {
-    line.trim_end_matches([' ', '\t'])
 }
 
 /// Check whether a line is a complete `LabelPlus` page header.
@@ -395,6 +368,22 @@ pub fn parse_label_plus(
     accept!(pages)
 }
 
+// Remove only spaces and tabs that follow `LabelPlus` structure lines.
+fn trim_label_plus_structure_line(line: &str) -> &str {
+    line.trim_end_matches([' ', '\t'])
+}
+
+// Construct the stable invalid-content error for `LabelPlus` input.
+fn invalid_label_plus_content(condition: &str) -> BaseError {
+    //
+    expected_error! {
+        ExpectedVariant::Args,
+        message: trl("error-invalid-chapter-import-content");
+        condition,
+        "chapter import content is invalid",
+    }
+}
+
 // Construct a localized limit error for LabelPlus input.
 fn invalid_label_plus_limit(
     key: &str,
@@ -438,4 +427,14 @@ fn split_label_plus_text(text: &str) -> (Option<String>, Option<String>) {
         normalize_label_plus_text(body),
         normalize_label_plus_text(note),
     )
+}
+
+// Copies non-blank `LabelPlus` text while preserving whitespace and lines.
+fn normalize_label_plus_text(text: &str) -> Option<String> {
+    //
+    if text.trim().is_empty() {
+        return None;
+    }
+
+    Some(text.to_owned())
 }

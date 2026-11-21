@@ -93,11 +93,11 @@ fn comment(
 
 fn list_instr(
     team_id: &str,
-    incl_opt: Vec<CommentInclOpt>,
+    incl: Vec<CommentInclOpt>,
 ) -> ListCommentInfosInstr {
     ListCommentInfosInstr {
         team_id: team_id.into(),
-        incl_opt,
+        incl,
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     }

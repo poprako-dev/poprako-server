@@ -8,7 +8,6 @@
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter::ChapterInfo;

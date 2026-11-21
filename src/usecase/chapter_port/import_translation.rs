@@ -115,7 +115,7 @@ where
 
             let (
                 final_page_source_count_metrics,
-                imported_page_source_count,
+                imported_page_count,
                 imported_unit_count,
             ) = import_page_sources(
                 repo,
@@ -160,7 +160,7 @@ where
             .await?;
 
             let import_val = ImportChapterTranslationVal {
-                imported_page_source_count,
+                imported_page_source_count: imported_page_count,
                 imported_unit_count,
             };
 
@@ -169,8 +169,7 @@ where
                 Some(token.user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
-                    imported_page_source_count: import_val
-                        .imported_page_source_count,
+                    imported_page_count: import_val.imported_page_source_count,
                     imported_unit_count: import_val.imported_unit_count,
                 },
             );
@@ -300,7 +299,7 @@ where
     C: Context,
     R: PageSourceRepo<C> + UnitRepo<C> + Sync,
 {
-    let mut imported_page_source_count = 0;
+    let mut imported_page_count = 0;
 
     let mut imported_unit_count = 0;
 
@@ -333,15 +332,14 @@ where
         final_page_source_count_metrics
             .push(page_source_import_changes.count_metrics);
 
-        imported_page_source_count +=
-            page_source_import_changes.imported_page_source_count;
+        imported_page_count += page_source_import_changes.imported_page_count;
 
         imported_unit_count += page_source_import_changes.imported_unit_count;
     }
 
     accept!((
         final_page_source_count_metrics,
-        imported_page_source_count,
+        imported_page_count,
         imported_unit_count,
     ))
 }
@@ -367,7 +365,7 @@ struct PageSourceImportChanges {
     // Final visible Unit counters for the page.
     count_metrics: UnitCountMetrics,
     // Whether this page's visible content changed through the import.
-    imported_page_source_count: usize,
+    imported_page_count: usize,
     // Number of source Units created through the import.
     imported_unit_count: usize,
 }
@@ -404,7 +402,7 @@ where
     {
         return accept!(PageSourceImportChanges {
             count_metrics: current_count_metrics,
-            imported_page_source_count: 0,
+            imported_page_count: 0,
             imported_unit_count: 0,
         });
     }
@@ -415,7 +413,7 @@ where
             //
             return accept!(PageSourceImportChanges {
                 count_metrics: current_count_metrics,
-                imported_page_source_count: 0,
+                imported_page_count: 0,
                 imported_unit_count: 0,
             });
         }
@@ -469,7 +467,7 @@ where
 
     accept!(PageSourceImportChanges {
         count_metrics: final_count_metrics,
-        imported_page_source_count: 1,
+        imported_page_count: 1,
         imported_unit_count: imported_page.units.len(),
     })
 }

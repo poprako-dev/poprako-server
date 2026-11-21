@@ -1,5 +1,4 @@
 //! Diesel-backed terminology-entry repository operations.
-
 // Batched terminology import persistence.
 mod upsert;
 

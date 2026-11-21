@@ -20,7 +20,7 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use crate::part::auth::TokenAuth as _;
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::test_util::http_logging::{
-    LogBuffer, capture_dispatch, capture_request,
+    LogBuffer, capture_dispatch, capture_req,
 };
 
 #[test]
@@ -98,7 +98,7 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
     ] {
         let router = Router::new().route(
             "/error",
-            get(move || async move {
+            get(async move || {
                 Err::<(), _>(HttpError::from(expected_error! {
                     variant,
                     message: "source diagnostic".into();
@@ -107,21 +107,20 @@ async fn application_client_errors_warn_at_source_without_http_duplicates() {
             }),
         );
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri("/error")
             .body(Body::empty())
             .unwrap();
 
-        let (actual, body, logs) = capture_request(router, request).await;
+        let (actual, body, logs) = capture_req(router, req).await;
 
         assert_eq!(actual, status);
 
-        let response =
-            serde_json::from_str::<serde_json::Value>(&body).unwrap();
+        let resp = serde_json::from_str::<serde_json::Value>(&body).unwrap();
 
-        assert_eq!(response.get("code"), Some(&json!(code)));
+        assert_eq!(resp.get("code"), Some(&json!(code)));
 
-        assert_eq!(response.get("message"), Some(&json!("source diagnostic")));
+        assert_eq!(resp.get("message"), Some(&json!("source diagnostic")));
 
         assert!(logs.contains("source diagnostic"), "{logs}");
 
@@ -149,25 +148,25 @@ async fn sdk_client_errors_keep_original_diagnostics_at_warning_level() {
         ),
     ] {
         let router = Router::new()
-            .route("/auth", get(|| async {
+            .route("/auth", get(async || {
                 let auth = JwtAuth::new("test-signing-secret", 1).unwrap();
 
                 let source = auth.verify_token("private-invalid-token").err().unwrap();
 
                 Err::<(), _>(HttpError::from(source))
             }))
-            .route("/conflict", get(|| async {
+            .route("/conflict", get(async || {
                 let source = DieselError::DatabaseError(DatabaseErrorKind::SerializationFailure, Box::new("conflicting write".to_owned()));
 
                 Err::<(), _>(HttpError::from(crate::shared::result::diesel(source)))
             }))
-            .route("/mismatch", get(|| async {
+            .route("/mismatch", get(async || {
                 crate::api::http::handler::util::ensure_path_matches_body_id("one", "two")
             }));
 
-        let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+        let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
 
-        let (actual, _, logs) = capture_request(router, request).await;
+        let (actual, _, logs) = capture_req(router, req).await;
 
         assert_eq!(actual, status);
 
@@ -201,7 +200,7 @@ async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
     ] {
         let router = Router::new().route(
             "/failure",
-            get(move || async move {
+            get(async move || {
                 if retryable {
                     return Err::<(), _>(HttpError::from(retryable_error! {
                         message: "retry request".into();
@@ -216,22 +215,20 @@ async fn failure_macros_preserve_http_mapping_without_duplicate_events() {
             }),
         );
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri("/failure")
             .body(Body::empty())
             .unwrap();
 
-        let (actual_status, body, logs) =
-            capture_request(router, request).await;
+        let (actual_status, body, logs) = capture_req(router, req).await;
 
         assert_eq!(actual_status, status);
 
-        let response =
-            serde_json::from_str::<serde_json::Value>(&body).unwrap();
+        let resp = serde_json::from_str::<serde_json::Value>(&body).unwrap();
 
-        assert_eq!(response.get("code"), Some(&json!(code)));
+        assert_eq!(resp.get("code"), Some(&json!(code)));
 
-        assert_eq!(response.get("message"), Some(&json!(response_message)));
+        assert_eq!(resp.get("message"), Some(&json!(response_message)));
 
         assert!(!body.contains("internal diagnostic sentinel"));
 
@@ -268,9 +265,9 @@ fn capture_logs<T>(operation: impl FnOnce() -> T) -> (T, String) {
     let writer = buffer.clone();
 
     let subscriber = tracing_subscriber::fmt()
-        .with_env_filter(crate::log::request_log_filter(Some("info")))
+        .with_env_filter(crate::log::req_log_filter(Some("info")))
         .with_ansi(false)
-        .event_format(crate::log::RequestLogFormat::new(()))
+        .event_format(crate::log::ReqLogFormat::new(()))
         .with_writer(move || writer.clone())
         .finish();
 
@@ -283,11 +280,11 @@ fn capture_logs<T>(operation: impl FnOnce() -> T) -> (T, String) {
 
 #[test]
 fn response_serialization_failure_is_logged_and_concealed() {
-    let (response, logs) = capture_logs(|| {
+    let (resp, logs) = capture_logs(|| {
         HttpBody::new(StatusCode::OK, Unserializable).into_response()
     });
 
-    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
     assert!(
         logs.contains("JSON response serialization failed"),

@@ -1,5 +1,4 @@
 //! Cache traits for process-local online-user leases.
-
 use poprako_orchestra::drive;
 
 use crate::part::cache::oper::online_user::{

@@ -4,7 +4,6 @@
 )]
 
 //! In-memory repository and prom adapters for tests.
-
 // Mock helper for in-memory nucl-related types.
 mod nucl;
 // Fixture construction, kept separate from adapter state and dispatch.
@@ -74,7 +73,7 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comic_archive::ComicArchiveInfo;
 use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::read::proj::member::MemberInfo;
@@ -154,7 +153,7 @@ pub struct MockState {
     /// Mock storage for system mail records.
     pub system_mails: Vec<SystemMailInfo>,
     /// Mock storage for archived comic records.
-    pub comic_archives: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveInfo>,
 
     /// Tombstoned Team identifiers pending physical cleanup.
     pub deleted_team_ids: HashSet<String>,
@@ -227,7 +226,7 @@ pub struct MockSnapshot {
     /// Snapshot of system mail records at the capture time.
     pub system_mails: Vec<SystemMailInfo>,
     /// Snapshot of archived comic records at the capture time.
-    pub comic_archives: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveInfo>,
 
     /// Snapshot of tombstoned Team identifiers.
     pub deleted_team_ids: HashSet<String>,

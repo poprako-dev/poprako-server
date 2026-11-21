@@ -1,5 +1,4 @@
 //! Database repository batching policies.
-
 use std::num::NonZeroU32;
 
 use serde::Deserialize;

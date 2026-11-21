@@ -7,7 +7,6 @@
 //! Convert to [`PageSourceInfoView`] for presentation.
 //!
 //! [`PageSourceInfoView`]: crate::data::view::page_source::PageSourceInfoView
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::unit::UnitCountMetrics;

@@ -1,5 +1,4 @@
 //! Unit read projections.
-
 use time::OffsetDateTime;
 
 use crate::model::shared::unit::UnitCoord;

@@ -1,5 +1,4 @@
 //! RDB-backed assignment repository.
-
 // Shared list query builder for assignment read paths.
 mod list;
 
@@ -133,7 +132,7 @@ async fn find_info_by_user_id_and_comic_id(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[AssignmentInclOpt],
+    incl: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
     let record = t_assignment
@@ -161,7 +160,7 @@ async fn get_info_by_id(
     incl::assignment::populate_assignment_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 

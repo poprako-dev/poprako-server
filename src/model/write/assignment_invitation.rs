@@ -1,5 +1,4 @@
 //! Domain models for chapter assignment invitations.
-
 use crate::value::role::RoleMask;
 
 /// The data needed to insert an assignment invitation row.

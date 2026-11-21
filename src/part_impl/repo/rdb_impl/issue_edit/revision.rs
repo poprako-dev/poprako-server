@@ -1,5 +1,4 @@
 //! Transactional chapter revision updates.
-
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 

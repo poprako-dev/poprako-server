@@ -1,5 +1,4 @@
 //! Pure rules for chapter assignments.
-
 /// Pure permission rules.
 pub mod perm {
     use poprako_util::i18n::trl;

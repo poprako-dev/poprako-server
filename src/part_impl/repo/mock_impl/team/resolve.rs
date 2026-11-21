@@ -1,5 +1,4 @@
 //! In-memory team ownership projections.
-
 #[cfg(test)]
 mod tests;
 

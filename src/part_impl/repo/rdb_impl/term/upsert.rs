@@ -1,5 +1,4 @@
 //! Batched terminology import persistence.
-
 use diesel::pg::Pg;
 use diesel::prelude::{
     BoxableExpression, ExpressionMethods as _, QueryDsl as _,

@@ -1,5 +1,4 @@
 //! Application binding for the reusable general Prom queue.
-
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 mod actor_tests;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]

@@ -122,11 +122,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     created_at, updated_at,
                 } = record;
 
-                drop((
+                let _ = (
                     id, topic, oper, obj_id, ver, domain, gen_value, status,
                     visible_at, retried_count, claim_token, error,
                     created_at, updated_at,
-                ));
+                );
             };
         }
 

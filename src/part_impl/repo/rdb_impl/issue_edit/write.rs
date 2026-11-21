@@ -1,5 +1,4 @@
 //! Atomic review writes through typed Diesel expressions.
-
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Step};

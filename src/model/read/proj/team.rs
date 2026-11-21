@@ -1,5 +1,4 @@
 //! Domain models for team profile storage.
-
 use time::OffsetDateTime;
 
 /// A teamrecord as stored in the database.

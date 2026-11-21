@@ -1,5 +1,4 @@
 //! Repository capability for atomic hierarchy deletion.
-
 #![allow(
     clippy::trait_duplication_in_bounds,
     reason = "drive generates repeated bounds for each transaction step"

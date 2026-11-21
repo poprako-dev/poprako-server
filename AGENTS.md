@@ -1,5 +1,11 @@
 # poprako-server
 
+MUST FOLLOW THE RULES OF LINTER CONFIG!!!!!
+
+NEVER DIRECTLY MODIFY `linters/` DIRECTORY!!!!!
+
+NEVER USE `async-trait` CRATE!!!!!!!! NO DYNAMIC DISPATCH IN TYPE SYSTEM IS ALLOWED!!!!
+
 Rust 2024 backend for manga translation project management. `Cargo.toml`
 defines the workspace; `src/lib.rs` defines the server module graph;
 `src/main.rs` composes production adapters and starts the Axum server.
@@ -8,6 +14,20 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 - Preserve user-authored changes; never overwrite unrelated work.
 - Never modify linters unless the user explicitly requests it.
+- **Never invoke `cargo` directly.** Every build, check, format, lint, and
+  test run must go through the `just` recipes in "Canonical Rust checks".
+  Ad-hoc `cargo check`, `cargo test`, `cargo clippy`, `cargo fmt`,
+  `cargo build`, and `cargo run` invocations multiply build artifacts in
+  `target/` until it grows without bound and every later build slows down.
+  Direct Cargo calls are permitted only inside the checked-in `just` recipes
+  and CI scripts.
+- **Never pass a package, target, feature, profile, or test filter to any
+  build command.** No `-p`, `--package`, `--test`, `--bin`, `--features`,
+  `--profile`, or positional test filter may replace or narrow a recipe's
+  fixed scope. Every `just` recipe here carries one fixed argument set, and
+  any deviation produces a different artifact fingerprint that cannot reuse
+  the existing `target/` contents. Run the whole fixed scope and read its
+  output instead of narrowing it.
 - **Type-safe SQL is mandatory.** All Rust database queries in every
   workspace crate, including tests, must use Diesel's type-safe query DSL
   and typed schema expressions. This applies to joins, subqueries,
@@ -55,18 +75,20 @@ defines the workspace; `src/lib.rs` defines the server module graph;
   from the composition root. Environment-variable configuration is separate.
 - Document every TOML configuration item with an English comment explaining
   its purpose, unit where applicable, default, and any deliberate override.
-- Include units consistently in numeric configuration keys: `_mib` for MiB,
-  `_secs` for seconds, and `_per_second` for rates. Rust `Duration` fields
-  carry their unit in the type and use explicitly unit-bearing TOML names.
+- Duration configuration values are unit-bearing strings such as `30s`, `5m`,
+  or `30d`, so duration keys carry no `_secs` suffix in either TOML or Rust.
+  Other numeric keys include their unit: `_mib` for MiB and `_per_second` for
+  rates.
 - Keep configuration names canonical. Do not add legacy aliases; reject
   unknown fields so obsolete keys cannot silently fall back to defaults.
 
-- For non-trivial work: plan → implement → review with targeted validation.
+- For non-trivial work: plan → implement → review with the fixed validation
+  commands below.
   Read nearby active code and business references before choosing contracts.
 - Load the relevant skills below before editing their areas. Keep changes
   limited to the layers the requested behavior needs.
-- After editing Rust, run the three canonical Rust checks below, plus tests
-  appropriate to the affected code.
+- After editing Rust, run the three canonical Rust checks below, plus the
+  test suite through `just test`.
 - Run custom repository linters only when requested or when validating a CI
   entry point. Basic CI checks: `sh scripts/ci-check.sh`. Full pre-commit CI:
   `sh scripts/ci-local.sh`. A basic check is not a substitute for the full gate.
@@ -86,58 +108,61 @@ lint exemptions belong on the relevant function or boundary module and must
 include an English `reason`. Test-only modules may allow `unwrap_used` and
 `expect_used` for fixture setup and assertions while retaining all other checks.
 
-Agents must prefer these exact `just` commands from the repository root.
-Their Cargo invocations match the Rust checks in `scripts/ci-check.sh`:
+Agents must run these exact `just` commands from the repository root. Their
+Cargo invocations match the Rust checks in `scripts/ci-check.sh` and
+`scripts/ci-test.sh`:
 
-| Local command | Canonical Cargo invocation |
-| --- | --- |
-| `just fmt-check` | `cargo fmt --all --check` |
-| `just fmt` | `cargo fmt --all` |
-| `just check` | `cargo check --workspace --all-targets --all-features` |
-| `just clippy` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| Local command    | Canonical Cargo invocation                                             |
+| ---------------- | ---------------------------------------------------------------------- |
+| `just fmt-check` | `cargo fmt --all --check`                                              |
+| `just fmt`       | `cargo fmt --all`                                                      |
+| `just check`     | `cargo check --workspace --all-targets --all-features`                 |
+| `just clippy`    | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| `just test`      | `cargo test --workspace --all-features`                                |
 
 - After editing Rust, run `just fmt-check`, `just check`, and `just clippy`.
-  Only if `just` is unavailable, use the exact Cargo invocations above.
+  If `just` itself is unavailable, stop and report it; do not fall back to
+  invoking Cargo directly.
 - Use these recipes for routine validation; do not invoke `ci-check.sh` or
   `ci-local.sh` merely to run fmt, check, or clippy. Custom repository linters
   remain subject to the rules above; commits still require the full gate.
-- Do not add, remove, or substitute arguments, including package selection,
-  target selection, features, profiles, or Clippy lint flags. Do not use
-  narrower checks as a preliminary step or retry with a different combination
-  after failure. Fix the failure and rerun the same canonical command.
+- Every recipe is fixed and takes no arguments. Do not add, remove, or
+  substitute arguments, and do not narrow a run with a package, target,
+  feature, profile, or test filter. Do not use narrower checks as a
+  preliminary step or retry with a different combination after failure.
+  Fix the failure and rerun the same canonical command.
 - For formatting changes, use `just fmt`, then `just fmt-check`.
-  Apply the same Cargo fallback only if `just` is unavailable.
-  Do not use `cargo clippy --fix` as a validation shortcut.
+  Do not use Clippy's `--fix` mode as a validation shortcut.
 - Preserve the pinned toolchain and existing Cargo environment/configuration.
   Do not override `RUSTFLAGS`, `CARGO_ENCODED_RUSTFLAGS`, `CARGO_TARGET_DIR`,
   `CARGO_BUILD_TARGET`, or profile/incremental settings, create a separate
   target directory, or run `cargo clean` to work around validation failures.
 - Deviate only when the user explicitly requests a different invocation or
   when executing a checked-in CI/test/coverage workflow that requires it.
-  These rules constrain fmt/check/clippy; choose tests for the affected code.
-- When CI changes these three command combinations, update the `justfile`
-  recipes and this section in the same change so all three stay aligned.
+  These rules constrain fmt, check, clippy, and test runs.
+- When CI changes these command combinations, update the `justfile` recipes
+  and this section in the same change so they stay aligned.
 
 ## Skill routing
 
 Skills live in `.agents/skills/<name>/SKILL.md`. Read only those applicable
 to the task; follow their links when the referenced area is affected.
 
-| Task | Skill |
-| --- | --- |
-| Rust source creation, modification, moves, or review | `general-conventions` |
-| Backend behavior changes across layers | `implement-fullchain-spec` |
+| Task                                                                            | Skill                          |
+| ------------------------------------------------------------------------------- | ------------------------------ |
+| Rust source creation, modification, moves, or review                            | `general-conventions`          |
+| Backend behavior changes across layers                                          | `implement-fullchain-spec`     |
 | Business IDs, source/artwork identity, object keys, and Issue creation receipts | `identity-and-object-key-spec` |
-| Migration SQL creation, modification, review, or Diesel rollback/reset | `migration-sql-conventions` |
-| Use cases, repository contracts, or delivery boundaries | `usecase-boundaries` |
-| Owned Models, borrowed Shapes, normalization and repository payload ownership | `model-shape-boundaries` |
-| Instr, Val, View types and dependencies | `data-dto-boundaries` |
-| Harn, AppHarn, startup or test composition | `harness-spec` |
-| Error classification, conversion, or propagation | `error-handling-spec` |
-| Instrumentation, logging, or error-conversion events | `tracing-usage-spec` |
-| Tests or externally visible behavior | `test-spec` |
-| Rust struct fields in any workspace crate | `struct-field-blank-lines` |
-| Module extraction for the file-length limit | `module-splitting-conventions` |
+| Migration SQL creation, modification, review, or Diesel rollback/reset          | `migration-sql-conventions`    |
+| Use cases, repository contracts, or delivery boundaries                         | `usecase-boundaries`           |
+| Owned Models, borrowed Shapes, normalization and repository payload ownership   | `model-shape-boundaries`       |
+| Instr, Val, View types and dependencies                                         | `data-dto-boundaries`          |
+| Harn, AppHarn, startup or test composition                                      | `harness-spec`                 |
+| Error classification, conversion, or propagation                                | `error-handling-spec`          |
+| Instrumentation, logging, or error-conversion events                            | `tracing-usage-spec`           |
+| Tests or externally visible behavior                                            | `test-spec`                    |
+| Rust struct fields in any workspace crate                                       | `struct-field-blank-lines`     |
+| Module extraction for the file-length limit                                     | `module-splitting-conventions` |
 
 Server-specific domain, DTO, and error rules apply to the server crate.
 Do not impose its HTTP types or domain dependencies on infrastructure crates.

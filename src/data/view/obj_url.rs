@@ -1,12 +1,9 @@
 //! Presentation of owned or shared object URL text.
-
 #[cfg(test)]
 mod tests;
 
 use std::ops::Deref;
 use std::sync::Arc;
-
-use serde::{Serialize, Serializer};
 
 // Single-consumer text stays owned; repeated consumers share the same bytes.
 enum ObjUrlText {
@@ -27,6 +24,21 @@ enum ObjUrlText {
 pub struct ObjUrlView {
     /// Ownership selected by the number of consumers in the presentation batch.
     text: ObjUrlText,
+}
+
+impl ObjUrlView {
+    /// Returns the URL text, moving a single-consumer buffer or cloning a
+    /// buffer that is still shared with another owner.
+    #[must_use]
+    pub fn into_string(self) -> String {
+        //
+        match self.text {
+            //
+            ObjUrlText::Owned { text } => text,
+
+            ObjUrlText::Shared { text } => Arc::unwrap_or_clone(text),
+        }
+    }
 }
 
 impl From<String> for ObjUrlView {
@@ -60,15 +72,5 @@ impl Deref for ObjUrlView {
 
             ObjUrlText::Shared { text } => text.as_str(),
         }
-    }
-}
-
-impl Serialize for ObjUrlView {
-    // Keeps the HTTP representation a string.
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self)
     }
 }

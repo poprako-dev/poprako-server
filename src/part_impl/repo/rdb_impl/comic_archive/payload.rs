@@ -1,5 +1,4 @@
 //! Byte-bounded permanent comic archive payload queries.
-
 use diesel::define_sql_function;
 use diesel::expression::BoxableExpression;
 use diesel::pg::Pg;
@@ -35,10 +34,6 @@ pub async fn list_payloads(
         f_archived_payload, f_created_at, f_id, f_team_id, t_comic_archive,
     };
 
-    let mut query = t_comic_archive
-        .filter(f_team_id.eq(oper.team_id))
-        .into_boxed();
-
     let mut intervals = Box::new(
         f_created_at
             .ge(OffsetDateTime::UNIX_EPOCH)
@@ -54,7 +49,10 @@ pub async fn list_payloads(
             ));
     }
 
-    query = query.filter(intervals);
+    let mut query = t_comic_archive
+        .filter(f_team_id.eq(oper.team_id))
+        .filter(intervals)
+        .into_boxed();
 
     if let Some((created_at, id)) = oper.after {
         //

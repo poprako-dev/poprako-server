@@ -1,5 +1,4 @@
 //! Domain models for member invitations.
-
 use crate::model::read::proj::user::UserInfo;
 use crate::value::role::RoleMask;
 

@@ -1,19 +1,8 @@
 //! Chapter review import instructions, independent of read projections.
-
-#[cfg(test)]
-mod tests;
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::model::shared::issue::IssueRect;
 use crate::model::write::issue_import::{IssueImport, PageIssueImport};
 
 /// A finite rectangle contained within the normalized whole composite.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueRectInstr {
     /// Left edge, in [0, 1].
     pub x_coord: f64,
@@ -38,9 +27,6 @@ impl From<IssueRectInstr> for IssueRect {
 }
 
 /// One issue in a complete chapter import.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueInstr {
     /// Open category, required to contain non-whitespace text.
     pub variant: String,
@@ -63,8 +49,6 @@ impl From<IssueInstr> for IssueImport {
 }
 
 /// Issues for one explicit composite page in the imported review file.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageIssuesInstr {
     /// Stable composite page ID within the target Chapter.
     pub page_artwork_id: String,
@@ -83,8 +67,6 @@ impl From<PageIssuesInstr> for PageIssueImport {
 }
 
 /// Replaces the single current review for a Chapter using explicit composite IDs.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterIssuesInstr {
     /// Composite page IDs with their issues; omitted pages have no issues.
     pub pages: Vec<PageIssuesInstr>,

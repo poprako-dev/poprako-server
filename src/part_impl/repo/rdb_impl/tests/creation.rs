@@ -4,7 +4,6 @@
 )]
 
 //! Chapter creation contracts exercised through use cases and real `PostgreSQL`.
-
 mod failure;
 mod snapshot;
 

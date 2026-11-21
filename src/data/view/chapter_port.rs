@@ -1,24 +1,16 @@
 //! View DTOs for chapter translation port import and export.
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::page_source_port::PageSourceTranslationPortView;
 use crate::data::view::upload::UploadHeaderView;
-use crate::model::shared::translation_document::ChapterTranslationDocument;
+use crate::value::chapter_port::document::ChapterTranslationDocument;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
-#[derive(Clone, Deserialize, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Clone)]
 pub struct ChapterTranslationPortView {
     /// Chapter identifier from the exporting chapter.
     pub chapter_id: String,
     /// Ordinal index of the chapter within its comic.
     pub chapter_index: usize,
     /// Optional subtitle from the exporting chapter.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter_subtitle: Option<String>,
 
     /// Comic identifier from the exporting comic.
@@ -45,8 +37,6 @@ impl From<ChapterTranslationDocument> for ChapterTranslationPortView {
 }
 
 /// A direct artwork upload capability.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterArtworkUploadSlotView {
     /// Presigned PUT URL.
     pub put_url: String,

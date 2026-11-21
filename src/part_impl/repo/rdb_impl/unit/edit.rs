@@ -1,5 +1,4 @@
 //! RDB-backed Unit edit application and sequence mutation.
-
 use std::collections::BTreeMap;
 
 use diesel::expression::functions::declare_sql_function;
@@ -35,8 +34,7 @@ use crate::util::Patch;
 
 #[declare_sql_function]
 extern "SQL" {
-    /// `PostgreSQL` text trim with an explicit character set.
-    // PostgreSQL text trim with an explicit character set.
+    // `PostgreSQL` text trim with an explicit character set.
     fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
 }
 

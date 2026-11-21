@@ -2,7 +2,6 @@
 
 //! Crate root: explicit public re-exports and internal module organization for
 //! the `PopRaKo` application core.
-
 // Shared error types and macros, declared first for application-wide lexical scope.
 #[macro_use]
 mod result;
@@ -42,7 +41,6 @@ mod util;
 // cases.
 mod value;
 
-// Concrete port implementations: repo, cache, auth, prom, image, effect, nucl.
 /// Concrete application port adapters.
 pub mod part_impl;
 
@@ -60,22 +58,12 @@ pub use crate::api::http::openapi::ApiDoc;
 pub use crate::complex::user as user_complex;
 
 pub use crate::api::http::server::serve;
-pub use crate::api::http::state::AppHarn;
 pub use crate::config::AppConfig;
-pub use crate::config::cache::CacheConfig;
-pub use crate::config::http::HttpConfig;
-pub use crate::config::image::ImageConfig;
-pub use crate::config::invitation::InvitationConfig;
-pub use crate::config::repo::RepoConfig;
-pub use crate::config::sched::{SchedConfig, SchedTaskConfig};
-pub use crate::config::subtree_delete::SubtreeDeleteConfig;
-pub use crate::extra::sched::task::{SchedNext, SchedTask, SchedTaskRunner};
 pub use crate::extra::sched::{Sched, SchedDesc};
 pub use crate::extra::subtree_delete::SubtreeDeleteTask;
 pub use crate::harn::Harn;
 pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};
-pub use crate::part::prom::payload::PromPayload;
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::cache::mem_impl::MemCache;
 pub use crate::part_impl::effect::async_impl::AsyncEventBus;
@@ -87,5 +75,4 @@ pub use crate::part_impl::obj_dept::r2_impl::R2ObjDeptPool;
 pub use crate::part_impl::obj_dept::{NormObjDept, RdbObjDeptProm};
 pub use crate::part_impl::prom::dispatch::dispatch as dispatch_prom;
 pub use crate::part_impl::repo::RdbRepo;
-pub use crate::result::{BaseError, BaseRest};
 pub use crate::shared::RdbContext;

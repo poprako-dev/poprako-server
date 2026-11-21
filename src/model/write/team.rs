@@ -1,5 +1,4 @@
 //! Domain models for team profile storage.
-
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {

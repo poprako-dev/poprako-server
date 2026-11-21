@@ -8,7 +8,6 @@
 //! Diesel's generated `AsChangeset` implementation reports
 //! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
 //! Flattening it would change the unchanged, clear, and set update semantics.
-
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
@@ -35,11 +34,7 @@ pub struct ComicInfoRecord {
     pub f_title: String,
     pub f_author: String,
     pub f_description: Option<String>,
-    pub f_composed_title: String,
-
     pub f_chapter_count: i32,
-    pub f_chapter_next_index: i32,
-
     pub f_creator_id: String,
 
     pub f_last_active_at: OffsetDateTime,
@@ -197,14 +192,6 @@ impl<'a> ComicPack<'a> {
     pub const fn chapter_count(mut self, val: i32) -> Self {
         //
         self.f_chapter_count = Some(val);
-
-        self
-    }
-
-    #[must_use]
-    pub const fn chapter_next_index(mut self, val: i32) -> Self {
-        //
-        self.f_chapter_next_index = Some(val);
 
         self
     }

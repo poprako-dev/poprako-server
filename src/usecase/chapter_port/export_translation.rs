@@ -24,10 +24,6 @@ use crate::model::read::proj::page_source::{
     PageSourceInfo, PageSourceRawIdentInfo,
 };
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::shared::translation_document::{
-    ChapterTranslationDocument, PageSourceTranslationDocument,
-    UnitTranslationDocument,
-};
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageSourceImage;
@@ -55,6 +51,10 @@ use crate::usecase::stage as stage_usecase;
 use crate::value::business_id::PageSourceId;
 use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::ExportFormatSpec;
+use crate::value::chapter_port::document::{
+    ChapterTranslationDocument, PageSourceTranslationDocument,
+    UnitTranslationDocument,
+};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
@@ -359,8 +359,8 @@ fn make_native_document(
                 .collect();
 
             PageSourceTranslationDocument {
-                page_source_id: page_source_info.id.clone(),
-                page_source_index: page_source_info.index,
+                page_id: page_source_info.id.clone(),
+                page_index: page_source_info.index,
                 units: unit_documents,
             }
         })
@@ -388,8 +388,8 @@ fn make_unit_export(
     UnitTranslationDocument {
         unit_id: unit_info.id.clone(),
         unit_index: index,
-        page_source_id: page_source_info.id.clone(),
-        page_source_index: page_source_info.index,
+        page_id: page_source_info.id.clone(),
+        page_index: page_source_info.index,
         x_coord: unit_info.coord.x_coord,
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,

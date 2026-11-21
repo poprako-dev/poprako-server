@@ -5,12 +5,14 @@
 
 use super::*;
 
-// import_query(ImportTermbaseQuery)(positive): force_merge defaults to false.
-// native_wire(ExportTermbaseVal)(positive): exported JSON deserializes as the independent import Instr.
+// import_query(ImportTermbasePayload)(positive): force_merge defaults to false.
+// native_wire(ExportTermbasePayload)(positive): exported JSON deserializes as the independent import Instr.
 
+use crate::api::http::object::termbase_port::AppendTermbaseBody;
+use crate::api::http::object::termbase_port::ExportTermbasePayload;
+use crate::api::http::object::termbase_port::ImportTermbaseBody;
+use crate::api::http::object::termbase_port::TermbaseTermObj;
 use axum::extract::Query;
-
-use crate::data::view::termbase_port::TermbaseTermView;
 
 #[test]
 fn import_query_defaults_force_merge_to_false() {
@@ -26,10 +28,10 @@ fn import_query_defaults_force_merge_to_false() {
 #[test]
 fn native_export_wire_deserializes_as_import_instr() {
     //
-    let export_termbase_val = ExportTermbaseVal {
+    let export_termbase_val = ExportTermbasePayload {
         name: "Glossary".into(),
         description: None,
-        terms: vec![TermbaseTermView {
+        terms: vec![TermbaseTermObj {
             source: "Source".into(),
             targets: vec!["Target".into()],
             comment: None,
@@ -38,15 +40,15 @@ fn native_export_wire_deserializes_as_import_instr() {
 
     let json = serde_json::to_value(export_termbase_val).unwrap();
 
-    let instr = serde_json::from_value::<ImportTermbaseInstr>(json).unwrap();
+    let instr = serde_json::from_value::<ImportTermbaseBody>(json).unwrap();
 
     assert_eq!(instr.name, "Glossary");
 
     assert_eq!(instr.terms.first().unwrap().source, "Source");
 }
 
-// append_wire(AppendTermbaseInstr)(positive): empty terms and omitted or null comments are accepted.
-// append_wire(AppendTermbaseInstr)(negative): library metadata, persistence fields, and malformed entries are rejected.
+// append_wire(AppendTermbasePayload)(positive): empty terms and omitted or null comments are accepted.
+// append_wire(AppendTermbasePayload)(negative): library metadata, persistence fields, and malformed entries are rejected.
 #[test]
 fn append_wire_accepts_only_strict_terms_documents() {
     for value in [
@@ -55,7 +57,7 @@ fn append_wire_accepts_only_strict_terms_documents() {
         serde_json::json!({"terms": [{"source": "S", "targets": ["T"],
             "comment": null}]}),
     ] {
-        assert!(serde_json::from_value::<AppendTermbaseInstr>(value).is_ok());
+        assert!(serde_json::from_value::<AppendTermbaseBody>(value).is_ok());
     }
 
     for value in [
@@ -67,6 +69,6 @@ fn append_wire_accepts_only_strict_terms_documents() {
             "id": "foreign"}]}),
         serde_json::json!({"terms": [{"source": "S", "targets": "T"}]}),
     ] {
-        assert!(serde_json::from_value::<AppendTermbaseInstr>(value).is_err());
+        assert!(serde_json::from_value::<AppendTermbaseBody>(value).is_err());
     }
 }

@@ -1,5 +1,4 @@
 //! Pure rules for page entities.
-
 /// Pure chapter-page manifest matching.
 pub mod manifest;
 /// Pure permission rules.

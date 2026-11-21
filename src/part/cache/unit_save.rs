@@ -1,5 +1,4 @@
 //! Process-local coordination and retention of Unit save tokens.
-
 use std::sync::Arc;
 
 use uuid::Uuid;

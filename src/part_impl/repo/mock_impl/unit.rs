@@ -1,5 +1,4 @@
 //! In-memory implementation of Unit repository operations.
-
 // Internal organization of the `orchestra` module.
 mod orchestra;
 

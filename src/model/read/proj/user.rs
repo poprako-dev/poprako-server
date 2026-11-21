@@ -1,5 +1,4 @@
 //! Domain models for user authentication and profile storage.
-
 use time::OffsetDateTime;
 
 /// A userprofile record as stored in the database.

@@ -1,5 +1,4 @@
 //! Mock implementation of `PageSourceRepo`.
-
 // Internal organization of the `orchestra` module.
 mod orchestra;
 
@@ -21,12 +20,9 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::value::page_source::MAX_CHAPTER_PAGE_SOURCE_COUNT;
 
-// Internal implementation of `list_infos`.
 // Look up page info by primary key; returns a business error on miss.
 fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageSourceInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut page_source_infos = state
         .pages
         .iter()
@@ -166,7 +162,6 @@ fn get_page_source_unit_scope(
     })
 }
 
-// Internal implementation of `list_first_page_sources`.
 fn list_first_page_sources(
     state: &MockState,
     chapter_ids: &[&str],

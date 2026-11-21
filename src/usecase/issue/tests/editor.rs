@@ -1,5 +1,4 @@
 //! Versioned page editing and chapter-wide category behavior.
-
 use super::{input, review_mock, submit, token};
 use crate::data::instr::issue_edit::{
     IssueEditEntryInstr, RenameIssueEditVariantInstr, SavePageIssuesInstr,

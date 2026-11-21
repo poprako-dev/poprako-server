@@ -1,5 +1,4 @@
 //! source page handlers: list, delete, batch allocation, and single image upload flow.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
@@ -9,20 +8,18 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::page_source::{
+    AllocChapterPageSourcesBody, AllocChapterPageSourcesPayload,
+    AllocPageSourceImageBody, AllocatedPageSourcePayload,
+    ListPageSourceInfosBody, ListPageSourceUnitDiffStatsBody,
+    ListPageSourceUnitFlaggedStatsBody, MarkPageSourceImageUploadedBody,
+    PageSourceInfoObj, PageSourceUnitDiffStatsPayload,
+    PageSourceUnitFlaggedStatsPayload,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::page_source::{
-    AllocChapterPageSourcesInstr, AllocPageSourceImageInstr,
-    ListPageSourceInfosInstr, ListPageSourceUnitDiffStatsInstr,
-    ListPageSourceUnitFlaggedStatsInstr, MarkPageSourceImageUploadedInstr,
-};
-use crate::data::val::page_source::{
-    AllocChapterPageSourcesVal, AllocatedPageSourceVal,
-    PageSourceUnitDiffStatsVal, PageSourceUnitFlaggedStatsVal,
-};
-use crate::data::view::page_source::PageSourceInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
@@ -42,7 +39,7 @@ use crate::usecase::page_source::{
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "PageSources \
-        listed", body = HttpBody<Vec<PageSourceInfoView>>),
+        listed", body = HttpBody<Vec<PageSourceInfoObj>>),
         (status = 403, description = "No perm to list pages in this chapter"),
     ),
 ))]
@@ -51,18 +48,17 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Vec<PageSourceInfoView>> {
+) -> HttpResult<Vec<PageSourceInfoObj>> {
     //
-    let instr = ListPageSourceInfosInstr { chapter_id };
+    let instr = ListPageSourceInfosBody { chapter_id };
 
     Ok(
         page_source_list_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
             (harn.repo(), harn.obj_dept()),
             user_token,
-            instr,
+            instr.into(),
         )
-        .await?
-        .accept(StatusCode::OK),
+        .await?.accept_into(StatusCode::OK),
     )
 }
 
@@ -76,7 +72,7 @@ pub async fn list_infos(
         (status = 200, description = "Visible Unit text counts for \
         PageSources with edits or revision-only additions, \
         in original PageSource order",
-                body = HttpBody<Vec<PageSourceUnitDiffStatsVal>>),
+                body = HttpBody<Vec<PageSourceUnitDiffStatsPayload>>),
         (status = 403,
             description = "No perm to list PageSources in this Chapter"),
         (status = 422, description = "Chapter not found"),
@@ -87,16 +83,16 @@ pub async fn list_unit_diff_stats(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Vec<PageSourceUnitDiffStatsVal>> {
+) -> HttpResult<Vec<PageSourceUnitDiffStatsPayload>> {
     //
-    let instr = ListPageSourceUnitDiffStatsInstr { chapter_id };
+    let instr = ListPageSourceUnitDiffStatsBody { chapter_id };
 
     Ok(page_source_list_usecase::list_unit_diff_stats::<
         RdbContext<ReptRead>,
         RdbRepo,
-    >((harn.repo(),), user_token, instr)
+    >((harn.repo(),), user_token, instr.into())
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/page-sources/unit-flagged-stats` — list source pages containing visible flagged Units.
@@ -108,7 +104,7 @@ pub async fn list_unit_diff_stats(
     responses(
         (status = 200, description = "Visible \
         flagged Unit counts for PageSources, in original PageSource order",
-            body = HttpBody<Vec<PageSourceUnitFlaggedStatsVal>>),
+            body = HttpBody<Vec<PageSourceUnitFlaggedStatsPayload>>),
         (status = 403,
             description = "No perm to list PageSources in this Chapter"),
         (status = 422, description = "Chapter not found"),
@@ -119,16 +115,16 @@ pub async fn list_unit_flagged_stats(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Vec<PageSourceUnitFlaggedStatsVal>> {
+) -> HttpResult<Vec<PageSourceUnitFlaggedStatsPayload>> {
     //
-    let instr = ListPageSourceUnitFlaggedStatsInstr { chapter_id };
+    let instr = ListPageSourceUnitFlaggedStatsBody { chapter_id };
 
     Ok(page_source_list_usecase::list_unit_flagged_stats::<
         RdbContext<ReptRead>,
         RdbRepo,
-    >((harn.repo(),), user_token, instr)
+    >((harn.repo(),), user_token, instr.into())
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `GET /api/v1/page-sources/{page_source_id}` — fetch one page.
@@ -139,7 +135,7 @@ pub async fn list_unit_flagged_stats(
     params(("page_source_id" = String, Path, description = "PageSource ID")),
     responses(
         (status = 200, description = "PageSource \
-        info retrieved", body = HttpBody<PageSourceInfoView>),
+        info retrieved", body = HttpBody<PageSourceInfoObj>),
         (status = 403, description = "No perm to view this page"),
         (status = 404, description = "PageSource not found"),
     ),
@@ -149,7 +145,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(page_source_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<PageSourceInfoView> {
+) -> HttpResult<PageSourceInfoObj> {
     //
     Ok(
         page_source_list_usecase::get_info::<RdbContext<ReptRead>, RdbRepo, _>(
@@ -158,7 +154,7 @@ pub async fn get_info(
             page_source_id,
         )
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -196,10 +192,11 @@ pub async fn delete(
     path = "/api/v1/chapters/{chapter_id}/page-sources/alloc",
     tag = "page-sources",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = AllocChapterPageSourcesInstr,
+    request_body = AllocChapterPageSourcesBody,
     responses(
-        (status = 200, description = "PageSource \
-        upload slots allocated", body = HttpBody<AllocChapterPageSourcesVal>),
+        (status = 200,
+        description = "PageSource upload slots allocated",
+        body = HttpBody<AllocChapterPageSourcesPayload>),
         (status = 422, description = "Path id does not match body chapter id"),
         (status = 403, description = "No perm to allocate pages in this \
         chapter"),
@@ -212,8 +209,8 @@ pub async fn alloc_chapter_page_sources(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocChapterPageSourcesInstr>,
-) -> HttpResult<AllocChapterPageSourcesVal> {
+    Json(instr): Json<AllocChapterPageSourcesBody>,
+) -> HttpResult<AllocChapterPageSourcesPayload> {
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
@@ -232,10 +229,10 @@ pub async fn alloc_chapter_page_sources(
             &harn.config().image,
         ),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/page-sources/{page_source_id}/image/alloc` — allocate a replacement page image.
@@ -244,10 +241,11 @@ pub async fn alloc_chapter_page_sources(
     path = "/api/v1/page-sources/{page_source_id}/image/alloc",
     tag = "page-sources",
     params(("page_source_id" = String, Path, description = "PageSource ID")),
-    request_body = AllocPageSourceImageInstr,
+    request_body = AllocPageSourceImageBody,
     responses(
-        (status = 200, description = "PageSource \
-        image upload URL allocated", body = HttpBody<AllocatedPageSourceVal>),
+        (status = 200,
+        description = "PageSource image upload URL allocated",
+        body = HttpBody<AllocatedPageSourcePayload>),
         (status = 403, description = "No perm to modify this page's image"),
         (status = 422, description = "PageSource not found, conflicting image \
         metadata, or published chapter"),
@@ -258,8 +256,8 @@ pub async fn alloc_image(
     State(harn): State<AppHarn>,
     Path(page_source_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<AllocPageSourceImageInstr>,
-) -> HttpResult<AllocatedPageSourceVal> {
+    Json(instr): Json<AllocPageSourceImageBody>,
+) -> HttpResult<AllocatedPageSourcePayload> {
     //
     Ok(page_source_alloc_usecase::alloc_image::<
         _,
@@ -277,10 +275,10 @@ pub async fn alloc_image(
         ),
         user_token,
         page_source_id,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::OK))
+    .accept_into(StatusCode::OK))
 }
 
 /// `POST /api/v1/page-sources/{page_source_id}/image/mark-uploaded` — confirm a page image upload.
@@ -289,7 +287,7 @@ pub async fn alloc_image(
     path = "/api/v1/page-sources/{page_source_id}/image/mark-uploaded",
     tag = "page-sources",
     params(("page_source_id" = String, Path, description = "PageSource ID")),
-    request_body = MarkPageSourceImageUploadedInstr,
+    request_body = MarkPageSourceImageUploadedBody,
     responses(
         (status = 204, description = "PageSource image upload confirmed"),
         (status = 403, description = "No perm to modify this page's image"),
@@ -302,7 +300,7 @@ pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,
     Path(page_source_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<MarkPageSourceImageUploadedInstr>,
+    Json(instr): Json<MarkPageSourceImageUploadedBody>,
 ) -> HttpNoContent {
     //
     page_source_usecase::mark_image_uploaded::<
@@ -314,7 +312,7 @@ pub async fn mark_image_uploaded(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         page_source_id,
-        instr,
+        instr.into(),
     )
     .await?;
 

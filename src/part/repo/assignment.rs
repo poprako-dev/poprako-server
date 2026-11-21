@@ -1,5 +1,4 @@
 //! Repository traits for the assignment domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::assignment::{

@@ -5,7 +5,6 @@
 //! envelope containing `code` and `data`. Empty success responses use
 //! [`NoContent`] to emit a `204 No Content` with no body. Errors are propagated
 //! as [`HttpError`].
-
 #[cfg(test)]
 // HTTP result test fixtures are compiled only for tests.
 mod tests;
@@ -44,7 +43,7 @@ pub struct HttpError {
     code: NonZeroU16,
 
     /// Human-readable error detail, omitted when absent.
-    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     message: Option<String>,
 }
@@ -95,8 +94,8 @@ impl HttpError {
         }
     }
 
-    /// 503 Service Unavailable with a generic localized message.
-    pub fn unavailable() -> Self {
+    // 503 Service Unavailable with a generic localized message.
+    fn unavailable() -> Self {
         Self {
             status: StatusCode::SERVICE_UNAVAILABLE,
             code: nonzero_code(9),
@@ -144,7 +143,7 @@ impl From<BaseError> for HttpError {
 impl IntoResponse for HttpError {
     // Converts a boundary error into JSON response with status code.
     fn into_response(self) -> Response {
-        json_response(self.status, self)
+        json_resp(self.status, self)
     }
 }
 
@@ -230,11 +229,11 @@ impl IntoResponse for HttpBody<HttpRawBody> {
             ..
         } = self;
 
-        let mut response = (status, Body::from(data.bytes)).into_response();
+        let mut resp = (status, Body::from(data.bytes)).into_response();
 
-        response.headers_mut().extend(headers);
+        resp.headers_mut().extend(headers);
 
-        response
+        resp
     }
 }
 
@@ -335,7 +334,7 @@ where
             data,
         } = self;
 
-        let mut response = json_response(
+        let mut resp = json_resp(
             status,
             Self {
                 status,
@@ -345,9 +344,9 @@ where
             },
         );
 
-        response.headers_mut().extend(headers);
+        resp.headers_mut().extend(headers);
 
-        response
+        resp
     }
 }
 
@@ -390,11 +389,11 @@ impl IntoResponse for NoContent {
     // Converts a 204 marker into an empty HTTP response with headers.
     fn into_response(self) -> Response {
         //
-        let mut response = StatusCode::NO_CONTENT.into_response();
+        let mut resp = StatusCode::NO_CONTENT.into_response();
 
-        response.headers_mut().extend(self.headers);
+        resp.headers_mut().extend(self.headers);
 
-        response
+        resp
     }
 }
 
@@ -434,6 +433,73 @@ where
     }
 }
 
+/// Converts a use-case value into its HTTP wire representation.
+pub trait Wire {
+    /// Serializable wire type produced by this conversion.
+    type Target: Serialize;
+
+    /// Converts the value into its wire representation.
+    fn into_wire(self) -> Self::Target;
+}
+
+impl<T> Wire for Vec<T>
+where
+    T: Wire,
+{
+    // Serializable wire payload produced by this conversion.
+    type Target = Vec<T::Target>;
+
+    // Converts each element into its wire representation.
+    fn into_wire(self) -> Self::Target {
+        self.into_iter().map(Wire::into_wire).collect()
+    }
+}
+
+impl<T> Wire for Option<T>
+where
+    T: Wire,
+{
+    // Serializable wire payload produced by this conversion.
+    type Target = Option<T::Target>;
+
+    // Converts the present element into its wire representation.
+    fn into_wire(self) -> Self::Target {
+        self.map(Wire::into_wire)
+    }
+}
+
+impl Wire for String {
+    // Serializable wire payload produced by this conversion.
+    type Target = Self;
+
+    // Keeps the owned text unchanged.
+    fn into_wire(self) -> Self::Target {
+        self
+    }
+}
+
+impl Wire for () {
+    // Serializable wire payload produced by this conversion.
+    type Target = ();
+
+    // Keeps the empty value unchanged.
+    fn into_wire(self) {}
+}
+
+/// Converts a use-case value into its wire payload before wrapping it.
+pub trait AcceptInto: Wire {
+    /// Converts `self` into its wire payload and wraps it with the provided
+    /// status code.
+    fn accept_into(self, status_code: StatusCode) -> HttpBody<Self::Target>
+    where
+        Self: Sized,
+    {
+        accept(self.into_wire(), status_code)
+    }
+}
+
+impl<T> AcceptInto for T where T: Wire {}
+
 /// Returns a `204 No Content` response with an empty body.
 pub fn no_content() -> NoContent {
     NoContent::new()
@@ -451,7 +517,7 @@ const fn nonzero_code(code: u16) -> NonZeroU16 {
 }
 
 // Serializes one JSON response and records serialization failures.
-fn json_response<T>(status: StatusCode, value: T) -> Response
+fn json_resp<T>(status: StatusCode, value: T) -> Response
 where
     T: Serialize,
 {

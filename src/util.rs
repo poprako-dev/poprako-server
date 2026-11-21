@@ -2,7 +2,6 @@
 //!
 //! This module currently hosts common value-object helpers that are used by
 //! many layers (model conversion, storage identifiers, and partial updates).
-
 /// Tagged request representation for partial updates.
 pub mod patch_input;
 

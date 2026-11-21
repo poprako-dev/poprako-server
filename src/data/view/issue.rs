@@ -1,16 +1,8 @@
 //! Read-only issue and geometry presentation.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::model::read::proj::issue::IssueInfo;
 use crate::model::shared::issue::IssueRect;
 
 /// Geometry in normalized whole-page coordinates.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueRectView {
     /// Left edge.
     pub x_coord: f64,
@@ -35,8 +27,6 @@ impl From<IssueRect> for IssueRectView {
 }
 
 /// Read-only issue in the chapter's single current review.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueInfoView {
     /// Server-generated identity.
     pub id: String,

@@ -1,5 +1,4 @@
 //! Domain rules and perm checks for page Units.
-
 // Linear-time linked-sequence planning for Unit edits.
 mod edit;
 // Literal text transformation for existing Unit content.

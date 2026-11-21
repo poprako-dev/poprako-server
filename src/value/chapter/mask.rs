@@ -113,22 +113,6 @@ impl StageMask {
         self.get_phase(stage) == phase
     }
 
-    /// Check if any of the given stages has a non-`Pending` phase.
-    pub fn has_any_stage(self, stages: &[Stage]) -> bool {
-        //
-        stages
-            .iter()
-            .any(|s| self.get_phase(*s) != StagePhase::Pending)
-    }
-
-    /// Check if all of the given stages have a non-`Pending` phase.
-    pub fn has_every_stage(self, stages: &[Stage]) -> bool {
-        //
-        stages
-            .iter()
-            .all(|s| self.get_phase(*s) != StagePhase::Pending)
-    }
-
     /// Check if the mask fully contains another mask's phases.
     ///
     /// For each 2-bit slot, `self`'s bits must be a superset of `other`'s

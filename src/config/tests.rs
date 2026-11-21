@@ -93,23 +93,23 @@ fn partial_overrides_reach_runtime_policy() {
         [cache]
         unit_save_limit_mib = 2
         unit_save_token_budget = 32
-        unit_save_ttl_secs = 23
-        online_user_ttl_secs = 11
+        unit_save_ttl = "23s"
+        online_user_ttl = "11s"
         [repo]
         subtree_sweep_batch_size = 3
         unit_order_query_batch_size = 2
         [invitation]
-        member_ttl_secs = 13
-        assignment_ttl_secs = 19
+        member_ttl = "13s"
+        assignment_ttl = "19s"
         [effect]
         queue_capacity = 3
         [sched]
-        shutdown_grace_secs = 0
+        shutdown_grace = "0s"
         [subtree_delete]
         concurrency = 3
-        timeout_secs = 17
-        idle_interval_secs = 2
-        retry_interval_secs = 4
+        timeout = "17s"
+        idle_interval = "2s"
+        retry_interval = "4s"
     "#,
     )
     .unwrap();
@@ -164,12 +164,13 @@ fn invalid_runtime_settings_are_rejected() {
         "[cache]\nunit_save_limit_mib = 0",
         "[cache]\nunit_save_limit_mib = 4294967296",
         "[cache]\nunit_save_token_budget = 0",
-        "[cache]\nunit_save_ttl_secs = 0",
-        "[cache]\nunit_save_ttl_secs = -1",
-        "[cache]\nunit_save_ttl_secs = 31536000001",
+        "[cache]\nunit_save_ttl = \"0s\"",
+        "[cache]\nunit_save_ttl = \"-1s\"",
+        "[cache]\nunit_save_ttl = \"31536000001s\"",
+        "[cache]\nunit_save_ttl = \"forever\"",
         "[cache]\nunit_save_limit_mib = 4096\nunit_save_token_budget = 1",
-        "[cache]\nonline_user_ttl_secs = 0",
-        "[cache]\nonline_user_ttl_secs = -1",
+        "[cache]\nonline_user_ttl = \"0s\"",
+        "[cache]\nonline_user_ttl = \"-1s\"",
         "[repo]\nsubtree_sweep_batch_size = 0",
         "[repo]\nunit_order_query_batch_size = 0",
         "[repo]\nsubtree_sweep_batch_size = 4294967296",
@@ -178,10 +179,10 @@ fn invalid_runtime_settings_are_rejected() {
         "[comic_archive_export]\nartifact_limit_mib = 0",
         "[comic_archive_export]\nconcurrency = 0",
         "[comic_archive_export]\npayload_limit_mib = 8",
-        "[invitation]\nmember_ttl_secs = 0",
-        "[invitation]\nassignment_ttl_secs = 0",
-        "[invitation]\nmember_ttl_secs = 1000000000000",
-        "[invitation]\nassignment_ttl_secs = 1000000000000",
+        "[invitation]\nmember_ttl = \"0s\"",
+        "[invitation]\nassignment_ttl = \"0s\"",
+        "[invitation]\nmember_ttl = \"1000000000000s\"",
+        "[invitation]\nassignment_ttl = \"1000000000000s\"",
         "[http.rate_limit]\nrequests_per_second = 0",
         "[http.rate_limit]\nburst = 0",
         "[http.rate_limit]\nrequests_per_second = 1000000001",
@@ -189,12 +190,14 @@ fn invalid_runtime_settings_are_rejected() {
         "[image]\npage_source_image_limit_mib = 0",
         "[effect]\nqueue_capacity = 9223372036854775807",
         "[subtree_delete]\nconcurrency = 0",
-        "[subtree_delete]\ntimeout_secs = 0",
-        "[subtree_delete]\nidle_interval_secs = 0",
-        "[subtree_delete]\nretry_interval_secs = 0",
-        "[subtree_delete]\ntimeout_secs = 18446744073709551615",
-        "[sched]\nshutdown_grace_secs = 18446744073709551615",
-        "[sched]\nshutdown_grace_secs = -1",
+        "[subtree_delete]\ntimeout = \"0s\"",
+        "[subtree_delete]\nidle_interval = \"0s\"",
+        "[subtree_delete]\nretry_interval = \"0s\"",
+        "[subtree_delete]\ntimeout = 300",
+        "[subtree_delete]\ntimeout = \"18446744073709551615s\"",
+        "[sched]\nshutdown_grace = \"18446744073709551615s\"",
+        "[sched]\nshutdown_grace = \"-1s\"",
+        "[sched]\nshutdown_grace = \"30\"",
         "[http]\nport = '8888'",
         "[http",
     ] {
@@ -256,16 +259,17 @@ fn obsolete_and_unknown_configuration_keys_are_rejected() {
         "[image]\npage_image_limit_mib = 25",
         "[image]\npage_artwork_image_limit_mib = 0",
         "[artwork]\nchapter_artwork_limit = 512",
-        "[cache]\nonline_user_ttl = 600",
+        "[cache]\nissue_save_ttl_secs = \"30d\"",
+        "[cache]\nonline_user_ttl_secs = \"10m\"",
         "[repo]\nunknown = 1",
-        "[invitation]\nmember_ttl = 432000",
-        "[invitation]\nassignment_ttl = 259200",
+        "[invitation]\nmember_ttl_secs = \"120h\"",
+        "[invitation]\nassignment_ttl_secs = \"72h\"",
         "[unknown]",
         "[http]\nunknown = 1",
         "[http.rate_limit]\nunknown = 1",
         "[effect]\nunknown = 1",
-        "[sched]\nshutdown_grace = 30",
-        "[subtree_delete]\ntimeout = 300",
+        "[sched]\nshutdown_grace_secs = \"30s\"",
+        "[subtree_delete]\ntimeout_secs = \"300s\"",
     ] {
         assert!(AppConfig::parse(document).is_err(), "{document}");
     }

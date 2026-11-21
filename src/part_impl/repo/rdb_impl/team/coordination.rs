@@ -1,5 +1,4 @@
 //! Team record locking and workset-index allocation boundary.
-
 use poprako_rdb_core::RdbConn;
 
 use crate::part_impl::repo::rdb_impl::team::info;

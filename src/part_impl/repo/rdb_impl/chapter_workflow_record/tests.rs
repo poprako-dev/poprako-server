@@ -4,7 +4,6 @@
 )]
 
 //! RDB coverage for immutable chapter workflow record persistence.
-
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use time::{Duration, OffsetDateTime};
 

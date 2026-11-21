@@ -10,7 +10,6 @@
 //!    iterator of [`Event`] values.
 //! 2. **[`EventBus`]** — the port implementation that receives and
 //!    processes the event iterator.
-
 /// Domain event types.
 pub mod event;
 

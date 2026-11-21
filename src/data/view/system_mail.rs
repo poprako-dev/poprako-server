@@ -1,16 +1,8 @@
 //! View DTOs for the system-mail domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 /// Presentation-ready system mail value.
 ///
 /// Converts the raw [`SystemMailInfo`] timestamp to Unix milliseconds
 /// and omits the internal `receiver_id` field.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SystemMailInfoView {
     /// Unique identifier.
     pub id: String,

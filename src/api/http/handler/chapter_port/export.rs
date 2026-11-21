@@ -1,9 +1,9 @@
 //! Shared chapter translation export response helpers.
-
 use axum::body::Bytes;
 use axum::http::{HeaderValue, StatusCode, header};
 use tracing::instrument;
 
+use crate::api::http::object::chapter_port::ExportChapterTranslationsPayload;
 use crate::api::http::result::{HttpBody, HttpError, HttpRawBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::model::shared::user::UserToken;
@@ -37,7 +37,9 @@ pub async fn export_payload(
     )
     .await?;
 
-    let body = serde_json::to_vec(&val).map_err(|error| {
+    let payload = ExportChapterTranslationsPayload::from(val);
+
+    let body = serde_json::to_vec(&payload).map_err(|error| {
         //
         tracing::error!(
             operation = "serialize_chapter_export",
@@ -52,7 +54,7 @@ pub async fn export_payload(
 }
 
 /// Builds a `200 OK` inline JSON export response.
-pub fn body_response(body: Bytes) -> HttpBody<HttpRawBody> {
+pub fn body_resp(body: Bytes) -> HttpBody<HttpRawBody> {
     //
     HttpBody::new(StatusCode::OK, HttpRawBody::new(body)).with_header(
         header::CONTENT_TYPE,
@@ -61,7 +63,7 @@ pub fn body_response(body: Bytes) -> HttpBody<HttpRawBody> {
 }
 
 /// Builds a `200 OK` JSON attachment response with a filename header.
-pub fn download_response(
+pub fn download_resp(
     filename_base: &str,
     body: Bytes,
 ) -> HttpResult<HttpRawBody> {

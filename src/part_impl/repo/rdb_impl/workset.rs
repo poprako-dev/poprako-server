@@ -1,5 +1,4 @@
 //! Diesel-backed workset repository operations.
-
 /// Workset RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -36,8 +35,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-/// Build the expected error for a missing workset.
-pub fn missing_workset(id: &str, operation: &str) -> BaseError {
+// Build the expected error for a missing workset.
+fn missing_workset(id: &str, operation: &str) -> BaseError {
     //
     expected_error! {
         ExpectedVariant::Args,

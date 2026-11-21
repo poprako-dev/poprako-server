@@ -75,7 +75,7 @@ is retained in the cache. Clients must generate a globally unique save ID for
 every new batch and reuse it only when retrying that batch.
 
 The cache defaults to a 256 MiB estimated-memory budget across 16 segments and
-a 30-day TTL (`cache.unit_save_ttl_secs = 2592000`). The TTL starts when the
+a 30-day TTL (`cache.unit_save_ttl = "30d"`). The TTL starts when the
 completed save is recorded after commit; successful retries do not renew it.
 Expired tokens are unavailable to lookups even before maintenance reclaims
 their storage. Idle caches may retain expired allocations until later activity.

@@ -2,13 +2,14 @@ use super::super::alloc::validation::validate_page_source_count;
 
 use crate::complex::image as image_complex;
 use crate::complex::page_source as page_source_complex;
-use crate::data::instr::page_source::{
-    AllocPageSourceImageInstr, PageSourceImageInstr,
-};
 use crate::test_util::IMAGE_CONFIG;
 use crate::value::image::ImageHash;
 use crate::value::image::ImageKind;
 use serde_json::json;
+
+use crate::api::http::object::page_source::{
+    AllocPageSourceImageBody, PageSourceImageBody,
+};
 
 #[test]
 fn image_byte_length_accepts_closed_bounds() {
@@ -89,10 +90,10 @@ fn raw_ident_deserializes_optional_filenames_for_both_allocations() {
                 .insert("raw_ident".into(), input);
         }
 
-        let single: AllocPageSourceImageInstr =
+        let single: AllocPageSourceImageBody =
             serde_json::from_value(body.clone()).unwrap();
 
-        let manifest: PageSourceImageInstr =
+        let manifest: PageSourceImageBody =
             serde_json::from_value(body).unwrap();
 
         assert_eq!(single.raw_ident, expected);
@@ -116,10 +117,10 @@ fn raw_ident_rejects_patch_objects_and_invalid_filenames() {
         });
 
         assert!(
-            serde_json::from_value::<AllocPageSourceImageInstr>(body.clone())
+            serde_json::from_value::<AllocPageSourceImageBody>(body.clone())
                 .is_err()
         );
-        assert!(serde_json::from_value::<PageSourceImageInstr>(body).is_err());
+        assert!(serde_json::from_value::<PageSourceImageBody>(body).is_err());
     }
 
     for value in [

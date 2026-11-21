@@ -25,30 +25,27 @@ async fn cache_policy_overrides_existing_headers_and_preserves_response() {
         let router = Router::new()
             .route(
                 "/known",
-                get(move || async move {
+                get(async move || {
                     (status, [(CACHE_CONTROL, "public, max-age=3600")], "body")
                 }),
             )
             .layer(map_response(disable_cache));
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri("/known")
             .body(Body::empty())
             .expect("Request should be valid");
 
-        let response = router
-            .oneshot(request)
-            .await
-            .expect("Request should succeed");
+        let resp = router.oneshot(req).await.expect("Request should succeed");
 
-        assert_eq!(response.status(), status);
+        assert_eq!(resp.status(), status);
 
         assert_eq!(
-            response.headers().get(CACHE_CONTROL),
+            resp.headers().get(CACHE_CONTROL),
             Some(&HeaderValue::from_static("no-store"))
         );
 
-        let body = to_bytes(response.into_body(), 1024)
+        let body = to_bytes(resp.into_body(), 1024)
             .await
             .expect("Body should be readable");
 
@@ -64,11 +61,11 @@ async fn cache_policy_covers_routing_rejections_and_cors_preflight() {
         ("/known", "OPTIONS", StatusCode::OK),
     ] {
         let router = Router::new()
-            .route("/known", get(|| async { StatusCode::OK }))
+            .route("/known", get(async || StatusCode::OK))
             .layer(cors(CorsOrigin::default().header()))
             .layer(map_response(disable_cache));
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri(uri)
             .method(method)
             .header("origin", "https://poprako.com")
@@ -76,15 +73,12 @@ async fn cache_policy_covers_routing_rejections_and_cors_preflight() {
             .body(Body::empty())
             .expect("Request should be valid");
 
-        let response = router
-            .oneshot(request)
-            .await
-            .expect("Request should succeed");
+        let resp = router.oneshot(req).await.expect("Request should succeed");
 
-        assert_eq!(response.status(), status);
+        assert_eq!(resp.status(), status);
 
         assert_eq!(
-            response.headers().get(CACHE_CONTROL),
+            resp.headers().get(CACHE_CONTROL),
             Some(&HeaderValue::from_static("no-store"))
         );
     }

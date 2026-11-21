@@ -1,5 +1,4 @@
 //! Locked source page and Unit snapshots for comic archives.
-
 use std::collections::HashMap;
 
 use diesel::prelude::{

@@ -30,19 +30,19 @@ pub async fn list_infos(
     //
     // Build the query shape from the operation mode first so the same pipeline can be reused
     // for all list variants.
-    let (role, incl_opt, page, mut query) = match oper {
+    let (role, incl, page, mut query) = match oper {
         //
         ListAssignmentInfos::Spec { spec } => match spec {
             //
             AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset, *limit)),
                 t_assignment
                     .filter(f_chapter_id.eq(chapter_id.as_str()))
@@ -52,12 +52,12 @@ pub async fn list_infos(
             AssignmentListSpec::User {
                 owner_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset, *limit)),
                 t_assignment
                     .filter(f_user_id.eq(owner_id.as_str()))
@@ -148,8 +148,7 @@ pub async fn list_infos(
     // Convert DB records to domain values, then hydrate the configured eager relations.
     let mut infos = records_into_infos(records)?;
 
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
-        .await?;
+    incl::assignment::populate_assignment_incls(conn, &mut infos, incl).await?;
 
     accept!(infos)
 }

@@ -1,15 +1,8 @@
 //! Instr DTOs for the comic domain.
-
 //! Data transfer objects for comic use cases — input parameters and
 //! presentation-ready values for the comic aggregate.
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
-
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest};
 use crate::value::chapter::mask::StageMask;
@@ -19,8 +12,7 @@ use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Request to allocate a comic cover upload.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocComicCoverInstr {
     /// SHA-256 identity of the exact cover bytes.
     pub image_hash: ImageHash,
@@ -31,11 +23,9 @@ pub struct AllocComicCoverInstr {
 }
 
 /// Request to confirm one allocated comic cover version.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct MarkComicCoverUploadedInstr {
     /// Version returned in the cover upload slot.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 }
 
@@ -44,8 +34,7 @@ pub struct MarkComicCoverUploadedInstr {
 /// The first chapter is created atomically with the comic. Its subtitle
 /// can be customised via `first_chapter_subtitle`; when absent, a
 /// locale-aware default (e.g. "Ch. 1") is generated.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateComicInstr {
     /// Parent workset identifier.
     pub workset_id: String,
@@ -71,8 +60,7 @@ pub struct CreateComicInstr {
 /// Cover updates are handled by dedicated endpoints.
 ///
 /// [`alloc_cover`]: crate::usecase::comic::alloc_cover
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateComicInfoInstr {
     /// Comic identifier.
     pub id: String,
@@ -86,19 +74,14 @@ pub struct UpdateComicInfoInstr {
 }
 
 /// Related data requested when retrieving one comic.
-#[derive(Debug, Default, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug, Default)]
 pub struct GetComicInfoInstr {
     /// Related rows to embed. Dotted values include their parent segments.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ComicInclOpt>,
+    pub incl: Vec<ComicInclOpt>,
 }
 
 /// Input parameters for listing comics within a workset.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListComicInfosInstr {
     /// Parent workset identifier.
     pub workset_id: String,
@@ -111,12 +94,10 @@ pub struct ListComicInfosInstr {
     pub status: Option<ComicStatus>,
 
     /// Optional related data to include in results.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<ComicInclOpt>,
+    pub incl: Vec<ComicInclOpt>,
 
     /// Optional expansion options for the result set.
-    #[serde(default, rename = "with")]
-    pub with_opt: Vec<ComicWithOpt>,
+    pub r#with: Vec<ComicWithOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -139,7 +120,7 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
             fuzzy_title: instr.fuzzy_title,
             stages,
             status: instr.status,
-            incl_opt: instr.incl_opt,
+            incl: instr.incl,
             offset: instr.offset,
             limit: instr.limit,
         })

@@ -1,5 +1,4 @@
 //! Terminology-entry use cases.
-
 #[cfg(test)]
 // Unit tests for term lifecycle, ownership, and conflict guards.
 mod tests;

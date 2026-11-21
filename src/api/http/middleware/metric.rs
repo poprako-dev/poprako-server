@@ -1,5 +1,4 @@
 //! HTTP response metric middleware.
-
 #[cfg(test)]
 // Metrics middleware test fixtures stay with the middleware module.
 mod tests;
@@ -10,28 +9,28 @@ use axum::extract::{MatchedPath, Request};
 use axum::middleware::Next;
 use axum::response::Response;
 
-use crate::api::http::shared::metric::record_response;
+use crate::api::http::shared::metric::record_resp;
 
 /// Records the response status and matched route template.
-pub async fn record_response_metric(request: Request, next: Next) -> Response {
+pub async fn record_resp_metric(req: Request, next: Next) -> Response {
     //
     let start = Instant::now();
 
-    let method = request.method().to_string();
+    let method = req.method().to_string();
 
-    let matched_path = request.extensions().get::<MatchedPath>().cloned();
+    let matched_path = req.extensions().get::<MatchedPath>().cloned();
 
-    let response = next.run(request).await;
+    let resp = next.run(req).await;
 
     let latency = start.elapsed();
 
-    record_response(&response, matched_path.as_ref(), latency);
+    record_resp(&resp, matched_path.as_ref(), latency);
 
     let route = matched_path
         .as_ref()
         .map_or("<unmatched>", MatchedPath::as_str);
 
-    let status = response.status().as_u16().to_string();
+    let status = resp.status().as_u16().to_string();
 
     metrics::counter!(
         "http_responses",
@@ -49,5 +48,5 @@ pub async fn record_response_metric(request: Request, next: Next) -> Response {
     )
     .record(latency.as_secs_f64());
 
-    response
+    resp
 }

@@ -1,6 +1,5 @@
 //! Borrowed chapter write payloads.
 //! Owners remain alive through persistence; existing data is not copied.
-
 /// The data needed to insert a new chapter row.
 ///
 /// The `is_pinned` initial value is determined by the caller

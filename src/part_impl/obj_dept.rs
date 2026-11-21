@@ -1,5 +1,4 @@
 //! Total ObjDept composition.
-
 // Composite image storage-key mapping.
 mod page_artwork;
 // Chapter artwork storage-key mapping.

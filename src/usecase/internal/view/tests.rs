@@ -4,7 +4,6 @@
 )]
 
 //! Complete response presentation contracts at the internal rendering interface.
-
 mod fixture;
 mod pinned_chapter;
 

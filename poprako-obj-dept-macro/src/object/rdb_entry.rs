@@ -117,7 +117,7 @@ pub fn expand(table: &Path, marker: &Ident) -> TokenStream {
                 updated_at,
             } = record;
 
-            drop((
+            let _ = (
                 id,
                 ver,
                 domain,
@@ -126,7 +126,7 @@ pub fn expand(table: &Path, marker: &Ident) -> TokenStream {
                 ext,
                 created_at,
                 updated_at,
-            ));
+            );
         };
     }
 }

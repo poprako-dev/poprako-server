@@ -1,5 +1,4 @@
 //! Complex-domain opers for chapter entities — identity generation, workflow
-
 //! stage transitions, pagination helpers, and perm gates.
 //!
 //! ## perm model
@@ -8,11 +7,9 @@
 //! owning workset's team. Write-level access (create, update info, delete) requires
 //! team admin. Workflow transitions also permit chapter workers holding the
 //! appropriate role; team administrators do not require worker assignments.
-
 // Workflow role validation for chapter stage transitions.
 mod role;
 
-// Domain-specific cascade helpers: delete-page cleanup and pinned chapter re-link.
 /// Permission gates for chapter entity operations.
 pub mod perm;
 

@@ -1,5 +1,4 @@
 //! Health-check handler.
-
 #[cfg(test)]
 // Health-check test fixtures stay isolated to this module.
 mod tests;

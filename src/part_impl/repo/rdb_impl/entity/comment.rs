@@ -1,5 +1,4 @@
 //! Diesel entity types for the `t_comment` table.
-
 use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

@@ -1,5 +1,4 @@
 //! Repository trait for the assignment invitation domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::assignment_invitation::{

@@ -1,5 +1,4 @@
 //! Direct chapter artwork uploads, completion, and export.
-
 #[cfg(test)]
 mod tests;
 

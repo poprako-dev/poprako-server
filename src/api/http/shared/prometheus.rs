@@ -1,5 +1,4 @@
 //! Prometheus recorder initialization and metric rendering.
-
 use std::sync::OnceLock;
 
 use anyhow::Context as _;

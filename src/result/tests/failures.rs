@@ -1,5 +1,4 @@
 //! Internal failures retain diagnostics while propagation remains silent.
-
 use std::cell::Cell;
 
 use diesel::result::{DatabaseErrorKind, Error as DieselError};

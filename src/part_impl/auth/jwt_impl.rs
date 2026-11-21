@@ -1,5 +1,4 @@
 //! JWT-backed authentication token signer.
-
 #[cfg(test)]
 mod tests;
 
@@ -19,7 +18,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
-    // Internal state field `expiration_seconds`.
     /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
 
@@ -31,15 +29,13 @@ pub struct JwtAuth {
 }
 
 impl JwtAuth {
-    // Creates a JWT signer from a shared secret and token lifetime in hours.
-    /// Creates a JWT signer from a shared secret and token lifetime.
+    /// Creates a JWT signer from a shared secret and a token lifetime in hours.
     ///
     /// # Errors
     ///
     /// Returns an error when the expiration is non-positive or overflows.
     pub fn new(secret: &str, expiration_hours: i64) -> BaseRest<Self> {
         //
-        // Internal implementation detail.
         if expiration_hours <= 0 {
             //
             return Err(unrecoverable_error! {
@@ -62,8 +58,28 @@ impl JwtAuth {
         };
 
         let (encoding_key, decoding_key) = (
-            EncodingKey::from_secret(secret.as_bytes()),
-            DecodingKey::from_secret(secret.as_bytes()),
+            EncodingKey::from_secret(secret.as_bytes()).map_err(|error| {
+                //
+                unrecoverable_error! {
+                    message: format!(
+                        "[JwtAuth::new] JWT encoding key rejected: {}",
+                        error,
+                    );
+                    sdk_error = ?error,
+                    "JWT SDK error",
+                }
+            })?,
+            DecodingKey::from_secret(secret.as_bytes()).map_err(|error| {
+                //
+                unrecoverable_error! {
+                    message: format!(
+                        "[JwtAuth::new] JWT decoding key rejected: {}",
+                        error,
+                    );
+                    sdk_error = ?error,
+                    "JWT SDK error",
+                }
+            })?,
         );
 
         accept!(Self {
@@ -73,8 +89,8 @@ impl JwtAuth {
         })
     }
 
-    // Reads token TTL from env vars and builds a signer with validated config.
-    /// Reads JWT settings from environment variables.
+    /// Reads JWT settings from environment variables and builds a validated
+    /// signer.
     ///
     /// # Errors
     ///
@@ -82,7 +98,6 @@ impl JwtAuth {
     /// malformed.
     pub fn from_env() -> anyhow::Result<Self> {
         //
-        // Internal implementation detail.
         let secret = var("JWT_SECRET")
             .with_context(|| "[JwtAuth::from_env] JWT_SECRET is not set")?;
 
@@ -110,7 +125,6 @@ impl TokenAuth for JwtAuth {
     #[instrument(level = "info", skip_all)]
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
-        // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
 
         let timestamp = now.unix_timestamp();
@@ -181,7 +195,6 @@ impl TokenAuth for JwtAuth {
     #[instrument(level = "info", skip_all)]
     fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
-        // Internal implementation detail.
         let token_data = jsonwebtoken::decode::<TokenClaims>(
             raw,
             &self.decoding_key,
@@ -208,7 +221,6 @@ impl TokenAuth for JwtAuth {
 #[derive(Serialize)]
 // Holds JWT standard + app-specific claim fields emitted by the signer.
 struct SignClaims<'a> {
-    // Internal state field `sub`.
     // JWT standard subject claim carrying the user primary key.
     sub: &'a str,
     // Copy of the user primary key, consistent with the business model.

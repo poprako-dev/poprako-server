@@ -32,7 +32,6 @@
 //! [`Nucl::coord`]: poprako_orchestra::Nucl::coord
 //! [`Run`]: poprako_orchestra::Run
 //! [`Step`]: poprako_orchestra::Step
-
 // Stage-processing use cases (internal).
 mod stage;
 // Shared data loaders for use-case orchestration.

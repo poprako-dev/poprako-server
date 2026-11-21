@@ -1,5 +1,4 @@
 //! Cloudflare R2 support for the `ObjDept` implementation.
-
 #[cfg(test)]
 // Executes lightweight unit tests for URL generation and upload content handling.
 mod tests;
@@ -31,7 +30,6 @@ const PUT_SIGNED_EXPIRATION: Duration = Duration::from_mins(10);
 /// Cloudflare R2-backed physical object pool.
 #[derive(Clone)]
 pub struct R2ObjDeptPool {
-    // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
     /// Name of the R2 bucket used for image storage.
@@ -59,7 +57,6 @@ impl R2ObjDeptPool {
     /// cannot be constructed.
     pub fn from_env() -> anyhow::Result<Self> {
         //
-        // Internal implementation detail.
         let (account_id, access_key_id) = (
             var("R2_ACCOUNT_ID").with_context(
                 || "[R2ObjDeptPool::from_env] R2_ACCOUNT_ID is not set",
@@ -174,7 +171,6 @@ impl ObjDeptPool for R2ObjDeptPool {
         let key = key.as_str();
 
         //
-        // Internal implementation detail.
         let signed_at = SystemTime::now();
 
         let expires_at =
@@ -202,7 +198,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 })?,
         );
 
-        let presigned_request = self
+        let presigned_req = self
             .client
             .put_object()
             .bucket(&self.bucket)
@@ -224,7 +220,7 @@ impl ObjDeptPool for R2ObjDeptPool {
                 }
             })?;
 
-        let url = Url::parse(presigned_request.uri()).map_err(|error| {
+        let url = Url::parse(presigned_req.uri()).map_err(|error| {
             //
             tracing::error!(
                 operation = "gen_obj_slot",

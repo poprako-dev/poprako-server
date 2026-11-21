@@ -1,5 +1,4 @@
 //! Chapter use cases — list, read, create, update, and deletion.
-
 /// Chapter deletion use cases.
 pub mod delete;
 /// Chapter workflow stage mutation use case.
@@ -84,7 +83,7 @@ where
 
     let spec = ChapterListSpec {
         comic_id: instr.comic_id,
-        incl_opt: instr.incl_opt,
+        incl: instr.incl,
         offset: instr.offset,
         limit: instr.limit,
     };

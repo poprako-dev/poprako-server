@@ -1,5 +1,4 @@
 //! Chapter artwork upload limits.
-
 use anyhow::bail;
 use serde::Deserialize;
 

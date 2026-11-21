@@ -1,5 +1,4 @@
 //! Mock member-invitation repository operations.
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -19,7 +18,6 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
-// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     //
     state
@@ -29,15 +27,12 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-// Internal implementation of `apply_invitor_incl`.
 fn apply_invitor_incl(
     state: &MockState,
     member_invitation_info: &mut MemberInvitationInfo,
     include_invitor: bool,
 ) {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     member_invitation_info.invitor = None;
 
     if include_invitor {
@@ -47,14 +42,11 @@ fn apply_invitor_incl(
     }
 }
 
-// Internal implementation of `list_member_invitation_infos`.
 fn list_member_invitation_infos(
     state: &MockState,
     spec: &MemberInvitationListSpec,
 ) -> Vec<MemberInvitationInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut member_invitation_infos = state
         .member_invitations
         .iter()
@@ -70,8 +62,7 @@ fn list_member_invitation_infos(
 
     member_invitation_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
-    let include_invitor =
-        spec.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
+    let include_invitor = spec.incl.contains(&MemberInvitationInclOpt::Invitor);
 
     for member_invitation_info in &mut member_invitation_infos {
         apply_invitor_incl(state, member_invitation_info, include_invitor);
@@ -85,15 +76,12 @@ fn list_member_invitation_infos(
         Vec::new()
     } else {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let end = std::cmp::min(offset + limit, member_invitation_infos.len());
 
         (*member_invitation_infos.get(offset..end).unwrap()).to_vec()
     }
 }
 
-// Internal implementation of `get_member_invitation_info`.
 fn get_member_invitation_info(
     state: &MockState,
     oper: &GetMemberInvitationInfo<'_, '_>,
@@ -101,12 +89,8 @@ fn get_member_invitation_info(
     //
     match oper {
         //
-        // Internal state field `GetMemberInvitationInfo`.
-        // Internal implementation detail.
         GetMemberInvitationInfo::Id { id, incls } => {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let mut member_invitation_info = state
                 .member_invitations
                 .iter()
@@ -139,14 +123,11 @@ fn get_member_invitation_info(
     }
 }
 
-// Internal implementation of `create_member_invitation`.
 fn create_member_invitation(
     state: &mut MockState,
     entry: &MemberInvitationEntry,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state
         .member_invitations
         .iter()
@@ -187,22 +168,15 @@ fn create_member_invitation(
     accept!(member_invitation_info)
 }
 
-// Internal implementation of `update_member_invitation`.
 fn update_member_invitation(
     state: &mut MockState,
     oper: &UpdateMemberInvitation<'_>,
 ) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     match oper {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         UpdateMemberInvitation::Info { update } => {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let member_invitation_info = state
                 .member_invitations
                 .iter_mut()
@@ -216,8 +190,6 @@ fn update_member_invitation(
 
         UpdateMemberInvitation::MarkUsed { id } => {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let member_invitation_info = state
                 .member_invitations
                 .iter_mut()
@@ -241,14 +213,11 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
     ) -> BaseRest<Vec<MemberInvitationInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_member_invitation_infos(&state, oper.spec))
@@ -261,14 +230,11 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
     ) -> BaseRest<MemberInvitationInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_member_invitation_info(&state, oper)
@@ -283,7 +249,6 @@ impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -301,7 +266,6 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -319,7 +283,6 @@ impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -337,7 +300,6 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -359,15 +321,12 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteMemberInvitation<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let position = context
             .state
             .member_invitations
@@ -391,15 +350,12 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredMemberInvitation<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         context
             .state
             .member_invitations
@@ -419,27 +375,24 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &PurgeExpiredMemberInvitation<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let mut state = self.state.lock().unwrap();
-
-        state.member_invitations.retain(|member_invitation_info| {
+        {
             //
-            member_invitation_info.id != oper.id
-                || !member_invitation_info.is_pending
-        });
+            // The state guard is released as soon as the purge completes.
+            let mut state = self.state.lock().unwrap();
 
-        let rest = accept!(());
+            state.member_invitations.retain(|member_invitation_info| {
+                //
+                member_invitation_info.id != oper.id
+                    || !member_invitation_info.is_pending
+            });
+        }
 
-        drop(state);
-
-        rest
+        accept!(())
     }
 }
 
@@ -465,22 +418,22 @@ impl<'a> Run<DeleteMemberInvitation<'a>> for Mock {
     // Applies the operation directly to shared mock state.
     async fn run(&self, oper: &DeleteMemberInvitation<'a>) -> BaseRest<()> {
         //
-        let mut state = self.state.lock().unwrap();
+        {
+            //
+            // The state guard is released as soon as the deletion completes.
+            let mut state = self.state.lock().unwrap();
 
-        let position = state
-            .member_invitations
-            .iter()
-            .position(|member_invitation_info| {
-                member_invitation_info.id == oper.id
-            })
-            .ok_or_else(|| expected("error-invitation-not-found"))?;
+            let position = state
+                .member_invitations
+                .iter()
+                .position(|member_invitation_info| {
+                    member_invitation_info.id == oper.id
+                })
+                .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        state.member_invitations.remove(position);
+            state.member_invitations.remove(position);
+        }
 
-        let rest = accept!(());
-
-        drop(state);
-
-        rest
+        accept!(())
     }
 }

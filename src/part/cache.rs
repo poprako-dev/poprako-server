@@ -1,5 +1,4 @@
 //! Process-local leases, save exclusion, and bounded successful receipts.
-
 /// Annotation save coordination and receipts.
 pub mod issue_save;
 /// Online-user lease capabilities.

@@ -12,7 +12,6 @@
 //! [`register`]: super::register
 //! [`login`]: super::login
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
-
 // register(register)(positive): pending invitation should create a user and member, consume the invitation, emit signup, and return a token.
 // register(register)(negative): qid mismatch should rollback user and member creation without consuming the invitation.
 // register(register)(negative): token signing failure should propagate after the transaction and signup event finish.

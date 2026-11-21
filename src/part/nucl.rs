@@ -1,5 +1,4 @@
 //! Transaction-coordinator boundary error conversion.
-
 use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{AtLeast, Level};
 

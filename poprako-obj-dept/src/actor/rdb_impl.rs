@@ -115,42 +115,44 @@ macro_rules! handle_obj_dept_task {
             &task.oper,
         )?;
 
-        let mut conn = core
-            .get()
-            .await
-            .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
-        let (record, initial_revision) = match oper {
-            ::poprako_obj_dept::model::task::ObjTaskOper::Check => {
-                let presence_state =
-                    $obj_mod::load_for_presence_reconciliation(
+        let (initial_revision, state, active_key) = {
+            //
+            let mut conn = core
+                .get()
+                .await
+                .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
+            let (record, initial_revision) = match oper {
+                ::poprako_obj_dept::model::task::ObjTaskOper::Check => {
+                    let presence_state =
+                        $obj_mod::load_for_presence_reconciliation(
+                            &mut conn,
+                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                        )
+                        .await?;
+
+                    presence_state.unzip()
+                }
+                _ => (
+                    $obj_mod::load(
                         &mut conn,
                         ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-                    )
-                    .await?;
+                        false,
+                    ).await?,
+                    None,
+                ),
+            };
+            let state = ::poprako_obj_dept::actor::rdb_impl::classify(
+                key.ver(),
+                record.as_ref(),
+            )?;
 
-                match presence_state {
-                    Some((record, revision)) => (Some(record), Some(revision)),
-                    None => (None, None),
-                }
-            }
-            _ => (
-                $obj_mod::load(
-                    &mut conn,
-                    ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-                    false,
-                ).await?,
-                None,
-            ),
+            let active_key = ::poprako_obj_dept::rdb_impl::active_key::<$obj>(
+                ::poprako_obj_dept::key::ObjId::as_str(key.id()),
+                record.as_ref(),
+            )?;
+
+            (initial_revision, state, active_key)
         };
-        let state = ::poprako_obj_dept::actor::rdb_impl::classify(
-            key.ver(),
-            record.as_ref(),
-        )?;
-
-        let active_key = ::poprako_obj_dept::rdb_impl::active_key::<$obj>(
-            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-            record.as_ref(),
-        )?;
 
         if active_key
             .as_ref()
@@ -166,8 +168,6 @@ macro_rules! handle_obj_dept_task {
                 },
             );
         }
-
-        drop(conn);
 
         match (oper, state) {
             (
@@ -215,59 +215,67 @@ macro_rules! handle_obj_dept_task {
                     ::poprako_obj_dept::rest::ObjDeptError::
                         retryable("object check timed out".into())
                 })??;
-                let mut conn = core
-                    .get()
-                    .await
-                    .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
-                let updated = match exists {
-                    true => {
-                        $obj_mod::mark_uploaded_if_revision(
-                            &mut conn,
-                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-                            key.ver(),
-                            initial_revision,
-                        )
-                            .await?
-                    }
-                    false => {
-                        $obj_mod::mark_unuploaded_if_revision(
-                            &mut conn,
-                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-                            key.ver(),
-                            initial_revision,
-                        )
-                            .await?
-                    }
+                let (updated, changed_state) = {
+                    //
+                    let mut conn = core
+                        .get()
+                        .await
+                        .map_err(::poprako_obj_dept::rdb_impl::rdb_error)?;
+                    let updated = match exists {
+                        true => {
+                            $obj_mod::mark_uploaded_if_revision(
+                                &mut conn,
+                                ::poprako_obj_dept::key::ObjId::as_str(
+                                    key.id(),
+                                ),
+                                key.ver(),
+                                initial_revision,
+                            )
+                                .await?
+                        }
+                        false => {
+                            $obj_mod::mark_unuploaded_if_revision(
+                                &mut conn,
+                                ::poprako_obj_dept::key::ObjId::as_str(
+                                    key.id(),
+                                ),
+                                key.ver(),
+                                initial_revision,
+                            )
+                                .await?
+                        }
+                    };
+
+                    let changed_state = match updated {
+                        0 => {
+                            let record = $obj_mod::load(
+                                &mut conn,
+                                ::poprako_obj_dept::key::ObjId::as_str(
+                                    key.id(),
+                                ),
+                                false,
+                            ).await?;
+
+                            Some(::poprako_obj_dept::actor::rdb_impl::classify(
+                                key.ver(),
+                                record.as_ref(),
+                            )?)
+                        }
+                        1 => None,
+                        _ => {
+                            return Ok(
+                                ::poprako_obj_dept::model::task::ObjTaskAction::
+                                    Operator {
+                                    message: "object check changed multiple \
+                                        rows"
+                                        .into(),
+                                },
+                            );
+                        }
+                    };
+
+                    (updated, changed_state)
                 };
-
-                let changed_state = match updated {
-                    0 => {
-                        let record = $obj_mod::load(
-                            &mut conn,
-                            ::poprako_obj_dept::key::ObjId::as_str(key.id()),
-                            false,
-                        ).await?;
-
-                        Some(::poprako_obj_dept::actor::rdb_impl::classify(
-                            key.ver(),
-                            record.as_ref(),
-                        )?)
-                    }
-                    1 => None,
-                    _ => {
-                        drop(conn);
-
-                        return Ok(
-                            ::poprako_obj_dept::model::task::ObjTaskAction::
-                                Operator {
-                                message:
-                                    "object check changed multiple rows".into(),
-                            },
-                        );
-                    }
-                };
-
-                drop(conn);
 
                 match (updated, changed_state) {
                     (1, _) => {}

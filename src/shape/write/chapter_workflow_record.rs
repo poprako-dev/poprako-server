@@ -1,5 +1,4 @@
 //! Insert models for immutable chapter workflow records.
-
 #[cfg(test)]
 mod tests;
 

@@ -1,5 +1,4 @@
 //! Bounded Unit save tokens shared by every clone of a cache adapter.
-
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 // PostgreSQL commit and replay regression tests.
 mod rdb_tests;

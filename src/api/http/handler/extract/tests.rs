@@ -4,7 +4,6 @@
 )]
 
 //! HTTP rejection logging must work with the production INFO filter.
-
 use axum::Router;
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Extension, Json, Path, Query};
@@ -14,11 +13,11 @@ use axum::routing::{get, post};
 use axum_extra::extract::Query as MultiQuery;
 use serde::Deserialize;
 
+use crate::api::http::object::page_source::AllocChapterPageSourcesBody;
+use crate::api::http::object::unit::UnitEditBody;
 use crate::api::http::result::HttpError;
-use crate::data::instr::page_source::AllocChapterPageSourcesInstr;
-use crate::data::instr::unit::UnitEditInstr;
 use crate::result::ExpectedVariant;
-use crate::test_util::http_logging::capture_request;
+use crate::test_util::http_logging::capture_req;
 
 #[derive(Deserialize)]
 struct Input {
@@ -32,13 +31,30 @@ struct RepeatedInput {
 
 fn extractor_router() -> Router {
     Router::new()
-        .route("/json", post(|Json(value): Json<Input>| async move { value.id.to_string() }))
-        .route("/query", get(|Query(value): Query<Input>| async move { value.id.to_string() }))
-        .route("/multi", get(|MultiQuery(value): MultiQuery<RepeatedInput>| async move { value.id.len().to_string() }))
-        .route("/path/{id}", get(|Path(id): Path<u32>| async move { id.to_string() }))
-        .route("/extension", get(|Extension(_): Extension<u32>| async { StatusCode::OK }))
-        .route("/string", post(|_: String| async { StatusCode::OK }))
-        .route("/bytes", post(|_: axum::body::Bytes| async { StatusCode::OK }))
+        .route(
+            "/json",
+            post(async |Json(value): Json<Input>| value.id.to_string()),
+        )
+        .route(
+            "/query",
+            get(async |Query(value): Query<Input>| value.id.to_string()),
+        )
+        .route(
+            "/multi",
+            get(async |MultiQuery(value): MultiQuery<RepeatedInput>| {
+                value.id.len().to_string()
+            }),
+        )
+        .route(
+            "/path/{id}",
+            get(async |Path(id): Path<u32>| id.to_string()),
+        )
+        .route(
+            "/extension",
+            get(async |Extension(_): Extension<u32>| StatusCode::OK),
+        )
+        .route("/string", post(async |_: String| StatusCode::OK))
+        .route("/bytes", post(async |_: axum::body::Bytes| StatusCode::OK))
         .layer(DefaultBodyLimit::max(128))
 }
 
@@ -77,7 +93,7 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
 
     runtime.block_on(async {
         let router = extractor_router().route_layer(axum::middleware::from_fn(
-            |request: Request<Body>, next: axum::middleware::Next| async move {
+            async |req: Request<Body>, next: axum::middleware::Next| {
                 // Another test reaches the rejection while capture is active.
                 std::thread::spawn(|| {
                     let uri = "/multi?id=private-sentinel".parse().unwrap();
@@ -95,16 +111,16 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
                 .join()
                 .unwrap();
 
-                next.run(request).await
+                next.run(req).await
             },
         ));
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri("/multi?id=private-sentinel")
             .body(Body::empty())
             .unwrap();
 
-        let (status, _, logs) = capture_request(router, request).await;
+        let (status, _, logs) = capture_req(router, req).await;
 
         assert_eq!(status, StatusCode::BAD_REQUEST);
 
@@ -120,10 +136,10 @@ fn rejection_logging_survives_first_use_on_an_untraced_thread() {
 async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
     let router = Router::new().route(
         "/units/save",
-        post(|Json(_): Json<Vec<UnitEditInstr>>| async { StatusCode::OK }),
+        post(async |Json(_): Json<Vec<UnitEditBody>>| StatusCode::OK),
     );
 
-    let request = Request::builder()
+    let req = Request::builder()
         .method("POST")
         .uri("/units/save")
         .header("content-type", "application/json")
@@ -133,7 +149,7 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
         ))
         .unwrap();
 
-    let (status, body, logs) = capture_request(router, request).await;
+    let (status, body, logs) = capture_req(router, req).await;
 
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
@@ -156,12 +172,10 @@ async fn invalid_unit_patch_records_framework_rejection_before_handler_runs() {
 async fn missing_required_json_field_is_logged_with_its_schema_name() {
     let router = Router::new().route(
         "/chapters/{chapter_id}/page-sources/alloc",
-        post(|Json(_): Json<AllocChapterPageSourcesInstr>| async {
-            StatusCode::OK
-        }),
+        post(async |Json(_): Json<AllocChapterPageSourcesBody>| StatusCode::OK),
     );
 
-    let request = Request::builder()
+    let req = Request::builder()
         .method("POST")
         .uri("/chapters/chapter--00000000001/page-sources/alloc")
         .header("content-type", "application/json")
@@ -169,7 +183,7 @@ async fn missing_required_json_field_is_logged_with_its_schema_name() {
         .body(Body::from(r#"{"pages":[]}"#))
         .unwrap();
 
-    let (status, body, logs) = capture_request(router, request).await;
+    let (status, body, logs) = capture_req(router, req).await;
 
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
@@ -270,7 +284,7 @@ async fn native_request_extractors_record_concrete_rejections_without_payloads()
             "MissingExtension",
         ),
     ] {
-        let request = Request::builder()
+        let req = Request::builder()
             .method(method)
             .uri(uri)
             .header("content-type", content_type)
@@ -279,8 +293,7 @@ async fn native_request_extractors_record_concrete_rejections_without_payloads()
             .body(Body::from(payload))
             .unwrap();
 
-        let (actual, body, logs) =
-            capture_request(extractor_router(), request).await;
+        let (actual, body, logs) = capture_req(extractor_router(), req).await;
 
         assert_eq!(actual.as_u16(), status);
 
@@ -312,15 +325,14 @@ async fn native_request_extractors_record_concrete_rejections_without_payloads()
 #[tokio::test]
 async fn body_extractors_record_size_rejections_and_retain_413() {
     for uri in ["/json", "/string", "/bytes"] {
-        let request = Request::builder()
+        let req = Request::builder()
             .method("POST")
             .uri(uri)
             .header("content-type", "application/json")
             .body(Body::from(" ".repeat(129)))
             .unwrap();
 
-        let (status, _, logs) =
-            capture_request(extractor_router(), request).await;
+        let (status, _, logs) = capture_req(extractor_router(), req).await;
 
         assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
 
@@ -350,15 +362,14 @@ async fn invalid_utf8_and_failed_body_reads_record_native_rejections() {
             "UnknownBodyError",
         ),
     ] {
-        let request = Request::builder()
+        let req = Request::builder()
             .method("POST")
             .uri(uri)
             .header("x-request-id", "body-rejection")
             .body(body)
             .unwrap();
 
-        let (status, _, logs) =
-            capture_request(extractor_router(), request).await;
+        let (status, _, logs) = capture_req(extractor_router(), req).await;
 
         assert_eq!(status, expected_status);
 
@@ -374,13 +385,12 @@ async fn invalid_utf8_and_failed_body_reads_record_native_rejections() {
 
 #[tokio::test]
 async fn valid_repeated_queries_keep_every_value_without_warning() {
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/multi?id=1&id=2")
         .body(Body::empty())
         .unwrap();
 
-    let (status, body, logs) =
-        capture_request(extractor_router(), request).await;
+    let (status, body, logs) = capture_req(extractor_router(), req).await;
 
     assert_eq!(status, StatusCode::OK);
 
@@ -393,7 +403,7 @@ async fn valid_repeated_queries_keep_every_value_without_warning() {
 async fn business_and_framework_422_have_distinct_diagnostics() {
     let router = Router::new().route(
         "/input",
-        post(|Json(_): Json<Input>| async {
+        post(async |Json(_): Json<Input>| {
             HttpError::from(expected_error! {
                 ExpectedVariant::Args,
                 message: "business validation failed".into();
@@ -405,7 +415,7 @@ async fn business_and_framework_422_have_distinct_diagnostics() {
     for (payload, framework) in
         [(r#"{"id":"private-input"}"#, true), (r#"{"id":1}"#, false)]
     {
-        let request = Request::builder()
+        let req = Request::builder()
             .method("POST")
             .uri("/input")
             .header("content-type", "application/json")
@@ -413,7 +423,7 @@ async fn business_and_framework_422_have_distinct_diagnostics() {
             .body(Body::from(payload))
             .unwrap();
 
-        let (status, _, logs) = capture_request(router.clone(), request).await;
+        let (status, _, logs) = capture_req(router.clone(), req).await;
 
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 

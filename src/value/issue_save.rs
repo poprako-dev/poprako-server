@@ -1,5 +1,4 @@
 //! Stable identities assigned by an annotation save.
-
 use std::sync::Arc;
 
 /// One temporary annotation identity and its committed business identity.

@@ -1,27 +1,21 @@
 //! Assignment invitation handlers: create, list, delete, and join.
-
 use axum::extract::{Extension, Json, Path, Query, State};
 use axum::http::StatusCode;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::assignment::AssignmentInfoObj;
+use crate::api::http::object::assignment_invitation::{
+    AssignmentInvitationInfoObj, AssignmentInvitationListQuery,
+    CreateAssignmentInvitationBody, CreateAssignmentInvitationPayload,
+    JoinAssignmentInvitationBody, ListAssignmentInvitationInfosQuery,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::assignment_invitation::{
-    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
-    ListAssignmentInvitationInfosInstr,
-};
-use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
-use crate::data::view::assignment::AssignmentInfoView;
-use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
@@ -29,25 +23,6 @@ use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::assignment_invitation as assignment_invitation_usecase;
 use crate::usecase::assignment_invitation::join as assignment_invitation_join_usecase;
-use crate::value::pagination::PubListLimit;
-
-/// Query for listing assignment invitations under one chapter.
-///
-/// Example: `?is_pending=true&offset=0&limit=20`.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct AssignmentInvitationListQuery {
-    /// When `Some(true)`, returns only unconsumed invitations;
-    /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub is_pending: Option<bool>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -56,10 +31,10 @@ pub struct AssignmentInvitationListQuery {
     tag = "assignment-invitations",
     description = "Requires owning-team administrator membership, without a \
     chapter assignment. Invitations contain worker roles only.",
-    request_body = CreateAssignmentInvitationInstr,
+    request_body = CreateAssignmentInvitationBody,
     responses(
         (status = 201, description = "Invitation created",
-            body = HttpBody<CreateAssignmentInvitationVal>),
+            body = HttpBody<CreateAssignmentInvitationPayload>),
         (status = 403, description = "No perm to create invitations in this \
         chapter"),
         (status = 409, description = "Invitee is already assigned"),
@@ -69,8 +44,8 @@ pub struct AssignmentInvitationListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateAssignmentInvitationInstr>,
-) -> HttpResult<CreateAssignmentInvitationVal> {
+    Json(instr): Json<CreateAssignmentInvitationBody>,
+) -> HttpResult<CreateAssignmentInvitationPayload> {
     //
     Ok(assignment_invitation_usecase::create::<
         _,
@@ -85,10 +60,10 @@ pub async fn create(
             &harn.config().invitation,
         ),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.
@@ -105,7 +80,7 @@ pub async fn create(
         AssignmentInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed",
-            body = HttpBody<Vec<AssignmentInvitationInfoView>>),
+            body = HttpBody<Vec<AssignmentInvitationInfoObj>>),
         (status = 403, description = "No perm to list invitations in this \
         chapter"),
     ),
@@ -116,9 +91,9 @@ pub async fn list_infos(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AssignmentInvitationListQuery>,
-) -> HttpResult<Vec<AssignmentInvitationInfoView>> {
+) -> HttpResult<Vec<AssignmentInvitationInfoObj>> {
     //
-    let instr = ListAssignmentInvitationInfosInstr {
+    let instr = ListAssignmentInvitationInfosQuery {
         chapter_id,
         is_pending: query.is_pending,
         offset: query.offset,
@@ -129,9 +104,9 @@ pub async fn list_infos(
         assignment_invitation_usecase::list_infos::<
             RdbContext<ReptRead>,
             RdbRepo,
-        >((harn.repo(),), user_token, instr)
+        >((harn.repo(),), user_token, instr.into())
         .await?
-        .accept(StatusCode::OK),
+        .accept_into(StatusCode::OK),
     )
 }
 
@@ -170,10 +145,10 @@ pub async fn delete(
     post,
     path = "/api/v1/assignment-invitations/join",
     tag = "assignment-invitations",
-    request_body = JoinAssignmentInvitationInstr,
+    request_body = JoinAssignmentInvitationBody,
     responses(
         (status = 201, description = "Joined \
-        assignment", body = HttpBody<AssignmentInfoView>),
+        assignment", body = HttpBody<AssignmentInfoObj>),
         (status = 422, description = "Invitation does not target this user"),
         (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Invitation code not found"),
@@ -183,8 +158,8 @@ pub async fn delete(
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<JoinAssignmentInvitationInstr>,
-) -> HttpResult<AssignmentInfoView> {
+    Json(instr): Json<JoinAssignmentInvitationBody>,
+) -> HttpResult<AssignmentInfoObj> {
     //
     Ok(assignment_invitation_join_usecase::join::<
         _,
@@ -194,8 +169,8 @@ pub async fn join(
     >(
         (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }

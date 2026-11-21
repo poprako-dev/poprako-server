@@ -176,7 +176,7 @@ async fn main() -> anyhow::Result<()> {
                     obj_dept.view(),
                     bus.clone(),
                 ),
-                |(nucl, repo, view, bus), payload| async move {
+                async |(nucl, repo, view, bus), payload| {
                     dispatch_prom((&nucl, &repo, &view, &bus), payload).await
                 },
             ),

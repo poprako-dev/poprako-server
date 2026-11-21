@@ -1,5 +1,4 @@
 //! Snapshot and persisted-record types for immutable comic archives.
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -47,7 +46,7 @@ pub struct ComicArchivePageSourceSnapshot {
 
 /// One compressed row to persist in an archive table.
 #[derive(Clone)]
-pub struct ComicArchiveRecord {
+pub struct ComicArchiveInfo {
     /// Unique identifier for the archive record.
     pub id: String,
 

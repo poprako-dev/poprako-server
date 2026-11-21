@@ -1,5 +1,4 @@
 //! Mock fixture construction.
-
 use poprako_obj_dept::model::record::{
     ObjKeyRecord as ObjKey, ObjMetaRecord as ObjMeta,
 };

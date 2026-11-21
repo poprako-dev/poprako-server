@@ -81,7 +81,7 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
 
     let mut list_data = list_by_chapter_data("chapter--00000000001");
 
-    list_data.incl_opt = vec![AssignmentInclOpt::ChapterComicWorksetTeam];
+    list_data.incl = vec![AssignmentInclOpt::ChapterComicWorksetTeam];
 
     let assignment_info_vals =
         list_infos((&mock, &mock), token("member--66614769577"), list_data)
@@ -256,7 +256,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
         (&mock, &mock),
         token("viewer-user"),
         ListAssignmentInfosInstr {
-            incl_opt: Vec::new(),
+            incl: Vec::new(),
             chapter_id: Some("chapter--00000000001".into()),
             owner_id: Some("owner-user".into()),
             role: None,

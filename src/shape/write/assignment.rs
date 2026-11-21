@@ -1,6 +1,5 @@
 //! Borrowed assignment write payloads.
 //! Owners remain alive through persistence; existing data is not copied.
-
 use crate::value::role::RoleMask;
 
 /// The data needed to insert a new assignment row.

@@ -4,7 +4,6 @@
 )]
 
 //! Team administration without chapter assignments.
-
 use super::*;
 
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;

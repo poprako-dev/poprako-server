@@ -37,7 +37,7 @@ pub struct MetricTotal {
 
     /// Accumulated latency in microseconds used to compute the average.
     #[serde(skip)]
-    total_latency_micros: u64,
+    pub total_latency_micros: u64,
 
     /// Count of 4xx/5xx responses grouped by their HTTP status code.
     pub by_error: HashMap<u16, u64>,
@@ -201,40 +201,37 @@ impl MetricWindow {
             return;
         };
 
-        let mut bucket = lock_bucket(bucket);
-
-        if bucket.minute != minute {
-            bucket.reset(minute);
-        }
-
-        bucket.total = bucket.total.saturating_add(1);
-
-        let latency_micros = latency.as_micros().try_into().unwrap_or(u64::MAX);
-
-        bucket.total_latency_micros =
-            bucket.total_latency_micros.saturating_add(latency_micros);
-
-        if status >= 400 {
+        {
             //
-            // Count bad/failed statuses for quick error visibility.
-            let error_total = bucket.by_error.entry(status).or_default();
+            // The bucket guard is released after the counters are updated.
+            let mut bucket = lock_bucket(bucket);
 
-            *error_total = error_total.saturating_add(1);
+            if bucket.minute != minute {
+                bucket.reset(minute);
+            }
+
+            bucket.total = bucket.total.saturating_add(1);
+
+            let latency_micros =
+                latency.as_micros().try_into().unwrap_or(u64::MAX);
+
+            bucket.total_latency_micros =
+                bucket.total_latency_micros.saturating_add(latency_micros);
+
+            if status >= 400 {
+                //
+                // Count bad/failed statuses for quick error visibility.
+                let error_total = bucket.by_error.entry(status).or_default();
+
+                *error_total = error_total.saturating_add(1);
+            }
+
+            let Some(matched_path) = matched_path else {
+                return;
+            };
+
+            *bucket.by_path.entry(matched_path.to_owned()).or_default() += 1;
         }
-
-        let Some(matched_path) = matched_path else {
-            //
-            drop(bucket);
-
-            return;
-        };
-
-        let path_total =
-            bucket.by_path.entry(matched_path.to_owned()).or_default();
-
-        *path_total = path_total.saturating_add(1);
-
-        drop(bucket);
     }
 
     // Reads and aggregates the current 60-minute window values.
@@ -278,15 +275,15 @@ impl MetricWindow {
 /// Records one response in the current minute bucket.
 ///
 /// The path dimension is populated only from axum's matched route template.
-pub fn record_response(
-    response: &Response,
+pub fn record_resp(
+    resp: &Response,
     matched_path: Option<&MatchedPath>,
     latency: Duration,
 ) {
     //
     let minute = curr_minute();
 
-    let status = response.status().as_u16();
+    let status = resp.status().as_u16();
 
     let matched_path = matched_path.map(MatchedPath::as_str);
 

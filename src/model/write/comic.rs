@@ -4,7 +4,6 @@
 //! Convert to [`ComicInfoView`] for presentation outside the domain layer.
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
-
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicRepl {

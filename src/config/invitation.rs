@@ -1,5 +1,4 @@
 //! Expiration delays for newly created invitations.
-
 use std::time::Duration;
 
 use anyhow::ensure;
@@ -13,16 +12,10 @@ use crate::config::duration;
 #[serde(default, deny_unknown_fields)]
 pub struct InvitationConfig {
     /// Delay before cleaning up an unconsumed member invitation.
-    #[serde(
-        rename = "member_ttl_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub member_ttl: Duration,
     /// Delay before cleaning up an unconsumed assignment invitation.
-    #[serde(
-        rename = "assignment_ttl_secs",
-        deserialize_with = "duration::deserialize"
-    )]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub assignment_ttl: Duration,
 }
 
@@ -34,17 +27,22 @@ impl InvitationConfig {
     pub fn validate(self) -> anyhow::Result<()> {
         //
         for (field, duration) in [
-            ("member_ttl_secs", self.member_ttl),
-            ("assignment_ttl_secs", self.assignment_ttl),
+            ("member_ttl", self.member_ttl),
+            ("assignment_ttl", self.assignment_ttl),
         ] {
             //
-            ensure!(!duration.is_zero(), "invitation.{field} must be positive");
+            ensure!(
+                !duration.is_zero(),
+                "invitation.{} must be positive",
+                field
+            );
 
             let delay = time::Duration::try_from(duration)?;
 
             ensure!(
                 OffsetDateTime::now_utc().checked_add(delay).is_some(),
-                "invitation.{field} exceeds the deferred-task timestamp range"
+                "invitation.{} exceeds the deferred-task timestamp range",
+                field
             );
         }
 

@@ -1,5 +1,4 @@
 //! Pure matching for authoritative chapter page manifests.
-
 #[cfg(test)]
 mod tests;
 
@@ -25,7 +24,7 @@ pub fn build(
 
     let mut consumed_indexes = HashSet::new();
 
-    for (request_index, (assigned_index, page_source_spec)) in assigned_indexes
+    for (req_index, (assigned_index, page_source_spec)) in assigned_indexes
         .iter_mut()
         .zip(page_source_specs)
         .enumerate()
@@ -43,7 +42,7 @@ pub fn build(
                     && cand.chapter_id == chapter_id
             })
             .ok_or_else(|| {
-                page_source_not_found(chapter_id, page_source_id, request_index)
+                page_source_not_found(chapter_id, page_source_id, req_index)
             })?;
 
         consumed_indexes.insert(existing_index);
@@ -70,7 +69,7 @@ pub fn build(
 fn page_source_not_found(
     chapter_id: &str,
     page_source_id: &str,
-    request_index: usize,
+    req_index: usize,
 ) -> BaseError {
     //
     expected_error! {
@@ -78,7 +77,7 @@ fn page_source_not_found(
         message: trl("error-page-not-found");
         chapter_id,
         page_source_id,
-        request_index,
+        req_index,
         "manifest page not found",
     }
 }

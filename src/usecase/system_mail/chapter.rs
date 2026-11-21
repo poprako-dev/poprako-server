@@ -1,5 +1,4 @@
 //! Chapter-event application handlers.
-
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -92,7 +91,6 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     //
     match stage {
         //
-        // Internal implementation detail.
         Stage::RawProvide => {
             Some((RoleField::TRANSLATOR, trl("mail-workflow-upload")))
         }
@@ -117,8 +115,8 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     }
 }
 
-/// Loads a chapter by ID with default include options, returning `None` on lookup failure.
-// Loads the chapter and resolves include data used by notification templates.
+// Loads a chapter by ID with default include options, returning `None` on
+// lookup failure, and resolves include data used by notification templates.
 #[instrument(level = "info", skip_all)]
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
@@ -134,7 +132,6 @@ where
 
     let Ok(chapter_info) = chapter_info else {
         //
-        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_id,
             "failed to look up chapter for notification",
@@ -146,8 +143,8 @@ where
     Some(chapter_info)
 }
 
-/// Builds a list of system mail forms for all assignments in a chapter matching a role.
-// Fetches assignments and renders localized title, workflow, and assignee fields.
+// Builds a list of system mail forms for all assignments in a chapter matching
+// a role, rendering localized title, workflow, and assignee fields.
 #[instrument(level = "info", skip_all)]
 async fn build_assignment_mails<C, R>(
     repo: &R,
@@ -169,7 +166,6 @@ where
 
     let Ok(assignment_infos) = assignment_infos else {
         //
-        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "failed to list chapter assignments",
@@ -180,7 +176,6 @@ where
 
     let Some(args) = chapter_mail_args(chapter_info, workflow_label) else {
         //
-        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "chapter notification is missing its required include chain",
@@ -205,8 +200,7 @@ where
         .collect()
 }
 
-/// Sends a batch of system mail forms, logging a warning on failure.
-// Submits prepared mails and logs the failure path for observability.
+// Sends a batch of prepared system mail forms, logging a warning on failure.
 #[instrument(level = "info", skip_all)]
 async fn send_batch<R>(
     repo: &R,
@@ -231,13 +225,12 @@ async fn send_batch<R>(
     }
 }
 
-// Returns the reviewer workflow label for a completed stage, skipping typesetting.
-// Returns `None` when reviewers are not expected.
+// Returns the reviewer workflow label for a completed stage, or `None` when
+// reviewers are not expected (typesetting is skipped).
 fn reviewer_progress_label(stage: Stage) -> Option<String> {
     //
     match stage {
         //
-        // Internal implementation detail.
         Stage::RawProvide => Some(trl("mail-workflow-upload")),
 
         Stage::Translate => Some(trl("mail-workflow-translate")),
@@ -250,8 +243,8 @@ fn reviewer_progress_label(stage: Stage) -> Option<String> {
     }
 }
 
-/// Notifies all reviewer assignees of a chapter about a workflow event.
-// Loads current assignees, builds their mail payload, then dispatches notifications.
+// Notifies all reviewer assignees of a chapter about a workflow event by
+// loading the assignees, building their mail payload, and dispatching it.
 #[instrument(level = "info", skip_all)]
 async fn notify_reviewers<C, R>(
     repo: &R,
@@ -283,7 +276,6 @@ fn chapter_mail_args(
     workflow_label: String,
 ) -> Option<HashMap<Cow<'static, str>, FluentValue<'static>>> {
     //
-    // Internal implementation detail.
     let comic_info = chapter_info.comic.as_ref()?;
 
     let workset_info = comic_info.workset.as_ref()?;
@@ -324,14 +316,12 @@ fn chapter_mail_args(
 // Truncates a title to a maximum number of characters, appending ellipsis if truncated.
 fn truncate_title(title: &str, max_chars: usize) -> String {
     //
-    // Internal implementation detail.
     let mut chars = title.chars();
 
     let mut short_title = chars.by_ref().take(max_chars).collect::<String>();
 
     match chars.next() {
         //
-        // Internal implementation detail.
         Some(_) => {
             //
             short_title.push_str("...");

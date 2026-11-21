@@ -1,5 +1,4 @@
 //! Value groups shared by Unit read and write models.
-
 /// source page-relative Unit coordinates.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(test, derive(Debug))]

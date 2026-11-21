@@ -1,5 +1,4 @@
 //! Composite image physical identities.
-
 use serde::{Deserialize, Serialize};
 
 use crate::value::business_id::{ChapterId, PageArtworkId};

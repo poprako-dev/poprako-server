@@ -1,5 +1,4 @@
 //! Literal text transformation for existing Unit content.
-
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;

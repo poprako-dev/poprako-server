@@ -1,20 +1,12 @@
 //! Instr DTOs for the user domain.
-
 //! Data transfer objects for user profile use cases.
-
-use serde::Deserialize;
-
 #[cfg(not(debug_assertions))]
 use veil::Redact;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
 
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Request to allocate a user avatar upload.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocUserAvatarInstr {
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
@@ -25,17 +17,14 @@ pub struct AllocUserAvatarInstr {
 }
 
 /// Request to confirm one allocated user avatar version.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct MarkUserAvatarUploadedInstr {
     /// Version returned in the avatar upload slot.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 }
 
 /// Input parameters for updating a user's profile.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateUserInfoInstr {
     /// User identifier to update.
     pub id: String,
@@ -47,10 +36,8 @@ pub struct UpdateUserInfoInstr {
 }
 
 /// Input parameters for replacing the authenticated user's password.
-#[derive(Deserialize)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[cfg_attr(not(debug_assertions), derive(Redact))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordInstr {
     /// Current password for verification before change.
     #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]

@@ -4,7 +4,6 @@
 )]
 
 //! Mock implementation of [TokenAuth] for testing token signing with deterministic output.
-
 use poprako_util::i18n::trl;
 
 use crate::model::shared::user::UserToken;
@@ -17,10 +16,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
 /// Configure [`Mock::with_token_failure`] to test sign failures.
 impl TokenAuth for Mock {
-    // Internal implementation of `sign_token`.
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
-        // Internal implementation detail.
         if self
             .flags
             .lock()
@@ -36,10 +33,8 @@ impl TokenAuth for Mock {
         accept!(format!("token:{}", token.user_id))
     }
 
-    // Internal implementation of `verify_token`.
     fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
-        // Internal implementation detail.
         if self
             .flags
             .lock()
@@ -66,7 +61,6 @@ impl TokenAuth for Mock {
 #[test]
 fn sign_returns_stable_token() {
     //
-    // Internal implementation detail.
     let mock = Mock::new();
 
     let signed = TokenAuth::sign_token(
@@ -87,7 +81,6 @@ fn sign_returns_stable_token() {
 #[test]
 fn sign_failure_returns_unrecoverable() {
     //
-    // Internal implementation detail.
     let mock = Mock::new().with_token_failure();
 
     let error_token = TokenAuth::sign_token(

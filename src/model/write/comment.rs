@@ -1,5 +1,4 @@
 //! Domain models for team board comments.
-
 /// The data needed to insert a team board comment row.
 #[cfg_attr(test, derive(Clone))]
 pub struct CommentEntry {

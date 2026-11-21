@@ -1,5 +1,4 @@
 //! In-memory tombstone claiming and physical deletion.
-
 use std::collections::HashSet;
 
 use crate::config::repo::RepoConfig;

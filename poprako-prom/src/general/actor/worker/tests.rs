@@ -101,7 +101,7 @@ async fn expired_queued_attempt_is_not_started() {
 
     let started = std::sync::atomic::AtomicBool::new(false);
 
-    run_worker(work_stream, Arc::new(Notify::new()), |()| async {
+    run_worker(work_stream, Arc::new(Notify::new()), async |()| {
         started.store(true, std::sync::atomic::Ordering::SeqCst);
     })
     .await;

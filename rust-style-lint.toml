@@ -63,6 +63,7 @@ allow_public_fields = [
     "config",
     "value",
     "api::http::handler",
+    "api::http::object",
     "api::http::shared::metric",
     "complex::page::manifest",
     "part::image",
@@ -90,26 +91,12 @@ ignore_files = []
 [[forbidden-identifiers.words]]
 word = "result"
 code = "FBD001"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "res"
 code = "FBD002"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "err"
@@ -131,51 +118,23 @@ contexts = [
 [[forbidden-identifiers.words]]
 word = "closure"
 code = "FBD005"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "connection"
 replacement = "conn"
 code = "FBD006"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "txn"
 code = "FBD007"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "tx"
 code = "FBD008"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "extension"
@@ -196,38 +155,17 @@ contexts = [
 word = "previous"
 replacement = "prev"
 code = "FBD011"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "replace"
 code = "FBD012"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "outcome"
 code = "FBD013"
-contexts = [
-    "function",
-    "let",
-    "parameter",
-    "const",
-    "static",
-    "enum_variant",
-]
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant"]
 
 [[forbidden-identifiers.words]]
 word = "generation"
@@ -619,6 +557,38 @@ contexts = [
 word = "allocations"
 code = "FBD034"
 replacement = "allocs"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "request"
+code = "FBD035"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "response"
+code = "FBD036"
 contexts = [
     "module",
     "function",

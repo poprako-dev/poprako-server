@@ -26,7 +26,7 @@ async fn get_info_expands_workset_team_and_creator() {
     seed_included_comic(&mock);
 
     let instr = GetComicInfoInstr {
-        incl_opt: vec![ComicInclOpt::WorksetTeam, ComicInclOpt::Creator],
+        incl: vec![ComicInclOpt::WorksetTeam, ComicInclOpt::Creator],
     };
 
     let comic_view = get_info(
@@ -86,7 +86,7 @@ async fn get_info_denies_member_of_another_team() {
     mock.seed_member(admin_member("outsider", "team--00000000002"));
 
     let instr = GetComicInfoInstr {
-        incl_opt: vec![ComicInclOpt::WorksetTeam],
+        incl: vec![ComicInclOpt::WorksetTeam],
     };
 
     let error = get_info(

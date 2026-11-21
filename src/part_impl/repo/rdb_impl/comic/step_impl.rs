@@ -69,7 +69,7 @@ pub fn missing_comic(id: &str, operation: &str) -> BaseError {
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-    incl_opt: &[ComicInclOpt],
+    incl: &[ComicInclOpt],
 ) -> BaseRest<ComicInfo> {
     //
     let record = t_comic
@@ -97,7 +97,7 @@ pub async fn get_info_by_id(
     incl::comic::populate_comic_incls(
         conn,
         std::slice::from_mut(&mut info),
-        incl_opt,
+        incl,
     )
     .await?;
 
@@ -180,7 +180,7 @@ pub async fn list_infos(
         .map(TryInto::try_into)
         .collect::<BaseRest<Vec<ComicInfo>>>()?;
 
-    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
+    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl).await?;
 
     accept!(infos)
 }

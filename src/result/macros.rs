@@ -1,5 +1,4 @@
 //! Error construction and source-level tracing shared by application modules.
-
 // Constructs a successful application result with its shared error type.
 // Keeping the error type explicit lets transaction callbacks infer BaseError.
 macro_rules! accept {

@@ -1,5 +1,4 @@
 //! Team use cases — create, read, update, avatar management, and deletion.
-
 /// Team deletion orchestration.
 pub mod delete;
 /// Process-local online-user lease use cases.

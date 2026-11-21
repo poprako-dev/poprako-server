@@ -1,5 +1,4 @@
 //! Exercise versioned typed persistence against the disposable `PostgreSQL` fixture.
-
 use super::{RdbNucl, RdbRepo, ReptRead, entry};
 use crate::model::write::issue_edit::{
     IssueEditPageRepl, IssueEditVariantRename,

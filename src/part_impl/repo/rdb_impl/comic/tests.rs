@@ -41,7 +41,7 @@ async fn verify_related_workset_team(
         fuzzy_title: Some("Comic".into()),
         stages: None,
         status: None,
-        incl_opt: vec![ComicInclOpt::WorksetTeam],
+        incl: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -110,7 +110,7 @@ async fn verify_updated_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
         fuzzy_title: Some("RDB Author Updated".into()),
         stages: None,
         status: None,
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -134,7 +134,7 @@ async fn verify_updated_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
         fuzzy_title: Some("1".into()),
         stages: None,
         status: None,
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -160,7 +160,7 @@ async fn verify_literal_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
             fuzzy_title: Some(fuzzy_title.into()),
             stages: None,
             status: None,
-            incl_opt: Vec::new(),
+            incl: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -195,7 +195,7 @@ async fn verify_literal_search(repo: &RdbRepo, comic_fixture: &ComicFixture) {
             fuzzy_title: Some(fuzzy_title.into()),
             stages: None,
             status: None,
-            incl_opt: Vec::new(),
+            incl: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -346,7 +346,7 @@ async fn verify_single_stage_filters(
             fuzzy_title: None,
             stages: Some(single_stage_filter(stage, phase)),
             status: None,
-            incl_opt: Vec::new(),
+            incl: Vec::new(),
             offset: 0,
             limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
@@ -401,7 +401,7 @@ async fn verify_combined_stage_filters(
             (Stage::Proofread, StagePhase::Completed),
         ])),
         status: None,
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -424,7 +424,7 @@ async fn verify_combined_stage_filters(
         fuzzy_title: None,
         stages: Some(StageMask::try_filter_from(0xFFF).unwrap()),
         status: None,
-        incl_opt: Vec::new(),
+        incl: Vec::new(),
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

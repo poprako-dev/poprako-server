@@ -1,5 +1,4 @@
 //! Domain models for system mail notifications.
-
 /// The data needed to insert a new system mail row.
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailEntry {

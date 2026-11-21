@@ -1,5 +1,4 @@
 //! Value types for assignment aggregates.
-
 use serde::Deserialize;
 
 #[cfg(feature = "swagger")]

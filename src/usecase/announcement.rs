@@ -1,7 +1,6 @@
 //! Announcement use cases.
-
-/// Announcement presentation assembly.
-pub mod view;
+// Announcement presentation assembly.
+mod view;
 
 #[cfg(test)]
 // Unit tests for announcement usecase behavior.

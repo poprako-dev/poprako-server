@@ -33,7 +33,7 @@ async fn verify_chapter_inclusions(
 ) {
     let chapter_list_spec = ChapterListSpec {
         comic_id: chapter_fixture.comic_info.id.clone(),
-        incl_opt: vec![ChapterInclOpt::Creator],
+        incl: vec![ChapterInclOpt::Creator],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
@@ -61,7 +61,7 @@ async fn verify_chapter_inclusions(
 
     let chapter_list_spec = ChapterListSpec {
         comic_id: chapter_fixture.comic_info.id.clone(),
-        incl_opt: vec![ChapterInclOpt::ComicWorksetTeam],
+        incl: vec![ChapterInclOpt::ComicWorksetTeam],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

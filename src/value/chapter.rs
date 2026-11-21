@@ -1,5 +1,4 @@
 //! Chapter workflow stages, phases, and transition rules.
-
 /// Stage-phase bitmask helpers.
 pub mod mask;
 /// Workflow stage, phase, and transition rules.

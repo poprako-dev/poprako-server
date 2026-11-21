@@ -1,5 +1,4 @@
 //! Authentication use cases — registration and login.
-
 #[cfg(test)]
 mod tests;
 

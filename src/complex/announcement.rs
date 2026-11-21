@@ -1,5 +1,4 @@
 //! Complex-domain opers for team announcements.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::{

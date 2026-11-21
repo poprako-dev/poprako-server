@@ -1,5 +1,4 @@
 //! RDB-backed team repository.
-
 // Record locking and workset index allocation.
 mod coordination;
 // Team lifecycle and profile persistence.

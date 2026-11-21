@@ -1,5 +1,4 @@
 //! User domain events.
-
 /// Event emitted when a new user signs up through an invitation.
 ///
 /// [`UserSignedUp`]: crate::part::effect::event::Event::UserSignedUp

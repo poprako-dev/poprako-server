@@ -1,5 +1,4 @@
 //! Assignment use cases — list, join, role update, and deletion.
-
 /// Assignment role-update orchestration.
 pub mod update_roles;
 

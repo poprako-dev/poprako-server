@@ -4,7 +4,6 @@
 //! `/auth/login`, `/auth/logout`) and all protected business routes live
 //! under `/api/v1`. Protected routes are wrapped by the authorization
 //! middleware.
-
 // Versioned API route builders.
 mod v1;
 
@@ -24,10 +23,10 @@ use crate::api::http::handler::health;
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::cache::disable_cache;
 use crate::api::http::middleware::cors::cors;
-use crate::api::http::middleware::metric::record_response_metric;
+use crate::api::http::middleware::metric::record_resp_metric;
 use crate::api::http::middleware::rate_limit;
 use crate::api::http::middleware::trace::{
-    propagate_request_id, set_request_id, trace_request,
+    propagate_req_id, set_req_id, trace_req,
 };
 
 #[cfg(feature = "swagger")]
@@ -89,10 +88,10 @@ pub fn new(harn: AppHarn, archive_exports: Arc<Semaphore>) -> Router<AppHarn> {
         .fallback(not_found)
         .method_not_allowed_fallback(method_not_allowed)
         .layer(from_fn_with_state(limiter, rate_limit::rate_limit))
-        .layer(propagate_request_id())
-        .layer(trace_request())
-        .layer(set_request_id())
-        .layer(from_fn(record_response_metric))
+        .layer(propagate_req_id())
+        .layer(trace_req())
+        .layer(set_req_id())
+        .layer(from_fn(record_resp_metric))
         .layer(cors_layer)
         .layer(CompressionLayer::new())
         .layer(map_response(disable_cache))

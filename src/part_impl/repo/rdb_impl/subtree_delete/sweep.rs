@@ -1,5 +1,4 @@
 //! Tombstone claiming and dependency-ordered physical deletion.
-
 use diesel::dsl::{exists, not};
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,

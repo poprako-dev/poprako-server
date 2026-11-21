@@ -1,5 +1,4 @@
 //! Transactional review editing in the in-memory adapter.
-
 use std::collections::BTreeMap;
 
 use poprako_orchestra::Step;

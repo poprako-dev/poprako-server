@@ -4,7 +4,6 @@
 )]
 
 //! Injected task, runner recovery, scheduling, and shutdown regressions.
-
 use std::collections::VecDeque;
 use std::future::pending;
 use std::num::NonZeroUsize;
@@ -302,7 +301,7 @@ async fn continue_is_immediate_and_wait_uses_idle_interval() {
     ]);
 
     let config: crate::AppConfig = toml::from_str(
-        "[subtree_delete]\nconcurrency = 1\nidle_interval_secs = 7",
+        "[subtree_delete]\nconcurrency = 1\nidle_interval = \"7s\"",
     )
     .unwrap();
 
@@ -463,7 +462,7 @@ async fn shutdown_uses_one_deadline_for_all_workers() {
     task.config.concurrency = NonZeroUsize::new(3).unwrap();
 
     let config: crate::AppConfig =
-        toml::from_str("[sched]\nshutdown_grace_secs = 8").unwrap();
+        toml::from_str("[sched]\nshutdown_grace = \"8s\"").unwrap();
 
     let desc = Sched::new(vec![Box::new(task)], config.sched).run_detached();
 

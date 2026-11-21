@@ -1,5 +1,4 @@
 //! Authoritative chapter page manifest transactions.
-
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 

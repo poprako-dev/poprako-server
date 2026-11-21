@@ -1,5 +1,4 @@
 //! Terminology-base validation, perms, and import planning.
-
 /// Pure permission rules.
 pub mod perm {
     use poprako_util::i18n::trl;

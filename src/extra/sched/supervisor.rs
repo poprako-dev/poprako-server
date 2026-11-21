@@ -1,5 +1,4 @@
 //! Fixed worker capacity, unexpected-exit recovery, and bounded group shutdown.
-
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;

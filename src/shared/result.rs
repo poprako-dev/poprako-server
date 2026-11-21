@@ -1,5 +1,4 @@
 //! Error conversion helpers for the Diesel-backed repository.
-
 #[cfg(test)]
 mod tests;
 

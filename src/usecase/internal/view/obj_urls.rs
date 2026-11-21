@@ -1,5 +1,4 @@
 //! Shared metadata and consumable URL batches for response object markers.
-
 #[cfg(test)]
 mod tests;
 

@@ -1,5 +1,4 @@
 //! Shared pure permission helpers for the complex layer.
-
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;

@@ -1,14 +1,5 @@
 //! Version-checked annotation editing requests.
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 /// Rectangle expressed in whole-page normalized coordinates.
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueEditRectInstr {
     /// Left edge.
     pub x_coord: f64,
@@ -21,9 +12,6 @@ pub struct IssueEditRectInstr {
 }
 
 /// Final contents of one stable annotation.
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct IssueEditEntryInstr {
     /// Existing server-assigned identity; exclusive with `local_id`.
     pub id: Option<String>,
@@ -39,16 +27,12 @@ pub struct IssueEditEntryInstr {
 }
 
 /// Complete ordered page replacement guarded by its loaded context.
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageIssuesInstr {
     /// Opaque review identity returned by the read endpoint.
     pub review_key: String,
     /// Decimal page revision returned by the read endpoint.
     pub revision: String,
     /// Exact image generation shown while editing, or null.
-    #[serde(rename = "image_version")]
     pub image_ver: Option<u32>,
 
     /// Final ordered contents; empty clears the page.
@@ -56,9 +40,6 @@ pub struct SavePageIssuesInstr {
 }
 
 /// Renames references only when the chapter snapshot is still current.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RenameIssueEditVariantInstr {
     /// Expected review identity.
     pub review_key: String,

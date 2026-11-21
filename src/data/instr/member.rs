@@ -1,14 +1,7 @@
 //! Instr DTOs for the member domain.
-
 //! Data transfer objects for member use cases.
-
-use serde::Deserialize;
-
 #[cfg(not(debug_assertions))]
 use veil::Redact;
-
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::i18n::trl;
 
@@ -19,8 +12,7 @@ use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Input parameters for creating a member.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateMemberInstr {
     /// User identifier for the new membership.
     pub user_id: String,
@@ -32,10 +24,8 @@ pub struct CreateMemberInstr {
 }
 
 /// Input parameters for joining a team through a member invitation.
-#[derive(Deserialize)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[cfg_attr(not(debug_assertions), derive(Redact))]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamInstr {
     /// Invitation code to join the team.
     #[cfg_attr(not(debug_assertions), redact(fixed = 10, with = "[REDACTED]"))]
@@ -53,9 +43,7 @@ pub struct JoinTeamInstr {
 /// `incl` embeds related rows (`user`, `team`).
 ///
 /// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+#[derive(Debug)]
 pub struct ListMemberInfosInstr {
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
@@ -74,8 +62,7 @@ pub struct ListMemberInfosInstr {
     pub role: Option<RoleField>,
 
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInclOpt>,
+    pub incl: Vec<MemberInclOpt>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -95,7 +82,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             team_id,
             fuzzy_nickname,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         } = instr;
@@ -130,7 +117,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             //
             return accept!(Self::User {
                 owner_id,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             });
@@ -153,7 +140,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
             team_id,
             fuzzy_nickname,
             role,
-            incl_opt,
+            incl,
             offset,
             limit,
         })
@@ -161,8 +148,7 @@ impl TryFrom<ListMemberInfosInstr> for MemberListSpec {
 }
 
 /// Input parameters for updating a member's roles.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateMemberRolesInstr {
     /// Member identifier to update.
     pub id: String,

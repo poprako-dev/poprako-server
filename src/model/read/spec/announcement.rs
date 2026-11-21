@@ -1,5 +1,4 @@
 //! Domain models for team announcements.
-
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -9,7 +8,7 @@ pub struct AnnouncementListSpec {
     pub team_id: String,
     /// Flags controlling which optional associations (such as user data) are
     /// joined into results.
-    pub incl_opt: Vec<AnnouncementInclOpt>,
+    pub incl: Vec<AnnouncementInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

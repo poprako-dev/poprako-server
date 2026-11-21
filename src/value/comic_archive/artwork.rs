@@ -1,5 +1,4 @@
 //! Immutable composite page archive payloads.
-
 use serde::Serialize;
 
 /// One independent composite page and its current review.

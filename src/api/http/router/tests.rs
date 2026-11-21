@@ -4,14 +4,13 @@
 )]
 
 //! Routing failures must retain their status and warn at their source.
-
 use axum::body::Body;
 use axum::http::Request;
 use axum::middleware::Next;
 use tower::ServiceExt as _;
 
 use super::*;
-use crate::test_util::http_logging::capture_request;
+use crate::test_util::http_logging::capture_req;
 
 #[tokio::test]
 async fn route_and_method_rejections_record_one_correlated_warning() {
@@ -25,18 +24,18 @@ async fn route_and_method_rejections_record_one_correlated_warning() {
         ),
     ] {
         let router = Router::new()
-            .route("/known", get(|| async { StatusCode::OK }))
+            .route("/known", get(async || StatusCode::OK))
             .fallback(not_found)
             .method_not_allowed_fallback(method_not_allowed);
 
-        let request = Request::builder()
+        let req = Request::builder()
             .uri(uri)
             .method(method)
             .header("x-request-id", "routing-rejection")
             .body(Body::empty())
             .unwrap();
 
-        let (actual, body, logs) = capture_request(router, request).await;
+        let (actual, body, logs) = capture_req(router, req).await;
 
         assert_eq!(actual, status);
 
@@ -53,28 +52,28 @@ async fn route_and_method_rejections_record_one_correlated_warning() {
 #[tokio::test]
 async fn method_rejection_preserves_allow_header() {
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .method_not_allowed_fallback(method_not_allowed);
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/known")
         .method("POST")
         .body(Body::empty())
         .unwrap();
 
-    let response = router.oneshot(request).await.unwrap();
+    let resp = router.oneshot(req).await.unwrap();
 
-    assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
 
-    assert_eq!(response.headers()["allow"], "GET,HEAD");
+    assert_eq!(resp.headers()["allow"], "GET,HEAD");
 }
 
 #[tokio::test]
 async fn protected_method_fallback_keeps_authorization_before_routing() {
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .method_not_allowed_fallback(method_not_allowed)
-        .layer(from_fn(|_: Request<Body>, _: Next| async {
+        .layer(from_fn(async |_: Request<Body>, _: Next| {
             crate::api::http::result::HttpError::from(expected_error! {
                 crate::result::ExpectedVariant::Auth,
                 message: "authentication required".into();
@@ -83,13 +82,13 @@ async fn protected_method_fallback_keeps_authorization_before_routing() {
         }))
         .method_not_allowed_fallback(method_not_allowed);
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/known")
         .method("POST")
         .body(Body::empty())
         .unwrap();
 
-    let (status, _, logs) = capture_request(router, request).await;
+    let (status, _, logs) = capture_req(router, req).await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 

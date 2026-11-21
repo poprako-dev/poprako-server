@@ -1,7 +1,6 @@
 //! Rate limiting middleware using the governor crate.
 //!
 //! Shares one configured token bucket across an application's routes.
-
 #[cfg(test)]
 mod tests;
 
@@ -27,7 +26,7 @@ pub fn new(config: RateLimitConfig) -> Arc<DefaultDirectRateLimiter> {
 /// Enforces the application quota using explicitly injected shared state.
 pub async fn rate_limit(
     State(limiter): State<Arc<DefaultDirectRateLimiter>>,
-    request: Request,
+    req: Request,
     next: Next,
 ) -> Response {
     //
@@ -35,12 +34,12 @@ pub async fn rate_limit(
         //
         tracing::warn!(
             status = 429,
-            uri = request.uri().path(),
+            uri = req.uri().path(),
             "rate limit exceeded"
         );
 
         return StatusCode::TOO_MANY_REQUESTS.into_response();
     }
 
-    next.run(request).await
+    next.run(req).await
 }

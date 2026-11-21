@@ -1,5 +1,4 @@
 //! Repository trait for immutable comic archive transactions.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::comic_archive::{

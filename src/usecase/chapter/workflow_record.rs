@@ -1,5 +1,4 @@
 //! Use case for listing immutable chapter workflow records.
-
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 

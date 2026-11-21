@@ -1,5 +1,4 @@
 //! Mock implementation of assignment repository operations.
-
 // Internal organization of the `incl` module.
 mod incl;
 
@@ -21,31 +20,24 @@ use crate::result::{BaseError, BaseRest};
 use crate::shape::write::assignment::AssignmentEntryShape;
 use crate::value::assignment::AssignmentInclOpt;
 
-// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     oper: &ListAssignmentInfos<'_, '_>,
 ) -> Vec<AssignmentInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
-    let (role, incl_opt, page, mut assignment_infos) = match oper {
+    let (role, incl, page, mut assignment_infos) = match oper {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         ListAssignmentInfos::Spec { spec } => match spec {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
@@ -60,12 +52,12 @@ fn list_infos(
             AssignmentListSpec::User {
                 owner_id,
                 role,
-                incl_opt,
+                incl,
                 offset,
                 limit,
             } => (
                 *role,
-                incl_opt.as_slice(),
+                incl.as_slice(),
                 Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
@@ -116,7 +108,7 @@ fn list_infos(
     });
 
     for assignment_info in &mut assignment_infos {
-        apply_assignment_incls(state, assignment_info, incl_opt);
+        apply_assignment_incls(state, assignment_info, incl);
     }
 
     assignment_infos.sort_by(|left, right| {
@@ -129,16 +121,12 @@ fn list_infos(
 
     match page {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         Some((offset, limit)) => {
             //
             if offset >= assignment_infos.len() {
                 Vec::new()
             } else {
                 //
-                // Internal implementation detail.
-                // Internal implementation detail.
                 let end = std::cmp::min(offset + limit, assignment_infos.len());
 
                 (*assignment_infos.get(offset..end).unwrap()).to_vec()
@@ -149,7 +137,6 @@ fn list_infos(
     }
 }
 
-// Internal implementation of `list_infos_excluded`.
 fn list_infos_excluded(
     state: &MockState,
     chapter_id: &str,
@@ -165,15 +152,12 @@ fn list_infos_excluded(
     )
 }
 
-// Internal implementation of `get_assignment`.
 fn get_assignment(
     state: &MockState,
     id: &str,
-    incl_opt: &[AssignmentInclOpt],
+    incl: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut assignment_info = state
         .assignments
         .iter()
@@ -181,7 +165,7 @@ fn get_assignment(
         .cloned()
         .ok_or_else(|| expected("error-assignment-not-found"))?;
 
-    apply_assignment_incls(state, &mut assignment_info, incl_opt);
+    apply_assignment_incls(state, &mut assignment_info, incl);
 
     accept!(assignment_info)
 }
@@ -225,7 +209,6 @@ fn find_assignment_by_user_and_comic(
     Some(assignment_info)
 }
 
-// Internal implementation of `find_assignment`.
 fn find_assignment(
     state: &MockState,
     chapter_id: &str,
@@ -243,14 +226,11 @@ fn find_assignment(
         .cloned()
 }
 
-// Internal implementation of `create_assignment`.
 fn create_assignment(
     state: &mut MockState,
     entry: &AssignmentEntryShape<'_>,
 ) -> BaseRest<AssignmentInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     if state
         .assignments
         .iter()
@@ -285,11 +265,8 @@ fn create_assignment(
     accept!(assignment_info)
 }
 
-// Internal implementation of `delete_assignment_by_id`.
 fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let index = state
         .assignments
         .iter()
@@ -301,14 +278,11 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseRest<()> {
     accept!(())
 }
 
-// Internal implementation of `delete_assignments_by_chapter_id`.
 fn delete_assignments_by_chapter_id(
     state: &mut MockState,
     chapter_id: &str,
 ) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     state.assignments.retain(|a| a.chapter_id != chapter_id);
 
     accept!(())
@@ -320,39 +294,34 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let state = self.state.lock().unwrap();
-
-        let assignment_info = match oper {
+        let assignment_info = {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            FindAssignmentInfo::ChapterUser {
-                chapter_id,
-                user_id,
-            } => find_assignment(&state, chapter_id, user_id),
+            // The state guard is released as soon as the lookup completes.
+            let state = self.state.lock().unwrap();
 
-            FindAssignmentInfo::UserComic {
-                user_id,
-                comic_id,
-                incls,
-            } => find_assignment_by_user_and_comic(
-                &state, user_id, comic_id, incls,
-            ),
+            match oper {
+                //
+                FindAssignmentInfo::ChapterUser {
+                    chapter_id,
+                    user_id,
+                } => find_assignment(&state, chapter_id, user_id),
+
+                FindAssignmentInfo::UserComic {
+                    user_id,
+                    comic_id,
+                    incls,
+                } => find_assignment_by_user_and_comic(
+                    &state, user_id, comic_id, incls,
+                ),
+            }
         };
 
-        let rest = accept!(assignment_info);
-
-        drop(state);
-
-        rest
+        accept!(assignment_info)
     }
 }
 
@@ -362,23 +331,20 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let state = self.state.lock().unwrap();
+        let assignment_infos = {
+            //
+            // The state guard is released as soon as the list is collected.
+            let state = self.state.lock().unwrap();
 
-        let assignment_infos = list_infos(&state, oper);
+            list_infos(&state, oper)
+        };
 
-        let rest = accept!(assignment_infos);
-
-        drop(state);
-
-        rest
+        accept!(assignment_infos)
     }
 }
 
@@ -388,14 +354,11 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
     ) -> Result<AssignmentInfo, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_assignment(&state, oper.id, oper.incls)
@@ -410,19 +373,14 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let assignment_info = match oper {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
@@ -452,7 +410,6 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -470,15 +427,12 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let assignment_infos = list_infos(&context.state, oper);
 
         accept!(assignment_infos)
@@ -493,7 +447,6 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -511,15 +464,12 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateAssignmentRoles<'_>,
     ) -> Result<AssignmentInfo, Self::Error> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let assignment_info = context
             .state
             .assignments
@@ -543,7 +493,6 @@ impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -552,8 +501,6 @@ impl Step<DeleteAssignments<'_>, MockContext> for Mock {
         //
         match oper {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             DeleteAssignments::Id { id } => {
                 delete_assignment_by_id(&mut context.state, id)
             }

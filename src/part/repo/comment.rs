@@ -1,5 +1,4 @@
 //! Repository traits for the comment domain.
-
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};

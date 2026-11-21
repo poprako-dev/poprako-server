@@ -1,5 +1,4 @@
 //! Chapter page-manifest and page-image allocation.
-
 // Authoritative chapter manifest transaction.
 mod manifest;
 // Transactional allocation permission checks.

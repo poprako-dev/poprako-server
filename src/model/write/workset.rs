@@ -1,5 +1,4 @@
 //! Domain models for worksets — units of work within a team.
-
 /// The data needed to create a new workset.
 #[cfg_attr(test, derive(Clone))]
 pub struct WorksetEntry {

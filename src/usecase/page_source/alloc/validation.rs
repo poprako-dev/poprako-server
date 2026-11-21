@@ -1,5 +1,4 @@
 //! Chapter page-count validation.
-
 use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};

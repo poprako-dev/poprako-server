@@ -1,5 +1,4 @@
 //! Domain models for terms stored inside terminology bases.
-
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermEntry {

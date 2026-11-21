@@ -1,16 +1,7 @@
 //! Composite page upload instructions.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::value::image::{ImageExt, ImageHash};
 
 /// One item in an authoritative composite manifest.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageArtworkImageInstr {
     /// Existing composite page identity; omission creates a new page.
     pub page_artwork_id: Option<String>,
@@ -26,18 +17,13 @@ pub struct PageArtworkImageInstr {
 }
 
 /// Complete independently ordered composite page manifest.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPageArtworksInstr {
     /// Final page sequence; omitted old pages are deleted.
     pub pages: Vec<PageArtworkImageInstr>,
 }
 
 /// Single composite image replacement.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct AllocPageArtworkImageInstr {
     /// Original PSD filename or relative path.
     pub raw_ident: Option<String>,
@@ -50,11 +36,8 @@ pub struct AllocPageArtworkImageInstr {
 }
 
 /// Exact-generation composite upload confirmation.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct MarkPageArtworkImageUploadedInstr {
     /// Allocated image version.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 }

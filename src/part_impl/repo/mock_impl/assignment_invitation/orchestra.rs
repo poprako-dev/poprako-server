@@ -14,7 +14,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest};
 
-// Internal implementation of `get_info`.
 fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
@@ -28,14 +27,11 @@ fn get_info(
         .ok_or_else(|| expected("error-invitation-not-found"))
 }
 
-// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     oper: &ListAssignmentInvitationInfos<'_>,
 ) -> Vec<AssignmentInvitationInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut infos = state
         .assignment_invitations
         .iter()
@@ -75,14 +71,11 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
     ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept!(list_infos(&state, oper))
@@ -94,14 +87,11 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
     ) -> BaseRest<AssignmentInvitationInfo> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper)
@@ -115,7 +105,6 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -132,8 +121,6 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
             Err(expected("error-already-exists"))
         } else {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             let time = now();
 
             let info = AssignmentInvitationInfo {
@@ -162,7 +149,6 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -179,7 +165,6 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -203,15 +188,12 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &MarkAssignmentInvitationUsed<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         let info = context
             .state
             .assignment_invitations
@@ -234,7 +216,6 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -243,12 +224,8 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
         //
         match oper {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
             DeleteAssignmentInvitations::Id { id } => {
                 //
-                // Internal implementation detail.
-                // Internal implementation detail.
                 let position = context
                     .state
                     .assignment_invitations
@@ -263,8 +240,6 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 
             DeleteAssignmentInvitations::Chapter { chapter_id } => {
                 //
-                // Internal implementation detail.
-                // Internal implementation detail.
                 context
                     .state
                     .assignment_invitations
@@ -284,15 +259,12 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
         context
             .state
             .assignment_invitations
@@ -308,24 +280,21 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let mut state = self.state.lock().unwrap();
+        {
+            //
+            // The state guard is released as soon as the mutation completes.
+            let mut state = self.state.lock().unwrap();
 
-        state
-            .assignment_invitations
-            .retain(|info| info.id != oper.id || !info.is_pending);
+            state
+                .assignment_invitations
+                .retain(|info| info.id != oper.id || !info.is_pending);
+        }
 
-        let rest = accept!(());
-
-        drop(state);
-
-        rest
+        accept!(())
     }
 }

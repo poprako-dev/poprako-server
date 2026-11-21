@@ -6,7 +6,6 @@
 //! Read models describe queried state, write models describe intended changes,
 //! and shared models carry concepts used across both roles. Presentation types
 //! belong to the [`data`](super::data) layer.
-
 /// Business read models and query specifications.
 pub mod read;
 /// Business models shared by read and write flows.

@@ -4,7 +4,6 @@
 )]
 
 //! source page use-case tests.
-
 use poprako_obj_dept::model::record::ObjKeyRecord as ObjKey;
 use poprako_obj_dept::model::record::ObjMetaRecord as ObjMeta;
 use time::OffsetDateTime;

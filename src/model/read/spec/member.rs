@@ -1,5 +1,4 @@
 //! Domain models for team membership.
-
 use crate::value::member::MemberInclOpt;
 use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
@@ -11,7 +10,7 @@ pub enum MemberListSpec {
         /// ID of the user whose memberships to list.
         owner_id: String,
         /// Optional include flags for related data.
-        incl_opt: Vec<MemberInclOpt>,
+        incl: Vec<MemberInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -27,7 +26,7 @@ pub enum MemberListSpec {
         /// Optional role filter.
         role: Option<RoleField>,
         /// Optional include flags for related data.
-        incl_opt: Vec<MemberInclOpt>,
+        incl: Vec<MemberInclOpt>,
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
@@ -50,13 +49,10 @@ impl MemberListSpec {
     }
 
     /// Returns the include options regardless of which variant the spec is.
-    pub fn incl_opt(&self) -> &[MemberInclOpt] {
+    pub fn incl(&self) -> &[MemberInclOpt] {
         //
         match self {
-            //
-            Self::User { incl_opt, .. } | Self::Team { incl_opt, .. } => {
-                incl_opt
-            }
+            Self::User { incl, .. } | Self::Team { incl, .. } => incl,
         }
     }
 }

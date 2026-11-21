@@ -1,5 +1,4 @@
 //! Pure rules for versioned annotation changes.
-
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;

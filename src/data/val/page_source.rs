@@ -1,15 +1,5 @@
 //! Val DTOs for the page domain.
-
 //! Data transfer objects for page use cases.
-
-#[cfg(test)]
-mod tests;
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::read::proj::page_source::{
     PageSourceUnitDiffStats, PageSourceUnitFlaggedStats,
@@ -18,8 +8,6 @@ use crate::value::image::{ImageExt, ImageHash};
 
 /// Visible Unit text statistics for a source page with revision differences.
 /// Counts are independent of revision approval and cover all visible Units.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct PageSourceUnitDiffStatsVal {
     /// Permanent source page identifier.
@@ -49,16 +37,12 @@ impl From<PageSourceUnitDiffStats> for PageSourceUnitDiffStatsVal {
 }
 
 /// Return value from successful chapter page allocations.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPageSourcesVal {
     /// Allocated pages with upload targets.
     pub pages: Vec<AllocatedPageSourceVal>,
 }
 
 /// One allocated page upload target.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocatedPageSourceVal {
     /// Allocated page identifier.
     pub page_source_id: String,
@@ -72,7 +56,6 @@ pub struct AllocatedPageSourceVal {
     pub ext: ImageExt,
 
     /// Current allocated or reused image generation.
-    #[serde(rename = "image_version")]
     pub image_ver: u32,
 
     /// Presigned upload slot, if a new image must be uploaded.
@@ -80,8 +63,6 @@ pub struct AllocatedPageSourceVal {
 }
 
 /// Visible flagged Unit statistics for one matching source page.
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct PageSourceUnitFlaggedStatsVal {
     /// Permanent source page identifier.

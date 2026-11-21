@@ -1,5 +1,4 @@
 //! RDB-backed announcement repository.
-
 /// Announcement RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -82,9 +81,7 @@ async fn list_infos(
         .collect::<Vec<AnnouncementInfo>>();
 
     incl::announcement::populate_announcement_incls(
-        conn,
-        &mut infos,
-        &spec.incl_opt,
+        conn, &mut infos, &spec.incl,
     )
     .await?;
 

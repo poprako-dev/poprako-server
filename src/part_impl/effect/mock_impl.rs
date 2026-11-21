@@ -4,7 +4,6 @@
 )]
 
 //! Mock implementation of [EventBus] for testing event collection.
-
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpEvent;
 use crate::part::effect::{EffectEvent, EventBus};

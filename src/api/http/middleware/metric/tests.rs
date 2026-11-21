@@ -22,21 +22,21 @@ async fn records_matched_route_template() {
     let router = Router::new()
         .route(
             "/metric-test/items/{item_id}",
-            get(|| async { StatusCode::NO_CONTENT }),
+            get(async || StatusCode::NO_CONTENT),
         )
-        .layer(from_fn(record_response_metric));
+        .layer(from_fn(record_resp_metric));
 
-    let request = Request::builder()
+    let req = Request::builder()
         .uri("/metric-test/items/real-item-id")
         .body(Body::empty())
         .expect("request should be valid");
 
-    let response = router
-        .oneshot(request)
+    let resp = router
+        .oneshot(req)
         .await
         .expect("metric test response should succeed");
 
-    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 
     let metric_total = read_total();
 

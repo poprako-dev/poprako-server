@@ -4,7 +4,6 @@
 )]
 
 //! Composite page identity, upload and review lifecycle tests.
-
 // Targeted image allocation must preserve every sibling's metadata.
 mod image;
 

@@ -20,7 +20,7 @@ where
     pub ids: &'a [K::Id],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> ListObjMetas<'a, K>
@@ -74,7 +74,7 @@ where
     pub spec: ObjUrlSpec,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> GenObjUrls<'a, K>
@@ -106,7 +106,7 @@ where
     pub spec: &'a ObjSlotSpec<'a, K>,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> GenObjSlot<'a, K>
@@ -134,7 +134,7 @@ where
     pub specs: &'a [ObjSlotSpec<'a, K>],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> GenObjSlots<'a, K>
@@ -178,7 +178,7 @@ where
     pub key: &'a ObjGen<K>,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> MarkObjUploaded<'a, K>
@@ -206,7 +206,7 @@ where
     pub ids: &'a [K::Id],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> ClearObjs<'a, K>
@@ -236,7 +236,7 @@ where
     pub ids: &'a [K::Id],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
-    _m: PhantomData<fn() -> K>,
+    pub _m: PhantomData<fn() -> K>,
 }
 
 impl<'a, K> DeleteObjs<'a, K>

@@ -6,7 +6,7 @@
 use super::*;
 
 #[test]
-fn owned_url_moves_its_text_and_serializes_as_a_string() {
+fn owned_url_keeps_its_text_when_converted_into_a_string() {
     //
     let text = String::from("https://obj.test/cover?signature=owned");
 
@@ -14,29 +14,17 @@ fn owned_url_moves_its_text_and_serializes_as_a_string() {
 
     let view = ObjUrlView::from(text);
 
-    assert_eq!(view.as_ptr(), pointer);
-
     assert!(matches!(&view.text, ObjUrlText::Owned { .. }));
 
-    assert_eq!(
-        serde_json::to_value(&view).unwrap(),
-        "https://obj.test/cover?signature=owned",
-    );
+    let converted = view.into_string();
 
-    let optional = Some(view);
+    assert_eq!(converted, "https://obj.test/cover?signature=owned");
 
-    assert_eq!(
-        optional.as_deref(),
-        Some("https://obj.test/cover?signature=owned"),
-    );
+    assert_eq!(converted.as_ptr(), pointer);
 }
 
 #[test]
-#[expect(
-    clippy::panic,
-    reason = "This test fails explicitly when an expected fixture variant or assertion is violated"
-)]
-fn shared_url_moves_its_handle_and_preserves_string_serialization() {
+fn shared_url_clones_while_shared_and_moves_its_handle_when_alone() {
     //
     let text = Arc::new(String::from("https://obj.test/avatar"));
 
@@ -50,17 +38,11 @@ fn shared_url_moves_its_handle_and_preserves_string_serialization() {
 
     assert_eq!(second.as_ptr(), pointer);
 
-    let ObjUrlText::Shared { text: shared } = &second.text else {
-        panic!("repeated URL must retain shared text");
-    };
+    assert_eq!(first.into_string(), "https://obj.test/avatar");
 
-    assert_eq!(Arc::strong_count(shared), 2);
+    let converted = second.into_string();
 
-    assert_eq!(
-        serde_json::to_value([first, second]).unwrap(),
-        serde_json::json!([
-            "https://obj.test/avatar",
-            "https://obj.test/avatar",
-        ]),
-    );
+    assert_eq!(converted, "https://obj.test/avatar");
+
+    assert_eq!(converted.as_ptr(), pointer);
 }

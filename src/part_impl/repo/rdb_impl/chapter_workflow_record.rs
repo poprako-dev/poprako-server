@@ -1,5 +1,4 @@
 //! RDB operations for immutable chapter workflow records.
-
 /// RDB integration tests for immutable chapter workflow records.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -19,7 +18,7 @@ use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordList
 use crate::shape::write::chapter_workflow_record::ChapterWorkflowRecordEntryShape;
 use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos};
 use crate::part_impl::repo::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordItem, ChapterWorkflowRecordInfoRecord};
+use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordInfoRecord, ChapterWorkflowRecordItem};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
 use crate::result::{BaseError, BaseRest};
 use crate::shared::result::diesel;

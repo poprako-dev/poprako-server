@@ -3,11 +3,15 @@
 
 use super::*;
 
+use crate::api::http::object::unit::UnitEditBody;
+
 use serde_json::json;
 
 // Decode a transport edit without coupling tests to every unrelated field.
 fn edit(payload: serde_json::Value) -> UnitEditInstr {
-    serde_json::from_value(payload).unwrap()
+    let body: UnitEditBody = serde_json::from_value(payload).unwrap();
+
+    body.into()
 }
 
 #[tokio::test]

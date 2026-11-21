@@ -1,5 +1,4 @@
 //! Domain models for team board comments.
-
 use crate::value::comment::CommentInclOpt;
 use crate::value::pagination::PubListLimit;
 
@@ -8,7 +7,7 @@ pub struct CommentListSpec {
     /// The team whose board comments should be listed.
     pub team_id: String,
     /// Additional data to include in each result, such as the author user record.
-    pub incl_opt: Vec<CommentInclOpt>,
+    pub incl: Vec<CommentInclOpt>,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

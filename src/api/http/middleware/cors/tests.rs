@@ -21,13 +21,10 @@ use tower::ServiceExt as _;
 async fn cors_handles_web_client_preflight_before_api_authorization() {
     //
     let router = Router::new()
-        .route(
-            "/api/v1/system-mails",
-            get(|| async { StatusCode::NO_CONTENT }),
-        )
+        .route("/api/v1/system-mails", get(async || StatusCode::NO_CONTENT))
         .layer(cors(CorsOrigin::default().header()));
 
-    let request = Request::builder()
+    let req = Request::builder()
         .method(Method::OPTIONS)
         .uri("/api/v1/system-mails")
         .header(ORIGIN, "https://poprako.com")
@@ -39,27 +36,25 @@ async fn cors_handles_web_client_preflight_before_api_authorization() {
         .body(Body::empty())
         .expect("CORS preflight request should be valid");
 
-    let response = router
-        .oneshot(request)
+    let resp = router
+        .oneshot(req)
         .await
         .expect("CORS preflight response should be valid");
 
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(resp.status(), StatusCode::OK);
     assert_eq!(
-        response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN),
+        resp.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN),
         Some(&HeaderValue::from_static("https://poprako.com")),
     );
     assert!(
-        response
-            .headers()
+        resp.headers()
             .get(ACCESS_CONTROL_ALLOW_METHODS)
             .is_some_and(|header_value| header_value
                 .as_bytes()
                 .contains(&b'G'))
     );
     assert!(
-        response
-            .headers()
+        resp.headers()
             .get(ACCESS_CONTROL_ALLOW_HEADERS)
             .is_some_and(|header_value| {
                 let header_value = header_value.as_bytes();
@@ -83,7 +78,7 @@ async fn configured_origin_controls_preflight_access() {
         .expect("local browser origin should be valid");
 
     let router = Router::new()
-        .route("/known", get(|| async { StatusCode::OK }))
+        .route("/known", get(async || StatusCode::OK))
         .layer(cors(origin.header()));
 
     for (request_origin, allowed) in [
@@ -91,7 +86,7 @@ async fn configured_origin_controls_preflight_access() {
         ("https://poprako.com", false),
         ("https://unrelated.example", false),
     ] {
-        let request = Request::builder()
+        let req = Request::builder()
             .method(Method::OPTIONS)
             .uri("/known")
             .header(ORIGIN, request_origin)
@@ -99,13 +94,13 @@ async fn configured_origin_controls_preflight_access() {
             .body(Body::empty())
             .expect("preflight request should be valid");
 
-        let response = router
+        let resp = router
             .clone()
-            .oneshot(request)
+            .oneshot(req)
             .await
             .expect("preflight should succeed");
 
-        let permits_origin = response
+        let permits_origin = resp
             .headers()
             .get(ACCESS_CONTROL_ALLOW_ORIGIN)
             .is_some_and(|value| value == request_origin);
@@ -113,7 +108,7 @@ async fn configured_origin_controls_preflight_access() {
         assert_eq!(permits_origin, allowed);
 
         assert_eq!(
-            response.headers().contains_key(ACCESS_CONTROL_ALLOW_ORIGIN),
+            resp.headers().contains_key(ACCESS_CONTROL_ALLOW_ORIGIN),
             allowed
         );
     }

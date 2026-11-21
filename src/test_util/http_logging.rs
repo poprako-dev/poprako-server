@@ -4,7 +4,6 @@
 )]
 
 //! Captures real HTTP responses and correlated logs with the production filter.
-
 use std::io::Write;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -17,7 +16,7 @@ use tracing::subscriber::NoSubscriber;
 use tracing::{Dispatch, Subscriber};
 
 use crate::api::http::middleware::trace;
-use crate::log::{RequestLogFormat, request_log_filter};
+use crate::log::{ReqLogFormat, req_log_filter};
 
 /// Keeps scoped captures independent of the thread that first emits an event.
 pub fn capture_dispatch<S>(subscriber: S) -> Dispatch
@@ -56,9 +55,9 @@ impl Write for LogBuffer {
     }
 }
 
-pub async fn capture_request(
+pub async fn capture_req(
     router: Router,
-    request: Request<Body>,
+    req: Request<Body>,
 ) -> (StatusCode, String, String) {
     //
     let buffer = LogBuffer::default();
@@ -66,24 +65,24 @@ pub async fn capture_request(
     let writer = buffer.clone();
 
     let subscriber = tracing_subscriber::fmt()
-        .with_env_filter(request_log_filter(Some("info")))
+        .with_env_filter(req_log_filter(Some("info")))
         .with_ansi(false)
-        .event_format(RequestLogFormat::new(()))
+        .event_format(ReqLogFormat::new(()))
         .with_writer(move || writer.clone())
         .finish();
 
     let (status, body) = async {
         //
-        let response = router
-            .layer(trace::trace_request())
-            .layer(trace::set_request_id())
-            .oneshot(request)
+        let resp = router
+            .layer(trace::trace_req())
+            .layer(trace::set_req_id())
+            .oneshot(req)
             .await
             .unwrap();
 
-        let status = response.status();
+        let status = resp.status();
 
-        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let body = to_bytes(resp.into_body(), usize::MAX).await.unwrap();
 
         (status, String::from_utf8(body.to_vec()).unwrap())
     }

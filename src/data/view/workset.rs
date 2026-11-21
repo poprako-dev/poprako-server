@@ -1,10 +1,4 @@
 //! View DTOs for the workset domain.
-
-use serde::Serialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::workset::WorksetInfo;
@@ -14,8 +8,6 @@ use crate::model::read::proj::workset::WorksetInfo;
 /// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
 ///
 /// [`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo
-#[derive(Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoView {
     /// Unique workset identifier.
     pub id: String,
@@ -29,7 +21,6 @@ pub struct WorksetInfoView {
     /// Workset display name.
     pub name: String,
     /// Optional description of the workset content or purpose.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Total number of comics in this workset.

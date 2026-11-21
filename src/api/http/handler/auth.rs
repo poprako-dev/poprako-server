@@ -1,5 +1,4 @@
 //! Authentication handlers: register, login, and logout.
-
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use cookie::time::Duration;
@@ -11,12 +10,13 @@ use crate::api::http::auth::AUTH_COOKIE_NAME;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::auth::{
+    LoginAuthBody, LoginAuthPayload, RegisterAuthBody, RegisterAuthPayload,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
-use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
@@ -30,12 +30,12 @@ use crate::usecase::auth as auth_usecase;
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
-    request_body = RegisterAuthInstr,
+    request_body = RegisterAuthBody,
     responses(
         (
             status = 201,
             description = "Registration successful, sets auth cookie",
-            body = HttpBody<RegisterAuthVal>),
+            body = HttpBody<RegisterAuthPayload>),
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
@@ -43,8 +43,8 @@ use crate::usecase::auth as auth_usecase;
 #[instrument(level = "info", skip_all)]
 pub async fn register(
     State(harn): State<AppHarn>,
-    Json(instr): Json<RegisterAuthInstr>,
-) -> HttpResult<RegisterAuthVal> {
+    Json(instr): Json<RegisterAuthBody>,
+) -> HttpResult<RegisterAuthPayload> {
     //
     let reply =
         auth_usecase::register::<_, RdbContext<ReptRead>, RdbRepo, _, _>(
@@ -54,13 +54,13 @@ pub async fn register(
                 harn.auth(),
                 harn.bus(),
             ),
-            instr,
+            instr.into(),
         )
         .await?;
 
     let cookie = auth_cookie(&reply.token);
 
-    Ok(reply.accept(StatusCode::CREATED).with_cookie(&cookie))
+    Ok(reply.accept_into(StatusCode::CREATED).with_cookie(&cookie))
 }
 
 /// `POST /api/v1/auth/login` — authenticates a user by QQ id and password.
@@ -71,28 +71,28 @@ pub async fn register(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
-    request_body = LoginAuthInstr,
+    request_body = LoginAuthBody,
     responses(
         (status = 200, description = "Login \
-        successful, sets auth cookie", body = HttpBody<LoginAuthVal>),
+        successful, sets auth cookie", body = HttpBody<LoginAuthPayload>),
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
 pub async fn login(
     State(harn): State<AppHarn>,
-    Json(instr): Json<LoginAuthInstr>,
-) -> HttpResult<LoginAuthVal> {
+    Json(instr): Json<LoginAuthBody>,
+) -> HttpResult<LoginAuthPayload> {
     //
     let reply = auth_usecase::login::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.auth()),
-        instr,
+        instr.into(),
     )
     .await?;
 
     let cookie = auth_cookie(&reply.token);
 
-    Ok(reply.accept(StatusCode::OK).with_cookie(&cookie))
+    Ok(reply.accept_into(StatusCode::OK).with_cookie(&cookie))
 }
 
 /// `POST /api/v1/auth/logout` — clears the authorization cookie.

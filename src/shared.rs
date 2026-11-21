@@ -1,5 +1,4 @@
 //! Shared RDB infrastructure for production adapters and extras.
-
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
 

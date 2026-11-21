@@ -88,7 +88,7 @@ where
 
     for chunk in uploaded.chunks(CONCURRENCY) {
         //
-        let futures = chunk.iter().map(|(id, meta)| async move {
+        let futures = chunk.iter().map(async |(id, meta)| {
             //
             let obj_urls = pool.gen_urls(meta.key.image(), spec).await?;
 

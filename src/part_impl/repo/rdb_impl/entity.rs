@@ -11,7 +11,6 @@
 //!
 //! Query projections use `Record`, insertion values use `Item`, and update
 //! field sets use `Pack`. These adapter types map business models to columns.
-
 /// Announcement Diesel entity types.
 pub mod announcement;
 /// Assignment Diesel entity types.

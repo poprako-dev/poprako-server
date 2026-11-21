@@ -1,5 +1,4 @@
 //! Domain models for team- and comic-scoped terminology bases.
-
 use crate::model::write::term::TermImport;
 
 /// The data needed to create a terminology base.

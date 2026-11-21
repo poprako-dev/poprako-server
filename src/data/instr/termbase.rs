@@ -1,17 +1,9 @@
 //! Instr DTOs for the termbase domain.
-
 //! Request and response DTOs for terminology-base use cases.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::value::pagination::PubListLimit;
 
 /// Input parameters for creating a terminology base.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct CreateTermbaseInstr {
     /// Team scope identifier; absent for comic-scoped termbases.
     pub team_id: Option<String>,
@@ -25,8 +17,7 @@ pub struct CreateTermbaseInstr {
 }
 
 /// Input parameters for replacing terminology-base profile fields.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[derive(Debug)]
 pub struct UpdateTermbaseInfoInstr {
     /// Terminology-base identifier to update.
     pub id: String,

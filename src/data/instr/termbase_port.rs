@@ -1,16 +1,8 @@
 //! Request DTOs for native terminology-base import.
-
-use serde::Deserialize;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
 use crate::model::write::term::TermImport;
 use crate::model::write::termbase::TermbaseImport;
 
 /// One portable terminology entry supplied by an import request.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermInstr {
     /// Source-language term or phrase.
     pub source: String,
@@ -32,8 +24,6 @@ impl From<ImportTermInstr> for TermImport {
 }
 
 /// Native terminology-base document supplied to an import endpoint.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermbaseInstr {
     /// Display name of the terminology base.
     pub name: String,
@@ -55,9 +45,6 @@ impl From<ImportTermbaseInstr> for TermbaseImport {
 }
 
 /// One strict portable terminology entry supplied by an append request.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AppendTermbaseTermInstr {
     /// Source-language term or phrase.
     pub source: String,
@@ -79,9 +66,6 @@ impl From<AppendTermbaseTermInstr> for TermImport {
 }
 
 /// Strict metadata-free document appended to an existing terminology base.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AppendTermbaseInstr {
     /// Portable entries; an empty batch is a successful no-op.
     pub terms: Vec<AppendTermbaseTermInstr>,

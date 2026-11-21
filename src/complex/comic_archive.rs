@@ -1,5 +1,4 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
-
 /// Pure permission rules.
 pub mod perm {
     use crate::complex::util::check_user_is_team_admin;
@@ -24,7 +23,7 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
+    ComicArchiveChapterSnapshot, ComicArchiveInfo, ComicArchiveSnapshot,
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseRest, ExpectedVariant};
@@ -121,7 +120,7 @@ fn build_entry(
         //
         let comic_payload = build_comic_payload(&comic_archive_snapshot)?;
 
-        serde_json::to_string(&comic_payload).map_err(|error| {
+        comic_payload.to_json_string().map_err(|error| {
             //
             unrecoverable_error! {
                 message: format!(
@@ -142,7 +141,7 @@ fn build_entry(
         chapter_snapshots,
     } = comic_archive_snapshot;
 
-    let record = ComicArchiveRecord {
+    let record = ComicArchiveInfo {
         id: archived_comic_id,
         team_id: workset_info.team_id,
         source_comic_id: comic_info.id,
@@ -238,7 +237,7 @@ fn build_page_source_payloads(
             let page_source_info = &page_source_snapshot.page_source_info;
 
             ArchivedPageSourcePayload {
-                source_page_source_id: &page_source_info.id,
+                source_page_id: &page_source_info.id,
                 index: page_source_info.index,
                 total_unit_count: page_source_info.total_unit_count,
                 translated_unit_count: page_source_info.translated_unit_count,
@@ -326,7 +325,7 @@ fn build_chapter_payload(
         is_pinned: chapter_info.is_pinned,
         index: chapter_info.index,
         subtitle: &chapter_info.subtitle,
-        page_source_count: chapter_info.page_source_count,
+        page_count: chapter_info.page_source_count,
         total_unit_count: chapter_info.total_unit_count,
         translated_unit_count: chapter_info.translated_unit_count,
         proofread_unit_count: chapter_info.proofread_unit_count,

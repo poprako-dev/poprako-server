@@ -62,7 +62,6 @@ impl Nucl for Mock {
     // Internal type alias for `Context`.
     type Context = MockContext;
 
-    // Internal implementation of `coord`.
     async fn coord<F, T, E>(&self, f: F) -> Result<T, NuclError<Self::Error, E>>
     where
         F: for<'cx> AsyncFnOnce(&'cx mut Self::Context) -> Result<T, E> + Send,
@@ -86,7 +85,6 @@ impl Nucl for Mock {
 
         match f(&mut context).await {
             //
-            // Internal implementation detail.
             Ok(value) => {
                 //
                 if flags.faults.contains(&MockFault::Commit) {
@@ -97,7 +95,6 @@ impl Nucl for Mock {
                 }
 
                 //
-                // Internal implementation detail.
                 *self.state.lock().unwrap() = context.state;
 
                 Ok(value)

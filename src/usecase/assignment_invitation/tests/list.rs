@@ -1,5 +1,4 @@
 //! Assignment invitation listing tests.
-
 use super::*;
 
 #[tokio::test]

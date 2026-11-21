@@ -75,7 +75,7 @@ async fn associated_payload_selects_decoding() {
 
     let actor = PromActor::new(
         (),
-        Dispatcher::new((), |(), payload: OtherWork| async move {
+        Dispatcher::new((), async |(), payload: OtherWork| {
             DispatchFlow::Wait {
                 error_message: payload.0,
             }
@@ -241,7 +241,7 @@ async fn topics_progress_independently() {
         delivery.clone(),
         Dispatcher::new(
             (entered.clone(), release.clone()),
-            |(entered, release), work: Work| async move {
+            async |(entered, release), work: Work| {
                 if matches!(work, Work::First(1)) {
                     entered.notify_one();
 
@@ -321,22 +321,20 @@ async fn dispatch_flows_preserve_delivery_policy() {
 
     let actor = PromActor::new(
         delivery.clone(),
-        Dispatcher::new((), |(), work: Work| async move {
-            match work {
-                Work::First(0) => DispatchFlow::Complete,
+        Dispatcher::new((), async |(), work: Work| match work {
+            Work::First(0) => DispatchFlow::Complete,
 
-                Work::First(1) => DispatchFlow::Retry {
-                    error_message: "retry".into(),
-                },
+            Work::First(1) => DispatchFlow::Retry {
+                error_message: "retry".into(),
+            },
 
-                Work::First(2) => DispatchFlow::Wait {
-                    error_message: "wait".into(),
-                },
+            Work::First(2) => DispatchFlow::Wait {
+                error_message: "wait".into(),
+            },
 
-                _ => DispatchFlow::Dead {
-                    error_message: "fatal".into(),
-                },
-            }
+            _ => DispatchFlow::Dead {
+                error_message: "fatal".into(),
+            },
         }),
     )
     .run_detached();
@@ -376,7 +374,7 @@ async fn cancel_and_join_drains_started_attempt() {
         delivery.clone(),
         Dispatcher::<Work, _, _>::new(
             (release.clone(), entered.clone()),
-            |(release, entered), _| async move {
+            async |(release, entered), _| {
                 entered.notify_one();
 
                 release.notified().await;

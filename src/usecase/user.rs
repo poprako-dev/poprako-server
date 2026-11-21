@@ -1,5 +1,4 @@
 //! User use cases — profile, avatar management, and activity tracking.
-
 /// User presentation assembly.
 pub mod view;
 

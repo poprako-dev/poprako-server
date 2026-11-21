@@ -1,5 +1,4 @@
 //! Diesel entity types for the `t_system_mail` table.
-
 use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 

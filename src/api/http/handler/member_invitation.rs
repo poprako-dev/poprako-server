@@ -1,71 +1,39 @@
 //! Member invitation handlers: create, list, role update, and deletion.
-
 use axum::extract::{Extension, Json, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
-use serde::Deserialize;
 use tracing::instrument;
-
-#[cfg(feature = "swagger")]
-use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
+use crate::api::http::object::member_invitation::{
+    CreateMemberInvitationBody, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosQuery, MemberInvitationInfoObj,
+    MemberInvitationListQuery, UpdateMemberInvitationRolesBody,
+};
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    AcceptInto as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::instr::member_invitation::{
-    CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
-    UpdateMemberInvitationRolesInstr,
-};
-use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::writer::RdbProm;
 use crate::part_impl::repo::RdbRepo;
 use crate::shared::RdbContext;
 use crate::usecase::member_invitation as member_invitation_usecase;
-use crate::value::member_invitation::MemberInvitationInclOpt;
-use crate::value::pagination::PubListLimit;
-
-/// Query for listing invitations within a team.
-///
-/// `incl` embeds related rows into each item.
-///
-/// Example: `?is_pending=true&incl=invitor&offset=0&limit=20`.
-#[derive(Deserialize)]
-#[cfg_attr(feature = "swagger", derive(IntoParams))]
-#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
-pub struct MemberInvitationListQuery {
-    /// When `Some(true)`, returns only unconsumed invitations;
-    /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub is_pending: Option<bool>,
-
-    /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(default, rename = "incl")]
-    pub incl_opt: Vec<MemberInvitationInclOpt>,
-
-    /// Pagination offset (0-based).
-    pub offset: u32,
-
-    /// Maximum number of items to return.
-    pub limit: PubListLimit,
-}
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
-    request_body = CreateMemberInvitationInstr,
+    request_body = CreateMemberInvitationBody,
     responses(
         (status = 201, description = "Invitation created",
-            body = HttpBody<CreateMemberInvitationVal>),
+            body = HttpBody<CreateMemberInvitationPayload>),
         (status = 403, description = "No perm to create invitations in this \
         team"),
         (status = 409, description = "Invitee is already a member"),
@@ -75,8 +43,8 @@ pub struct MemberInvitationListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<CreateMemberInvitationInstr>,
-) -> HttpResult<CreateMemberInvitationVal> {
+    Json(instr): Json<CreateMemberInvitationBody>,
+) -> HttpResult<CreateMemberInvitationPayload> {
     //
     Ok(member_invitation_usecase::create::<
         _,
@@ -91,10 +59,10 @@ pub async fn create(
             &harn.config().invitation,
         ),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?
-    .accept(StatusCode::CREATED))
+    .accept_into(StatusCode::CREATED))
 }
 
 /// `GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.
@@ -110,7 +78,7 @@ pub async fn create(
         MemberInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed",
-            body = HttpBody<Vec<MemberInvitationInfoView>>),
+            body = HttpBody<Vec<MemberInvitationInfoObj>>),
         (status = 403, description = "No perm to list invitations in this \
         team"),
     ),
@@ -121,12 +89,12 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberInvitationListQuery>,
-) -> HttpResult<Vec<MemberInvitationInfoView>> {
+) -> HttpResult<Vec<MemberInvitationInfoObj>> {
     //
-    let instr = ListMemberInvitationInfosInstr {
+    let instr = ListMemberInvitationInfosQuery {
         team_id,
         is_pending: query.is_pending,
-        incl_opt: query.incl_opt,
+        incl: query.incl,
         offset: query.offset,
         limit: query.limit,
     };
@@ -134,10 +102,9 @@ pub async fn list_infos(
     Ok(member_invitation_usecase::list_infos::<RdbContext<ReptRead>, RdbRepo, _>(
         (harn.repo(), harn.obj_dept()),
         user_token,
-        instr,
+        instr.into(),
     )
-    .await?
-    .accept(StatusCode::OK))
+    .await?.accept_into(StatusCode::OK))
 }
 
 /// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
@@ -147,7 +114,7 @@ pub async fn list_infos(
     tag = "member-invitations",
     params(("member_invitation_id" = String, Path,
         description = "Invitation ID")),
-    request_body = UpdateMemberInvitationRolesInstr,
+    request_body = UpdateMemberInvitationRolesBody,
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -160,7 +127,7 @@ pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<UpdateMemberInvitationRolesInstr>,
+    Json(instr): Json<UpdateMemberInvitationRolesBody>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
@@ -168,7 +135,7 @@ pub async fn update_roles(
     member_invitation_usecase::update_roles::<RdbContext<ReptRead>, RdbRepo>(
         (harn.repo(),),
         user_token,
-        instr,
+        instr.into(),
     )
     .await?;
 

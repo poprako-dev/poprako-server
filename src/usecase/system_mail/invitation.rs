@@ -1,5 +1,4 @@
 //! User-event application handlers.
-
 use std::borrow::Cow;
 use std::collections::HashMap;
 

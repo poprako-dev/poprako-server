@@ -1,5 +1,4 @@
 //! Permanent comic archive commit operations.
-
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
@@ -23,8 +22,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_source_id as 
 use crate::result::{BaseRest, ExpectedVariant};
 use crate::shared::result::diesel;
 
-// Store archive payload, clear sources, and retain the comic management record.
-/// Commits one permanent archive and clears its active source resources.
+/// Commits one permanent archive, stores its payload, clears its active source
+/// resources, and retains the comic management record.
 #[instrument(level = "info", skip_all)]
 pub async fn commit(
     conn: &mut RdbConn,

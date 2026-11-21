@@ -1,5 +1,4 @@
 //! Authoritative composite page manifests.
-
 /// Final identity and metadata for one composite page.
 pub struct PageArtworkEntry {
     /// Stable page identity.

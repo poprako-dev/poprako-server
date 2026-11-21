@@ -1,5 +1,4 @@
 //! Joining assignments through pending invitation codes.
-
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 

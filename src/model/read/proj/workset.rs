@@ -1,5 +1,4 @@
 //! Domain models for worksets — units of work within a team.
-
 use time::OffsetDateTime;
 
 /// A minimal worksetrecord.

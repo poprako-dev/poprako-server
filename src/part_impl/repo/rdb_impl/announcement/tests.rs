@@ -65,7 +65,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let announcement_list_spec = AnnouncementListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        incl_opt: vec![AnnouncementInclOpt::User],
+        incl: vec![AnnouncementInclOpt::User],
         offset: 0,
         limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };

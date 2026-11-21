@@ -1,5 +1,4 @@
 //! Read projection for immutable chapter workflow records.
-
 use time::OffsetDateTime;
 
 use crate::value::chapter_workflow_record::{
