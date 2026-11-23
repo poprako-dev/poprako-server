@@ -365,7 +365,13 @@ async fn chapter_creation_history_failure_restores_siblings() {
         &repo,
         &third.id,
         &token.user_id,
-        &[ChapterWorkflowRecordPayload::ChapterCreated],
+        &[
+            ChapterWorkflowRecordPayload::AssignmentCreated {
+                subject_user_id: token.user_id.clone(),
+                roles: RoleMask::from(RoleField::TRANSLATOR),
+            },
+            ChapterWorkflowRecordPayload::ChapterCreated,
+        ],
     )
     .await;
 
@@ -375,6 +381,10 @@ async fn chapter_creation_history_failure_restores_siblings() {
         &token.user_id,
         &[
             ChapterWorkflowRecordPayload::ChapterUnpinned,
+            ChapterWorkflowRecordPayload::AssignmentCreated {
+                subject_user_id: token.user_id.clone(),
+                roles: RoleMask::from(RoleField::TRANSLATOR),
+            },
             ChapterWorkflowRecordPayload::ChapterCreated,
         ],
     )

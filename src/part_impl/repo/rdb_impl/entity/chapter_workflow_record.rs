@@ -65,13 +65,13 @@ fn encode_payload(payload: &ChapterWorkflowRecordPayload) -> serde_json::Value {
 
         ChapterWorkflowRecordPayload::TranslationImported {
             format,
-            imported_page_count,
+            imported_page_source_count,
             imported_unit_count,
         } => {
             //
             json!({
                 "format": format,
-                "imported_page_count": imported_page_count,
+                "imported_page_source_count": imported_page_source_count,
                 "imported_unit_count": imported_unit_count,
             })
         }
@@ -136,9 +136,11 @@ fn decode_payload(
             &["subject_user_id", "previous_roles"][..]
         }
 
-        ChapterWorkflowRecordKind::TranslationImported => {
-            &["format", "imported_page_count", "imported_unit_count"][..]
-        }
+        ChapterWorkflowRecordKind::TranslationImported => &[
+            "format",
+            "imported_page_source_count",
+            "imported_unit_count",
+        ][..],
 
         ChapterWorkflowRecordKind::TranslationExported => &["formats"][..],
 
