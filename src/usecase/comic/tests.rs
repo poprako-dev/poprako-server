@@ -197,19 +197,32 @@ async fn create_allocates_index_and_updates_count() {
         RoleMask::from(RoleField::TRANSLATOR)
     );
 
-    assert_eq!(snapshot.chapter_workflow_records.len(), 1);
+    assert_eq!(snapshot.chapter_workflow_records.len(), 2);
 
-    let record = snapshot.chapter_workflow_records.first().unwrap();
+    assert!(snapshot.chapter_workflow_records.iter().all(|record| {
+        record.chapter_id == created.chapter_id
+            && record.actor_user_id.as_deref() == Some(USER_ID)
+    }));
 
-    assert_eq!(record.chapter_id, created.chapter_id);
-
-    assert_eq!(record.actor_user_id.as_deref(), Some(USER_ID));
-
-    assert!(matches!(
-            record.payload,
+    assert!(snapshot.chapter_workflow_records.iter().any(|record| {
+        matches!(
+            &record.payload,
             crate::value::chapter_workflow_record::
                 ChapterWorkflowRecordPayload::ChapterCreated
-        ));
+        )
+    }));
+
+    assert!(snapshot.chapter_workflow_records.iter().any(|record| {
+        matches!(
+            &record.payload,
+            crate::value::chapter_workflow_record::
+                ChapterWorkflowRecordPayload::AssignmentCreated {
+                subject_user_id,
+                roles,
+            } if subject_user_id.as_str() == USER_ID
+                && *roles == RoleMask::from(RoleField::TRANSLATOR)
+        )
+    }));
 }
 
 #[tokio::test]

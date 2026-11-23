@@ -51,17 +51,14 @@ async fn create_only_assigns_explicit_worker_presets() {
             );
         }
 
-        assert_eq!(snapshot.chapter_workflow_records.len(), 1);
-
         assert_eq!(
-            snapshot
-                .chapter_workflow_records
-                .first()
-                .unwrap()
-                .actor_user_id
-                .as_deref(),
-            Some("user--00000000001")
+            snapshot.chapter_workflow_records.len(),
+            1 + usize::from(preset.is_some())
         );
+
+        assert!(snapshot.chapter_workflow_records.iter().all(|record| {
+            record.actor_user_id.as_deref() == Some("user--00000000001")
+        }));
 
         assert!(snapshot.chapter_workflow_records.iter().any(|record| {
             record.chapter_id == created.id
@@ -70,6 +67,20 @@ async fn create_only_assigns_explicit_worker_presets() {
                     ChapterWorkflowRecordPayload::ChapterCreated
                 )
         }));
+
+        if let Some(roles) = preset {
+            assert!(snapshot.chapter_workflow_records.iter().any(|record| {
+                record.chapter_id == created.id
+                    && matches!(
+                        &record.payload,
+                        ChapterWorkflowRecordPayload::AssignmentCreated {
+                            subject_user_id,
+                            roles: recorded_roles,
+                        } if subject_user_id == "user--00000000001"
+                            && *recorded_roles == roles
+                    )
+            }));
+        }
     }
 }
 

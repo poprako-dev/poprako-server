@@ -154,43 +154,78 @@ where
     record_created_chapter(
         repo,
         context,
-        &token.user_id,
-        prev_pinned_chapter_id,
-        &chapter_info.id,
+        CreationHistory {
+            actor_user_id: &token.user_id,
+            chapter_id: &chapter_info.id,
+            prev_pinned_chapter_id,
+            preset_assignment_roles,
+        },
     )
     .await?;
 
     accept!(chapter_info)
 }
 
-// Records creation and any displaced pinned chapter in the workflow history.
+// Identity inputs for the Chapter creation history records.
+struct CreationHistory<'a> {
+    // User that created the Chapter.
+    actor_user_id: &'a str,
+
+    // Chapter created by this operation.
+    chapter_id: &'a str,
+
+    // Previously pinned Chapter displaced by creation, when one exists.
+    prev_pinned_chapter_id: Option<&'a str>,
+
+    // Roles assigned to the creator, when requested.
+    preset_assignment_roles: Option<RoleMask>,
+}
+
+// Records creation, the creator's preset assignment, and any displaced pinned chapter.
 async fn record_created_chapter<C, R>(
     repo: &R,
     context: &mut C,
-    user_id: &str,
-    prev_pinned_chapter_id: Option<&str>,
-    chapter_id: &str,
+    history: CreationHistory<'_>,
 ) -> BaseRest<()>
 where
     C: Context,
     R: ChapterWorkflowRecordRepo<C> + Sync,
 {
-    let mut entries = Vec::with_capacity(2);
+    let CreationHistory {
+        actor_user_id,
+        chapter_id,
+        prev_pinned_chapter_id,
+        preset_assignment_roles,
+    } = history;
+
+    let mut entries = Vec::with_capacity(3);
 
     if let Some(prev_pinned_chapter_id) = prev_pinned_chapter_id {
         //
         entries.push(ChapterWorkflowRecordEntryShape::new(
             prev_pinned_chapter_id,
-            Some(user_id),
+            Some(actor_user_id),
             ChapterWorkflowRecordPayload::ChapterUnpinned,
         ));
     }
 
     entries.push(ChapterWorkflowRecordEntryShape::new(
         chapter_id,
-        Some(user_id),
+        Some(actor_user_id),
         ChapterWorkflowRecordPayload::ChapterCreated,
     ));
+
+    if let Some(roles) = preset_assignment_roles {
+        //
+        entries.push(ChapterWorkflowRecordEntryShape::new(
+            chapter_id,
+            Some(actor_user_id),
+            ChapterWorkflowRecordPayload::AssignmentCreated {
+                subject_user_id: actor_user_id.to_owned(),
+                roles,
+            },
+        ));
+    }
 
     CreateChapterWorkflowRecords { entries: &entries }
         .step_on(repo, context)
