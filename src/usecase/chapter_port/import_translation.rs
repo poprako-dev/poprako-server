@@ -115,7 +115,7 @@ where
 
             let (
                 final_page_source_count_metrics,
-                imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             ) = import_page_sources(
                 repo,
@@ -160,7 +160,7 @@ where
             .await?;
 
             let import_val = ImportChapterTranslationVal {
-                imported_page_source_count: imported_page_count,
+                imported_page_source_count,
                 imported_unit_count,
             };
 
@@ -169,7 +169,8 @@ where
                 Some(token.user_id.as_str()),
                 ChapterWorkflowRecordPayload::TranslationImported {
                     format,
-                    imported_page_count: import_val.imported_page_source_count,
+                    imported_page_source_count: import_val
+                        .imported_page_source_count,
                     imported_unit_count: import_val.imported_unit_count,
                 },
             );
@@ -310,7 +311,7 @@ where
     C: Context,
     R: PageSourceRepo<C> + UnitRepo<C> + Sync,
 {
-    let mut imported_page_count = 0;
+    let mut imported_page_source_count = 0;
 
     let mut imported_unit_count = 0;
 
@@ -343,14 +344,15 @@ where
         final_page_source_count_metrics
             .push(page_source_import_changes.count_metrics);
 
-        imported_page_count += page_source_import_changes.imported_page_count;
+        imported_page_source_count +=
+            page_source_import_changes.imported_page_count;
 
         imported_unit_count += page_source_import_changes.imported_unit_count;
     }
 
     accept!((
         final_page_source_count_metrics,
-        imported_page_count,
+        imported_page_source_count,
         imported_unit_count,
     ))
 }

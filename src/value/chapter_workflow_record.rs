@@ -156,8 +156,8 @@ pub enum ChapterWorkflowRecordPayload {
     TranslationImported {
         /// Imported content format.
         format: TranslationFormat,
-        /// Number of pages whose visible Unit content changed.
-        imported_page_count: usize,
+        /// Number of page sources whose visible Unit content changed.
+        imported_page_source_count: usize,
         /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },

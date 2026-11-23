@@ -531,7 +531,7 @@ async fn import_keep_preserves_visible_page_source_units() {
     assert!(matches!(
         snapshot.chapter_workflow_records.first().unwrap().payload,
         ChapterWorkflowRecordPayload::TranslationImported {
-            imported_page_count: 0,
+            imported_page_source_count: 0,
             imported_unit_count: 0,
             ..
         }

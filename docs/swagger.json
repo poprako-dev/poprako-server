@@ -6152,7 +6152,7 @@
                 "description": "Translation content was imported into a chapter.",
                 "required": [
                   "format",
-                  "imported_page_count",
+                  "imported_page_source_count",
                   "imported_unit_count"
                 ],
                 "properties": {
@@ -6160,9 +6160,9 @@
                     "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatObj",
                     "description": "Imported content format."
                   },
-                  "imported_page_count": {
+                  "imported_page_source_count": {
                     "type": "integer",
-                    "description": "Number of pages whose visible Unit content changed.",
+                    "description": "Number of page sources whose visible Unit content changed.",
                     "minimum": 0
                   },
                   "imported_unit_count": {
